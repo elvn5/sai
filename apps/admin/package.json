@@ -1,0 +1,25 @@
+{
+  "name": "@app/admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^2.20.0",
+    "@pinia/nuxt": "^0.9.0",
+    "@vee-validate/zod": "^4.15.0",
+    "@vueuse/nuxt": "^12.4.0",
+    "pinia": "^2.3.0",
+    "vee-validate": "^4.15.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "nuxt": "^3.15.1",
+    "typescript": "^5.7.2",
+    "vue-tsc": "^2.2.0"
+  }
+}

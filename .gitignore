@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.nuxt/
+.output/
+*.log
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+.claude/settings.local.json

@@ -1,0 +1,24 @@
+{
+  "name": "parcel-bot-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @app/database build && pnpm --filter @app/api dev",
+    "dev:bot": "pnpm --filter @app/database build && pnpm --filter @app/bot dev",
+    "dev:admin": "pnpm --filter @app/admin dev",
+    "build": "pnpm -r build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "pnpm --filter @app/database build && pnpm -r typecheck",
+    "migration:generate": "pnpm --filter @app/database migration:generate",
+    "migration:run": "pnpm --filter @app/database migration:run"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.7.2"
+  }
+}

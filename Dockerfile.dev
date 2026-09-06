@@ -1,0 +1,8 @@
+# Базовый образ для локальной разработки (hot-reload).
+# Используется всеми сервисами в docker-compose.dev.yml с разными командами.
+# Зависимости НЕ вшиваются в образ — их ставит сервис `deps` в именованные
+# тома при первом запуске (быстрый повтор за счёт кэша pnpm-store).
+FROM node:24-alpine
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+ENV npm_config_store_dir=/pnpm-store
+WORKDIR /repo

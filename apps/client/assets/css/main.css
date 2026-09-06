@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "@app/theme/theme.css";
+@plugin "@tailwindcss/typography";

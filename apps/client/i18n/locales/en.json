@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "services": "Services",
+    "how": "How it works",
+    "contacts": "Contacts",
+    "blog": "Blog"
+  },
+  "header": {
+    "openBot": "Open bot",
+    "menu": "Menu"
+  },
+  "footer": {
+    "tagline": "Cargo and parcel delivery"
+  },
+  "hero": {
+    "badge": "Delivery from abroad",
+    "titleLead": "Your parcels —",
+    "titleAccent": "under reliable protection",
+    "subtitle": "Acme receives, ships and hands over your cargo. Ordering and tracking — right in Telegram.",
+    "ctaStart": "Start in Telegram",
+    "ctaHow": "How it works",
+    "cardReady": "Ready for pickup",
+    "cardBadge": "In transit → Pickup",
+    "status": {
+      "created": "Created",
+      "warehouse": "At warehouse",
+      "transit": "In transit",
+      "ready": "Ready for pickup"
+    }
+  },
+  "services": {
+    "heading": "Services",
+    "sub": "Everything to deliver your purchases and cargo.",
+    "receive": {
+      "title": "Parcel receiving",
+      "text": "A personal warehouse address — shop online and receive with us."
+    },
+    "delivery": {
+      "title": "Cargo delivery",
+      "text": "Fast and reliable transport from the warehouse to your city."
+    },
+    "pickup": {
+      "title": "Pickup points",
+      "text": "Convenient addresses to collect — choose the nearest one."
+    }
+  },
+  "how": {
+    "heading": "How it works",
+    "s1": {
+      "title": "Registration",
+      "text": "Launch the Telegram bot and get your personal warehouse address."
+    },
+    "s2": {
+      "title": "Order",
+      "text": "Provide our address when placing an order in a store."
+    },
+    "s3": {
+      "title": "Tracking",
+      "text": "Track your parcel status in real time."
+    },
+    "s4": {
+      "title": "Pickup",
+      "text": "Collect your order at a convenient point once it arrives."
+    }
+  },
+  "cta": {
+    "heading": "Ready to send your first parcel?",
+    "text": "Launch the bot, get a personal warehouse address and arrange delivery in a couple of minutes.",
+    "button": "Open the Telegram bot"
+  },
+  "meta": {
+    "title": "Cargo China, Russia — Kyrgyzstan · delivery | Acme",
+    "description": "Acme — cargo and delivery: from China to Kyrgyzstan, from Russia to Kyrgyzstan and from Kyrgyzstan to Russia. Tracking and ordering via a Telegram bot."
+  },
+  "blog": {
+    "title": "Blog",
+    "subtitle": "News, tips and updates from Acme.",
+    "readMore": "Read",
+    "empty": "No posts yet.",
+    "back": "← Back to blog"
+  }
+}

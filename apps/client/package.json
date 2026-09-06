@@ -1,0 +1,26 @@
+{
+  "name": "@app/client",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev --port 3002",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "start": "node .output/server/index.mjs",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@app/theme": "workspace:*",
+    "@iconify-json/lucide": "^1.2.0",
+    "@nuxt/ui": "^4.0.0",
+    "@nuxtjs/i18n": "^10.6.0",
+    "@tailwindcss/typography": "^0.5.16",
+    "@vueuse/nuxt": "^13.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "devDependencies": {
+    "nuxt": "^4.1.0",
+    "typescript": "^5.7.2",
+    "vue-tsc": "^2.2.0"
+  }
+}

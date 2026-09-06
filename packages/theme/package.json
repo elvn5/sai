@@ -1,0 +1,11 @@
+{
+  "name": "@app/theme",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Единая фирменная цветовая схема Acme (Tailwind v4 / Nuxt UI v3)",
+  "type": "module",
+  "exports": {
+    "./theme.css": "./theme.css"
+  },
+  "files": ["theme.css"]
+}

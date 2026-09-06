@@ -1,0 +1,129 @@
+# Локальная разработка с hot-reload:
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# Исходники монтируются в контейнеры (правки подхватываются на лету).
+# node_modules и pnpm-store живут в ИМЕНОВАННЫХ томах и не смешиваются с
+# node_modules на macOS (разные бинарники). Нужен файл .env в корне
+# (скопируй из .env.example и заполни BOT_TOKEN, JWT_SECRET, ADMIN_PASSWORD).
+name: acme-dev
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  env_file: .env
+  working_dir: /repo
+  environment: &app-env
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: "5432"
+    CHOKIDAR_USEPOLLING: "true" # надёжный watch файлов на macOS Docker
+  volumes: &app-volumes
+    - .:/repo
+    - pnpm_store:/pnpm-store
+    - root_nm:/repo/node_modules
+    - api_nm:/repo/apps/api/node_modules
+    - bot_nm:/repo/apps/bot/node_modules
+    - admin_nm:/repo/apps/admin/node_modules
+    - client_nm:/repo/apps/client/node_modules
+    - database_nm:/repo/packages/database/node_modules
+    - theme_nm:/repo/packages/theme/node_modules
+    - database_dist:/repo/packages/database/dist
+    - admin_nuxt:/repo/apps/admin/.nuxt
+    - client_nuxt:/repo/apps/client/.nuxt
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-parcel_bot}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parcel_bot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Разовая установка зависимостей + сборка пакета database.
+  deps:
+    <<: *app
+    command: sh -c "pnpm install --frozen-lockfile=false && pnpm --filter @app/database build"
+    restart: "no"
+
+  # Разовое применение миграций (после deps и готовности БД).
+  migrate:
+    <<: *app
+    command: sh -c "pnpm --filter @app/database migration:run"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *app
+    command: sh -c "pnpm --filter @app/api dev"
+    environment:
+      <<: *app-env
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3002"
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  bot:
+    <<: *app
+    command: sh -c "pnpm --filter @app/bot dev"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  admin:
+    <<: *app
+    command: sh -c "pnpm --filter @app/admin dev -- --host 0.0.0.0 --port 3000"
+    environment:
+      <<: *app-env
+      NUXT_PUBLIC_API_BASE_URL: "http://localhost:3001"
+    ports:
+      - "${ADMIN_PORT:-3000}:3000"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+
+  client:
+    <<: *app
+    command: sh -c "pnpm --filter @app/client dev -- --host 0.0.0.0"
+    environment:
+      <<: *app-env
+      NUXT_PUBLIC_API_BASE_URL: "http://localhost:3001"
+      NUXT_API_INTERNAL_URL: "http://api:3001"
+    ports:
+      - "${CLIENT_PORT:-3002}:3002"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data_dev:
+  pnpm_store:
+  root_nm:
+  api_nm:
+  bot_nm:
+  admin_nm:
+  client_nm:
+  database_nm:
+  theme_nm:
+  database_dist:
+  admin_nuxt:
+  client_nuxt:

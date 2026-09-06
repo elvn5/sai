@@ -1,0 +1,75 @@
+/* =============================================================================
+   @app/theme — единая цветовая схема AsDi Cargo
+   -----------------------------------------------------------------------------
+   Один источник правды для всех фронтендов монорепозитория (admin, client).
+   Подключается в main.css каждого приложения ПОСЛЕ Tailwind и Nuxt UI:
+
+       @import "tailwindcss";
+       @import "@nuxt/ui";
+       @import "@app/theme/theme.css";
+
+   Палитры построены на двух цветах логотипа:
+     • brand — терракотовый красный (лучи солнца + надпись «AsDi»)
+     • steel — графитовый серый (дорога/трасса + надпись «CARGO»)
+
+   В app.config.ts каждого приложения:
+       ui: { colors: { primary: 'brand', neutral: 'steel' } }
+   ============================================================================= */
+
+@theme static {
+  /* --- Терракотовый красный логотипа. Базовый оттенок — 500 --- */
+  --color-brand-50: #fcf4f2;
+  --color-brand-100: #f9e4df;
+  --color-brand-200: #f2c5b9;
+  --color-brand-300: #e79d8b;
+  --color-brand-400: #da6e56;
+  --color-brand-500: #c33a22;
+  --color-brand-600: #a8301b;
+  --color-brand-700: #862715; /* цвет, снятый напрямую с логотипа */
+  --color-brand-800: #6e2214;
+  --color-brand-900: #5c2015;
+  --color-brand-950: #330e08;
+
+  /* --- Графитовый серый дороги логотипа. Базовый оттенок ~800 --- */
+  --color-steel-50: #f6f6f6;
+  --color-steel-100: #e7e7e7;
+  --color-steel-200: #d1d1d1;
+  --color-steel-300: #b0b0b0;
+  --color-steel-400: #888888;
+  --color-steel-500: #6d6c6c;
+  --color-steel-600: #5a5959;
+  --color-steel-700: #4b4a4a;
+  --color-steel-800: #434141; /* цвет, снятый напрямую с логотипа */
+  --color-steel-900: #3a3838;
+  --color-steel-950: #232121;
+
+  /* Общие токены оформления */
+  --radius-brand: 0.625rem;
+}
+
+/* -----------------------------------------------------------------------------
+   View Transitions API — круговое «раскрытие» новой темы из точки клика.
+   Радиус круга анимируется в JS (ThemeToggle.vue) через Web Animations API,
+   здесь только отключаем стандартный кросс-фейд и задаём порядок слоёв.
+   ----------------------------------------------------------------------------- */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+}
+::view-transition-old(root) {
+  z-index: 0;
+}
+
+/* Уважаем настройку «уменьшить движение» — мгновенное переключение темы */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,76 @@
+# Деплой готовых образов из GHCR на сервере.
+# Используется workflow'ом .github/workflows/deploy.yml по SSH:
+#   IMAGE_PREFIX=ghcr.io/<owner>/<repo> IMAGE_TAG=<staging|версия> \
+#     docker compose -f docker-compose.deploy.yml pull
+#   ... up -d
+#
+# Переменные IMAGE_PREFIX и IMAGE_TAG подставляются из окружения при вызове.
+# Секреты приложений берутся из файла .env рядом с этим compose на сервере.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-parcel_bot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parcel_bot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/acme}/api:${IMAGE_TAG:-staging}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+    ports:
+      - "127.0.0.1:${API_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  bot:
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/acme}/bot:${IMAGE_TAG:-staging}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  admin:
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/acme}/admin:${IMAGE_TAG:-staging}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Версия для футера = тег задеплоенного образа.
+      NUXT_PUBLIC_APP_VERSION: ${IMAGE_TAG:-}
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+  client:
+    image: ${IMAGE_PREFIX:-ghcr.io/your-org/acme}/client:${IMAGE_TAG:-staging}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # SSR внутри сети Docker обращается к api по имени сервиса.
+      NUXT_API_INTERNAL_URL: "http://api:3001"
+      # Версия для футера = тег задеплоенного образа.
+      NUXT_PUBLIC_APP_VERSION: ${IMAGE_TAG:-}
+    ports:
+      - "127.0.0.1:${CLIENT_PORT:-3002}:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

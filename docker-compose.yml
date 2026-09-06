@@ -1,0 +1,98 @@
+# Локальная / серверная сборка из исходников (docker compose up -d --build).
+# Для деплоя готовых образов из GHCR см. docker-compose.deploy.yml.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-parcel_bot}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-parcel_bot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Разовое применение миграций до старта приложений (schema synchronize:false).
+  # Использует образ api: в нём есть typeorm, pg и скомпилированные миграции.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file: .env
+    working_dir: /repo
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+    command: ["node", "apps/api/node_modules/typeorm/cli.js", "migration:run", "-d", "packages/database/dist/data-source.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      CORS_ORIGINS: "http://localhost:3000,http://localhost:3002"
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  bot:
+    build:
+      context: .
+      dockerfile: apps/bot/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${ADMIN_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # SSR внутри контейнера ходит к api по имени сервиса; браузер — на localhost.
+      NUXT_API_INTERNAL_URL: "http://api:3001"
+      NUXT_PUBLIC_API_BASE_URL: "http://localhost:3001"
+    ports:
+      - "${CLIENT_PORT:-3002}:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

@@ -17,7 +17,7 @@ services:
       retries: 10
 
   api:
-    image: ghcr.io/${IMAGE_OWNER}/sai-api:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-api:${IMAGE_TAG}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -33,7 +33,7 @@ services:
         condition: service_healthy
 
   bot:
-    image: ghcr.io/${IMAGE_OWNER}/sai-bot:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-bot:${IMAGE_TAG}
     restart: unless-stopped
     env_file: .env
     environment:
@@ -44,7 +44,7 @@ services:
         condition: service_healthy
 
   admin:
-    image: ghcr.io/${IMAGE_OWNER}/sai-admin:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-admin:${IMAGE_TAG}
     restart: unless-stopped
     env_file: .env
     ports:
@@ -53,7 +53,7 @@ services:
       - api
 
   client:
-    image: ghcr.io/${IMAGE_OWNER}/sai-client:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-client:${IMAGE_TAG}
     restart: unless-stopped
     env_file: .env
     ports:

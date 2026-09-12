@@ -37,8 +37,8 @@ jobs:
           file: apps/${{ matrix.service }}/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/sai-${{ matrix.service }}:staging
-            ghcr.io/${{ github.repository_owner }}/sai-${{ matrix.service }}:staging-${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/ermekten-${{ matrix.service }}:staging
+            ghcr.io/${{ github.repository_owner }}/ermekten-${{ matrix.service }}:staging-${{ github.sha }}
           build-args: |
             NUXT_PUBLIC_API_BASE_URL=${{ vars.NUXT_PUBLIC_API_BASE_URL }}
             NUXT_PUBLIC_SITE_URL=${{ vars.NUXT_PUBLIC_SITE_URL }}
@@ -120,8 +120,8 @@ jobs:
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-            docker compose -p sai-staging -f docker-compose.deploy.yml --env-file .env pull
-            docker compose -p sai-staging -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
-            docker compose -p sai-staging -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/packages/database api \
+            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env pull
+            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
+            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/packages/database api \
               ./node_modules/.bin/typeorm migration:run -d dist/data-source.js
             docker image prune -f

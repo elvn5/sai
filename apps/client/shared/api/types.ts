@@ -63,3 +63,35 @@ export interface Parcel {
   comment: string | null;
   createdAt: string;
 }
+
+export interface BlogPost {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  coverImageUrl: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  updatedAt: string;
+}
+
+export interface GalleryItem {
+  id: string;
+  imageUrl: string;
+  caption: string | null;
+  altText: string | null;
+  sortOrder: number;
+}
+
+export interface PageSeo {
+  id: string;
+  page: string;
+  locale: string;
+  title: string | null;
+  description: string | null;
+  ogImageUrl: string | null;
+}

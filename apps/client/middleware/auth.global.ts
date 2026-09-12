@@ -1,8 +1,9 @@
 import { useAuthStore } from '~/stores/auth';
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  const publicPages = ['/', '/login', '/about'];
-  if (publicPages.includes(to.path)) return;
+  const getRouteBaseName = useRouteBaseName();
+  const publicPages = ['index', 'login', 'about', 'blog', 'blog-slug', 'gallery'];
+  if (publicPages.includes(getRouteBaseName(to) ?? '')) return;
 
   const auth = useAuthStore();
   if (!auth.checked) {
@@ -10,6 +11,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (!auth.authenticated) {
-    return navigateTo('/login');
+    const localePath = useLocalePath();
+    return navigateTo(localePath('/login'));
   }
 });

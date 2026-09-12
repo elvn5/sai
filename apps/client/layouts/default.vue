@@ -6,22 +6,29 @@
         <div class="flex justify-between h-16">
           <div class="flex">
             <div class="flex-shrink-0 flex items-center">
-              <NuxtLink to="/" class="text-xl font-bold text-gray-900 dark:text-white">
+              <NuxtLink :to="localePath('/')" class="text-xl font-bold text-gray-900 dark:text-white">
                 ClientApp
               </NuxtLink>
             </div>
             <nav class="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <NuxtLink to="/" class="border-indigo-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                Home
+              <NuxtLink :to="localePath('/')" class="border-primary-500 text-gray-900 dark:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                {{ $t('nav.home') }}
               </NuxtLink>
-              <NuxtLink to="/about" class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                About
+              <NuxtLink :to="localePath('/blog')" class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                {{ $t('nav.blog') }}
+              </NuxtLink>
+              <NuxtLink :to="localePath('/gallery')" class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                {{ $t('nav.gallery') }}
+              </NuxtLink>
+              <NuxtLink :to="localePath('/about')" class="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                {{ $t('nav.about') }}
               </NuxtLink>
             </nav>
           </div>
           <div class="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+            <LanguageSwitcher />
             <ThemeToggle />
-            <UButton to="/login" color="primary" variant="solid">Sign In</UButton>
+            <UButton :to="localePath('/login')" color="primary" variant="solid">{{ $t('nav.signIn') }}</UButton>
           </div>
         </div>
       </div>
@@ -33,3 +40,7 @@
     </main>
   </div>
 </template>
+
+<script setup lang="ts">
+const localePath = useLocalePath();
+</script>

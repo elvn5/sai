@@ -25,8 +25,11 @@ services:
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
+      UPLOADS_DIR: /repo/apps/api/uploads
     ports:
       - "${API_PORT:-3001}:3001"
+    volumes:
+      - uploads_data:/repo/apps/api/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,12 +51,29 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL:-http://localhost:3001}
     restart: unless-stopped
     env_file: .env
     ports:
-      - "3000:3000"
+      - "${ADMIN_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+      args:
+        NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL:-http://localhost:3001}
+        NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-http://localhost:3002}
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${CLIENT_PORT:-3002}:3000"
     depends_on:
       - api
 
 volumes:
   postgres_data:
+  uploads_data:

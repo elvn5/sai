@@ -10,6 +10,9 @@ const links = [
   { label: 'Поддержка', to: '/support' },
   { label: 'Посылки', to: '/parcels' },
   { label: 'Пользователи', to: '/users' },
+  { label: 'Блог', to: '/blog' },
+  { label: 'Галерея', to: '/gallery' },
+  { label: 'SEO', to: '/seo' },
 ];
 
 async function handleLogout(): Promise<void> {

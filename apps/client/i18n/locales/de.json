@@ -1,0 +1,42 @@
+{
+  "nav": {
+    "home": "Start",
+    "blog": "Blog",
+    "gallery": "Galerie",
+    "about": "Über uns",
+    "signIn": "Anmelden"
+  },
+  "blog": {
+    "heading": "Blog",
+    "empty": "Noch keine Beiträge"
+  },
+  "gallery": {
+    "heading": "Galerie",
+    "empty": "Die Galerie ist leer"
+  },
+  "theme": {
+    "toggle": "Design"
+  },
+  "language": {
+    "switch": "Sprache"
+  },
+  "home": {
+    "hero": {
+      "titleLine1": "Reisen Sie leicht —",
+      "titleLine2": "den Rest übernehmen wir",
+      "subtitle": "Senden und empfangen Sie Pakete überall auf Ihrer Route. Behalten Sie Lieferungen und Adressen an einem Ort im Blick.",
+      "ctaPrimary": "Loslegen",
+      "ctaSecondary": "Mehr erfahren"
+    },
+    "features": {
+      "eyebrow": "Funktionen",
+      "heading": "Alles, was Sie unterwegs brauchen"
+    }
+  },
+  "login": {
+    "title": "Bei Ihrem Konto anmelden",
+    "emailLabel": "E-Mail-Adresse",
+    "passwordLabel": "Passwort",
+    "submit": "Anmelden"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "nav": {
+    "home": "Home",
+    "blog": "Blog",
+    "gallery": "Gallery",
+    "about": "About",
+    "signIn": "Sign In"
+  },
+  "blog": {
+    "heading": "Blog",
+    "empty": "No posts yet"
+  },
+  "gallery": {
+    "heading": "Gallery",
+    "empty": "Gallery is empty"
+  },
+  "theme": {
+    "toggle": "Theme"
+  },
+  "language": {
+    "switch": "Language"
+  },
+  "home": {
+    "hero": {
+      "titleLine1": "Travel light —",
+      "titleLine2": "we'll handle the rest",
+      "subtitle": "Send and receive parcels anywhere on your route. Track deliveries and addresses in one place.",
+      "ctaPrimary": "Get started",
+      "ctaSecondary": "Learn more"
+    },
+    "features": {
+      "eyebrow": "Features",
+      "heading": "Everything you need on the road"
+    }
+  },
+  "login": {
+    "title": "Sign in to your account",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "submit": "Sign in"
+  }
+}

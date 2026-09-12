@@ -1,9 +1,13 @@
 import { AddressesModule } from '@/addresses/addresses.module';
 import { AuthModule } from '@/auth/auth.module';
 import { BannedItemsModule } from '@/banned-items/banned-items.module';
+import { BlogModule } from '@/blog/blog.module';
 import { validateEnv } from '@/config/env.schema';
+import { GalleryModule } from '@/gallery/gallery.module';
+import { PageSeoModule } from '@/page-seo/page-seo.module';
 import { ParcelsModule } from '@/parcels/parcels.module';
 import { SupportModule } from '@/support/support.module';
+import { UploadsModule } from '@/uploads/uploads.module';
 import { UsersModule } from '@/users/users.module';
 import { entities } from '@app/database';
 import { Module } from '@nestjs/common';
@@ -40,6 +44,10 @@ import { LoggerModule } from 'nestjs-pino';
     SupportModule,
     ParcelsModule,
     UsersModule,
+    BlogModule,
+    GalleryModule,
+    PageSeoModule,
+    UploadsModule,
   ],
 })
 export class AppModule {}

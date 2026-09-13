@@ -31,6 +31,7 @@ onMounted(load);
             <th class="px-4 py-2">Имя</th>
             <th class="px-4 py-2">Username</th>
             <th class="px-4 py-2">Telegram ID</th>
+            <th class="px-4 py-2">Email</th>
             <th class="px-4 py-2">Телефон</th>
             <th class="px-4 py-2">Регистрация</th>
           </tr>
@@ -39,12 +40,13 @@ onMounted(load);
           <tr v-for="user in users" :key="user.id" class="border-t">
             <td class="px-4 py-2">{{ [user.firstName, user.lastName].filter(Boolean).join(' ') || '—' }}</td>
             <td class="px-4 py-2">{{ user.username ? `@${user.username}` : '—' }}</td>
-            <td class="px-4 py-2">{{ user.telegramId }}</td>
+            <td class="px-4 py-2">{{ user.telegramId ?? '—' }}</td>
+            <td class="px-4 py-2">{{ user.email ?? '—' }}</td>
             <td class="px-4 py-2">{{ user.phone ?? '—' }}</td>
             <td class="px-4 py-2">{{ new Date(user.createdAt).toLocaleDateString('ru-RU') }}</td>
           </tr>
           <tr v-if="!loading && users.length === 0">
-            <td colspan="5" class="px-4 py-6 text-center text-gray-400">Пользователей нет</td>
+            <td colspan="6" class="px-4 py-6 text-center text-gray-400">Пользователей нет</td>
           </tr>
         </tbody>
       </table>

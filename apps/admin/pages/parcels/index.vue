@@ -20,10 +20,15 @@ const form = reactive({
   comment: '',
 });
 
+function userIdentifier(user: AppUser): string {
+  return user.username
+    ? `@${user.username}`
+    : (user.telegramId ?? user.email ?? user.phone ?? user.id);
+}
+
 const userOptions = computed(() =>
   users.value.map((user: AppUser) => ({
-    label:
-      `${user.firstName ?? ''} ${user.username ? `@${user.username}` : user.telegramId}`.trim(),
+    label: `${user.firstName ?? ''} ${userIdentifier(user)}`.trim(),
     value: user.id,
   })),
 );
@@ -31,7 +36,7 @@ const userOptions = computed(() =>
 function userLabel(userId: string): string {
   const user = users.value.find((item: AppUser) => item.id === userId);
   if (!user) return userId;
-  return user.username ? `@${user.username}` : (user.firstName ?? user.telegramId);
+  return user.username ? `@${user.username}` : (user.firstName ?? userIdentifier(user));
 }
 
 function statusLabel(status: ParcelStatus): string {

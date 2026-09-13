@@ -16,12 +16,3 @@ export const telegramMiniAppLoginSchema = z.object({
 
 export type TelegramWidgetLoginDto = z.infer<typeof telegramWidgetLoginSchema>;
 export type TelegramMiniAppLoginDto = z.infer<typeof telegramMiniAppLoginSchema>;
-
-export interface PublicTelegramUser {
-  id: string;
-  telegramId: string;
-  username: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  avatarUrl: string | null;
-}

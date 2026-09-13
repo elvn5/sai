@@ -1,10 +1,11 @@
+import { type PublicUser, toPublicUser } from '@/user-auth/public-user';
 import { User } from '@app/database';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
-import type { PublicTelegramUser, TelegramWidgetLoginDto } from './telegram-auth.dto';
+import type { TelegramWidgetLoginDto } from './telegram-auth.dto';
 import { verifyTelegramInitData, verifyTelegramWidgetHash } from './telegram-verify.util';
 
 const MAX_AUTH_AGE_SECONDS = 24 * 60 * 60;
@@ -26,9 +27,7 @@ export class TelegramAuthService {
     private readonly users: Repository<User>,
   ) {}
 
-  async loginWithWidget(
-    dto: TelegramWidgetLoginDto,
-  ): Promise<{ token: string; user: PublicTelegramUser }> {
+  async loginWithWidget(dto: TelegramWidgetLoginDto): Promise<{ token: string; user: PublicUser }> {
     const botToken = this.getBotToken();
     if (!verifyTelegramWidgetHash(dto, botToken)) {
       throw new UnauthorizedException('Invalid Telegram signature');
@@ -45,7 +44,7 @@ export class TelegramAuthService {
     return this.issueSession(user);
   }
 
-  async loginWithMiniApp(initData: string): Promise<{ token: string; user: PublicTelegramUser }> {
+  async loginWithMiniApp(initData: string): Promise<{ token: string; user: PublicUser }> {
     const botToken = this.getBotToken();
     const params = verifyTelegramInitData(initData, botToken);
     if (!params) {
@@ -81,14 +80,6 @@ export class TelegramAuthService {
       avatarUrl: parsed.photo_url,
     });
     return this.issueSession(user);
-  }
-
-  async getPublicUser(userId: string): Promise<PublicTelegramUser> {
-    const user = await this.users.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-    return this.toPublic(user);
   }
 
   private getBotToken(): string {
@@ -127,19 +118,8 @@ export class TelegramAuthService {
     return this.users.save(created);
   }
 
-  private issueSession(user: User): { token: string; user: PublicTelegramUser } {
+  private issueSession(user: User): { token: string; user: PublicUser } {
     const token = this.jwtService.sign({ sub: user.id, role: 'user' });
-    return { token, user: this.toPublic(user) };
-  }
-
-  private toPublic(user: User): PublicTelegramUser {
-    return {
-      id: user.id,
-      telegramId: user.telegramId,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      avatarUrl: user.avatarUrl,
-    };
+    return { token, user: toPublicUser(user) };
   }
 }

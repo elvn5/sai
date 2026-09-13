@@ -10,7 +10,10 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
-    "@nuxtjs/i18n": "9.5.6"
+    "@nuxtjs/i18n": "9.5.6",
+    "@vee-validate/zod": "^4.15.0",
+    "vee-validate": "^4.15.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@nuxtjs/color-mode": "^3.5.2",

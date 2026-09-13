@@ -16,6 +16,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/platform-express": "^10.4.15",
     "@nestjs/typeorm": "^10.0.2",
+    "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "multer": "^2.3.0",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
+    "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

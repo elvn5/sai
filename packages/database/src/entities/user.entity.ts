@@ -15,8 +15,15 @@ export class User {
   id!: string;
 
   @Index({ unique: true })
-  @Column({ type: 'bigint' })
-  telegramId!: string;
+  @Column({ type: 'bigint', nullable: true })
+  telegramId!: string | null;
+
+  @Index({ unique: true })
+  @Column({ type: 'varchar', nullable: true })
+  email!: string | null;
+
+  @Column({ type: 'varchar', nullable: true, select: false })
+  passwordHash!: string | null;
 
   @Column({ type: 'varchar', nullable: true })
   username!: string | null;
@@ -27,6 +34,7 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   lastName!: string | null;
 
+  @Index({ unique: true })
   @Column({ type: 'varchar', nullable: true })
   phone!: string | null;
 

@@ -44,7 +44,8 @@ export const PARCEL_STATUS_OPTIONS: { value: ParcelStatus; label: string }[] = [
 
 export interface AppUser {
   id: string;
-  telegramId: string;
+  telegramId: string | null;
+  email: string | null;
   username: string | null;
   firstName: string | null;
   lastName: string | null;

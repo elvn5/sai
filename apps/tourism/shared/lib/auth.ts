@@ -1,8 +1,20 @@
 import { readonly, ref } from 'vue';
 import { useApiClient } from '~/shared/api/client';
-import type { TelegramUser, TelegramWidgetPayload } from '~/shared/api/types';
+import type { AppUser, TelegramWidgetPayload } from '~/shared/api/types';
 
-const user = ref<TelegramUser | null>(null);
+export interface RegisterPayload {
+  email?: string;
+  phone?: string;
+  password: string;
+  firstName?: string;
+}
+
+export interface LoginPayload {
+  identifier: string;
+  password: string;
+}
+
+const user = ref<AppUser | null>(null);
 const checked = ref(false);
 
 export function useAuth() {
@@ -10,7 +22,7 @@ export function useAuth() {
 
   async function checkSession(): Promise<boolean> {
     try {
-      const res = await api.get<{ user: TelegramUser }>('/auth/telegram/me');
+      const res = await api.get<{ user: AppUser }>('/auth/user/me');
       user.value = res.user;
     } catch {
       user.value = null;
@@ -19,20 +31,32 @@ export function useAuth() {
     return user.value !== null;
   }
 
-  async function loginWithWidget(payload: TelegramWidgetPayload): Promise<void> {
-    const res = await api.post<{ user: TelegramUser }>('/auth/telegram/widget', payload);
+  async function register(payload: RegisterPayload): Promise<void> {
+    const res = await api.post<{ user: AppUser }>('/auth/user/register', payload);
     user.value = res.user;
     checked.value = true;
   }
 
-  async function loginWithMiniApp(initData: string): Promise<void> {
-    const res = await api.post<{ user: TelegramUser }>('/auth/telegram/miniapp', { initData });
+  async function login(payload: LoginPayload): Promise<void> {
+    const res = await api.post<{ user: AppUser }>('/auth/user/login', payload);
+    user.value = res.user;
+    checked.value = true;
+  }
+
+  async function loginWithTelegramWidget(payload: TelegramWidgetPayload): Promise<void> {
+    const res = await api.post<{ user: AppUser }>('/auth/telegram/widget', payload);
+    user.value = res.user;
+    checked.value = true;
+  }
+
+  async function loginWithTelegramMiniApp(initData: string): Promise<void> {
+    const res = await api.post<{ user: AppUser }>('/auth/telegram/miniapp', { initData });
     user.value = res.user;
     checked.value = true;
   }
 
   async function logout(): Promise<void> {
-    await api.post('/auth/telegram/logout');
+    await api.post('/auth/user/logout');
     user.value = null;
   }
 
@@ -40,8 +64,10 @@ export function useAuth() {
     user: readonly(user),
     checked: readonly(checked),
     checkSession,
-    loginWithWidget,
-    loginWithMiniApp,
+    register,
+    login,
+    loginWithTelegramWidget,
+    loginWithTelegramMiniApp,
     logout,
   };
 }

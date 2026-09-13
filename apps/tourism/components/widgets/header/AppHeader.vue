@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import LanguageSwitcher from '~/components/features/language-switch/LanguageSwitcher.vue';
+import ThemeToggle from '~/components/features/theme-toggle/ThemeToggle.vue';
+
 const { isTma } = useTelegramWebApp();
 </script>
 

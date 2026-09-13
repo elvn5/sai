@@ -1,3 +1,5 @@
+import { onMounted, readonly, ref } from 'vue';
+
 interface TelegramWebApp {
   initData: string;
   ready: () => void;

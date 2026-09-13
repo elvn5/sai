@@ -39,22 +39,3 @@ function close(): void {
     </Transition>
   </Teleport>
 </template>
-
-<style scoped>
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-}
-.modal-scale-enter-active,
-.modal-scale-leave-active {
-  transition: transform 0.2s ease;
-}
-.modal-scale-enter-from,
-.modal-scale-leave-to {
-  transform: scale(0.95);
-}
-</style>

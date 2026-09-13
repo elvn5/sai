@@ -2,6 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
   devServer: { port: 3011 },
+  features: { inlineStyles: false },
   modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@nuxtjs/i18n'],
   css: ['~/assets/css/tokens.css'],
   colorMode: {
@@ -9,11 +10,6 @@ export default defineNuxtConfig({
     preference: 'system',
     fallback: 'light',
   },
-  components: [
-    { path: '~/shared/ui', pathPrefix: false },
-    { path: '~/features', pathPrefix: false },
-    { path: '~/widgets', pathPrefix: false },
-  ],
   imports: {
     dirs: ['shared/lib'],
   },

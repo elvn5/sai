@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import AppBadge from '~/components/shared/ui/AppBadge.vue';
+import AppButton from '~/components/shared/ui/AppButton.vue';
+import AppCard from '~/components/shared/ui/AppCard.vue';
+import AppInput from '~/components/shared/ui/AppInput.vue';
+import AppModal from '~/components/shared/ui/AppModal.vue';
+import SkeletonBlock from '~/components/shared/ui/SkeletonBlock.vue';
+
 const { isTma, colorScheme } = useTelegramWebApp();
 
 const ranks = [

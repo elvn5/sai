@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AppHeader from '~/components/widgets/header/AppHeader.vue';
+
 const route = useRoute();
 const router = useRouter();
 const { isTma, showBackButton, hideBackButton } = useTelegramWebApp();

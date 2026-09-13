@@ -24,6 +24,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       UPLOADS_DIR: /repo/apps/api/uploads
+      API_PORT: 3001
     ports:
       - "${API_PORT}:3001"
     volumes:

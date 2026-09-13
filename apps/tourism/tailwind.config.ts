@@ -6,7 +6,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: {
+        // Named "brand", not "primary" — @nuxt/ui's module unconditionally
+        // overwrites a color literally named "primary" (and "gray") with an
+        // internal CSS-variable placeholder. app.config.ts points
+        // ui.primary at this scale by name instead.
+        brand: {
           50: '#fef2f2',
           100: '#fde2e2',
           200: '#fbc5c5',

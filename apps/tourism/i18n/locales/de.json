@@ -4,9 +4,10 @@
   "theme": { "toggle": "Design" },
   "language": { "switch": "Sprache" },
   "home": {
-    "tagline": "Design-System für eine Tourismus-App über Natur und Kultur Kirgisistans.",
-    "ctaPrimary": "Wanderung starten",
-    "ctaSecondary": "Guides ansehen"
+    "tagline": "Guides, Routen und Neuigkeiten rund um Natur und Kultur Kirgisistans.",
+    "ctaPrimary": "Guides ansehen",
+    "latestNews": "Neueste Beiträge",
+    "viewAllPosts": "Alle Beiträge"
   },
   "blog": {
     "heading": "Blog",

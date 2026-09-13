@@ -4,9 +4,10 @@
   "theme": { "toggle": "Theme" },
   "language": { "switch": "Language" },
   "home": {
-    "tagline": "Design system for a tourism app about the nature and culture of Kyrgyzstan.",
-    "ctaPrimary": "Start a hike",
-    "ctaSecondary": "Browse guides"
+    "tagline": "Guides, routes, and news for exploring the nature and culture of Kyrgyzstan.",
+    "ctaPrimary": "Browse guides",
+    "latestNews": "Latest news",
+    "viewAllPosts": "View all posts"
   },
   "blog": {
     "heading": "Blog",

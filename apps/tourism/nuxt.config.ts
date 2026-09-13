@@ -5,6 +5,9 @@ export default defineNuxtConfig({
   features: { inlineStyles: false },
   modules: ['@nuxt/ui', '@nuxtjs/i18n'],
   css: ['~/assets/css/tokens.css'],
+  ui: {
+    safelistColors: ['secondary'],
+  },
   colorMode: {
     preference: 'system',
     fallback: 'light',

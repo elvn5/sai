@@ -16,11 +16,29 @@ definePageMeta({ layout: 'default' });
 const route = useRoute();
 const api = useApiClient();
 
+const config = useRuntimeConfig();
+const apiBaseUrl = config.public.apiBaseUrl;
+
 const id = route.params.id as string;
 const isNew = id === 'new';
 const loading = ref(false);
 const saving = ref(false);
 const slugTouched = ref(false);
+const previewOpen = ref(false);
+
+const previewChecklist = computed(() =>
+  form.equipmentChecklistText
+    .split('\n')
+    .map((line: string) => line.trim())
+    .filter(Boolean),
+);
+
+const previewDifficultyLabel = computed(
+  () => GUIDE_DIFFICULTY_OPTIONS.find((o) => o.value === form.difficulty)?.label ?? '',
+);
+const previewSeasonLabel = computed(
+  () => GUIDE_SEASON_OPTIONS.find((o) => o.value === form.season)?.label ?? '',
+);
 
 const form = reactive({
   locale: Locale.RU,
@@ -125,6 +143,7 @@ onMounted(load);
       <h1 class="text-xl font-semibold">{{ isNew ? 'Новый гайд' : 'Редактирование гайда' }}</h1>
       <div class="flex gap-2">
         <UButton variant="ghost" to="/guides">Назад</UButton>
+        <UButton variant="ghost" icon="i-heroicons-eye" @click="previewOpen = true">Предпросмотр</UButton>
         <UButton v-if="!isNew" color="red" variant="ghost" @click="remove">Удалить</UButton>
         <UButton :loading="saving" @click="save">Сохранить</UButton>
       </div>
@@ -180,5 +199,31 @@ onMounted(load);
 
       <UCheckbox v-model="form.isPublished" label="Опубликовано (видно на сайте)" />
     </div>
+
+    <UModal v-model="previewOpen" :ui="{ width: 'sm:max-w-2xl' }">
+      <div class="max-h-[80vh] overflow-y-auto p-6">
+        <img
+          v-if="form.coverImageUrl"
+          :src="`${apiBaseUrl}${form.coverImageUrl}`"
+          :alt="form.title"
+          class="mb-6 aspect-video w-full rounded-lg object-cover"
+        />
+        <div class="flex gap-2">
+          <UBadge color="primary" variant="subtle">{{ previewDifficultyLabel }}</UBadge>
+          <UBadge color="gray" variant="subtle">{{ previewSeasonLabel }}</UBadge>
+        </div>
+        <h1 class="mt-3 text-2xl font-bold">{{ form.title || 'Без названия' }}</h1>
+        <p v-if="form.excerpt" class="mt-2 text-gray-500">{{ form.excerpt }}</p>
+
+        <div v-if="previewChecklist.length > 0" class="mt-6">
+          <h2 class="text-sm font-semibold text-gray-700">Снаряжение</h2>
+          <ul class="mt-2 list-disc pl-5 text-sm text-gray-600">
+            <li v-for="item in previewChecklist" :key="item">{{ item }}</li>
+          </ul>
+        </div>
+
+        <div class="prose prose-sm mt-6 max-w-none" v-html="form.content" />
+      </div>
+    </UModal>
   </div>
 </template>

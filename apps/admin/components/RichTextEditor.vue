@@ -1,102 +1,131 @@
 <template>
   <div class="overflow-hidden rounded-md border border-gray-200">
-    <div v-if="editor" class="flex flex-wrap gap-1 border-b border-gray-200 bg-gray-50 p-2">
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('bold') ? 'solid' : 'ghost'"
-        icon="i-heroicons-bold"
-        @click="editor.chain().focus().toggleBold().run()"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('italic') ? 'solid' : 'ghost'"
-        icon="i-heroicons-italic"
-        @click="editor.chain().focus().toggleItalic().run()"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('strike') ? 'solid' : 'ghost'"
-        icon="i-heroicons-strikethrough"
-        @click="editor.chain().focus().toggleStrike().run()"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('heading', { level: 2 }) ? 'solid' : 'ghost'"
-        @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-      >
-        H2
-      </UButton>
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('heading', { level: 3 }) ? 'solid' : 'ghost'"
-        @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-      >
-        H3
-      </UButton>
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('bulletList') ? 'solid' : 'ghost'"
-        icon="i-heroicons-list-bullet"
-        @click="editor.chain().focus().toggleBulletList().run()"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('orderedList') ? 'solid' : 'ghost'"
-        icon="i-heroicons-numbered-list"
-        @click="editor.chain().focus().toggleOrderedList().run()"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('blockquote') ? 'solid' : 'ghost'"
-        icon="i-heroicons-chat-bubble-left-right"
-        @click="editor.chain().focus().toggleBlockquote().run()"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        :variant="editor.isActive('link') ? 'solid' : 'ghost'"
-        icon="i-heroicons-link"
-        @click="addLink"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        variant="ghost"
-        icon="i-heroicons-photo"
-        :loading="uploadingImage"
-        @click="triggerImageUpload"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        variant="ghost"
-        icon="i-heroicons-arrow-uturn-left"
-        @click="editor.chain().focus().undo().run()"
-      />
-      <UButton
-        size="xs"
-        color="gray"
-        variant="ghost"
-        icon="i-heroicons-arrow-uturn-right"
-        @click="editor.chain().focus().redo().run()"
-      />
-      <input
-        ref="fileInput"
-        type="file"
-        accept="image/*"
-        class="hidden"
-        @change="onImageSelected"
-      />
+    <div v-if="editor" class="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2">
+      <div class="mr-auto flex overflow-hidden rounded-md border border-gray-300 bg-white">
+        <button
+          type="button"
+          class="px-2.5 py-1 text-xs font-medium transition-colors"
+          :class="mode === 'edit' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'"
+          @click="mode = 'edit'"
+        >
+          Написать
+        </button>
+        <button
+          type="button"
+          class="px-2.5 py-1 text-xs font-medium transition-colors"
+          :class="mode === 'preview' ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'"
+          @click="mode = 'preview'"
+        >
+          Просмотр
+        </button>
+      </div>
+      <template v-if="mode === 'edit'">
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('bold') ? 'solid' : 'ghost'"
+          icon="i-heroicons-bold"
+          @click="editor.chain().focus().toggleBold().run()"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('italic') ? 'solid' : 'ghost'"
+          icon="i-heroicons-italic"
+          @click="editor.chain().focus().toggleItalic().run()"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('strike') ? 'solid' : 'ghost'"
+          icon="i-heroicons-strikethrough"
+          @click="editor.chain().focus().toggleStrike().run()"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('heading', { level: 2 }) ? 'solid' : 'ghost'"
+          @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
+        >
+          H2
+        </UButton>
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('heading', { level: 3 }) ? 'solid' : 'ghost'"
+          @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
+        >
+          H3
+        </UButton>
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('bulletList') ? 'solid' : 'ghost'"
+          icon="i-heroicons-list-bullet"
+          @click="editor.chain().focus().toggleBulletList().run()"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('orderedList') ? 'solid' : 'ghost'"
+          icon="i-heroicons-numbered-list"
+          @click="editor.chain().focus().toggleOrderedList().run()"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('blockquote') ? 'solid' : 'ghost'"
+          icon="i-heroicons-chat-bubble-left-right"
+          @click="editor.chain().focus().toggleBlockquote().run()"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          :variant="editor.isActive('link') ? 'solid' : 'ghost'"
+          icon="i-heroicons-link"
+          @click="addLink"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          variant="ghost"
+          icon="i-heroicons-photo"
+          :loading="uploadingImage"
+          @click="triggerImageUpload"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          variant="ghost"
+          icon="i-heroicons-arrow-uturn-left"
+          @click="editor.chain().focus().undo().run()"
+        />
+        <UButton
+          size="xs"
+          color="gray"
+          variant="ghost"
+          icon="i-heroicons-arrow-uturn-right"
+          @click="editor.chain().focus().redo().run()"
+        />
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          class="hidden"
+          @change="onImageSelected"
+        />
+      </template>
     </div>
-    <EditorContent :editor="editor" class="editor-content min-h-[280px] p-3" />
+    <EditorContent
+      v-show="mode === 'edit'"
+      :editor="editor"
+      class="editor-content min-h-[280px] p-3"
+    />
+    <div
+      v-if="mode === 'preview'"
+      class="prose prose-sm max-w-none min-h-[280px] p-3"
+      v-html="props.modelValue"
+    />
   </div>
 </template>
 
@@ -114,6 +143,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>();
 const api = useApiClient();
 const fileInput = ref<HTMLInputElement | null>(null);
 const uploadingImage = ref(false);
+const mode = ref<'edit' | 'preview'>('edit');
 
 const editor = useEditor({
   content: props.modelValue,

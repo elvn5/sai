@@ -9,11 +9,15 @@ definePageMeta({ layout: 'default' });
 const route = useRoute();
 const api = useApiClient();
 
+const config = useRuntimeConfig();
+const apiBaseUrl = config.public.apiBaseUrl;
+
 const id = route.params.id as string;
 const isNew = id === 'new';
 const loading = ref(false);
 const saving = ref(false);
 const slugTouched = ref(false);
+const previewOpen = ref(false);
 
 const form = reactive({
   locale: Locale.RU,
@@ -104,6 +108,7 @@ onMounted(load);
       <h1 class="text-xl font-semibold">{{ isNew ? 'Новая статья' : 'Редактирование статьи' }}</h1>
       <div class="flex gap-2">
         <UButton variant="ghost" to="/blog">Назад</UButton>
+        <UButton variant="ghost" icon="i-heroicons-eye" @click="previewOpen = true">Предпросмотр</UButton>
         <UButton v-if="!isNew" color="red" variant="ghost" @click="remove">Удалить</UButton>
         <UButton :loading="saving" @click="save">Сохранить</UButton>
       </div>
@@ -146,5 +151,19 @@ onMounted(load);
 
       <UCheckbox v-model="form.isPublished" label="Опубликовано (видно на сайте)" />
     </div>
+
+    <UModal v-model="previewOpen" :ui="{ width: 'sm:max-w-2xl' }">
+      <div class="max-h-[80vh] overflow-y-auto p-6">
+        <img
+          v-if="form.coverImageUrl"
+          :src="`${apiBaseUrl}${form.coverImageUrl}`"
+          :alt="form.title"
+          class="mb-6 aspect-video w-full rounded-lg object-cover"
+        />
+        <h1 class="text-2xl font-bold">{{ form.title || 'Без названия' }}</h1>
+        <p v-if="form.excerpt" class="mt-2 text-gray-500">{{ form.excerpt }}</p>
+        <div class="prose prose-sm mt-6 max-w-none" v-html="form.content" />
+      </div>
+    </UModal>
   </div>
 </template>

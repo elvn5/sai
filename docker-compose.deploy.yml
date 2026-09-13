@@ -53,8 +53,8 @@ services:
     depends_on:
       - api
 
-  client:
-    image: ghcr.io/${IMAGE_OWNER}/ermekten-client:${IMAGE_TAG}
+  tourism:
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-tourism:${IMAGE_TAG}
     restart: unless-stopped
     env_file: .env
     ports:

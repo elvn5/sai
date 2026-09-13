@@ -23,7 +23,7 @@ jobs:
     environment: production
     strategy:
       matrix:
-        service: [api, bot, admin, client]
+        service: [api, bot, admin, tourism]
     steps:
       - uses: actions/checkout@v4
         with:

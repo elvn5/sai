@@ -72,6 +72,10 @@ export function useTelegramWebApp() {
     getWebApp()?.HapticFeedback.impactOccurred(style);
   }
 
+  function getInitData(): string | undefined {
+    return getWebApp()?.initData || undefined;
+  }
+
   return {
     isTma: readonly(isTma),
     colorScheme: readonly(colorScheme),
@@ -79,5 +83,6 @@ export function useTelegramWebApp() {
     showBackButton,
     hideBackButton,
     haptic,
+    getInitData,
   };
 }

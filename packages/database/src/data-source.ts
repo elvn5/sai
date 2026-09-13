@@ -5,6 +5,7 @@ import { Address } from './entities/address.entity';
 import { BannedItem } from './entities/banned-item.entity';
 import { BlogPost } from './entities/blog-post.entity';
 import { GalleryItem } from './entities/gallery-item.entity';
+import { Guide } from './entities/guide.entity';
 import { PageSeo } from './entities/page-seo.entity';
 import { Parcel } from './entities/parcel.entity';
 import { SupportInfo } from './entities/support-info.entity';
@@ -20,6 +21,7 @@ export const entities = [
   SupportInfo,
   BlogPost,
   GalleryItem,
+  Guide,
   PageSeo,
 ];
 

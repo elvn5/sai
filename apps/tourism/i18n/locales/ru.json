@@ -7,5 +7,30 @@
     "tagline": "Дизайн-система для туристического приложения о природе и культуре Кыргызстана.",
     "ctaPrimary": "Начать поход",
     "ctaSecondary": "Смотреть гайды"
+  },
+  "blog": {
+    "heading": "Блог",
+    "empty": "Пока нет статей"
+  },
+  "gallery": {
+    "heading": "Галерея",
+    "empty": "Галерея пуста"
+  },
+  "guides": {
+    "heading": "Гайды",
+    "empty": "Гайдов пока нет",
+    "equipment": "Снаряжение",
+    "difficulty": { "easy": "Лёгкий", "moderate": "Средний", "hard": "Сложный" },
+    "season": { "summer": "Лето", "winter": "Зима", "all_year": "Круглый год" }
+  },
+  "login": {
+    "title": "Вход через Telegram",
+    "subtitle": "Войдите, чтобы сохранять прогресс и достижения",
+    "cta": "Войти через Telegram",
+    "loading": "Входим через Telegram...",
+    "error": "Не удалось войти через Telegram"
+  },
+  "profile": {
+    "logout": "Выйти"
   }
 }

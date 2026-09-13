@@ -1,0 +1,18 @@
+<template>
+  <svg viewBox="0 0 160 160" role="img" aria-label="Ala-Too Explorer">
+    <path
+      fill="currentColor"
+      fill-rule="evenodd"
+      d="M20,100 L48,45 L58,58 L80,18 L100,56 L112,42 L140,100 Z M50,72 L64,98 L34,98 Z"
+    />
+    <path
+      fill="none"
+      stroke="currentColor"
+      stroke-width="11"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      d="M20,102 C28,122 44,128 56,116 C64,108 68,108 76,116 C86,126 100,126 106,116
+         C110,110 116,108 121,111 C126,114 126,120 121,122 C117,124 114,120 116,116"
+    />
+  </svg>
+</template>

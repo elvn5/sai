@@ -3,6 +3,7 @@ import AppBadge from '~/components/shared/ui/AppBadge.vue';
 import AppButton from '~/components/shared/ui/AppButton.vue';
 import AppCard from '~/components/shared/ui/AppCard.vue';
 import AppInput from '~/components/shared/ui/AppInput.vue';
+import AppLogo from '~/components/shared/ui/AppLogo.vue';
 import AppModal from '~/components/shared/ui/AppModal.vue';
 import SkeletonBlock from '~/components/shared/ui/SkeletonBlock.vue';
 
@@ -21,7 +22,8 @@ const isModalOpen = ref(false);
 <template>
   <section class="mx-auto max-w-6xl px-4 py-10">
     <header class="mb-10">
-      <h1 class="text-3xl font-extrabold text-text">{{ $t('brand.name') }}</h1>
+      <AppLogo class="h-20 w-20 text-primary" />
+      <h1 class="mt-4 text-3xl font-extrabold text-text">{{ $t('brand.name') }}</h1>
       <p class="mt-2 max-w-xl text-text-muted">{{ $t('home.tagline') }}</p>
       <p class="mt-3 text-xs text-text-muted">
         TMA: <strong>{{ isTma ? 'да' : 'нет' }}</strong> · colorScheme:

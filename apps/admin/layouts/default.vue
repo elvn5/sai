@@ -5,10 +5,7 @@ const auth = useAuthStore();
 const route = useRoute();
 
 const links = [
-  { label: 'Запрещенные товары', to: '/banned-items' },
-  { label: 'Адреса', to: '/addresses' },
   { label: 'Поддержка', to: '/support' },
-  { label: 'Посылки', to: '/parcels' },
   { label: 'Пользователи', to: '/users' },
   { label: 'Блог', to: '/blog' },
   { label: 'Гайды', to: '/guides' },

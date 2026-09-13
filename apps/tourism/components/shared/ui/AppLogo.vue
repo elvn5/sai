@@ -1,5 +1,5 @@
 <template>
-  <svg viewBox="0 0 160 160" role="img" aria-label="Ala-Too Explorer">
+  <svg viewBox="0 0 160 160" role="img" aria-label="Ermekten">
     <path
       fill="currentColor"
       fill-rule="evenodd"

@@ -11,6 +11,7 @@
     "dev:bot": "pnpm --filter @app/database build && pnpm --filter @app/bot dev",
     "dev:admin": "pnpm --filter @app/admin dev",
     "dev:client": "pnpm --filter @app/client dev",
+    "dev:tourism": "pnpm --filter @app/tourism dev",
     "build": "pnpm -r build",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

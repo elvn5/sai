@@ -1,0 +1,11 @@
+{
+  "brand": { "name": "Ala-Too Explorer" },
+  "nav": { "feed": "Feed", "gallery": "Galerie", "guides": "Guides", "blog": "Blog" },
+  "theme": { "toggle": "Design" },
+  "language": { "switch": "Sprache" },
+  "home": {
+    "tagline": "Design-System für eine Tourismus-App über Natur und Kultur Kirgisistans.",
+    "ctaPrimary": "Wanderung starten",
+    "ctaSecondary": "Guides ansehen"
+  }
+}

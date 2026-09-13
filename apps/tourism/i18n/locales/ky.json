@@ -1,0 +1,11 @@
+{
+  "brand": { "name": "Ala-Too Explorer" },
+  "nav": { "feed": "Лента", "gallery": "Галерея", "guides": "Гайддар", "blog": "Блог" },
+  "theme": { "toggle": "Тема" },
+  "language": { "switch": "Тил" },
+  "home": {
+    "tagline": "Кыргызстандын табияты жана маданияты жөнүндө туристтик колдонмо үчүн дизайн-система.",
+    "ctaPrimary": "Жол баштоо",
+    "ctaSecondary": "Гайддарды көрүү"
+  }
+}

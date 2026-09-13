@@ -122,3 +122,45 @@ export interface PageSeo {
   description: string | null;
   ogImageUrl: string | null;
 }
+
+export enum GuideDifficulty {
+  EASY = 'easy',
+  MODERATE = 'moderate',
+  HARD = 'hard',
+}
+
+export const GUIDE_DIFFICULTY_OPTIONS: { value: GuideDifficulty; label: string }[] = [
+  { value: GuideDifficulty.EASY, label: 'Лёгкий' },
+  { value: GuideDifficulty.MODERATE, label: 'Средний' },
+  { value: GuideDifficulty.HARD, label: 'Сложный' },
+];
+
+export enum GuideSeason {
+  SUMMER = 'summer',
+  WINTER = 'winter',
+  ALL_YEAR = 'all_year',
+}
+
+export const GUIDE_SEASON_OPTIONS: { value: GuideSeason; label: string }[] = [
+  { value: GuideSeason.SUMMER, label: 'Лето' },
+  { value: GuideSeason.WINTER, label: 'Зима' },
+  { value: GuideSeason.ALL_YEAR, label: 'Круглый год' },
+];
+
+export interface Guide {
+  id: string;
+  locale: Locale;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  difficulty: GuideDifficulty;
+  season: GuideSeason;
+  equipmentChecklist: string[];
+  coverImageUrl: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  updatedAt: string;
+}

@@ -1,5 +1,5 @@
 {
-  "brand": { "name": "Ala-Too Explorer" },
+  "brand": { "name": "Ermekten" },
   "nav": { "feed": "Feed", "gallery": "Galerie", "guides": "Guides", "blog": "Blog" },
   "theme": { "toggle": "Design" },
   "language": { "switch": "Sprache" },
@@ -7,5 +7,30 @@
     "tagline": "Design-System für eine Tourismus-App über Natur und Kultur Kirgisistans.",
     "ctaPrimary": "Wanderung starten",
     "ctaSecondary": "Guides ansehen"
+  },
+  "blog": {
+    "heading": "Blog",
+    "empty": "Noch keine Beiträge"
+  },
+  "gallery": {
+    "heading": "Galerie",
+    "empty": "Die Galerie ist leer"
+  },
+  "guides": {
+    "heading": "Guides",
+    "empty": "Noch keine Guides",
+    "equipment": "Ausrüstung",
+    "difficulty": { "easy": "Leicht", "moderate": "Mittel", "hard": "Schwer" },
+    "season": { "summer": "Sommer", "winter": "Winter", "all_year": "Ganzjährig" }
+  },
+  "login": {
+    "title": "Mit Telegram anmelden",
+    "subtitle": "Melden Sie sich an, um Fortschritt und Erfolge zu speichern",
+    "cta": "Mit Telegram anmelden",
+    "loading": "Anmeldung mit Telegram...",
+    "error": "Telegram-Anmeldung fehlgeschlagen"
+  },
+  "profile": {
+    "logout": "Abmelden"
   }
 }

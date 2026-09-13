@@ -1,5 +1,5 @@
 {
-  "brand": { "name": "Ala-Too Explorer" },
+  "brand": { "name": "Ermekten" },
   "nav": { "feed": "Feed", "gallery": "Gallery", "guides": "Guides", "blog": "Blog" },
   "theme": { "toggle": "Theme" },
   "language": { "switch": "Language" },
@@ -7,5 +7,30 @@
     "tagline": "Design system for a tourism app about the nature and culture of Kyrgyzstan.",
     "ctaPrimary": "Start a hike",
     "ctaSecondary": "Browse guides"
+  },
+  "blog": {
+    "heading": "Blog",
+    "empty": "No posts yet"
+  },
+  "gallery": {
+    "heading": "Gallery",
+    "empty": "Gallery is empty"
+  },
+  "guides": {
+    "heading": "Guides",
+    "empty": "No guides yet",
+    "equipment": "Equipment",
+    "difficulty": { "easy": "Easy", "moderate": "Moderate", "hard": "Hard" },
+    "season": { "summer": "Summer", "winter": "Winter", "all_year": "All year" }
+  },
+  "login": {
+    "title": "Sign in with Telegram",
+    "subtitle": "Sign in to save your progress and achievements",
+    "cta": "Log in with Telegram",
+    "loading": "Signing in with Telegram...",
+    "error": "Telegram sign-in failed"
+  },
+  "profile": {
+    "logout": "Log out"
   }
 }

@@ -10,6 +10,7 @@ export const envSchema = z.object({
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
   JWT_EXPIRES_IN: z.string().default('12h'),
   ADMIN_PASSWORD: z.string().min(1, 'ADMIN_PASSWORD is required'),
+  BOT_TOKEN: z.string().min(1, 'BOT_TOKEN is required'),
   ADMIN_ORIGIN: z.string().default('http://localhost:3000'),
   CLIENT_ORIGIN: z.string().default('http://localhost:3002'),
   UPLOADS_DIR: z.string().optional(),

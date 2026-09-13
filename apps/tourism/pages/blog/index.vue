@@ -1,0 +1,41 @@
+<script setup lang="ts">
+import AppCard from '~/components/shared/ui/AppCard.vue';
+import { useApiClient } from '~/shared/api/client';
+import type { BlogPost } from '~/shared/api/types';
+
+const { locale } = useI18n();
+const localePath = useLocalePath();
+const api = useApiClient();
+const config = useRuntimeConfig();
+const apiBaseUrl = config.public.apiBaseUrl;
+
+const { data: posts } = await useAsyncData<BlogPost[]>(
+  () => `blog-list-${locale.value}`,
+  () => api.get<BlogPost[]>(`/blog?locale=${locale.value}`),
+  { watch: [locale] },
+);
+</script>
+
+<template>
+  <section class="mx-auto max-w-4xl px-4 py-12">
+    <h1 class="mb-8 text-3xl font-extrabold text-text">{{ $t('blog.heading') }}</h1>
+
+    <div v-if="posts && posts.length > 0" class="flex flex-col gap-4">
+      <AppCard v-for="post in posts" :key="post.id" as="article">
+        <NuxtLink :to="localePath(`/blog/${post.slug}`)" class="flex flex-col gap-4 sm:flex-row">
+          <img
+            v-if="post.coverImageUrl"
+            :src="`${apiBaseUrl}${post.coverImageUrl}`"
+            :alt="post.title"
+            class="h-40 w-full rounded-lg object-cover sm:w-56"
+          />
+          <div class="flex flex-col justify-center">
+            <h2 class="text-xl font-semibold text-text">{{ post.title }}</h2>
+            <p v-if="post.excerpt" class="mt-2 text-text-muted">{{ post.excerpt }}</p>
+          </div>
+        </NuxtLink>
+      </AppCard>
+    </div>
+    <p v-else class="text-text-muted">{{ $t('blog.empty') }}</p>
+  </section>
+</template>

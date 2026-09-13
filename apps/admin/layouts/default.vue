@@ -11,6 +11,7 @@ const links = [
   { label: 'Посылки', to: '/parcels' },
   { label: 'Пользователи', to: '/users' },
   { label: 'Блог', to: '/blog' },
+  { label: 'Гайды', to: '/guides' },
   { label: 'Галерея', to: '/gallery' },
   { label: 'SEO', to: '/seo' },
 ];

@@ -30,6 +30,9 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   phone!: string | null;
 
+  @Column({ type: 'varchar', nullable: true })
+  avatarUrl!: string | null;
+
   @OneToMany(
     () => Parcel,
     (parcel) => parcel.user,

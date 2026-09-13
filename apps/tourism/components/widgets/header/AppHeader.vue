@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import LanguageSwitcher from '~/components/features/language-switch/LanguageSwitcher.vue';
 import ThemeToggle from '~/components/features/theme-toggle/ThemeToggle.vue';
-import AppButton from '~/components/shared/ui/AppButton.vue';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
 
 const { isTma } = useTelegramWebApp();
@@ -28,7 +27,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
   >
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
       <NuxtLink :to="localePath('/')" class="flex items-center gap-2 text-lg font-bold text-text">
-        <AppLogo class="h-7 w-7 text-primary" />
+        <AppLogo class="h-7 w-7 text-primary-600 dark:text-primary-400" />
         {{ $t('brand.name') }}
       </NuxtLink>
       <nav class="hidden items-center gap-6 text-sm font-medium text-text-muted sm:flex">
@@ -48,11 +47,13 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
             class="h-8 w-8 rounded-full object-cover"
           />
           <span class="hidden text-sm text-text sm:inline">{{ displayName }}</span>
-          <AppButton variant="ghost" @click="handleLogout">{{ $t('profile.logout') }}</AppButton>
+          <UButton color="gray" variant="ghost" @click="handleLogout">
+            {{ $t('profile.logout') }}
+          </UButton>
         </template>
-        <AppButton v-else variant="primary" @click="navigateTo(localePath('/login'))">
+        <UButton v-else color="primary" @click="navigateTo(localePath('/login'))">
           {{ $t('login.cta') }}
-        </AppButton>
+        </UButton>
       </div>
     </div>
   </header>

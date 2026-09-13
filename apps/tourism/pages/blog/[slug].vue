@@ -37,7 +37,10 @@ useSeoMeta({
 
 <template>
   <article v-if="post" class="mx-auto max-w-3xl px-4 py-12">
-    <NuxtLink :to="localePath('/blog')" class="text-sm text-primary hover:underline">
+    <NuxtLink
+      :to="localePath('/blog')"
+      class="text-sm text-primary-600 hover:underline dark:text-primary-400"
+    >
       &larr; {{ $t('blog.heading') }}
     </NuxtLink>
 

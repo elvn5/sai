@@ -3,10 +3,9 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   devServer: { port: 3011 },
   features: { inlineStyles: false },
-  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@nuxtjs/i18n'],
+  modules: ['@nuxt/ui', '@nuxtjs/i18n'],
   css: ['~/assets/css/tokens.css'],
   colorMode: {
-    classSuffix: '',
     preference: 'system',
     fallback: 'light',
   },

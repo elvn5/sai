@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import AppBadge from '~/components/shared/ui/AppBadge.vue';
-import AppCard from '~/components/shared/ui/AppCard.vue';
 import { useApiClient } from '~/shared/api/client';
 import type { Guide } from '~/shared/api/types';
 
@@ -26,7 +24,7 @@ function difficultyLabel(difficulty: string): string {
     <h1 class="mb-8 text-3xl font-extrabold text-text">{{ $t('guides.heading') }}</h1>
 
     <div v-if="guides && guides.length > 0" class="flex flex-col gap-4">
-      <AppCard v-for="guide in guides" :key="guide.id" as="article">
+      <UCard v-for="guide in guides" :key="guide.id">
         <NuxtLink :to="localePath(`/guides/${guide.slug}`)" class="flex flex-col gap-4 sm:flex-row">
           <img
             v-if="guide.coverImageUrl"
@@ -36,14 +34,14 @@ function difficultyLabel(difficulty: string): string {
           />
           <div class="flex flex-1 flex-col justify-center">
             <div class="mb-2 flex flex-wrap gap-2">
-              <AppBadge tone="primary">{{ difficultyLabel(guide.difficulty) }}</AppBadge>
-              <AppBadge tone="secondary">{{ $t(`guides.season.${guide.season}`) }}</AppBadge>
+              <UBadge color="primary" variant="subtle">{{ difficultyLabel(guide.difficulty) }}</UBadge>
+              <UBadge color="secondary" variant="subtle">{{ $t(`guides.season.${guide.season}`) }}</UBadge>
             </div>
             <h2 class="text-xl font-semibold text-text">{{ guide.title }}</h2>
             <p v-if="guide.excerpt" class="mt-2 text-text-muted">{{ guide.excerpt }}</p>
           </div>
         </NuxtLink>
-      </AppCard>
+      </UCard>
     </div>
     <p v-else class="text-text-muted">{{ $t('guides.empty') }}</p>
   </section>

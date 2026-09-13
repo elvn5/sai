@@ -1,28 +1,23 @@
 <script setup lang="ts">
-import AppBadge from '~/components/shared/ui/AppBadge.vue';
-import AppButton from '~/components/shared/ui/AppButton.vue';
-import AppCard from '~/components/shared/ui/AppCard.vue';
-import AppInput from '~/components/shared/ui/AppInput.vue';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
-import AppModal from '~/components/shared/ui/AppModal.vue';
-import SkeletonBlock from '~/components/shared/ui/SkeletonBlock.vue';
 
 const { isTma, colorScheme } = useTelegramWebApp();
 
 const ranks = [
-  { label: 'Новичок', locked: false, tone: 'neutral' as const },
-  { label: 'Исследователь', locked: false, tone: 'secondary' as const },
-  { label: 'Покоритель Ала-Арчи', locked: false, tone: 'primary' as const },
-  { label: '10 походных ночей', locked: true, tone: 'neutral' as const },
+  { label: 'Новичок', locked: false, color: 'gray' as const },
+  { label: 'Исследователь', locked: false, color: 'secondary' as const },
+  { label: 'Покоритель Ала-Арчи', locked: false, color: 'primary' as const },
+  { label: '10 походных ночей', locked: true, color: 'gray' as const },
 ];
 
+const nickname = ref('Новичок');
 const isModalOpen = ref(false);
 </script>
 
 <template>
   <section class="mx-auto max-w-6xl px-4 py-10">
     <header class="mb-10">
-      <AppLogo class="h-20 w-20 text-primary" />
+      <AppLogo class="h-20 w-20 text-primary-600 dark:text-primary-400" />
       <h1 class="mt-4 text-3xl font-extrabold text-text">{{ $t('brand.name') }}</h1>
       <p class="mt-2 max-w-xl text-text-muted">{{ $t('home.tagline') }}</p>
       <p class="mt-3 text-xs text-text-muted">
@@ -34,17 +29,19 @@ const isModalOpen = ref(false);
     <article class="mb-10">
       <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Buttons</h2>
       <div class="flex flex-wrap gap-3">
-        <AppButton variant="primary">{{ $t('home.ctaPrimary') }}</AppButton>
-        <AppButton variant="secondary">{{ $t('home.ctaSecondary') }}</AppButton>
-        <AppButton variant="ghost" @click="isModalOpen = true">Открыть модалку</AppButton>
-        <AppButton variant="primary" disabled>Disabled</AppButton>
+        <UButton color="primary">{{ $t('home.ctaPrimary') }}</UButton>
+        <UButton color="secondary">{{ $t('home.ctaSecondary') }}</UButton>
+        <UButton color="gray" variant="ghost" @click="isModalOpen = true">Открыть модалку</UButton>
+        <UButton color="primary" disabled>Disabled</UButton>
       </div>
     </article>
 
     <article class="mb-10">
       <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-text-muted">Input</h2>
       <div class="max-w-sm">
-        <AppInput v-model="ranks[0]!.label" label="Никнейм" placeholder="Введите имя" />
+        <UFormGroup label="Никнейм">
+          <UInput v-model="nickname" placeholder="Введите имя" />
+        </UFormGroup>
       </div>
     </article>
 
@@ -53,30 +50,34 @@ const isModalOpen = ref(false);
         Badges / Achievements
       </h2>
       <div class="flex flex-wrap gap-2">
-        <AppBadge
+        <UBadge
           v-for="rank in ranks"
           :key="rank.label"
-          :tone="rank.tone"
-          :locked="rank.locked"
+          :color="rank.color"
+          variant="subtle"
+          :class="{ 'opacity-50 grayscale': rank.locked }"
         >
           {{ rank.label }}
-        </AppBadge>
+        </UBadge>
       </div>
     </article>
 
     <article class="mb-10 grid gap-4 sm:grid-cols-3">
-      <AppCard v-for="n in 3" :key="n" as="article">
-        <SkeletonBlock height="8rem" rounded="0.75rem" />
-        <SkeletonBlock height="1rem" width="70%" rounded="0.25rem" class="mt-3" />
-        <SkeletonBlock height="0.875rem" width="40%" rounded="0.25rem" class="mt-2" />
-      </AppCard>
+      <UCard v-for="n in 3" :key="n">
+        <USkeleton class="h-32 w-full" />
+        <USkeleton class="mt-3 h-4 w-[70%]" />
+        <USkeleton class="mt-2 h-3.5 w-[40%]" />
+      </UCard>
     </article>
 
-    <AppModal v-model="isModalOpen" title="Пример модалки">
-      <p class="text-text-muted">Контент модального окна из дизайн-системы.</p>
-      <div class="mt-4 flex justify-end">
-        <AppButton variant="primary" @click="isModalOpen = false">Готово</AppButton>
+    <UModal v-model="isModalOpen">
+      <div class="p-4">
+        <h2 class="mb-4 text-lg font-semibold text-text">Пример модалки</h2>
+        <p class="text-text-muted">Контент модального окна из дизайн-системы.</p>
+        <div class="mt-4 flex justify-end">
+          <UButton color="primary" @click="isModalOpen = false">Готово</UButton>
+        </div>
       </div>
-    </AppModal>
+    </UModal>
   </section>
 </template>

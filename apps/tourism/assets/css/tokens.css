@@ -1,8 +1,4 @@
 :root {
-  --color-primary: #d62828;
-  --color-primary-hover: #b31f1f;
-  --color-secondary: #f4a261;
-  --color-secondary-hover: #e08c46;
   --color-bg: #f8f9fa;
   --color-surface: #ffffff;
   --color-border: #e9ecef;
@@ -11,10 +7,6 @@
 }
 
 .dark {
-  --color-primary: #e63946;
-  --color-primary-hover: #f2545f;
-  --color-secondary: #ffb703;
-  --color-secondary-hover: #ffc933;
   --color-bg: #0f172a;
   --color-surface: #1e293b;
   --color-border: #334155;
@@ -26,21 +18,4 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
-}
-.modal-scale-enter-active,
-.modal-scale-leave-active {
-  transition: transform 0.2s ease;
-}
-.modal-scale-enter-from,
-.modal-scale-leave-to {
-  transform: scale(0.95);
 }

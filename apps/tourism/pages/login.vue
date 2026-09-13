@@ -2,8 +2,6 @@
 import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import { z } from 'zod';
-import AppButton from '~/components/shared/ui/AppButton.vue';
-import AppInput from '~/components/shared/ui/AppInput.vue';
 import { ApiError } from '~/shared/api/client';
 import type { TelegramWidgetPayload } from '~/shared/api/types';
 
@@ -136,7 +134,7 @@ onMounted(async () => {
       <button
         type="button"
         class="flex-1 rounded-full py-2 text-sm font-medium transition-colors"
-        :class="mode === 'login' ? 'bg-primary text-white' : 'text-text-muted'"
+        :class="mode === 'login' ? 'bg-primary-600 text-white dark:bg-primary-500' : 'text-text-muted'"
         @click="mode = 'login'"
       >
         {{ $t('login.tabLogin') }}
@@ -144,7 +142,7 @@ onMounted(async () => {
       <button
         type="button"
         class="flex-1 rounded-full py-2 text-sm font-medium transition-colors"
-        :class="mode === 'register' ? 'bg-primary text-white' : 'text-text-muted'"
+        :class="mode === 'register' ? 'bg-primary-600 text-white dark:bg-primary-500' : 'text-text-muted'"
         @click="mode = 'register'"
       >
         {{ $t('login.tabRegister') }}
@@ -152,23 +150,15 @@ onMounted(async () => {
     </div>
 
     <form v-if="!isTma && mode === 'login'" class="mt-6 flex flex-col gap-4" @submit="onLogin">
-      <AppInput
-        v-model="loginIdentifier"
-        v-bind="loginIdentifierAttrs"
-        :label="$t('login.identifierLabel')"
-        placeholder="you@example.com"
-        :error="loginErrors.identifier"
-      />
-      <AppInput
-        v-model="loginPassword"
-        v-bind="loginPasswordAttrs"
-        type="password"
-        :label="$t('login.passwordLabel')"
-        :error="loginErrors.password"
-      />
-      <AppButton type="submit" variant="primary" :disabled="submitting">
+      <UFormGroup :label="$t('login.identifierLabel')" :error="loginErrors.identifier">
+        <UInput v-model="loginIdentifier" v-bind="loginIdentifierAttrs" placeholder="you@example.com" />
+      </UFormGroup>
+      <UFormGroup :label="$t('login.passwordLabel')" :error="loginErrors.password">
+        <UInput v-model="loginPassword" v-bind="loginPasswordAttrs" type="password" />
+      </UFormGroup>
+      <UButton type="submit" color="primary" block :loading="submitting">
         {{ $t('login.submitLogin') }}
-      </AppButton>
+      </UButton>
     </form>
 
     <form v-else-if="!isTma" class="mt-6 flex flex-col gap-4" @submit="onRegister">
@@ -190,32 +180,31 @@ onMounted(async () => {
           {{ $t('login.phone') }}
         </button>
       </div>
-      <AppInput
-        v-model="registerIdentifier"
-        v-bind="registerIdentifierAttrs"
-        :type="identifierType === 'email' ? 'email' : 'tel'"
+      <UFormGroup
         :label="identifierType === 'email' ? $t('login.email') : $t('login.phone')"
-        :placeholder="identifierType === 'email' ? 'you@example.com' : '+996 700 000 000'"
         :error="registerErrors.identifier"
-      />
-      <AppInput
-        v-model="registerFirstName"
-        v-bind="registerFirstNameAttrs"
-        :label="$t('login.firstNameLabel')"
-      />
-      <AppInput
-        v-model="registerPassword"
-        v-bind="registerPasswordAttrs"
-        type="password"
-        :label="$t('login.passwordLabel')"
-        :error="registerErrors.password"
-      />
-      <AppButton type="submit" variant="primary" :disabled="submitting">
+      >
+        <UInput
+          v-model="registerIdentifier"
+          v-bind="registerIdentifierAttrs"
+          :type="identifierType === 'email' ? 'email' : 'tel'"
+          :placeholder="identifierType === 'email' ? 'you@example.com' : '+996 700 000 000'"
+        />
+      </UFormGroup>
+      <UFormGroup :label="$t('login.firstNameLabel')">
+        <UInput v-model="registerFirstName" v-bind="registerFirstNameAttrs" />
+      </UFormGroup>
+      <UFormGroup :label="$t('login.passwordLabel')" :error="registerErrors.password">
+        <UInput v-model="registerPassword" v-bind="registerPasswordAttrs" type="password" />
+      </UFormGroup>
+      <UButton type="submit" color="primary" block :loading="submitting">
         {{ $t('login.submitRegister') }}
-      </AppButton>
+      </UButton>
     </form>
 
-    <p v-if="errorMessage" class="mt-4 text-center text-sm text-primary">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="mt-4 text-center text-sm text-primary-600 dark:text-primary-400">
+      {{ errorMessage }}
+    </p>
 
     <template v-if="isTma">
       <p v-if="tmaLoading" class="mt-8 text-center text-text-muted">{{ $t('login.loading') }}</p>

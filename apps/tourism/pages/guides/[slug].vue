@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import AppBadge from '~/components/shared/ui/AppBadge.vue';
 import { useApiClient } from '~/shared/api/client';
 import type { Guide } from '~/shared/api/types';
 
@@ -38,13 +37,16 @@ useSeoMeta({
 
 <template>
   <article v-if="guide" class="mx-auto max-w-3xl px-4 py-12">
-    <NuxtLink :to="localePath('/guides')" class="text-sm text-primary hover:underline">
+    <NuxtLink
+      :to="localePath('/guides')"
+      class="text-sm text-primary-600 hover:underline dark:text-primary-400"
+    >
       &larr; {{ $t('guides.heading') }}
     </NuxtLink>
 
     <div class="mt-4 flex flex-wrap gap-2">
-      <AppBadge tone="primary">{{ t(`guides.difficulty.${guide.difficulty}`) }}</AppBadge>
-      <AppBadge tone="secondary">{{ t(`guides.season.${guide.season}`) }}</AppBadge>
+      <UBadge color="primary" variant="subtle">{{ t(`guides.difficulty.${guide.difficulty}`) }}</UBadge>
+      <UBadge color="secondary" variant="subtle">{{ t(`guides.season.${guide.season}`) }}</UBadge>
     </div>
 
     <h1 class="mt-4 text-3xl font-extrabold text-text sm:text-4xl">{{ guide.title }}</h1>
@@ -65,7 +67,7 @@ useSeoMeta({
       </h2>
       <ul class="flex flex-col gap-2">
         <li v-for="entry in guide.equipmentChecklist" :key="entry" class="flex items-center gap-2 text-text">
-          <span class="h-1.5 w-1.5 rounded-full bg-primary" />
+          <span class="h-1.5 w-1.5 rounded-full bg-primary-600 dark:bg-primary-400" />
           {{ entry }}
         </li>
       </ul>

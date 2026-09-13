@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import AppCard from '~/components/shared/ui/AppCard.vue';
 import { useApiClient } from '~/shared/api/client';
 import type { BlogPost } from '~/shared/api/types';
 
@@ -21,7 +20,7 @@ const { data: posts } = await useAsyncData<BlogPost[]>(
     <h1 class="mb-8 text-3xl font-extrabold text-text">{{ $t('blog.heading') }}</h1>
 
     <div v-if="posts && posts.length > 0" class="flex flex-col gap-4">
-      <AppCard v-for="post in posts" :key="post.id" as="article">
+      <UCard v-for="post in posts" :key="post.id">
         <NuxtLink :to="localePath(`/blog/${post.slug}`)" class="flex flex-col gap-4 sm:flex-row">
           <img
             v-if="post.coverImageUrl"
@@ -34,7 +33,7 @@ const { data: posts } = await useAsyncData<BlogPost[]>(
             <p v-if="post.excerpt" class="mt-2 text-text-muted">{{ post.excerpt }}</p>
           </div>
         </NuxtLink>
-      </AppCard>
+      </UCard>
     </div>
     <p v-else class="text-text-muted">{{ $t('blog.empty') }}</p>
   </section>

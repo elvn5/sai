@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import AppModal from '~/components/shared/ui/AppModal.vue';
 import { useApiClient } from '~/shared/api/client';
 import type { GalleryItem } from '~/shared/api/types';
 
@@ -41,8 +40,8 @@ function openItem(item: GalleryItem): void {
     </div>
     <p v-else class="text-text-muted">{{ $t('gallery.empty') }}</p>
 
-    <AppModal v-model="isOpen">
-      <div v-if="selected">
+    <UModal v-model="isOpen">
+      <div v-if="selected" class="p-2">
         <img
           :src="`${apiBaseUrl}${selected.imageUrl}`"
           :alt="selected.altText ?? ''"
@@ -52,6 +51,6 @@ function openItem(item: GalleryItem): void {
           {{ selected.caption }}
         </p>
       </div>
-    </AppModal>
+    </UModal>
   </section>
 </template>

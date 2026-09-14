@@ -23,35 +23,43 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
 <template>
   <header
     v-if="!isTma"
-    class="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur"
+    class="animated-gradient-border sticky top-0 z-40 bg-gradient-to-r from-brand-900 via-brand-700 to-brand-500"
   >
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-      <NuxtLink :to="localePath('/')" class="flex items-center gap-2 text-lg font-bold text-text">
-        <AppLogo class="h-7 w-7 text-primary-600 dark:text-primary-400" />
+      <NuxtLink :to="localePath('/')" class="flex items-center gap-2 text-lg font-bold text-white">
+        <AppLogo class="h-7 w-7" />
         {{ $t('brand.name') }}
       </NuxtLink>
-      <nav class="hidden items-center gap-6 text-sm font-medium text-text-muted sm:flex">
-        <NuxtLink :to="localePath('/')" class="hover:text-text">{{ $t('nav.feed') }}</NuxtLink>
-        <NuxtLink :to="localePath('/gallery')" class="hover:text-text">{{ $t('nav.gallery') }}</NuxtLink>
-        <NuxtLink :to="localePath('/guides')" class="hover:text-text">{{ $t('nav.guides') }}</NuxtLink>
-        <NuxtLink :to="localePath('/blog')" class="hover:text-text">{{ $t('nav.blog') }}</NuxtLink>
+      <nav class="hidden items-center gap-6 text-sm font-medium text-white/75 sm:flex">
+        <NuxtLink :to="localePath('/')" class="transition-colors hover:text-white">{{ $t('nav.feed') }}</NuxtLink>
+        <NuxtLink :to="localePath('/gallery')" class="transition-colors hover:text-white">{{ $t('nav.gallery') }}</NuxtLink>
+        <NuxtLink :to="localePath('/guides')" class="transition-colors hover:text-white">{{ $t('nav.guides') }}</NuxtLink>
+        <NuxtLink :to="localePath('/blog')" class="transition-colors hover:text-white">{{ $t('nav.blog') }}</NuxtLink>
       </nav>
       <div class="flex items-center gap-2">
-        <LanguageSwitcher />
-        <ThemeToggle />
-        <template v-if="auth.user.value">
-          <img
-            v-if="auth.user.value.avatarUrl"
-            :src="auth.user.value.avatarUrl"
-            :alt="displayName"
-            class="h-8 w-8 rounded-full object-cover"
-          />
-          <span class="hidden text-sm text-text sm:inline">{{ displayName }}</span>
-          <UButton color="gray" variant="ghost" @click="handleLogout">
-            {{ $t('profile.logout') }}
-          </UButton>
-        </template>
-        <UButton v-else color="primary" @click="navigateTo(localePath('/login'))">
+        <div class="flex items-center gap-2 [&_button]:!text-white [&_button:hover]:!bg-white/10">
+          <LanguageSwitcher />
+          <ThemeToggle />
+          <template v-if="auth.user.value">
+            <NuxtLink :to="localePath('/profile')" class="flex items-center gap-2">
+              <img
+                v-if="auth.user.value.avatarUrl"
+                :src="auth.user.value.avatarUrl"
+                :alt="displayName"
+                class="h-8 w-8 rounded-full object-cover ring-2 ring-white/30"
+              />
+              <span class="hidden text-sm text-white sm:inline">{{ displayName }}</span>
+            </NuxtLink>
+            <UButton color="gray" variant="ghost" @click="handleLogout">
+              {{ $t('profile.logout') }}
+            </UButton>
+          </template>
+        </div>
+        <UButton
+          v-if="!auth.user.value"
+          class="!bg-white !text-brand-700 hover:!bg-white/90"
+          @click="navigateTo(localePath('/login'))"
+        >
           {{ $t('login.cta') }}
         </UButton>
       </div>

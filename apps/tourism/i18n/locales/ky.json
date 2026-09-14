@@ -44,9 +44,28 @@
     "registerError": "Катталуу мүмкүн болбоду. Email же телефон буга чейин колдонулган болушу мүмкүн",
     "networkError": "Тармак катасы",
     "loading": "Telegram аркылуу кирүү...",
-    "error": "Telegram аркылуу кирүү ишке ашкан жок"
+    "error": "Telegram аркылуу кирүү ишке ашкан жок",
+    "telegramUnavailable": "Telegram аркылуу кирүү учурда жеткиликсиз"
   },
   "profile": {
-    "logout": "Чыгуу"
+    "logout": "Чыгуу",
+    "title": "Профиль",
+    "tabs": { "info": "Профиль", "history": "Походдордун тарыхы" },
+    "fields": { "username": "Логин", "email": "Email", "phone": "Телефон", "telegram": "Telegram" },
+    "history": {
+      "empty": "Азырынча аяктаган походдор жок",
+      "emptyHint": "Биринчи маршрутту аяктаганыңыздан кийин, бул жерде походдордун тарыхы көрүнөт.",
+      "cta": "Гайддарды көрүү"
+    }
+  },
+  "footer": {
+    "sections": { "nav": "Бөлүмдөр", "account": "Аккаунт", "contacts": "Байланыш" },
+    "profile": "Профиль",
+    "startTrip": "Маршрут тандоо",
+    "telegram": "Telegram",
+    "account": "Аккаунт",
+    "location": "Кыргызстан",
+    "bottomTagline": "Кыргызстан боюнча гайддар жана маршруттар",
+    "rights": "Бардык укуктар корголгон."
   }
 }

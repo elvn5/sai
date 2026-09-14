@@ -19,3 +19,37 @@ body {
   color: var(--color-text);
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+@keyframes brand-gradient-flow {
+  to {
+    background-position: 300% center;
+  }
+}
+
+.animated-gradient-border {
+  position: relative;
+}
+
+.animated-gradient-border::after,
+.animated-gradient-border-top::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-image: linear-gradient(90deg, #e63946, #ffb703, #b91f1f, #f4a261, #e63946);
+  background-size: 300% 100%;
+  animation: brand-gradient-flow 6s linear infinite;
+}
+
+.animated-gradient-border::after {
+  bottom: 0;
+}
+
+.animated-gradient-border-top {
+  position: relative;
+}
+
+.animated-gradient-border-top::before {
+  top: 0;
+}

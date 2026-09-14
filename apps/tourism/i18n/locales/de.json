@@ -2,6 +2,7 @@
   "brand": { "name": "Ermekten" },
   "nav": { "feed": "Feed", "gallery": "Galerie", "guides": "Guides", "blog": "Blog" },
   "theme": { "toggle": "Design" },
+  "colorTheme": { "toggle": "Farbthema" },
   "language": { "switch": "Sprache" },
   "home": {
     "tagline": "Guides, Routen und Neuigkeiten rund um Natur und Kultur Kirgisistans.",

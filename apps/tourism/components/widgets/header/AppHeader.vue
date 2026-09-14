@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ColorThemeToggle from '~/components/features/color-theme-toggle/ColorThemeToggle.vue';
 import LanguageSwitcher from '~/components/features/language-switch/LanguageSwitcher.vue';
 import ThemeToggle from '~/components/features/theme-toggle/ThemeToggle.vue';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
@@ -39,6 +40,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
       <div class="flex items-center gap-2">
         <div class="flex items-center gap-2 [&_button]:!text-white [&_button:hover]:!bg-white/10">
           <LanguageSwitcher />
+          <ColorThemeToggle />
           <ThemeToggle />
           <template v-if="auth.user.value">
             <NuxtLink :to="localePath('/profile')" class="flex items-center gap-2">

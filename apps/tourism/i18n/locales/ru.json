@@ -2,6 +2,7 @@
   "brand": { "name": "Ermekten" },
   "nav": { "feed": "Лента", "gallery": "Галерея", "guides": "Гайды", "blog": "Блог" },
   "theme": { "toggle": "Тема" },
+  "colorTheme": { "toggle": "Цветовая тема" },
   "language": { "switch": "Язык" },
   "home": {
     "tagline": "Гайды, маршруты и новости о путешествиях по природе и культуре Кыргызстана.",

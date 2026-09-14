@@ -2,6 +2,7 @@
   "brand": { "name": "Ermekten" },
   "nav": { "feed": "Feed", "gallery": "Gallery", "guides": "Guides", "blog": "Blog" },
   "theme": { "toggle": "Theme" },
+  "colorTheme": { "toggle": "Color theme" },
   "language": { "switch": "Language" },
   "home": {
     "tagline": "Guides, routes, and news for exploring the nature and culture of Kyrgyzstan.",

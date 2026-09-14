@@ -2,6 +2,7 @@
   "brand": { "name": "Ermekten" },
   "nav": { "feed": "Лента", "gallery": "Галерея", "guides": "Гайддар", "blog": "Блог" },
   "theme": { "toggle": "Тема" },
+  "colorTheme": { "toggle": "Түс темасы" },
   "language": { "switch": "Тил" },
   "home": {
     "tagline": "Кыргызстандын табияты жана маданияты боюнча гайддар, маршруттар жана жаңылыктар.",

@@ -22,13 +22,21 @@ const latestPosts = computed(() => (posts.value ?? []).slice(0, NEWS_LIMIT));
 
 <template>
   <div>
-    <section class="mx-auto max-w-4xl px-4 py-16 text-center">
-      <AppLogo class="mx-auto h-16 w-16 text-primary-600 dark:text-primary-400" />
-      <h1 class="mt-4 text-3xl font-extrabold text-text sm:text-4xl">{{ $t('brand.name') }}</h1>
-      <p class="mx-auto mt-3 max-w-xl text-text-muted">{{ $t('home.tagline') }}</p>
-      <UButton class="mt-6" color="primary" size="lg" :to="localePath('/guides')">
-        {{ $t('home.ctaPrimary') }}
-      </UButton>
+    <section class="relative isolate overflow-hidden px-4 py-24 text-center sm:py-32">
+      <div
+        class="absolute inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+        style="background-image: url('/images/hero-mountain.webp')"
+      />
+      <div class="absolute inset-0 -z-10 bg-gradient-to-b from-black/70 via-black/50 to-bg" />
+
+      <div class="mx-auto max-w-4xl">
+        <AppLogo class="mx-auto h-16 w-16 text-white" />
+        <h1 class="mt-4 text-3xl font-extrabold text-white sm:text-4xl">{{ $t('brand.name') }}</h1>
+        <p class="mx-auto mt-3 max-w-xl text-white/85">{{ $t('home.tagline') }}</p>
+        <UButton class="mt-6" color="primary" size="lg" :to="localePath('/guides')">
+          {{ $t('home.ctaPrimary') }}
+        </UButton>
+      </div>
     </section>
 
     <section class="mx-auto max-w-4xl px-4 pb-16">

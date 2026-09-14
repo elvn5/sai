@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import type { Guide } from '~/shared/api/types';
 
@@ -8,15 +9,22 @@ const api = useApiClient();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
-const { data: guides } = await useAsyncData<Guide[]>(
-  () => `guides-list-${locale.value}`,
-  () => api.get<Guide[]>(`/guides?locale=${locale.value}`),
-  { watch: [locale] },
-);
+const guidesQuery = useQuery({
+  queryKey: ['guides', locale],
+  queryFn: () => api.get<Guide[]>(`/guides?locale=${locale.value}`),
+});
+if (import.meta.server) await guidesQuery.suspense();
+
+const guides = guidesQuery.data;
 
 function difficultyLabel(difficulty: string): string {
   return t(`guides.difficulty.${difficulty}`);
 }
+
+useSeoMeta({
+  title: () => t('guides.heading'),
+  description: () => t('home.tagline'),
+});
 </script>
 
 <template>

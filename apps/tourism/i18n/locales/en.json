@@ -1,6 +1,12 @@
 {
   "brand": { "name": "Ermekten" },
-  "nav": { "feed": "Feed", "gallery": "Gallery", "guides": "Guides", "blog": "Blog" },
+  "nav": {
+    "feed": "Feed",
+    "gallery": "Gallery",
+    "guides": "Guides",
+    "blog": "Blog",
+    "menu": "Menu"
+  },
   "theme": { "toggle": "Theme" },
   "colorTheme": { "toggle": "Color theme" },
   "language": { "switch": "Language" },
@@ -73,5 +79,10 @@
     "location": "Kyrgyzstan",
     "bottomTagline": "guides and routes across Kyrgyzstan",
     "rights": "All rights reserved."
+  },
+  "cookieConsent": {
+    "title": "Cookie notice",
+    "message": "We use cookies required for signing in and remembering your preferences.",
+    "accept": "Got it"
   }
 }

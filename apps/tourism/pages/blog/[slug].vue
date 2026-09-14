@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import type { BlogPost } from '~/shared/api/types';
 
@@ -11,16 +12,19 @@ const apiBaseUrl = config.public.apiBaseUrl;
 
 const slug = route.params.slug as string;
 
-const { data: post } = await useAsyncData<BlogPost | null>(
-  `blog-post-${locale.value}-${slug}`,
-  async () => {
+const postQuery = useQuery({
+  queryKey: ['blog', locale, slug],
+  queryFn: async () => {
     try {
       return await api.get<BlogPost>(`/blog/${locale.value}/${slug}`);
     } catch {
       return null;
     }
   },
-);
+});
+if (import.meta.server) await postQuery.suspense();
+
+const post = postQuery.data;
 
 if (!post.value) {
   throw createError({ statusCode: 404, statusMessage: 'Post not found' });

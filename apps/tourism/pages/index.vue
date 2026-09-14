@@ -1,23 +1,31 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
 import { useApiClient } from '~/shared/api/client';
 import type { BlogPost } from '~/shared/api/types';
 
 const NEWS_LIMIT = 3;
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const api = useApiClient();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
-const { data: posts } = await useAsyncData<BlogPost[]>(
-  () => `home-news-${locale.value}`,
-  () => api.get<BlogPost[]>(`/blog?locale=${locale.value}`),
-  { watch: [locale] },
-);
+const postsQuery = useQuery({
+  queryKey: ['blog', locale],
+  queryFn: () => api.get<BlogPost[]>(`/blog?locale=${locale.value}`),
+});
+if (import.meta.server) await postsQuery.suspense();
 
-const latestPosts = computed(() => (posts.value ?? []).slice(0, NEWS_LIMIT));
+const latestPosts = computed(() => (postsQuery.data.value ?? []).slice(0, NEWS_LIMIT));
+
+useSeoMeta({
+  description: () => t('home.tagline'),
+  ogTitle: () => t('brand.name'),
+  ogDescription: () => t('home.tagline'),
+  ogImage: '/images/hero-mountain.webp',
+});
 </script>
 
 <template>

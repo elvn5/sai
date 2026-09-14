@@ -1,18 +1,26 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import type { BlogPost } from '~/shared/api/types';
 
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const api = useApiClient();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
-const { data: posts } = await useAsyncData<BlogPost[]>(
-  () => `blog-list-${locale.value}`,
-  () => api.get<BlogPost[]>(`/blog?locale=${locale.value}`),
-  { watch: [locale] },
-);
+const postsQuery = useQuery({
+  queryKey: ['blog', locale],
+  queryFn: () => api.get<BlogPost[]>(`/blog?locale=${locale.value}`),
+});
+if (import.meta.server) await postsQuery.suspense();
+
+const posts = postsQuery.data;
+
+useSeoMeta({
+  title: () => t('blog.heading'),
+  description: () => t('home.tagline'),
+});
 </script>
 
 <template>

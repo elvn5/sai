@@ -1,17 +1,28 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import type { GalleryItem } from '~/shared/api/types';
 
+const { t } = useI18n();
 const api = useApiClient();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
-const { data: items } = await useAsyncData<GalleryItem[]>('gallery-list', () =>
-  api.get<GalleryItem[]>('/gallery'),
-);
+const galleryQuery = useQuery({
+  queryKey: ['gallery'],
+  queryFn: () => api.get<GalleryItem[]>('/gallery'),
+});
+if (import.meta.server) await galleryQuery.suspense();
+
+const items = galleryQuery.data;
 
 const isOpen = ref(false);
 const selected = ref<GalleryItem | null>(null);
+
+useSeoMeta({
+  title: () => t('gallery.heading'),
+  description: () => t('home.tagline'),
+});
 
 function openItem(item: GalleryItem): void {
   selected.value = item;

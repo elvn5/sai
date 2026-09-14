@@ -8,6 +8,11 @@ const tabs = [
   { key: 'history', label: t('profile.tabs.history'), icon: 'i-heroicons-map' },
 ];
 
+useSeoMeta({
+  title: () => t('profile.title'),
+  robots: 'noindex',
+});
+
 const displayName = computed(
   () => auth.user.value?.firstName ?? auth.user.value?.username ?? auth.user.value?.email ?? '',
 );

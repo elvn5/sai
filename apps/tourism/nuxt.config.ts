@@ -25,6 +25,14 @@ export default defineNuxtConfig({
     defaultLocale: 'ru',
     strategy: 'prefix_except_default',
     lazy: true,
+    baseUrl: process.env.NUXT_PUBLIC_SITE_URL ?? 'http://localhost:3011',
+    // The locale is already encoded in the URL path (prefix_except_default),
+    // so a redirect-tracking cookie isn't needed — one less non-essential
+    // cookie on the site.
+    detectBrowserLanguage: {
+      useCookie: false,
+      redirectOn: 'root',
+    },
   },
   app: {
     head: {

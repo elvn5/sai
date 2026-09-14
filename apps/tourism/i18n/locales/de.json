@@ -1,6 +1,12 @@
 {
   "brand": { "name": "Ermekten" },
-  "nav": { "feed": "Feed", "gallery": "Galerie", "guides": "Guides", "blog": "Blog" },
+  "nav": {
+    "feed": "Feed",
+    "gallery": "Galerie",
+    "guides": "Guides",
+    "blog": "Blog",
+    "menu": "Menü"
+  },
   "theme": { "toggle": "Design" },
   "colorTheme": { "toggle": "Farbthema" },
   "language": { "switch": "Sprache" },
@@ -73,5 +79,10 @@
     "location": "Kirgisistan",
     "bottomTagline": "Guides und Routen in Kirgisistan",
     "rights": "Alle Rechte vorbehalten."
+  },
+  "cookieConsent": {
+    "title": "Cookie-Hinweis",
+    "message": "Wir verwenden Cookies, die für die Anmeldung und das Speichern Ihrer Einstellungen erforderlich sind.",
+    "accept": "Verstanden"
   }
 }

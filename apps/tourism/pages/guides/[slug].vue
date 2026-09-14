@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import type { Guide } from '~/shared/api/types';
 
@@ -11,16 +12,19 @@ const apiBaseUrl = config.public.apiBaseUrl;
 
 const slug = route.params.slug as string;
 
-const { data: guide } = await useAsyncData<Guide | null>(
-  `guide-${locale.value}-${slug}`,
-  async () => {
+const guideQuery = useQuery({
+  queryKey: ['guides', locale, slug],
+  queryFn: async () => {
     try {
       return await api.get<Guide>(`/guides/${locale.value}/${slug}`);
     } catch {
       return null;
     }
   },
-);
+});
+if (import.meta.server) await guideQuery.suspense();
+
+const guide = guideQuery.data;
 
 if (!guide.value) {
   throw createError({ statusCode: 404, statusMessage: 'Guide not found' });

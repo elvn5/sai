@@ -19,6 +19,12 @@ const tmaLoading = ref(false);
 const widgetContainer = ref<HTMLDivElement | null>(null);
 const telegramUnavailable = ref(false);
 
+useSeoMeta({
+  title: () => t('login.title'),
+  description: () => t('login.subtitle'),
+  robots: 'noindex',
+});
+
 const loginSchema = toTypedSchema(
   z.object({
     identifier: z.string().min(1, t('login.required')),

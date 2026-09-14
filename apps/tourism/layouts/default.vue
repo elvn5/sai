@@ -23,7 +23,7 @@ watch(
 <template>
   <div class="flex min-h-screen flex-col bg-bg text-text">
     <AppHeader />
-    <main class="flex-1">
+    <main class="min-h-[70vh] flex-1">
       <slot />
     </main>
     <AppFooter v-if="!isTma" />

@@ -17,6 +17,7 @@ const errorMessage = ref<string | null>(null);
 const submitting = ref(false);
 const tmaLoading = ref(false);
 const widgetContainer = ref<HTMLDivElement | null>(null);
+const telegramUnavailable = ref(false);
 
 const loginSchema = toTypedSchema(
   z.object({
@@ -100,7 +101,10 @@ onMounted(async () => {
   }
 
   const botUsername = config.public.telegramBotUsername;
-  if (!botUsername || !widgetContainer.value) return;
+  if (!botUsername || !widgetContainer.value) {
+    telegramUnavailable.value = true;
+    return;
+  }
 
   (
     window as unknown as { onTelegramAuth: (payload: TelegramWidgetPayload) => void }
@@ -215,7 +219,10 @@ onMounted(async () => {
         {{ $t('login.orTelegram') }}
         <span class="h-px flex-1 bg-border" />
       </div>
-      <div ref="widgetContainer" class="flex justify-center" />
+      <p v-if="telegramUnavailable" class="text-center text-sm text-text-muted">
+        {{ $t('login.telegramUnavailable') }}
+      </p>
+      <div v-else ref="widgetContainer" class="flex min-h-[40px] justify-center" />
     </template>
   </section>
 </template>

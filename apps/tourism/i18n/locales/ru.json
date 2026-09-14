@@ -44,9 +44,28 @@
     "registerError": "Не удалось зарегистрироваться. Возможно, email или телефон уже заняты",
     "networkError": "Ошибка сети",
     "loading": "Входим через Telegram...",
-    "error": "Не удалось войти через Telegram"
+    "error": "Не удалось войти через Telegram",
+    "telegramUnavailable": "Вход через Telegram сейчас недоступен"
   },
   "profile": {
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "title": "Профиль",
+    "tabs": { "info": "Профиль", "history": "История походов" },
+    "fields": { "username": "Логин", "email": "Email", "phone": "Телефон", "telegram": "Telegram" },
+    "history": {
+      "empty": "Пока нет завершённых походов",
+      "emptyHint": "Здесь появится история ваших походов, как только вы отметите первый пройденный маршрут.",
+      "cta": "Смотреть гайды"
+    }
+  },
+  "footer": {
+    "sections": { "nav": "Разделы", "account": "Аккаунт", "contacts": "Контакты" },
+    "profile": "Профиль",
+    "startTrip": "Выбрать маршрут",
+    "telegram": "Telegram",
+    "account": "Аккаунт",
+    "location": "Кыргызстан",
+    "bottomTagline": "гайды и маршруты по Кыргызстану",
+    "rights": "Все права защищены."
   }
 }

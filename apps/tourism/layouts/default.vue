@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppFooter from '~/components/widgets/footer/AppFooter.vue';
 import AppHeader from '~/components/widgets/header/AppHeader.vue';
 
 const route = useRoute();
@@ -20,10 +21,11 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen bg-bg text-text">
+  <div class="flex min-h-screen flex-col bg-bg text-text">
     <AppHeader />
-    <main>
+    <main class="flex-1">
       <slot />
     </main>
+    <AppFooter v-if="!isTma" />
   </div>
 </template>

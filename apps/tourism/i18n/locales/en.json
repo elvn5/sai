@@ -44,9 +44,33 @@
     "registerError": "Could not register. Email or phone may already be taken",
     "networkError": "Network error",
     "loading": "Signing in with Telegram...",
-    "error": "Telegram sign-in failed"
+    "error": "Telegram sign-in failed",
+    "telegramUnavailable": "Telegram sign-in is unavailable right now"
   },
   "profile": {
-    "logout": "Log out"
+    "logout": "Log out",
+    "title": "Profile",
+    "tabs": { "info": "Profile", "history": "Trip history" },
+    "fields": {
+      "username": "Username",
+      "email": "Email",
+      "phone": "Phone",
+      "telegram": "Telegram"
+    },
+    "history": {
+      "empty": "No completed trips yet",
+      "emptyHint": "Your trip history will show up here once you complete your first route.",
+      "cta": "Browse guides"
+    }
+  },
+  "footer": {
+    "sections": { "nav": "Sections", "account": "Account", "contacts": "Contacts" },
+    "profile": "Profile",
+    "startTrip": "Pick a route",
+    "telegram": "Telegram",
+    "account": "Account",
+    "location": "Kyrgyzstan",
+    "bottomTagline": "guides and routes across Kyrgyzstan",
+    "rights": "All rights reserved."
   }
 }

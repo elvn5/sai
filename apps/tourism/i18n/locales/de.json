@@ -44,9 +44,33 @@
     "registerError": "Registrierung fehlgeschlagen. E-Mail oder Telefon ist möglicherweise bereits vergeben",
     "networkError": "Netzwerkfehler",
     "loading": "Anmeldung mit Telegram...",
-    "error": "Telegram-Anmeldung fehlgeschlagen"
+    "error": "Telegram-Anmeldung fehlgeschlagen",
+    "telegramUnavailable": "Telegram-Anmeldung ist derzeit nicht verfügbar"
   },
   "profile": {
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "title": "Profil",
+    "tabs": { "info": "Profil", "history": "Tourenverlauf" },
+    "fields": {
+      "username": "Benutzername",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "telegram": "Telegram"
+    },
+    "history": {
+      "empty": "Noch keine abgeschlossenen Touren",
+      "emptyHint": "Hier erscheint Ihr Tourenverlauf, sobald Sie Ihre erste Route abgeschlossen haben.",
+      "cta": "Guides ansehen"
+    }
+  },
+  "footer": {
+    "sections": { "nav": "Bereiche", "account": "Konto", "contacts": "Kontakt" },
+    "profile": "Profil",
+    "startTrip": "Route wählen",
+    "telegram": "Telegram",
+    "account": "Konto",
+    "location": "Kirgisistan",
+    "bottomTagline": "Guides und Routen in Kirgisistan",
+    "rights": "Alle Rechte vorbehalten."
   }
 }

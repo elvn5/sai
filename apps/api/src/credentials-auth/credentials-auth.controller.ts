@@ -6,9 +6,14 @@ import type { Response } from 'express';
 import {
   type LoginDto,
   type RegisterDto,
+  type ResendCodeDto,
+  type VerifyCodeDto,
   loginSchema,
   registerSchema,
+  resendCodeSchema,
+  verifyCodeSchema,
 } from './credentials-auth.dto';
+import type { PendingVerification } from './credentials-auth.service';
 import { CredentialsAuthService } from './credentials-auth.service';
 
 @Controller('auth/user')
@@ -19,11 +24,9 @@ export class CredentialsAuthController {
   @HttpCode(200)
   async register(
     @Body(new ZodValidationPipe(registerSchema)) dto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<{ user: PublicUser }> {
-    const { token, user } = await this.service.register(dto);
-    setUserSessionCookie(res, token);
-    return { user };
+  ): Promise<{ verification: PendingVerification }> {
+    const verification = await this.service.register(dto);
+    return { verification };
   }
 
   @Post('login')
@@ -31,9 +34,33 @@ export class CredentialsAuthController {
   async login(
     @Body(new ZodValidationPipe(loginSchema)) dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
+  ): Promise<{ user: PublicUser } | { verification: PendingVerification }> {
+    const result = await this.service.login(dto);
+    if ('token' in result) {
+      setUserSessionCookie(res, result.token);
+      return { user: result.user };
+    }
+
+    return { verification: result };
+  }
+
+  @Post('verify')
+  @HttpCode(200)
+  async verify(
+    @Body(new ZodValidationPipe(verifyCodeSchema)) dto: VerifyCodeDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser }> {
-    const { token, user } = await this.service.login(dto);
+    const { token, user } = await this.service.verifyCode(dto);
     setUserSessionCookie(res, token);
     return { user };
+  }
+
+  @Post('resend-code')
+  @HttpCode(200)
+  async resendCode(
+    @Body(new ZodValidationPipe(resendCodeSchema)) dto: ResendCodeDto,
+  ): Promise<{ verification: PendingVerification }> {
+    const verification = await this.service.resendCode(dto);
+    return { verification };
   }
 }

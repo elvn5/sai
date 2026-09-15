@@ -15,6 +15,18 @@ export interface LoginPayload {
   password: string;
 }
 
+export type VerificationMethod = 'email' | 'whatsapp';
+
+export interface PendingVerification {
+  identifier: string;
+  method: VerificationMethod;
+}
+
+export interface VerifyCodePayload {
+  identifier: string;
+  code: string;
+}
+
 const AUTH_QUERY_KEY = ['auth', 'me'] as const;
 const AUTH_STALE_TIME_MS = 60 * 1000;
 
@@ -54,14 +66,38 @@ export function useAuth() {
     return data !== null;
   }
 
-  async function register(payload: RegisterPayload): Promise<void> {
-    const res = await api.post<{ user: AppUser }>('/auth/user/register', payload);
+  async function register(payload: RegisterPayload): Promise<PendingVerification> {
+    const res = await api.post<{ verification: PendingVerification }>(
+      '/auth/user/register',
+      payload,
+    );
+    return res.verification;
+  }
+
+  // Returns the pending verification info if the account hasn't confirmed
+  // its code yet, or null once the session is established.
+  async function login(payload: LoginPayload): Promise<PendingVerification | null> {
+    const res = await api.post<{ user: AppUser } | { verification: PendingVerification }>(
+      '/auth/user/login',
+      payload,
+    );
+    if ('user' in res) {
+      setUser(res.user);
+      return null;
+    }
+    return res.verification;
+  }
+
+  async function verifyCode(payload: VerifyCodePayload): Promise<void> {
+    const res = await api.post<{ user: AppUser }>('/auth/user/verify', payload);
     setUser(res.user);
   }
 
-  async function login(payload: LoginPayload): Promise<void> {
-    const res = await api.post<{ user: AppUser }>('/auth/user/login', payload);
-    setUser(res.user);
+  async function resendCode(identifier: string): Promise<PendingVerification> {
+    const res = await api.post<{ verification: PendingVerification }>('/auth/user/resend-code', {
+      identifier,
+    });
+    return res.verification;
   }
 
   async function loginWithTelegramWidget(payload: TelegramWidgetPayload): Promise<void> {
@@ -85,6 +121,8 @@ export function useAuth() {
     checkSession,
     register,
     login,
+    verifyCode,
+    resendCode,
     loginWithTelegramWidget,
     loginWithTelegramMiniApp,
     logout,

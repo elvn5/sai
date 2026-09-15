@@ -48,6 +48,24 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   avatarUrl!: string | null;
 
+  // True for Telegram-authenticated accounts (verified by Telegram itself)
+  // and any account created before this column existed. Email/phone
+  // registrations start false and flip to true once the code is confirmed.
+  @Column({ type: 'boolean', default: true })
+  isVerified!: boolean;
+
+  @Column({ type: 'varchar', nullable: true, select: false })
+  verificationCodeHash!: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  verificationCodeExpiresAt!: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  verificationCodeSentAt!: Date | null;
+
+  @Column({ type: 'int', default: 0 })
+  verificationAttempts!: number;
+
   @Column({ type: 'enum', enum: PartnerStatus, default: PartnerStatus.NONE })
   partnerStatus!: PartnerStatus;
 

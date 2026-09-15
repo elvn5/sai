@@ -14,6 +14,15 @@ export const envSchema = z.object({
   ADMIN_ORIGIN: z.string().default('http://localhost:3000'),
   CLIENT_ORIGIN: z.string().default('http://localhost:3002'),
   UPLOADS_DIR: z.string().optional(),
+  // Email verification codes (Resend). Optional so the app can still boot
+  // without them — registration by email just fails with a clear error
+  // until they're set, instead of crash-looping the whole API.
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('Ermekten <onboarding@resend.dev>'),
+  // Phone verification codes (Twilio WhatsApp). Same optionality as above.
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_WHATSAPP_FROM: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

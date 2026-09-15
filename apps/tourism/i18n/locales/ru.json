@@ -126,7 +126,23 @@
     "networkError": "Ошибка сети",
     "loading": "Входим через Telegram...",
     "error": "Не удалось войти через Telegram",
-    "telegramUnavailable": "Вход через Telegram сейчас недоступен"
+    "telegramUnavailable": "Вход через Telegram сейчас недоступен",
+    "verify": {
+      "title": "Подтверждение",
+      "hintEmail": "Мы отправим код подтверждения на этот email",
+      "hintWhatsapp": "Мы отправим код подтверждения в WhatsApp на этот номер",
+      "subtitleEmail": "Мы отправили код подтверждения на {identifier}",
+      "subtitleWhatsapp": "Мы отправили код подтверждения в WhatsApp на {identifier}",
+      "codeLabel": "Код из 6 цифр",
+      "invalidFormat": "Код должен состоять из 6 цифр",
+      "submit": "Подтвердить",
+      "resend": "Отправить код ещё раз",
+      "resendCooldown": "Отправить снова через {seconds} с",
+      "invalidCode": "Неверный или устаревший код",
+      "resendError": "Не удалось отправить код. Попробуйте позже",
+      "sendError": "Не удалось отправить код подтверждения. Попробуйте позже",
+      "back": "Назад к входу"
+    }
   },
   "profile": {
     "logout": "Выйти",

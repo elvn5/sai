@@ -126,7 +126,23 @@
     "networkError": "Тармак катасы",
     "loading": "Telegram аркылуу кирүү...",
     "error": "Telegram аркылуу кирүү ишке ашкан жок",
-    "telegramUnavailable": "Telegram аркылуу кирүү учурда жеткиликсиз"
+    "telegramUnavailable": "Telegram аркылуу кирүү учурда жеткиликсиз",
+    "verify": {
+      "title": "Ырастоо",
+      "hintEmail": "Бул email дарегине ырастоо кодун жөнөтөбүз",
+      "hintWhatsapp": "Бул номерге WhatsApp аркылуу ырастоо кодун жөнөтөбүз",
+      "subtitleEmail": "Ырастоо кодун {identifier} дарегине жөнөттүк",
+      "subtitleWhatsapp": "Ырастоо кодун WhatsApp аркылуу {identifier} номерине жөнөттүк",
+      "codeLabel": "6 сандан турган код",
+      "invalidFormat": "Код 6 сандан турушу керек",
+      "submit": "Ырастоо",
+      "resend": "Кодду кайра жөнөтүү",
+      "resendCooldown": "{seconds} сек кийин кайра жөнөтүү мүмкүн",
+      "invalidCode": "Код туура эмес же мөөнөтү өтүп кеткен",
+      "resendError": "Кодду жөнөтүү мүмкүн болбоду. Кийинчерээк аракет кылыңыз",
+      "sendError": "Ырастоо кодун жөнөтүү мүмкүн болбоду. Кийинчерээк аракет кылыңыз",
+      "back": "Кирүүгө кайтуу"
+    }
   },
   "profile": {
     "logout": "Чыгуу",

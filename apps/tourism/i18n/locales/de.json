@@ -126,7 +126,23 @@
     "networkError": "Netzwerkfehler",
     "loading": "Anmeldung mit Telegram...",
     "error": "Telegram-Anmeldung fehlgeschlagen",
-    "telegramUnavailable": "Telegram-Anmeldung ist derzeit nicht verfügbar"
+    "telegramUnavailable": "Telegram-Anmeldung ist derzeit nicht verfügbar",
+    "verify": {
+      "title": "Konto bestätigen",
+      "hintEmail": "Wir senden einen Bestätigungscode an diese E-Mail-Adresse",
+      "hintWhatsapp": "Wir senden einen Bestätigungscode per WhatsApp an diese Nummer",
+      "subtitleEmail": "Wir haben einen Bestätigungscode an {identifier} gesendet",
+      "subtitleWhatsapp": "Wir haben einen Bestätigungscode per WhatsApp an {identifier} gesendet",
+      "codeLabel": "6-stelliger Code",
+      "invalidFormat": "Der Code muss aus 6 Ziffern bestehen",
+      "submit": "Bestätigen",
+      "resend": "Code erneut senden",
+      "resendCooldown": "Erneut senden in {seconds}s",
+      "invalidCode": "Ungültiger oder abgelaufener Code",
+      "resendError": "Code konnte nicht gesendet werden. Bitte später erneut versuchen",
+      "sendError": "Bestätigungscode konnte nicht gesendet werden. Bitte später erneut versuchen",
+      "back": "Zurück zur Anmeldung"
+    }
   },
   "profile": {
     "logout": "Abmelden",

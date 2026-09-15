@@ -126,7 +126,23 @@
     "networkError": "Network error",
     "loading": "Signing in with Telegram...",
     "error": "Telegram sign-in failed",
-    "telegramUnavailable": "Telegram sign-in is unavailable right now"
+    "telegramUnavailable": "Telegram sign-in is unavailable right now",
+    "verify": {
+      "title": "Verify your account",
+      "hintEmail": "We'll send a verification code to this email",
+      "hintWhatsapp": "We'll send a verification code to this number over WhatsApp",
+      "subtitleEmail": "We sent a verification code to {identifier}",
+      "subtitleWhatsapp": "We sent a verification code over WhatsApp to {identifier}",
+      "codeLabel": "6-digit code",
+      "invalidFormat": "Code must be 6 digits",
+      "submit": "Verify",
+      "resend": "Resend code",
+      "resendCooldown": "Resend in {seconds}s",
+      "invalidCode": "Invalid or expired code",
+      "resendError": "Could not resend the code. Please try again later",
+      "sendError": "Could not send the verification code. Please try again later",
+      "back": "Back to sign in"
+    }
   },
   "profile": {
     "logout": "Log out",

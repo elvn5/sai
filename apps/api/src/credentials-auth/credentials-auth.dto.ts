@@ -17,5 +17,16 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(100),
 });
 
+export const verifyCodeSchema = z.object({
+  identifier: z.string().min(1).max(255),
+  code: z.string().regex(/^\d{6}$/, 'Code must be 6 digits'),
+});
+
+export const resendCodeSchema = z.object({
+  identifier: z.string().min(1).max(255),
+});
+
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;
+export type VerifyCodeDto = z.infer<typeof verifyCodeSchema>;
+export type ResendCodeDto = z.infer<typeof resendCodeSchema>;

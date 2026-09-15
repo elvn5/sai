@@ -1,7 +1,3 @@
-import { AddressesService } from '@/addresses/addresses.service';
-import { BannedItemsService } from '@/banned-items/banned-items.service';
-import { PARCEL_STATUS_LABELS } from '@/parcels/parcel-status.labels';
-import { ParcelsService } from '@/parcels/parcels.service';
 import { SupportService } from '@/support/support.service';
 import { UsersService } from '@/users/users.service';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
@@ -27,9 +23,6 @@ export class BotUpdate implements OnModuleInit {
     @InjectBot() private readonly bot: Telegraf<Context>,
     private readonly configService: ConfigService,
     private readonly usersService: UsersService,
-    private readonly parcelsService: ParcelsService,
-    private readonly bannedItemsService: BannedItemsService,
-    private readonly addressesService: AddressesService,
     private readonly supportService: SupportService,
     private readonly editSessionService: EditSessionService,
   ) {
@@ -61,64 +54,9 @@ export class BotUpdate implements OnModuleInit {
     });
 
     await ctx.reply(
-      `Здравствуйте, ${from.first_name ?? 'гость'}! Я помогу отследить посылки и отвечу на вопросы. Выберите раздел в меню ниже.`,
+      `Здравствуйте, ${from.first_name ?? 'гость'}! Я помогу с гайдами и маршрутами по Кыргызстану и отвечу на вопросы. Выберите раздел в меню ниже.`,
       mainMenuKeyboard(this.miniAppUrl),
     );
-  }
-
-  @Hears(MENU_BUTTONS.PARCELS)
-  async onParcels(@Ctx() ctx: Context): Promise<void> {
-    const user = await this.getOrRegisterUser(ctx);
-    if (!user) return;
-
-    const parcels = await this.parcelsService.findByUserId(user.id);
-
-    if (parcels.length === 0) {
-      await ctx.reply('У вас пока нет посылок.');
-      return;
-    }
-
-    const lines = parcels.map((parcel, index) => {
-      const status = PARCEL_STATUS_LABELS[parcel.status];
-      const description = parcel.description ? ` — ${parcel.description}` : '';
-      return `${index + 1}. Трек-номер: ${parcel.trackNumber}\nСтатус: ${status}${description}`;
-    });
-
-    await ctx.reply(`Ваши посылки:\n\n${lines.join('\n\n')}`);
-  }
-
-  @Hears(MENU_BUTTONS.BANNED_ITEMS)
-  async onBannedItems(@Ctx() ctx: Context): Promise<void> {
-    const items = await this.bannedItemsService.findActive();
-
-    if (items.length === 0) {
-      await ctx.reply('Список запрещенных товаров пока пуст.');
-      return;
-    }
-
-    const lines = items.map((item, index) => {
-      const description = item.description ? ` — ${item.description}` : '';
-      return `${index + 1}. ${item.name}${description}`;
-    });
-
-    await ctx.reply(`Запрещенные к пересылке товары:\n\n${lines.join('\n')}`);
-  }
-
-  @Hears(MENU_BUTTONS.ADDRESSES)
-  async onAddresses(@Ctx() ctx: Context): Promise<void> {
-    const addresses = await this.addressesService.findActive();
-
-    if (addresses.length === 0) {
-      await ctx.reply('Адреса пока не настроены.');
-      return;
-    }
-
-    const lines = addresses.map((address) => {
-      const comment = address.comment ? `\n${address.comment}` : '';
-      return `📍 ${address.title}\n${address.fullAddress}${comment}`;
-    });
-
-    await ctx.reply(lines.join('\n\n'));
   }
 
   @Hears(MENU_BUTTONS.PROFILE)

@@ -23,6 +23,12 @@ export enum GuideSeason {
   ALL_YEAR = 'all_year',
 }
 
+export interface GuideAttachment {
+  url: string;
+  name: string;
+  size: number;
+}
+
 @Entity('guides')
 @Index(['locale', 'slug'], { unique: true })
 export class Guide {
@@ -55,6 +61,9 @@ export class Guide {
 
   @Column({ type: 'varchar', nullable: true })
   coverImageUrl!: string | null;
+
+  @Column({ type: 'simple-json', default: '[]' })
+  attachments!: GuideAttachment[];
 
   @Column({ type: 'varchar', nullable: true })
   seoTitle!: string | null;

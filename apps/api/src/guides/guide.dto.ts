@@ -15,6 +15,17 @@ export const createGuideSchema = z.object({
   season: z.nativeEnum(GuideSeason).optional().default(GuideSeason.ALL_YEAR),
   equipmentChecklist: z.array(z.string().min(1).max(255)).max(50).optional().default([]),
   coverImageUrl: z.string().max(2000).nullable().optional(),
+  attachments: z
+    .array(
+      z.object({
+        url: z.string().min(1).max(2000),
+        name: z.string().min(1).max(255),
+        size: z.number().int().nonnegative(),
+      }),
+    )
+    .max(10)
+    .optional()
+    .default([]),
 });
 
 export const updateGuideSchema = createGuideSchema.partial();

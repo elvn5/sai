@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import type { Guide } from '~/shared/api/types';
+import { EQUIPMENT_CATALOG } from '~/shared/lib/guide-equipment';
 
 const route = useRoute();
 const { locale, t } = useI18n();
@@ -56,6 +57,21 @@ function handleDelete(): void {
   if (!confirm(t('guides.deleteConfirm'))) return;
   deleteMutation.mutate(guide.value.id);
 }
+
+function equipmentIcon(entry: string): string | null {
+  return EQUIPMENT_CATALOG.find((item) => item.key === entry)?.icon ?? null;
+}
+
+function equipmentLabel(entry: string): string {
+  const known = EQUIPMENT_CATALOG.find((item) => item.key === entry);
+  return known ? t(`guides.equipmentItems.${known.key}`) : entry;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 </script>
 
 <template>
@@ -88,15 +104,40 @@ function handleDelete(): void {
       <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
         {{ $t('guides.equipment') }}
       </h2>
-      <ul class="flex flex-col gap-2">
-        <li v-for="entry in guide.equipmentChecklist" :key="entry" class="flex items-center gap-2 text-text">
-          <span class="h-1.5 w-1.5 rounded-full bg-primary-600 dark:bg-primary-400" />
-          {{ entry }}
+      <ul class="flex flex-wrap gap-3">
+        <li
+          v-for="entry in guide.equipmentChecklist"
+          :key="entry"
+          class="flex items-center gap-2 rounded-full border border-border bg-bg px-3 py-1.5 text-sm text-text"
+        >
+          <UIcon v-if="equipmentIcon(entry)" :name="equipmentIcon(entry)!" class="h-4 w-4 text-brand-600 dark:text-brand-400" />
+          <span v-else class="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-600 dark:bg-primary-400" />
+          {{ equipmentLabel(entry) }}
         </li>
       </ul>
     </div>
 
     <div class="prose prose-neutral dark:prose-invert mt-8 max-w-none" v-html="guide.content" />
+
+    <div v-if="guide.attachments.length > 0" class="mt-8 rounded-card border border-border bg-surface p-4">
+      <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-text-muted">
+        {{ $t('guides.filesLabel') }}
+      </h2>
+      <ul class="flex flex-col gap-2">
+        <li v-for="file in guide.attachments" :key="file.url">
+          <a
+            :href="`${apiBaseUrl}${file.url}`"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 text-sm text-primary-600 hover:underline dark:text-primary-400"
+          >
+            <UIcon name="i-mdi-file-download-outline" class="h-4 w-4 shrink-0" />
+            {{ file.name }}
+            <span class="text-text-muted">({{ formatFileSize(file.size) }})</span>
+          </a>
+        </li>
+      </ul>
+    </div>
 
     <UButton
       v-if="auth.user.value && guide.userId === auth.user.value.id"

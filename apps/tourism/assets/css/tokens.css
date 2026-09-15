@@ -137,3 +137,19 @@ body {
 .animated-gradient-border-top::before {
   top: 0;
 }
+
+@keyframes icon-select-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgb(var(--color-brand-500) / 0.55), 0 0 14px 2px
+      rgb(var(--color-brand-500) / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgb(var(--color-brand-500) / 0.85), 0 0 22px 6px
+      rgb(var(--color-brand-500) / 0.65);
+  }
+}
+
+.icon-select-active {
+  animation: icon-select-glow 1.8s ease-in-out infinite;
+}

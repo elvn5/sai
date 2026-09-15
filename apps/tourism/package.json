@@ -13,6 +13,12 @@
     "@nuxt/ui": "^2.20.0",
     "@nuxtjs/i18n": "9.5.6",
     "@tanstack/vue-query": "^5.62.0",
+    "@tiptap/extension-image": "^2.11.0",
+    "@tiptap/extension-link": "^2.11.0",
+    "@tiptap/extension-placeholder": "^2.11.0",
+    "@tiptap/pm": "^2.11.0",
+    "@tiptap/starter-kit": "^2.11.0",
+    "@tiptap/vue-3": "^2.11.0",
     "@vee-validate/zod": "^4.15.0",
     "vee-validate": "^4.15.0",
     "zod": "^3.24.1"

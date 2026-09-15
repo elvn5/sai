@@ -34,6 +34,12 @@ export enum GuideSeason {
   ALL_YEAR = 'all_year',
 }
 
+export interface GuideAttachment {
+  url: string;
+  name: string;
+  size: number;
+}
+
 export interface Guide {
   id: string;
   locale: string;
@@ -45,6 +51,7 @@ export interface Guide {
   season: GuideSeason;
   equipmentChecklist: string[];
   coverImageUrl: string | null;
+  attachments: GuideAttachment[];
   seoTitle: string | null;
   seoDescription: string | null;
   isPublished: boolean;

@@ -36,12 +36,12 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      link: [{ rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+      link: [{ id: 'favicon', rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
       script: [
         { src: 'https://telegram.org/js/telegram-web-app.js', defer: true },
         {
           innerHTML:
-            "try{if(localStorage.getItem('color-theme')==='azure'){document.documentElement.setAttribute('data-color-theme','azure')}}catch(e){}",
+            "try{if(localStorage.getItem('color-theme')==='azure'){document.documentElement.setAttribute('data-color-theme','azure');var f=document.getElementById('favicon');if(f)f.href='/logo-azure.svg'}}catch(e){}",
         },
       ],
     },

@@ -71,6 +71,23 @@ export interface Guide {
   userId: string | null;
 }
 
+export interface Tour {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  price: number | null;
+  durationDays: number | null;
+  location: string | null;
+  coverImageUrl: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  updatedAt: string;
+  userId: string | null;
+}
+
 export interface PageSeo {
   id: string;
   page: string;
@@ -78,6 +95,13 @@ export interface PageSeo {
   title: string | null;
   description: string | null;
   ogImageUrl: string | null;
+}
+
+export enum PartnerStatus {
+  NONE = 'none',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
 }
 
 export interface AppUser {
@@ -89,6 +113,7 @@ export interface AppUser {
   lastName: string | null;
   phone: string | null;
   avatarUrl: string | null;
+  partnerStatus: PartnerStatus;
 }
 
 export interface TelegramWidgetPayload {

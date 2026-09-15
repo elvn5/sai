@@ -1,4 +1,4 @@
-import { User } from '@app/database';
+import { PartnerStatus, User } from '@app/database';
 
 export interface PublicUser {
   id: string;
@@ -9,6 +9,7 @@ export interface PublicUser {
   lastName: string | null;
   phone: string | null;
   avatarUrl: string | null;
+  partnerStatus: PartnerStatus;
 }
 
 export function toPublicUser(user: User): PublicUser {
@@ -21,5 +22,6 @@ export function toPublicUser(user: User): PublicUser {
     lastName: user.lastName,
     phone: user.phone,
     avatarUrl: user.avatarUrl,
+    partnerStatus: user.partnerStatus,
   };
 }

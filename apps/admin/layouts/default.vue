@@ -7,6 +7,7 @@ const route = useRoute();
 const links = [
   { label: 'Поддержка', to: '/support' },
   { label: 'Пользователи', to: '/users' },
+  { label: 'Партнёры', to: '/partners' },
   { label: 'Блог', to: '/blog' },
   { label: 'SEO', to: '/seo' },
 ];

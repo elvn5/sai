@@ -7,6 +7,13 @@ export interface SupportInfo {
   workingHours: string | null;
 }
 
+export enum PartnerStatus {
+  NONE = 'none',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 export interface AppUser {
   id: string;
   telegramId: string | null;
@@ -16,6 +23,8 @@ export interface AppUser {
   lastName: string | null;
   phone: string | null;
   createdAt: string;
+  partnerStatus: PartnerStatus;
+  partnerRequestedAt: string | null;
 }
 
 export enum Locale {

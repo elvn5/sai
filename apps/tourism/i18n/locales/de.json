@@ -4,6 +4,7 @@
     "feed": "Feed",
     "gallery": "Galerie",
     "guides": "Guides",
+    "tours": "Touren",
     "blog": "Blog",
     "menu": "Menü"
   },
@@ -84,6 +85,26 @@
     "deleteButton": "Löschen",
     "deleteConfirm": "Diesen Guide löschen?"
   },
+  "tours": {
+    "heading": "Touren",
+    "empty": "Noch keine Touren",
+    "addButton": "Tour hinzufügen",
+    "newTitle": "Neue Tour",
+    "titleLabel": "Titel",
+    "excerptLabel": "Kurzbeschreibung",
+    "priceLabel": "Preis (Som)",
+    "durationLabel": "Dauer (Tage)",
+    "locationLabel": "Ort",
+    "durationValue": "{days} Tage",
+    "priceValue": "{price} Som",
+    "coverLabel": "Titelbild",
+    "contentLabel": "Tourbeschreibung",
+    "contentPlaceholder": "Beschreiben Sie die Tour...",
+    "submit": "Veröffentlichen",
+    "createError": "Tour konnte nicht veröffentlicht werden. Bitte erneut versuchen",
+    "deleteButton": "Löschen",
+    "deleteConfirm": "Diese Tour löschen?"
+  },
   "login": {
     "title": "Anmelden",
     "subtitle": "Melden Sie sich an, um Fortschritt und Erfolge zu speichern",
@@ -110,7 +131,7 @@
   "profile": {
     "logout": "Abmelden",
     "title": "Profil",
-    "tabs": { "info": "Profil", "history": "Tourenverlauf" },
+    "tabs": { "info": "Profil", "history": "Tourenverlauf", "partner": "Partnerschaft" },
     "fields": {
       "username": "Benutzername",
       "email": "E-Mail",
@@ -121,6 +142,14 @@
       "empty": "Noch keine abgeschlossenen Touren",
       "emptyHint": "Hier erscheint Ihr Tourenverlauf, sobald Sie Ihre erste Route abgeschlossen haben.",
       "cta": "Guides ansehen"
+    },
+    "partner": {
+      "pitch": "Werden Sie Ermekten-Partner und veröffentlichen Sie eigene Touren für Reisende.",
+      "applyCta": "Partner werden",
+      "pending": "Ihre Anfrage wird vom Administrator geprüft.",
+      "rejected": "Die Anfrage wurde abgelehnt. Sie können erneut anfragen.",
+      "approved": "Sie sind Ermekten-Partner. Sie können jetzt Touren veröffentlichen.",
+      "addTourCta": "Tour hinzufügen"
     }
   },
   "footer": {

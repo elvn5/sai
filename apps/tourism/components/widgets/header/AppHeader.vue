@@ -14,6 +14,7 @@ const navLinks = [
   { to: '/', label: 'nav.feed' },
   { to: '/gallery', label: 'nav.gallery' },
   { to: '/guides', label: 'nav.guides' },
+  { to: '/tours', label: 'nav.tours' },
   { to: '/blog', label: 'nav.blog' },
 ] as const;
 
@@ -61,7 +62,9 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
       </nav>
 
       <div class="hidden items-center gap-2 sm:flex">
-        <div class="flex items-center gap-2 [&_button]:!text-white [&_button:hover]:!bg-white/10">
+        <div
+          class="flex items-center gap-2 [&_button:not([role=menuitem])]:!text-white [&_button:hover:not([role=menuitem])]:!bg-white/10"
+        >
           <LanguageSwitcher />
           <ColorThemeToggle />
           <ThemeToggle />
@@ -119,7 +122,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
         </nav>
 
         <div
-          class="mt-3 flex items-center gap-2 border-t border-white/15 pt-3 [&_button]:!text-white [&_button:hover]:!bg-white/10"
+          class="mt-3 flex items-center gap-2 border-t border-white/15 pt-3 [&_button:not([role=menuitem])]:!text-white [&_button:hover:not([role=menuitem])]:!bg-white/10"
         >
           <LanguageSwitcher />
           <ColorThemeToggle />

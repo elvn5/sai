@@ -4,6 +4,7 @@
     "feed": "Feed",
     "gallery": "Gallery",
     "guides": "Guides",
+    "tours": "Tours",
     "blog": "Blog",
     "menu": "Menu"
   },
@@ -84,6 +85,26 @@
     "deleteButton": "Delete",
     "deleteConfirm": "Delete this guide?"
   },
+  "tours": {
+    "heading": "Tours",
+    "empty": "No tours yet",
+    "addButton": "Add tour",
+    "newTitle": "New tour",
+    "titleLabel": "Title",
+    "excerptLabel": "Short description",
+    "priceLabel": "Price (som)",
+    "durationLabel": "Duration (days)",
+    "locationLabel": "Location",
+    "durationValue": "{days} days",
+    "priceValue": "{price} som",
+    "coverLabel": "Cover image",
+    "contentLabel": "Tour description",
+    "contentPlaceholder": "Describe the tour...",
+    "submit": "Publish",
+    "createError": "Could not publish the tour. Please try again",
+    "deleteButton": "Delete",
+    "deleteConfirm": "Delete this tour?"
+  },
   "login": {
     "title": "Sign in",
     "subtitle": "Sign in to save your progress and achievements",
@@ -110,7 +131,7 @@
   "profile": {
     "logout": "Log out",
     "title": "Profile",
-    "tabs": { "info": "Profile", "history": "Trip history" },
+    "tabs": { "info": "Profile", "history": "Trip history", "partner": "Partnership" },
     "fields": {
       "username": "Username",
       "email": "Email",
@@ -121,6 +142,14 @@
       "empty": "No completed trips yet",
       "emptyHint": "Your trip history will show up here once you complete your first route.",
       "cta": "Browse guides"
+    },
+    "partner": {
+      "pitch": "Become an Ermekten partner and publish your own tours for travelers.",
+      "applyCta": "Become a partner",
+      "pending": "Your request is waiting for admin review.",
+      "rejected": "Your request was declined. You can apply again.",
+      "approved": "You're an Ermekten partner. You can now publish tours.",
+      "addTourCta": "Add a tour"
     }
   },
   "footer": {

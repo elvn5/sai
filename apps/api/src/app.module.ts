@@ -8,8 +8,10 @@ import { GalleryModule } from '@/gallery/gallery.module';
 import { GuidesModule } from '@/guides/guides.module';
 import { PageSeoModule } from '@/page-seo/page-seo.module';
 import { ParcelsModule } from '@/parcels/parcels.module';
+import { PartnersModule } from '@/partners/partners.module';
 import { SupportModule } from '@/support/support.module';
 import { TelegramAuthModule } from '@/telegram-auth/telegram-auth.module';
+import { ToursModule } from '@/tours/tours.module';
 import { UploadsModule } from '@/uploads/uploads.module';
 import { UserAuthModule } from '@/user-auth/user-auth.module';
 import { UsersModule } from '@/users/users.module';
@@ -51,6 +53,8 @@ import { LoggerModule } from 'nestjs-pino';
     BlogModule,
     GalleryModule,
     GuidesModule,
+    ToursModule,
+    PartnersModule,
     PageSeoModule,
     UploadsModule,
     TelegramAuthModule,

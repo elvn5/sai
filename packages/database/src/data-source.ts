@@ -9,6 +9,7 @@ import { Guide } from './entities/guide.entity';
 import { PageSeo } from './entities/page-seo.entity';
 import { Parcel } from './entities/parcel.entity';
 import { SupportInfo } from './entities/support-info.entity';
+import { Tour } from './entities/tour.entity';
 import { User } from './entities/user.entity';
 
 config();
@@ -22,6 +23,7 @@ export const entities = [
   BlogPost,
   GalleryItem,
   Guide,
+  Tour,
   PageSeo,
 ];
 

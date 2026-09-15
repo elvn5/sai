@@ -9,6 +9,13 @@ import {
 } from 'typeorm';
 import { Parcel } from './parcel.entity';
 
+export enum PartnerStatus {
+  NONE = 'none',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -40,6 +47,12 @@ export class User {
 
   @Column({ type: 'varchar', nullable: true })
   avatarUrl!: string | null;
+
+  @Column({ type: 'enum', enum: PartnerStatus, default: PartnerStatus.NONE })
+  partnerStatus!: PartnerStatus;
+
+  @Column({ type: 'timestamp', nullable: true })
+  partnerRequestedAt!: Date | null;
 
   @OneToMany(
     () => Parcel,

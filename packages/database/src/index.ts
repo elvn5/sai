@@ -1,4 +1,4 @@
-export { User } from './entities/user.entity';
+export { User, PartnerStatus } from './entities/user.entity';
 export { Parcel, ParcelStatus } from './entities/parcel.entity';
 export { Address } from './entities/address.entity';
 export { BannedItem } from './entities/banned-item.entity';
@@ -6,6 +6,7 @@ export { SupportInfo } from './entities/support-info.entity';
 export { BlogPost } from './entities/blog-post.entity';
 export { GalleryItem, GalleryRegion } from './entities/gallery-item.entity';
 export { Guide, GuideDifficulty, GuideSeason } from './entities/guide.entity';
+export { Tour } from './entities/tour.entity';
 export { PageSeo, SeoPage } from './entities/page-seo.entity';
 export { Locale } from './entities/locale.enum';
 export { entities, buildDataSourceOptions } from './data-source';

@@ -13,9 +13,20 @@ export interface BlogPost {
   updatedAt: string;
 }
 
+export enum GalleryRegion {
+  BATKEN = 'batken',
+  JALAL_ABAD = 'jalal_abad',
+  ISSYK_KUL = 'issyk_kul',
+  NARYN = 'naryn',
+  OSH = 'osh',
+  TALAS = 'talas',
+  CHUY = 'chuy',
+}
+
 export interface GalleryItem {
   id: string;
   imageUrl: string;
+  region: GalleryRegion;
   caption: string | null;
   altText: string | null;
   sortOrder: number;

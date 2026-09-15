@@ -4,7 +4,7 @@ export { Address } from './entities/address.entity';
 export { BannedItem } from './entities/banned-item.entity';
 export { SupportInfo } from './entities/support-info.entity';
 export { BlogPost } from './entities/blog-post.entity';
-export { GalleryItem } from './entities/gallery-item.entity';
+export { GalleryItem, GalleryRegion } from './entities/gallery-item.entity';
 export { Guide, GuideDifficulty, GuideSeason } from './entities/guide.entity';
 export { PageSeo, SeoPage } from './entities/page-seo.entity';
 export { Locale } from './entities/locale.enum';

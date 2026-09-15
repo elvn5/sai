@@ -26,6 +26,18 @@
     "addButton": "Foto hinzufügen",
     "addTitle": "Neues Foto",
     "uploadLabel": "Bild",
+    "regionLabel": "Region",
+    "regionHint": "Wählen Sie eine Region Kirgisistans",
+    "allRegions": "Alle Regionen",
+    "regions": {
+      "batken": "Region Batken",
+      "jalal_abad": "Region Dschalalabat",
+      "issyk_kul": "Region Yssykköl",
+      "naryn": "Region Naryn",
+      "osh": "Region Osch",
+      "talas": "Region Talas",
+      "chuy": "Region Tschüi"
+    },
     "captionLabel": "Beschriftung",
     "submit": "Veröffentlichen",
     "uploadError": "Foto konnte nicht hochgeladen werden. Bitte erneut versuchen",

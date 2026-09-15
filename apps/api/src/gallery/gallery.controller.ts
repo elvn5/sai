@@ -1,8 +1,8 @@
 import { ZodValidationPipe } from '@/common/zod-validation.pipe';
 import { CurrentUser } from '@/user-auth/current-user.decorator';
 import { UserJwtAuthGuard } from '@/user-auth/user-jwt-auth.guard';
-import { User } from '@app/database';
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { GalleryRegion, User } from '@app/database';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import {
   type CreateGalleryItemDto,
   type UpdateGalleryItemDto,
@@ -16,8 +16,11 @@ export class GalleryController {
   constructor(private readonly service: GalleryService) {}
 
   @Get()
-  findPublished() {
-    return this.service.findPublished();
+  findPublished(@Query('region') region?: string) {
+    const validRegion = Object.values(GalleryRegion).includes(region as GalleryRegion)
+      ? (region as GalleryRegion)
+      : undefined;
+    return this.service.findPublished(validRegion);
   }
 
   @Get('mine')

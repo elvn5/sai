@@ -9,6 +9,17 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 
+// Kyrgyzstan's 7 regions (oblasts). Every gallery photo belongs to one.
+export enum GalleryRegion {
+  BATKEN = 'batken',
+  JALAL_ABAD = 'jalal_abad',
+  ISSYK_KUL = 'issyk_kul',
+  NARYN = 'naryn',
+  OSH = 'osh',
+  TALAS = 'talas',
+  CHUY = 'chuy',
+}
+
 @Entity('gallery_items')
 export class GalleryItem {
   @PrimaryGeneratedColumn('uuid')
@@ -16,6 +27,9 @@ export class GalleryItem {
 
   @Column({ type: 'varchar' })
   imageUrl!: string;
+
+  @Column({ type: 'enum', enum: GalleryRegion, default: GalleryRegion.CHUY })
+  region!: GalleryRegion;
 
   @Column({ type: 'varchar', nullable: true })
   caption!: string | null;

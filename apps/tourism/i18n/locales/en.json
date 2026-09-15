@@ -26,6 +26,18 @@
     "addButton": "Add photo",
     "addTitle": "New photo",
     "uploadLabel": "Image",
+    "regionLabel": "Region",
+    "regionHint": "Pick a region of Kyrgyzstan",
+    "allRegions": "All regions",
+    "regions": {
+      "batken": "Batken Region",
+      "jalal_abad": "Jalal-Abad Region",
+      "issyk_kul": "Issyk-Kul Region",
+      "naryn": "Naryn Region",
+      "osh": "Osh Region",
+      "talas": "Talas Region",
+      "chuy": "Chuy Region"
+    },
     "captionLabel": "Caption",
     "submit": "Publish",
     "uploadError": "Could not upload the photo. Please try again",

@@ -1,4 +1,4 @@
-import { GalleryItem } from '@app/database';
+import { GalleryItem, type GalleryRegion } from '@app/database';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
@@ -11,9 +11,9 @@ export class GalleryService {
     private readonly repository: Repository<GalleryItem>,
   ) {}
 
-  findPublished(): Promise<GalleryItem[]> {
+  findPublished(region?: GalleryRegion): Promise<GalleryItem[]> {
     return this.repository.find({
-      where: { isPublished: true },
+      where: { isPublished: true, ...(region ? { region } : {}) },
       order: { sortOrder: 'ASC', createdAt: 'DESC' },
     });
   }

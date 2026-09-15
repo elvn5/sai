@@ -257,20 +257,14 @@ const onSubmit = handleSubmit((values) => {
               </li>
             </ul>
           </UFormGroup>
+
+          <p v-if="submitError" class="text-sm text-brand-600">{{ submitError }}</p>
+
+          <UButton type="submit" color="primary" block :loading="createMutation.isPending.value">
+            {{ $t('guides.submit') }}
+          </UButton>
         </div>
       </div>
-
-      <p v-if="submitError" class="mt-6 text-sm text-brand-600">{{ submitError }}</p>
-
-      <UButton
-        type="submit"
-        color="primary"
-        block
-        class="mt-6"
-        :loading="createMutation.isPending.value"
-      >
-        {{ $t('guides.submit') }}
-      </UButton>
     </form>
   </section>
 </template>

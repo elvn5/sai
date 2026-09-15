@@ -22,14 +22,36 @@
   },
   "gallery": {
     "heading": "Gallery",
-    "empty": "Gallery is empty"
+    "empty": "Gallery is empty",
+    "addButton": "Add photo",
+    "addTitle": "New photo",
+    "uploadLabel": "Image",
+    "captionLabel": "Caption",
+    "submit": "Publish",
+    "uploadError": "Could not upload the photo. Please try again",
+    "deleteButton": "Delete",
+    "deleteConfirm": "Delete this photo?"
   },
   "guides": {
     "heading": "Guides",
     "empty": "No guides yet",
     "equipment": "Equipment",
     "difficulty": { "easy": "Easy", "moderate": "Moderate", "hard": "Hard" },
-    "season": { "summer": "Summer", "winter": "Winter", "all_year": "All year" }
+    "season": { "summer": "Summer", "winter": "Winter", "all_year": "All year" },
+    "addButton": "Add guide",
+    "newTitle": "New guide",
+    "titleLabel": "Title",
+    "excerptLabel": "Short description",
+    "difficultyLabel": "Difficulty",
+    "seasonLabel": "Season",
+    "equipmentLabel": "Equipment",
+    "equipmentHint": "One item per line or comma-separated",
+    "coverLabel": "Cover image",
+    "contentLabel": "Guide text",
+    "submit": "Publish",
+    "createError": "Could not publish the guide. Please try again",
+    "deleteButton": "Delete",
+    "deleteConfirm": "Delete this guide?"
   },
   "login": {
     "title": "Sign in",

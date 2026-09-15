@@ -9,6 +9,9 @@ import { UserJwtAuthGuard } from './user-jwt-auth.guard';
   imports: [TypeOrmModule.forFeature([User]), AuthModule],
   controllers: [UserAuthController],
   providers: [UserJwtAuthGuard],
-  exports: [UserJwtAuthGuard],
+  // Re-export AuthModule (JwtModule) too, since UserJwtAuthGuard depends on
+  // JwtService — modules that only import UserAuthModule to use the guard
+  // need that dependency resolvable as well.
+  exports: [UserJwtAuthGuard, TypeOrmModule, AuthModule],
 })
 export class UserAuthModule {}

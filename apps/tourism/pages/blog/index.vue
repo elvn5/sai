@@ -13,7 +13,7 @@ const postsQuery = useQuery({
   queryKey: ['blog', locale],
   queryFn: () => api.get<BlogPost[]>(`/blog?locale=${locale.value}`),
 });
-if (import.meta.server) await postsQuery.suspense();
+await postsQuery.suspense();
 
 const posts = postsQuery.data;
 

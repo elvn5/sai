@@ -16,7 +16,7 @@ const postsQuery = useQuery({
   queryKey: ['blog', locale],
   queryFn: () => api.get<BlogPost[]>(`/blog?locale=${locale.value}`),
 });
-if (import.meta.server) await postsQuery.suspense();
+await postsQuery.suspense();
 
 const latestPosts = computed(() => (postsQuery.data.value ?? []).slice(0, NEWS_LIMIT));
 

@@ -19,6 +19,7 @@ export interface GalleryItem {
   caption: string | null;
   altText: string | null;
   sortOrder: number;
+  userId: string | null;
 }
 
 export enum GuideDifficulty {
@@ -49,6 +50,7 @@ export interface Guide {
   isPublished: boolean;
   publishedAt: string | null;
   updatedAt: string;
+  userId: string | null;
 }
 
 export interface PageSeo {

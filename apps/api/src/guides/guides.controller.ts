@@ -1,6 +1,7 @@
-import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { ZodValidationPipe } from '@/common/zod-validation.pipe';
-import { Locale } from '@app/database';
+import { CurrentUser } from '@/user-auth/current-user.decorator';
+import { UserJwtAuthGuard } from '@/user-auth/user-jwt-auth.guard';
+import { Locale, User } from '@app/database';
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import {
   type CreateGuideDto,
@@ -19,16 +20,10 @@ export class GuidesController {
     return this.service.findPublished(locale);
   }
 
-  @Get('admin/all')
-  @UseGuards(JwtAuthGuard)
-  findAllAdmin(@Query('locale') locale?: Locale) {
-    return this.service.findAllAdmin(locale);
-  }
-
-  @Get('admin/:id')
-  @UseGuards(JwtAuthGuard)
-  findOneAdmin(@Param('id') id: string) {
-    return this.service.findOneAdmin(id);
+  @Get('mine')
+  @UseGuards(UserJwtAuthGuard)
+  findMine(@CurrentUser() user: User) {
+    return this.service.findMine(user.id);
   }
 
   @Get(':locale/:slug')
@@ -37,23 +32,27 @@ export class GuidesController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  create(@Body(new ZodValidationPipe(createGuideSchema)) dto: CreateGuideDto) {
-    return this.service.create(dto);
+  @UseGuards(UserJwtAuthGuard)
+  create(
+    @CurrentUser() user: User,
+    @Body(new ZodValidationPipe(createGuideSchema)) dto: CreateGuideDto,
+  ) {
+    return this.service.create(user.id, dto);
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserJwtAuthGuard)
   update(
+    @CurrentUser() user: User,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(updateGuideSchema)) dto: UpdateGuideDto,
   ) {
-    return this.service.update(id, dto);
+    return this.service.update(user.id, id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @UseGuards(UserJwtAuthGuard)
+  remove(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.remove(user.id, id);
   }
 }

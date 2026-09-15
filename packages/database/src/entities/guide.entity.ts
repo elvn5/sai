@@ -3,10 +3,13 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Locale } from './locale.enum';
+import { User } from './user.entity';
 
 export enum GuideDifficulty {
   EASY = 'easy',
@@ -64,6 +67,14 @@ export class Guide {
 
   @Column({ type: 'timestamp', nullable: true })
   publishedAt!: Date | null;
+
+  // Null for guides written by admins before user submissions existed.
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userId' })
+  user!: User | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

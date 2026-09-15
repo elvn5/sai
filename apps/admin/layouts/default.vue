@@ -8,8 +8,6 @@ const links = [
   { label: 'Поддержка', to: '/support' },
   { label: 'Пользователи', to: '/users' },
   { label: 'Блог', to: '/blog' },
-  { label: 'Гайды', to: '/guides' },
-  { label: 'Галерея', to: '/gallery' },
   { label: 'SEO', to: '/seo' },
 ];
 

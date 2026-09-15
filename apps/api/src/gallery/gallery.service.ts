@@ -1,5 +1,5 @@
 import { GalleryItem } from '@app/database';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import type { CreateGalleryItemDto, UpdateGalleryItemDto } from './gallery.dto';
@@ -18,8 +18,8 @@ export class GalleryService {
     });
   }
 
-  findAllAdmin(): Promise<GalleryItem[]> {
-    return this.repository.find({ order: { sortOrder: 'ASC', createdAt: 'DESC' } });
+  findMine(userId: string): Promise<GalleryItem[]> {
+    return this.repository.find({ where: { userId }, order: { createdAt: 'DESC' } });
   }
 
   async findOne(id: string): Promise<GalleryItem> {
@@ -30,19 +30,27 @@ export class GalleryService {
     return item;
   }
 
-  create(dto: CreateGalleryItemDto): Promise<GalleryItem> {
-    const item = this.repository.create(dto);
+  create(userId: string, dto: CreateGalleryItemDto): Promise<GalleryItem> {
+    const item = this.repository.create({ ...dto, userId, isPublished: true, sortOrder: 0 });
     return this.repository.save(item);
   }
 
-  async update(id: string, dto: UpdateGalleryItemDto): Promise<GalleryItem> {
-    const item = await this.findOne(id);
+  async update(userId: string, id: string, dto: UpdateGalleryItemDto): Promise<GalleryItem> {
+    const item = await this.findOwned(userId, id);
     Object.assign(item, dto);
     return this.repository.save(item);
   }
 
-  async remove(id: string): Promise<void> {
-    const item = await this.findOne(id);
+  async remove(userId: string, id: string): Promise<void> {
+    const item = await this.findOwned(userId, id);
     await this.repository.remove(item);
+  }
+
+  private async findOwned(userId: string, id: string): Promise<GalleryItem> {
+    const item = await this.findOne(id);
+    if (item.userId !== userId) {
+      throw new ForbiddenException('You can only manage your own gallery items');
+    }
+    return item;
   }
 }

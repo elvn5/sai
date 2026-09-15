@@ -2,9 +2,12 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('gallery_items')
 export class GalleryItem {
@@ -25,6 +28,14 @@ export class GalleryItem {
 
   @Column({ type: 'boolean', default: true })
   isPublished!: boolean;
+
+  // Null for items created before user submissions existed (curated by admins).
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userId' })
+  user!: User | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  userId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

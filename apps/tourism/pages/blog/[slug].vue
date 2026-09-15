@@ -22,7 +22,9 @@ const postQuery = useQuery({
     }
   },
 });
-if (import.meta.server) await postQuery.suspense();
+// Must await on the client too, not just SSR — otherwise a client-side
+// navigation here hits the 404 check below before the query has resolved.
+await postQuery.suspense();
 
 const post = postQuery.data;
 

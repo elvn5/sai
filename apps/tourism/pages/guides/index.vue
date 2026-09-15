@@ -6,6 +6,7 @@ import type { Guide } from '~/shared/api/types';
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const api = useApiClient();
+const auth = useAuth();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
@@ -13,7 +14,7 @@ const guidesQuery = useQuery({
   queryKey: ['guides', locale],
   queryFn: () => api.get<Guide[]>(`/guides?locale=${locale.value}`),
 });
-if (import.meta.server) await guidesQuery.suspense();
+await guidesQuery.suspense();
 
 const guides = guidesQuery.data;
 
@@ -29,7 +30,17 @@ useSeoMeta({
 
 <template>
   <section class="mx-auto max-w-4xl px-4 py-12">
-    <h1 class="mb-8 text-3xl font-extrabold text-text">{{ $t('guides.heading') }}</h1>
+    <div class="mb-8 flex items-center justify-between">
+      <h1 class="text-3xl font-extrabold text-text">{{ $t('guides.heading') }}</h1>
+      <UButton
+        v-if="auth.user.value"
+        color="primary"
+        icon="i-heroicons-plus"
+        :to="localePath('/guides/new')"
+      >
+        {{ $t('guides.addButton') }}
+      </UButton>
+    </div>
 
     <div v-if="guides && guides.length > 0" class="flex flex-col gap-4">
       <UCard v-for="guide in guides" :key="guide.id">

@@ -1,5 +1,11 @@
+import { sanitizeUserContent } from '@/common/sanitize-user-content';
 import { Guide, type Locale } from '@app/database';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import type { CreateGuideDto, UpdateGuideDto } from './guide.dto';
@@ -26,52 +32,50 @@ export class GuidesService {
     return item;
   }
 
-  findAllAdmin(locale?: Locale): Promise<Guide[]> {
-    return this.repository.find({
-      where: locale ? { locale } : {},
-      order: { updatedAt: 'DESC' },
-    });
+  findMine(userId: string): Promise<Guide[]> {
+    return this.repository.find({ where: { userId }, order: { createdAt: 'DESC' } });
   }
 
-  async findOneAdmin(id: string): Promise<Guide> {
-    const item = await this.repository.findOne({ where: { id } });
-    if (!item) {
-      throw new NotFoundException('Guide not found');
-    }
-    return item;
-  }
-
-  async create(dto: CreateGuideDto): Promise<Guide> {
+  async create(userId: string, dto: CreateGuideDto): Promise<Guide> {
     await this.assertSlugAvailable(dto.locale, dto.slug);
     const item = this.repository.create({
       ...dto,
-      publishedAt: dto.isPublished ? new Date() : null,
+      content: sanitizeUserContent(dto.content),
+      userId,
+      isPublished: true,
+      publishedAt: new Date(),
     });
     return this.repository.save(item);
   }
 
-  async update(id: string, dto: UpdateGuideDto): Promise<Guide> {
-    const item = await this.findOneAdmin(id);
+  async update(userId: string, id: string, dto: UpdateGuideDto): Promise<Guide> {
+    const item = await this.findOwned(userId, id);
     if (dto.slug && dto.slug !== item.slug) {
       await this.assertSlugAvailable(dto.locale ?? item.locale, dto.slug, id);
     }
 
-    const wasPublished = item.isPublished;
     Object.assign(item, dto);
-
-    if (!wasPublished && item.isPublished) {
-      item.publishedAt = new Date();
-    }
-    if (!item.isPublished) {
-      item.publishedAt = null;
+    if (dto.content) {
+      item.content = sanitizeUserContent(dto.content);
     }
 
     return this.repository.save(item);
   }
 
-  async remove(id: string): Promise<void> {
-    const item = await this.findOneAdmin(id);
+  async remove(userId: string, id: string): Promise<void> {
+    const item = await this.findOwned(userId, id);
     await this.repository.remove(item);
+  }
+
+  private async findOwned(userId: string, id: string): Promise<Guide> {
+    const item = await this.repository.findOne({ where: { id } });
+    if (!item) {
+      throw new NotFoundException('Guide not found');
+    }
+    if (item.userId !== userId) {
+      throw new ForbiddenException('You can only manage your own guides');
+    }
+    return item;
   }
 
   private async assertSlugAvailable(

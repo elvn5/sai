@@ -22,14 +22,36 @@
   },
   "gallery": {
     "heading": "Galerie",
-    "empty": "Die Galerie ist leer"
+    "empty": "Die Galerie ist leer",
+    "addButton": "Foto hinzufügen",
+    "addTitle": "Neues Foto",
+    "uploadLabel": "Bild",
+    "captionLabel": "Beschriftung",
+    "submit": "Veröffentlichen",
+    "uploadError": "Foto konnte nicht hochgeladen werden. Bitte erneut versuchen",
+    "deleteButton": "Löschen",
+    "deleteConfirm": "Dieses Foto löschen?"
   },
   "guides": {
     "heading": "Guides",
     "empty": "Noch keine Guides",
     "equipment": "Ausrüstung",
     "difficulty": { "easy": "Leicht", "moderate": "Mittel", "hard": "Schwer" },
-    "season": { "summer": "Sommer", "winter": "Winter", "all_year": "Ganzjährig" }
+    "season": { "summer": "Sommer", "winter": "Winter", "all_year": "Ganzjährig" },
+    "addButton": "Guide hinzufügen",
+    "newTitle": "Neuer Guide",
+    "titleLabel": "Titel",
+    "excerptLabel": "Kurzbeschreibung",
+    "difficultyLabel": "Schwierigkeit",
+    "seasonLabel": "Saison",
+    "equipmentLabel": "Ausrüstung",
+    "equipmentHint": "Ein Punkt pro Zeile oder durch Komma getrennt",
+    "coverLabel": "Titelbild",
+    "contentLabel": "Guide-Text",
+    "submit": "Veröffentlichen",
+    "createError": "Guide konnte nicht veröffentlicht werden. Bitte erneut versuchen",
+    "deleteButton": "Löschen",
+    "deleteConfirm": "Diesen Guide löschen?"
   },
   "login": {
     "title": "Anmelden",

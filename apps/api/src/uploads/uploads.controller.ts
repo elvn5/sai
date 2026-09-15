@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
-import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
+import { AnyAuthGuard } from '@/common/any-auth.guard';
 import {
   BadRequestException,
   Controller,
@@ -17,7 +17,7 @@ const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'im
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 
 @Controller('uploads')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AnyAuthGuard)
 export class UploadsController {
   @Post('image')
   @UseInterceptors(

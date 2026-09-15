@@ -1,5 +1,7 @@
-import { JwtAuthGuard } from '@/auth/jwt-auth.guard';
 import { ZodValidationPipe } from '@/common/zod-validation.pipe';
+import { CurrentUser } from '@/user-auth/current-user.decorator';
+import { UserJwtAuthGuard } from '@/user-auth/user-jwt-auth.guard';
+import { User } from '@app/database';
 import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import {
   type CreateGalleryItemDto,
@@ -18,30 +20,34 @@ export class GalleryController {
     return this.service.findPublished();
   }
 
-  @Get('admin/all')
-  @UseGuards(JwtAuthGuard)
-  findAllAdmin() {
-    return this.service.findAllAdmin();
+  @Get('mine')
+  @UseGuards(UserJwtAuthGuard)
+  findMine(@CurrentUser() user: User) {
+    return this.service.findMine(user.id);
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  create(@Body(new ZodValidationPipe(createGalleryItemSchema)) dto: CreateGalleryItemDto) {
-    return this.service.create(dto);
+  @UseGuards(UserJwtAuthGuard)
+  create(
+    @CurrentUser() user: User,
+    @Body(new ZodValidationPipe(createGalleryItemSchema)) dto: CreateGalleryItemDto,
+  ) {
+    return this.service.create(user.id, dto);
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(UserJwtAuthGuard)
   update(
+    @CurrentUser() user: User,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(updateGalleryItemSchema)) dto: UpdateGalleryItemDto,
   ) {
-    return this.service.update(id, dto);
+    return this.service.update(user.id, id, dto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  @UseGuards(UserJwtAuthGuard)
+  remove(@CurrentUser() user: User, @Param('id') id: string) {
+    return this.service.remove(user.id, id);
   }
 }

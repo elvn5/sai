@@ -22,14 +22,36 @@
   },
   "gallery": {
     "heading": "Галерея",
-    "empty": "Галерея бош"
+    "empty": "Галерея бош",
+    "addButton": "Сүрөт кошуу",
+    "addTitle": "Жаңы сүрөт",
+    "uploadLabel": "Сүрөт",
+    "captionLabel": "Тайпа",
+    "submit": "Жарыялоо",
+    "uploadError": "Сүрөттү жүктөө мүмкүн болбоду. Кайра аракет кылыңыз",
+    "deleteButton": "Өчүрүү",
+    "deleteConfirm": "Бул сүрөттү өчүрөсүзбү?"
   },
   "guides": {
     "heading": "Гайддар",
     "empty": "Азырынча гайддар жок",
     "equipment": "Жабдуулар",
     "difficulty": { "easy": "Жеңил", "moderate": "Орточо", "hard": "Оор" },
-    "season": { "summer": "Жай", "winter": "Кыш", "all_year": "Жыл бою" }
+    "season": { "summer": "Жай", "winter": "Кыш", "all_year": "Жыл бою" },
+    "addButton": "Гайд кошуу",
+    "newTitle": "Жаңы гайд",
+    "titleLabel": "Аталышы",
+    "excerptLabel": "Кыскача сүрөттөмө",
+    "difficultyLabel": "Татаалдык",
+    "seasonLabel": "Сезон",
+    "equipmentLabel": "Жабдуулар",
+    "equipmentHint": "Ар бир пункт жаңы сапта же үтүр менен",
+    "coverLabel": "Мукаба сүрөтү",
+    "contentLabel": "Гайддын тексти",
+    "submit": "Жарыялоо",
+    "createError": "Гайдды жарыялоо мүмкүн болбоду. Кайра аракет кылыңыз",
+    "deleteButton": "Өчүрүү",
+    "deleteConfirm": "Бул гайдды өчүрөсүзбү?"
   },
   "login": {
     "title": "Аккаунтка кирүү",

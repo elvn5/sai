@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useQuery } from '@tanstack/vue-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import type { Guide } from '~/shared/api/types';
 
@@ -7,6 +7,8 @@ const route = useRoute();
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const api = useApiClient();
+const auth = useAuth();
+const queryClient = useQueryClient();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
@@ -22,7 +24,10 @@ const guideQuery = useQuery({
     }
   },
 });
-if (import.meta.server) await guideQuery.suspense();
+// Must await on the client too, not just SSR — otherwise a client-side
+// navigation here (e.g. right after creating a guide) hits the 404 check
+// below before the query has resolved.
+await guideQuery.suspense();
 
 const guide = guideQuery.data;
 
@@ -37,6 +42,20 @@ useSeoMeta({
   ogDescription: guide.value.seoDescription || guide.value.excerpt || undefined,
   ogImage: guide.value.coverImageUrl ? `${apiBaseUrl}${guide.value.coverImageUrl}` : undefined,
 });
+
+const deleteMutation = useMutation({
+  mutationFn: (id: string) => api.delete(`/guides/${id}`),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['guides'] });
+    navigateTo(localePath('/guides'));
+  },
+});
+
+function handleDelete(): void {
+  if (!guide.value) return;
+  if (!confirm(t('guides.deleteConfirm'))) return;
+  deleteMutation.mutate(guide.value.id);
+}
 </script>
 
 <template>
@@ -78,5 +97,16 @@ useSeoMeta({
     </div>
 
     <div class="prose prose-neutral dark:prose-invert mt-8 max-w-none" v-html="guide.content" />
+
+    <UButton
+      v-if="auth.user.value && guide.userId === auth.user.value.id"
+      color="gray"
+      variant="soft"
+      class="mt-8"
+      :loading="deleteMutation.isPending.value"
+      @click="handleDelete"
+    >
+      {{ $t('guides.deleteButton') }}
+    </UButton>
   </article>
 </template>

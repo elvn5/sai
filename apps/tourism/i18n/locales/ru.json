@@ -22,14 +22,36 @@
   },
   "gallery": {
     "heading": "Галерея",
-    "empty": "Галерея пуста"
+    "empty": "Галерея пуста",
+    "addButton": "Добавить фото",
+    "addTitle": "Новое фото",
+    "uploadLabel": "Изображение",
+    "captionLabel": "Подпись",
+    "submit": "Опубликовать",
+    "uploadError": "Не удалось загрузить фото. Попробуйте ещё раз",
+    "deleteButton": "Удалить",
+    "deleteConfirm": "Удалить это фото?"
   },
   "guides": {
     "heading": "Гайды",
     "empty": "Гайдов пока нет",
     "equipment": "Снаряжение",
     "difficulty": { "easy": "Лёгкий", "moderate": "Средний", "hard": "Сложный" },
-    "season": { "summer": "Лето", "winter": "Зима", "all_year": "Круглый год" }
+    "season": { "summer": "Лето", "winter": "Зима", "all_year": "Круглый год" },
+    "addButton": "Добавить гайд",
+    "newTitle": "Новый гайд",
+    "titleLabel": "Название",
+    "excerptLabel": "Краткое описание",
+    "difficultyLabel": "Сложность",
+    "seasonLabel": "Сезон",
+    "equipmentLabel": "Снаряжение",
+    "equipmentHint": "Каждый пункт с новой строки или через запятую",
+    "coverLabel": "Обложка",
+    "contentLabel": "Текст гайда",
+    "submit": "Опубликовать",
+    "createError": "Не удалось опубликовать гайд. Попробуйте ещё раз",
+    "deleteButton": "Удалить",
+    "deleteConfirm": "Удалить этот гайд?"
   },
   "login": {
     "title": "Вход в аккаунт",

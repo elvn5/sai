@@ -7,6 +7,9 @@ export const envSchema = z.object({
   POSTGRES_USER: z.string().default('parcel_bot'),
   POSTGRES_PASSWORD: z.string().default('change_me'),
   POSTGRES_DB: z.string().default('parcel_bot'),
+  // URL of the Ermekten Telegram Mini App (the apps/tourism site). When set,
+  // the bot exposes it via the chat menu button and a keyboard button.
+  MINI_APP_URL: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

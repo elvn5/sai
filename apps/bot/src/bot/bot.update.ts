@@ -4,9 +4,10 @@ import { PARCEL_STATUS_LABELS } from '@/parcels/parcel-status.labels';
 import { ParcelsService } from '@/parcels/parcels.service';
 import { SupportService } from '@/support/support.service';
 import { UsersService } from '@/users/users.service';
-import { Injectable, Logger } from '@nestjs/common';
-import { Action, Ctx, Hears, On, Start, Update } from 'nestjs-telegraf';
-import type { Context } from 'telegraf';
+import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Action, Ctx, Hears, InjectBot, On, Start, Update } from 'nestjs-telegraf';
+import type { Context, Telegraf } from 'telegraf';
 import type { Message } from 'telegraf/typings/core/types/typegram';
 import { EditSessionService } from './edit-session.service';
 import {
@@ -18,17 +19,34 @@ import {
 
 @Update()
 @Injectable()
-export class BotUpdate {
+export class BotUpdate implements OnModuleInit {
   private readonly logger = new Logger(BotUpdate.name);
+  private readonly miniAppUrl?: string;
 
   constructor(
+    @InjectBot() private readonly bot: Telegraf<Context>,
+    private readonly configService: ConfigService,
     private readonly usersService: UsersService,
     private readonly parcelsService: ParcelsService,
     private readonly bannedItemsService: BannedItemsService,
     private readonly addressesService: AddressesService,
     private readonly supportService: SupportService,
     private readonly editSessionService: EditSessionService,
-  ) {}
+  ) {
+    this.miniAppUrl = this.configService.get<string>('MINI_APP_URL');
+  }
+
+  async onModuleInit(): Promise<void> {
+    if (!this.miniAppUrl) return;
+
+    try {
+      await this.bot.telegram.setChatMenuButton({
+        menuButton: { type: 'web_app', text: 'Ermekten', web_app: { url: this.miniAppUrl } },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to set the Mini App chat menu button: ${error}`);
+    }
+  }
 
   @Start()
   async onStart(@Ctx() ctx: Context): Promise<void> {
@@ -44,7 +62,7 @@ export class BotUpdate {
 
     await ctx.reply(
       `Здравствуйте, ${from.first_name ?? 'гость'}! Я помогу отследить посылки и отвечу на вопросы. Выберите раздел в меню ниже.`,
-      mainMenuKeyboard,
+      mainMenuKeyboard(this.miniAppUrl),
     );
   }
 
@@ -151,7 +169,7 @@ export class BotUpdate {
     if (!ctx.chat) return;
     this.editSessionService.cancel(ctx.chat.id);
     await ctx.answerCbQuery('Отменено');
-    await ctx.reply('Редактирование отменено.', mainMenuKeyboard);
+    await ctx.reply('Редактирование отменено.', mainMenuKeyboard(this.miniAppUrl));
   }
 
   @On('text')
@@ -172,10 +190,10 @@ export class BotUpdate {
 
     if (pendingField === 'name') {
       await this.usersService.updateFirstName(user.id, text);
-      await ctx.reply('Имя обновлено.', mainMenuKeyboard);
+      await ctx.reply('Имя обновлено.', mainMenuKeyboard(this.miniAppUrl));
     } else {
       await this.usersService.updatePhone(user.id, text);
-      await ctx.reply('Телефон обновлен.', mainMenuKeyboard);
+      await ctx.reply('Телефон обновлен.', mainMenuKeyboard(this.miniAppUrl));
     }
   }
 

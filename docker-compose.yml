@@ -43,6 +43,7 @@ services:
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
+      MINI_APP_URL: ${MINI_APP_URL:-http://localhost:3002}
     depends_on:
       postgres:
         condition: service_healthy

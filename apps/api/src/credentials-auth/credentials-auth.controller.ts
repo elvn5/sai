@@ -1,16 +1,18 @@
 import { ZodValidationPipe } from '@/common/zod-validation.pipe';
 import type { PublicUser } from '@/user-auth/public-user';
 import { setUserSessionCookie } from '@/user-auth/session-cookie';
-import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import {
   type LoginDto,
   type RegisterDto,
   type ResendCodeDto,
+  type VerificationStatusDto,
   type VerifyCodeDto,
   loginSchema,
   registerSchema,
   resendCodeSchema,
+  verificationStatusSchema,
   verifyCodeSchema,
 } from './credentials-auth.dto';
 import type { PendingVerification } from './credentials-auth.service';
@@ -36,7 +38,7 @@ export class CredentialsAuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: PublicUser } | { verification: PendingVerification }> {
     const result = await this.service.login(dto);
-    if ('token' in result) {
+    if ('user' in result) {
       setUserSessionCookie(res, result.token);
       return { user: result.user };
     }
@@ -62,5 +64,12 @@ export class CredentialsAuthController {
   ): Promise<{ verification: PendingVerification }> {
     const verification = await this.service.resendCode(dto);
     return { verification };
+  }
+
+  @Get('verification-status')
+  verificationStatus(
+    @Query(new ZodValidationPipe(verificationStatusSchema)) dto: VerificationStatusDto,
+  ): Promise<{ verified: boolean }> {
+    return this.service.getVerificationStatus(dto);
   }
 }

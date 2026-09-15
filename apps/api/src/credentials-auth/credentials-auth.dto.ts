@@ -26,7 +26,12 @@ export const resendCodeSchema = z.object({
   identifier: z.string().min(1).max(255),
 });
 
+export const verificationStatusSchema = z.object({
+  identifier: z.string().min(1).max(255),
+});
+
 export type RegisterDto = z.infer<typeof registerSchema>;
 export type LoginDto = z.infer<typeof loginSchema>;
 export type VerifyCodeDto = z.infer<typeof verifyCodeSchema>;
 export type ResendCodeDto = z.infer<typeof resendCodeSchema>;
+export type VerificationStatusDto = z.infer<typeof verificationStatusSchema>;

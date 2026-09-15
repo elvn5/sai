@@ -19,10 +19,6 @@ export const envSchema = z.object({
   // until they're set, instead of crash-looping the whole API.
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('Ermekten <onboarding@resend.dev>'),
-  // Phone verification codes (Twilio WhatsApp). Same optionality as above.
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_WHATSAPP_FROM: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

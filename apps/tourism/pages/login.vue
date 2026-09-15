@@ -21,8 +21,17 @@ const widgetContainer = ref<HTMLDivElement | null>(null);
 const telegramUnavailable = ref(false);
 
 const pendingVerification = ref<PendingVerification | null>(null);
+const pendingPassword = ref('');
 const resendCooldown = ref(0);
 let resendTimer: ReturnType<typeof setInterval> | undefined;
+let verifyPollTimer: ReturnType<typeof setInterval> | undefined;
+
+const telegramDeepLink = computed(() => {
+  const verification = pendingVerification.value;
+  const botUsername = config.public.telegramBotUsername;
+  if (!verification?.token || !botUsername) return null;
+  return `https://t.me/${botUsername}?start=verify_${verification.token}`;
+});
 
 useSeoMeta({
   title: () => t('login.title'),
@@ -85,12 +94,51 @@ function startResendCooldown(): void {
   }, 1000);
 }
 
+function stopVerificationPoll(): void {
+  clearInterval(verifyPollTimer);
+  verifyPollTimer = undefined;
+}
+
+async function completeTelegramLogin(): Promise<void> {
+  if (!pendingVerification.value) return;
+  try {
+    const result = await auth.login({
+      identifier: pendingVerification.value.identifier,
+      password: pendingPassword.value,
+    });
+    if (!result) {
+      await navigateTo(localePath('/'));
+    }
+  } catch {
+    errorMessage.value = t('login.networkError');
+  }
+}
+
+function startVerificationPoll(): void {
+  stopVerificationPoll();
+  verifyPollTimer = setInterval(async () => {
+    if (!pendingVerification.value) return;
+    try {
+      const verified = await auth.checkVerificationStatus(pendingVerification.value.identifier);
+      if (verified) {
+        stopVerificationPoll();
+        await completeTelegramLogin();
+      }
+    } catch {
+      // Transient network hiccup — keep polling silently.
+    }
+  }, 3000);
+}
+
 function enterVerifyMode(verification: PendingVerification): void {
   pendingVerification.value = verification;
   errorMessage.value = null;
   resetVerifyForm();
   mode.value = 'verify';
   startResendCooldown();
+  if (verification.method === 'telegram') {
+    startVerificationPoll();
+  }
 }
 
 const onLogin = handleLoginSubmit(async (values) => {
@@ -102,6 +150,7 @@ const onLogin = handleLoginSubmit(async (values) => {
       password: values.password,
     });
     if (verification) {
+      pendingPassword.value = values.password;
       enterVerifyMode(verification);
       return;
     }
@@ -124,6 +173,7 @@ const onRegister = handleRegisterSubmit(async (values) => {
       password: values.password,
       firstName: values.firstName || undefined,
     });
+    pendingPassword.value = values.password;
     enterVerifyMode(verification);
   } catch (error) {
     errorMessage.value =
@@ -164,8 +214,10 @@ async function handleResend(): Promise<void> {
 function backToLogin(): void {
   mode.value = 'login';
   pendingVerification.value = null;
+  pendingPassword.value = '';
   errorMessage.value = null;
   clearInterval(resendTimer);
+  stopVerificationPoll();
 }
 
 onMounted(async () => {
@@ -212,48 +264,83 @@ onMounted(async () => {
   widgetContainer.value.appendChild(script);
 });
 
-onBeforeUnmount(() => clearInterval(resendTimer));
+onBeforeUnmount(() => {
+  clearInterval(resendTimer);
+  stopVerificationPoll();
+});
 </script>
 
 <template>
   <section class="mx-auto flex max-w-sm flex-col px-4 py-16">
     <template v-if="mode === 'verify'">
       <h1 class="text-center text-2xl font-extrabold text-text">{{ $t('login.verify.title') }}</h1>
-      <p class="mt-2 text-center text-text-muted">
-        {{
-          pendingVerification?.method === 'email'
-            ? $t('login.verify.subtitleEmail', { identifier: pendingVerification?.identifier })
-            : $t('login.verify.subtitleWhatsapp', { identifier: pendingVerification?.identifier })
-        }}
-      </p>
 
-      <form class="mt-8 flex flex-col gap-4" @submit="onVerify">
-        <UFormGroup :label="$t('login.verify.codeLabel')" :error="verifyErrors.code">
-          <UInput
-            v-model="verifyCodeValue"
-            v-bind="verifyCodeAttrs"
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="000000"
-          />
-        </UFormGroup>
-        <UButton type="submit" color="primary" block :loading="submitting">
-          {{ $t('login.verify.submit') }}
+      <template v-if="pendingVerification?.method === 'email'">
+        <p class="mt-2 text-center text-text-muted">
+          {{ $t('login.verify.subtitleEmail', { identifier: pendingVerification?.identifier }) }}
+        </p>
+
+        <form class="mt-8 flex flex-col gap-4" @submit="onVerify">
+          <UFormGroup :label="$t('login.verify.codeLabel')" :error="verifyErrors.code">
+            <UInput
+              v-model="verifyCodeValue"
+              v-bind="verifyCodeAttrs"
+              inputmode="numeric"
+              maxlength="6"
+              placeholder="000000"
+            />
+          </UFormGroup>
+          <UButton type="submit" color="primary" block :loading="submitting">
+            {{ $t('login.verify.submit') }}
+          </UButton>
+        </form>
+
+        <button
+          type="button"
+          class="mt-4 text-center text-sm text-primary-600 disabled:text-text-muted dark:text-primary-400"
+          :disabled="resendCooldown > 0"
+          @click="handleResend"
+        >
+          {{
+            resendCooldown > 0
+              ? $t('login.verify.resendCooldown', { seconds: resendCooldown })
+              : $t('login.verify.resend')
+          }}
+        </button>
+      </template>
+
+      <template v-else-if="pendingVerification?.method === 'telegram'">
+        <p class="mt-2 text-center text-text-muted">{{ $t('login.verify.subtitleTelegram') }}</p>
+
+        <UButton
+          class="mt-8"
+          color="primary"
+          block
+          :to="telegramDeepLink ?? undefined"
+          :disabled="!telegramDeepLink"
+          target="_blank"
+        >
+          {{ $t('login.verify.openTelegram') }}
         </UButton>
-      </form>
 
-      <button
-        type="button"
-        class="mt-4 text-center text-sm text-primary-600 disabled:text-text-muted dark:text-primary-400"
-        :disabled="resendCooldown > 0"
-        @click="handleResend"
-      >
-        {{
-          resendCooldown > 0
-            ? $t('login.verify.resendCooldown', { seconds: resendCooldown })
-            : $t('login.verify.resend')
-        }}
-      </button>
+        <div class="mt-4 flex items-center justify-center gap-2 text-sm text-text-muted">
+          <UIcon name="i-heroicons-arrow-path" class="h-4 w-4 animate-spin" />
+          {{ $t('login.verify.waitingTelegram') }}
+        </div>
+
+        <button
+          type="button"
+          class="mt-4 text-center text-sm text-primary-600 disabled:text-text-muted dark:text-primary-400"
+          :disabled="resendCooldown > 0"
+          @click="handleResend"
+        >
+          {{
+            resendCooldown > 0
+              ? $t('login.verify.resendLinkCooldown', { seconds: resendCooldown })
+              : $t('login.verify.resendLink')
+          }}
+        </button>
+      </template>
 
       <button
         type="button"
@@ -322,7 +409,7 @@ onBeforeUnmount(() => clearInterval(resendTimer));
           {{
             identifierType === 'email'
               ? $t('login.verify.hintEmail')
-              : $t('login.verify.hintWhatsapp')
+              : $t('login.verify.hintTelegram')
           }}
         </p>
         <UFormGroup

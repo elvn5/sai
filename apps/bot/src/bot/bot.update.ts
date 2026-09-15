@@ -46,6 +46,12 @@ export class BotUpdate implements OnModuleInit {
     const from = ctx.from;
     if (!from) return;
 
+    const payload = (ctx as Context & { payload?: string }).payload;
+    if (payload?.startsWith('verify_')) {
+      await this.handleVerificationDeepLink(ctx, payload.slice('verify_'.length));
+      return;
+    }
+
     await this.usersService.findOrCreate({
       telegramId: String(from.id),
       username: from.username,
@@ -56,6 +62,20 @@ export class BotUpdate implements OnModuleInit {
     await ctx.reply(
       `Здравствуйте, ${from.first_name ?? 'гость'}! Я помогу с гайдами и маршрутами по Кыргызстану и отвечу на вопросы. Выберите раздел в меню ниже.`,
       mainMenuKeyboard(this.miniAppUrl),
+    );
+  }
+
+  private async handleVerificationDeepLink(ctx: Context, token: string): Promise<void> {
+    const user = await this.usersService.verifyPendingByToken(token);
+    if (!user) {
+      await ctx.reply(
+        '❌ Ссылка недействительна или истекла. Запросите новую ссылку на сайте Ermekten.',
+      );
+      return;
+    }
+
+    await ctx.reply(
+      `✅ Аккаунт Ermekten подтверждён${user.firstName ? `, ${user.firstName}` : ''}! Возвращайтесь на сайт — вход выполнится автоматически.`,
     );
   }
 

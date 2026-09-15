@@ -15,11 +15,13 @@ export interface LoginPayload {
   password: string;
 }
 
-export type VerificationMethod = 'email' | 'whatsapp';
+export type VerificationMethod = 'email' | 'telegram';
 
 export interface PendingVerification {
   identifier: string;
   method: VerificationMethod;
+  // Only set for the 'telegram' method — embed this in the bot deep link.
+  token?: string;
 }
 
 export interface VerifyCodePayload {
@@ -100,6 +102,15 @@ export function useAuth() {
     return res.verification;
   }
 
+  // Polled while waiting for the Telegram bot to confirm a pending phone
+  // verification (there's no code to type for that channel).
+  async function checkVerificationStatus(identifier: string): Promise<boolean> {
+    const res = await api.get<{ verified: boolean }>(
+      `/auth/user/verification-status?identifier=${encodeURIComponent(identifier)}`,
+    );
+    return res.verified;
+  }
+
   async function loginWithTelegramWidget(payload: TelegramWidgetPayload): Promise<void> {
     const res = await api.post<{ user: AppUser }>('/auth/telegram/widget', payload);
     setUser(res.user);
@@ -123,6 +134,7 @@ export function useAuth() {
     login,
     verifyCode,
     resendCode,
+    checkVerificationStatus,
     loginWithTelegramWidget,
     loginWithTelegramMiniApp,
     logout,

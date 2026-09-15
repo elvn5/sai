@@ -1,5 +1,4 @@
 import { EmailService } from '@/notifications/email.service';
-import { WhatsappService } from '@/notifications/whatsapp.service';
 import { type PublicUser, toPublicUser } from '@/user-auth/public-user';
 import { User } from '@app/database';
 import {
@@ -15,23 +14,37 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
 import type { Repository } from 'typeorm';
-import type { LoginDto, RegisterDto, ResendCodeDto, VerifyCodeDto } from './credentials-auth.dto';
+import type {
+  LoginDto,
+  RegisterDto,
+  ResendCodeDto,
+  VerificationStatusDto,
+  VerifyCodeDto,
+} from './credentials-auth.dto';
 import {
   VERIFICATION_CODE_TTL_MS,
   VERIFICATION_MAX_ATTEMPTS,
   VERIFICATION_RESEND_COOLDOWN_MS,
   generateVerificationCode,
+  generateVerificationToken,
   hashVerificationCode,
   verificationCodeMatches,
 } from './verification-code';
 
 const PASSWORD_SALT_ROUNDS = 10;
 
-export type VerificationMethod = 'email' | 'whatsapp';
+// Email registrations get a typed 6-digit code. Phone registrations get
+// verified by opening a Telegram deep link — the bot process (which shares
+// this same database) flips isVerified once the link is opened, since only
+// it can actually deliver a message to a Telegram chat.
+export type VerificationMethod = 'email' | 'telegram';
 
 export interface PendingVerification {
   identifier: string;
   method: VerificationMethod;
+  // Only set for the 'telegram' method — the frontend embeds this in the
+  // bot deep link (https://t.me/<bot>?start=verify_<token>).
+  token?: string;
 }
 
 const CODE_FIELDS = [
@@ -57,7 +70,6 @@ export class CredentialsAuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
-    private readonly whatsappService: WhatsappService,
     @InjectRepository(User)
     private readonly users: Repository<User>,
   ) {}
@@ -90,18 +102,13 @@ export class CredentialsAuthService {
     });
     const saved = await this.users.save(created);
 
-    const method: VerificationMethod = dto.email ? 'email' : 'whatsapp';
-    const identifier = (dto.email ?? dto.phone) as string;
-
     try {
-      await this.dispatchVerificationCode(saved, method);
+      return await this.issueVerification(saved);
     } catch (error) {
       // Don't leave an unverifiable account holding the email/phone hostage.
       await this.users.remove(saved);
       throw error;
     }
-
-    return { identifier, method };
   }
 
   async login(dto: LoginDto): Promise<{ token: string; user: PublicUser } | PendingVerification> {
@@ -132,7 +139,7 @@ export class CredentialsAuthService {
     }
 
     if (!user.isVerified) {
-      return { identifier: dto.identifier, method: user.email ? 'email' : 'whatsapp' };
+      return { identifier: dto.identifier, method: user.email ? 'email' : 'telegram' };
     }
 
     return this.issueSession(user);
@@ -190,24 +197,46 @@ export class CredentialsAuthService {
       );
     }
 
-    const method: VerificationMethod = user.email ? 'email' : 'whatsapp';
-    await this.dispatchVerificationCode(user, method);
-    return { identifier: dto.identifier, method };
+    return this.issueVerification(user);
   }
 
-  private async dispatchVerificationCode(user: User, method: VerificationMethod): Promise<void> {
-    const code = generateVerificationCode();
-    user.verificationCodeHash = hashVerificationCode(code);
+  // Polled by the frontend while waiting for the Telegram bot to confirm a
+  // pending phone verification.
+  async getVerificationStatus(dto: VerificationStatusDto): Promise<{ verified: boolean }> {
+    const user = await this.users.findOne({
+      where: [{ email: dto.identifier }, { phone: dto.identifier }],
+      select: ['id', 'isVerified'],
+    });
+    if (!user) {
+      throw new NotFoundException('Account not found');
+    }
+    return { verified: user.isVerified };
+  }
+
+  private async issueVerification(user: User): Promise<PendingVerification> {
+    if (user.email) {
+      const code = generateVerificationCode();
+      user.verificationCodeHash = hashVerificationCode(code);
+      user.verificationCodeExpiresAt = new Date(Date.now() + VERIFICATION_CODE_TTL_MS);
+      user.verificationCodeSentAt = new Date();
+      user.verificationAttempts = 0;
+      await this.users.save(user);
+
+      await this.emailService.sendVerificationCode(user.email, code);
+      return { identifier: user.email, method: 'email' };
+    }
+
+    // Phone: nothing to send yet — the token only becomes useful once the
+    // user opens it in Telegram, at which point the bot process (sharing
+    // this database) verifies it directly.
+    const token = generateVerificationToken();
+    user.verificationCodeHash = hashVerificationCode(token);
     user.verificationCodeExpiresAt = new Date(Date.now() + VERIFICATION_CODE_TTL_MS);
     user.verificationCodeSentAt = new Date();
     user.verificationAttempts = 0;
     await this.users.save(user);
 
-    if (method === 'email') {
-      await this.emailService.sendVerificationCode(user.email as string, code);
-    } else {
-      await this.whatsappService.sendVerificationCode(user.phone as string, code);
-    }
+    return { identifier: user.phone as string, method: 'telegram', token };
   }
 
   private findByIdentifierWithCode(identifier: string): Promise<User | null> {

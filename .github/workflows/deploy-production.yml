@@ -141,4 +141,6 @@ jobs:
             docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
             docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/packages/database api \
               ./node_modules/.bin/typeorm migration:run -d dist/data-source.js
+            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/apps/api api \
+              node dist/scripts/convert-uploads-to-webp.js
             docker image prune -f

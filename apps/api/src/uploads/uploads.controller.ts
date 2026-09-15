@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { extname } from 'node:path';
+import { writeFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
 import { AnyAuthGuard } from '@/common/any-auth.guard';
 import {
   BadRequestException,
@@ -10,7 +11,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
+import { convertImageBufferToWebp } from './image-conversion';
 import { UPLOADS_DIR } from './uploads.constants';
 
 const ALLOWED_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
@@ -38,10 +40,9 @@ export class UploadsController {
   @Post('image')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: UPLOADS_DIR,
-        filename: (_req, file, callback) => callback(null, randomFilename(file.originalname)),
-      }),
+      // Buffered in memory, not written to disk as-is — every upload gets
+      // re-encoded to WebP below before it ever touches the filesystem.
+      storage: memoryStorage(),
       limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
       fileFilter: (_req, file, callback) => {
         if (!ALLOWED_IMAGE_MIME_TYPES.has(file.mimetype)) {
@@ -55,11 +56,21 @@ export class UploadsController {
       },
     }),
   )
-  uploadImage(@UploadedFile() file: Express.Multer.File): { url: string } {
+  async uploadImage(@UploadedFile() file: Express.Multer.File): Promise<{ url: string }> {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
-    return { url: `/uploads/${file.filename}` };
+
+    let webp: Buffer;
+    try {
+      webp = await convertImageBufferToWebp(file.buffer);
+    } catch {
+      throw new BadRequestException('Could not process image file');
+    }
+
+    const filename = `${randomUUID()}.webp`;
+    await writeFile(join(UPLOADS_DIR, filename), webp);
+    return { url: `/uploads/${filename}` };
   }
 
   @Post('file')

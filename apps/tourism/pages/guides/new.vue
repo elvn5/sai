@@ -17,6 +17,7 @@ const auth = useAuth();
 const queryClient = useQueryClient();
 
 const coverFile = ref<File | null>(null);
+const coverPreviewUrl = ref<string | null>(null);
 const attachedFiles = ref<File[]>([]);
 const submitError = ref<string | null>(null);
 const equipment = ref<string[]>([]);
@@ -96,8 +97,16 @@ onMounted(async () => {
 
 function onCoverChange(event: Event): void {
   const target = event.target as HTMLInputElement;
-  coverFile.value = target.files?.[0] ?? null;
+  const file = target.files?.[0] ?? null;
+  coverFile.value = file;
+
+  if (coverPreviewUrl.value) URL.revokeObjectURL(coverPreviewUrl.value);
+  coverPreviewUrl.value = file ? URL.createObjectURL(file) : null;
 }
+
+onBeforeUnmount(() => {
+  if (coverPreviewUrl.value) URL.revokeObjectURL(coverPreviewUrl.value);
+});
 
 function onFilesSelected(event: Event): void {
   const target = event.target as HTMLInputElement;
@@ -169,77 +178,97 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-2xl px-4 py-12">
+  <section class="mx-auto max-w-5xl px-4 py-12">
     <h1 class="text-3xl font-extrabold text-text">{{ $t('guides.newTitle') }}</h1>
 
-    <form class="mt-8 flex flex-col gap-6" @submit="onSubmit">
-      <UFormGroup :label="$t('guides.titleLabel')" :error="errors.title">
-        <UInput v-model="title" v-bind="titleAttrs" />
-      </UFormGroup>
+    <form class="mt-8" @submit="onSubmit">
+      <div class="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
+        <aside
+          class="order-2 flex h-fit flex-col gap-6 rounded-card border border-border bg-surface p-4 lg:order-1 lg:sticky lg:top-24"
+        >
+          <UFormGroup :label="$t('guides.difficultyLabel')">
+            <IconPicker v-model="difficulty" :options="difficultyOptions" />
+          </UFormGroup>
 
-      <UFormGroup :label="$t('guides.excerptLabel')" :error="errors.excerpt">
-        <UInput v-model="excerpt" v-bind="excerptAttrs" />
-      </UFormGroup>
+          <UFormGroup :label="$t('guides.seasonLabel')">
+            <IconPicker v-model="season" :options="seasonOptions" />
+          </UFormGroup>
 
-      <UFormGroup :label="$t('guides.difficultyLabel')">
-        <IconPicker v-model="difficulty" :options="difficultyOptions" />
-      </UFormGroup>
+          <UFormGroup :label="$t('guides.equipmentLabel')" :hint="$t('guides.equipmentHint')">
+            <IconPicker v-model="equipment" :options="equipmentOptions" multiple />
+          </UFormGroup>
+        </aside>
 
-      <UFormGroup :label="$t('guides.seasonLabel')">
-        <IconPicker v-model="season" :options="seasonOptions" />
-      </UFormGroup>
+        <div class="order-1 flex flex-col gap-6 lg:order-2">
+          <UFormGroup :label="$t('guides.titleLabel')" :error="errors.title">
+            <UInput v-model="title" v-bind="titleAttrs" size="lg" />
+          </UFormGroup>
 
-      <UFormGroup :label="$t('guides.equipmentLabel')" :hint="$t('guides.equipmentHint')">
-        <IconPicker v-model="equipment" :options="equipmentOptions" multiple />
-      </UFormGroup>
+          <UFormGroup :label="$t('guides.excerptLabel')" :error="errors.excerpt">
+            <UInput v-model="excerpt" v-bind="excerptAttrs" />
+          </UFormGroup>
 
-      <UFormGroup :label="$t('guides.coverLabel')">
-        <input
-          type="file"
-          accept="image/*"
-          class="block w-full text-sm text-text file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
-          @change="onCoverChange"
-        />
-      </UFormGroup>
+          <UFormGroup :label="$t('guides.coverLabel')">
+            <input
+              type="file"
+              accept="image/*"
+              class="block w-full text-sm text-text file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+              @change="onCoverChange"
+            />
+            <img
+              v-if="coverPreviewUrl"
+              :src="coverPreviewUrl"
+              alt=""
+              class="mt-3 h-48 w-full rounded-lg object-cover"
+            />
+          </UFormGroup>
 
-      <UFormGroup :label="$t('guides.contentLabel')" :error="errors.content">
-        <TiptapEditor v-model="content" :placeholder="$t('guides.contentPlaceholder')" />
-      </UFormGroup>
+          <UFormGroup :label="$t('guides.contentLabel')" :error="errors.content">
+            <TiptapEditor v-model="content" :placeholder="$t('guides.contentPlaceholder')" />
+          </UFormGroup>
 
-      <UFormGroup :label="$t('guides.filesLabel')" :hint="$t('guides.filesHint')">
-        <input
-          type="file"
-          multiple
-          accept=".pdf,.gpx,.kml,.zip,.xml"
-          class="block w-full text-sm text-text file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
-          @change="onFilesSelected"
-        />
-        <ul v-if="attachedFiles.length > 0" class="mt-3 flex flex-col gap-2">
-          <li
-            v-for="(file, index) in attachedFiles"
-            :key="`${file.name}-${index}`"
-            class="flex items-center justify-between rounded-card border border-border bg-surface px-3 py-2 text-sm"
-          >
-            <span class="flex items-center gap-2 text-text">
-              <UIcon name="i-mdi-file-outline" class="h-4 w-4 shrink-0 text-text-muted" />
-              {{ file.name }}
-              <span class="text-text-muted">({{ formatFileSize(file.size) }})</span>
-            </span>
-            <button
-              type="button"
-              class="text-text-muted transition-colors hover:text-brand-600"
-              :aria-label="$t('guides.removeFile')"
-              @click="removeFile(index)"
-            >
-              <UIcon name="i-heroicons-x-mark" class="h-4 w-4" />
-            </button>
-          </li>
-        </ul>
-      </UFormGroup>
+          <UFormGroup :label="$t('guides.filesLabel')" :hint="$t('guides.filesHint')">
+            <input
+              type="file"
+              multiple
+              accept=".pdf,.gpx,.kml,.zip,.xml"
+              class="block w-full text-sm text-text file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
+              @change="onFilesSelected"
+            />
+            <ul v-if="attachedFiles.length > 0" class="mt-3 flex flex-col gap-2">
+              <li
+                v-for="(file, index) in attachedFiles"
+                :key="`${file.name}-${index}`"
+                class="flex items-center justify-between rounded-card border border-border bg-surface px-3 py-2 text-sm"
+              >
+                <span class="flex items-center gap-2 text-text">
+                  <UIcon name="i-mdi-file-outline" class="h-4 w-4 shrink-0 text-text-muted" />
+                  {{ file.name }}
+                  <span class="text-text-muted">({{ formatFileSize(file.size) }})</span>
+                </span>
+                <button
+                  type="button"
+                  class="text-text-muted transition-colors hover:text-brand-600"
+                  :aria-label="$t('guides.removeFile')"
+                  @click="removeFile(index)"
+                >
+                  <UIcon name="i-heroicons-x-mark" class="h-4 w-4" />
+                </button>
+              </li>
+            </ul>
+          </UFormGroup>
+        </div>
+      </div>
 
-      <p v-if="submitError" class="text-sm text-brand-600">{{ submitError }}</p>
+      <p v-if="submitError" class="mt-6 text-sm text-brand-600">{{ submitError }}</p>
 
-      <UButton type="submit" color="primary" block :loading="createMutation.isPending.value">
+      <UButton
+        type="submit"
+        color="primary"
+        block
+        class="mt-6"
+        :loading="createMutation.isPending.value"
+      >
         {{ $t('guides.submit') }}
       </UButton>
     </form>

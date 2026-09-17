@@ -11,6 +11,7 @@ const localePath = useLocalePath();
 const { isTma, getInitData } = useTelegramWebApp();
 const auth = useAuth();
 const config = useRuntimeConfig();
+const colorMode = useColorMode();
 
 const mode = ref<'login' | 'register' | 'verify'>('login');
 const identifierType = ref<'email' | 'phone'>('email');
@@ -220,6 +221,37 @@ function backToLogin(): void {
   stopVerificationPoll();
 }
 
+function mountTelegramWidget(): void {
+  const botUsername = config.public.telegramBotUsername;
+  if (!botUsername || !widgetContainer.value) {
+    telegramUnavailable.value = true;
+    return;
+  }
+
+  widgetContainer.value.replaceChildren();
+
+  const script = document.createElement('script');
+  script.src = 'https://telegram.org/js/telegram-widget.js?22';
+  script.async = true;
+  script.setAttribute('data-telegram-login', botUsername);
+  script.setAttribute('data-size', 'large');
+  script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+  script.setAttribute('data-request-access', 'write');
+  script.setAttribute('data-radius', '12');
+  // Telegram's "logged in as X" chip renders with an opaque dark backdrop we
+  // can't restyle (cross-origin iframe) — dropping the avatar/personalization
+  // in light mode keeps it to the plain button, which never shows that backdrop.
+  script.setAttribute('data-userpic', colorMode.value === 'light' ? 'false' : 'true');
+  widgetContainer.value.appendChild(script);
+}
+
+watch(
+  () => colorMode.value,
+  () => {
+    if (!isTma.value && !telegramUnavailable.value) mountTelegramWidget();
+  },
+);
+
 onMounted(async () => {
   if (isTma.value) {
     tmaLoading.value = true;
@@ -236,12 +268,6 @@ onMounted(async () => {
     return;
   }
 
-  const botUsername = config.public.telegramBotUsername;
-  if (!botUsername || !widgetContainer.value) {
-    telegramUnavailable.value = true;
-    return;
-  }
-
   (
     window as unknown as { onTelegramAuth: (payload: TelegramWidgetPayload) => void }
   ).onTelegramAuth = async (payload: TelegramWidgetPayload) => {
@@ -253,15 +279,7 @@ onMounted(async () => {
     }
   };
 
-  const script = document.createElement('script');
-  script.src = 'https://telegram.org/js/telegram-widget.js?22';
-  script.async = true;
-  script.setAttribute('data-telegram-login', botUsername);
-  script.setAttribute('data-size', 'large');
-  script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-  script.setAttribute('data-request-access', 'write');
-  script.setAttribute('data-radius', '12');
-  widgetContainer.value.appendChild(script);
+  mountTelegramWidget();
 });
 
 onBeforeUnmount(() => {
@@ -453,7 +471,7 @@ onBeforeUnmount(() => {
           {{ $t('login.telegramUnavailable') }}
         </p>
         <div v-else class="flex min-h-[56px] justify-center py-2">
-          <div ref="widgetContainer" class="telegram-widget-glow" />
+          <div ref="widgetContainer" class="telegram-widget-frame" />
         </div>
       </template>
     </template>

@@ -8,12 +8,13 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   devServer: { port: 3011 },
   features: { inlineStyles: false },
-  modules: ['@nuxt/ui', '@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxtjs/robots'],
+  modules: ['@nuxt/ui', '@nuxtjs/i18n', '@nuxtjs/robots'],
   site: {
     url: siteUrl,
     name: 'Ermekten',
   },
   robots: {
+    sitemap: '/sitemap.xml',
     // Staging serves the same build as production and must stay out of search
     // results entirely, so it gets a blanket disallow instead of the
     // page-level rules below.
@@ -63,6 +64,7 @@ export default defineNuxtConfig({
     public: {
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001',
       telegramBotUsername: process.env.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? '',
+      siteUrl,
     },
   },
   typescript: {

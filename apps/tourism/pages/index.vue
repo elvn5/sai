@@ -20,7 +20,7 @@ await postsQuery.suspense();
 
 const latestPosts = computed(() => (postsQuery.data.value ?? []).slice(0, NEWS_LIMIT));
 
-const pageSeoQuery = usePageSeo(SeoPage.HOME);
+const pageSeoQuery = usePageSeo(SeoPage.HOME, locale);
 await pageSeoQuery.suspense();
 const pageSeo = pageSeoQuery.data;
 

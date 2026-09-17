@@ -21,7 +21,7 @@ const tours = toursQuery.data;
 
 const canPost = computed(() => auth.user.value?.partnerStatus === PartnerStatus.APPROVED);
 
-const pageSeoQuery = usePageSeo(SeoPage.TOURS);
+const pageSeoQuery = usePageSeo(SeoPage.TOURS, locale);
 await pageSeoQuery.suspense();
 const pageSeo = pageSeoQuery.data;
 

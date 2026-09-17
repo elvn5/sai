@@ -7,7 +7,7 @@ import { GalleryRegion, SeoPage } from '~/shared/api/types';
 import type { GalleryItem } from '~/shared/api/types';
 import { KYRGYZSTAN_REGIONS } from '~/shared/lib/kyrgyzstan-regions';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const api = useApiClient();
 const auth = useAuth();
 const queryClient = useQueryClient();
@@ -36,7 +36,7 @@ const caption = ref('');
 const formRegion = ref<GalleryRegion | undefined>(undefined);
 const submitError = ref<string | null>(null);
 
-const pageSeoQuery = usePageSeo(SeoPage.GALLERY);
+const pageSeoQuery = usePageSeo(SeoPage.GALLERY, locale);
 await pageSeoQuery.suspense();
 const pageSeo = pageSeoQuery.data;
 

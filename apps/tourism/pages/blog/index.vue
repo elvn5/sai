@@ -17,7 +17,7 @@ await postsQuery.suspense();
 
 const posts = postsQuery.data;
 
-const pageSeoQuery = usePageSeo(SeoPage.BLOG);
+const pageSeoQuery = usePageSeo(SeoPage.BLOG, locale);
 await pageSeoQuery.suspense();
 const pageSeo = pageSeoQuery.data;
 

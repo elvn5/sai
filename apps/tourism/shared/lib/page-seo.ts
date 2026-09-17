@@ -1,9 +1,12 @@
 import { type UseQueryReturnType, useQuery } from '@tanstack/vue-query';
+import type { Ref } from 'vue';
 import { useApiClient } from '~/shared/api/client';
 import type { PageSeo, SeoPage } from '~/shared/api/types';
 
-export function usePageSeo(page: SeoPage): UseQueryReturnType<PageSeo | null, Error> {
-  const { locale } = useI18n();
+export function usePageSeo(
+  page: SeoPage,
+  locale: Ref<string>,
+): UseQueryReturnType<PageSeo | null, Error> {
   const api = useApiClient();
 
   return useQuery({

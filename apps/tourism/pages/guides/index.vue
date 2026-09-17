@@ -22,7 +22,7 @@ function difficultyLabel(difficulty: string): string {
   return t(`guides.difficulty.${difficulty}`);
 }
 
-const pageSeoQuery = usePageSeo(SeoPage.GUIDES);
+const pageSeoQuery = usePageSeo(SeoPage.GUIDES, locale);
 await pageSeoQuery.suspense();
 const pageSeo = pageSeoQuery.data;
 

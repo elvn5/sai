@@ -165,6 +165,8 @@ body {
 }
 
 .telegram-widget-glow {
+  overflow: hidden;
+  border-radius: 12px;
   transform: scale(1.25);
   transform-origin: center;
   animation: telegram-widget-glow 2.4s ease-in-out infinite;

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import RegionBanner from '~/components/features/region-picker/RegionBanner.vue';
 import RegionPicker from '~/components/features/region-picker/RegionPicker.vue';
 import { useApiClient } from '~/shared/api/client';
-import { GalleryRegion } from '~/shared/api/types';
+import { GalleryRegion, SeoPage } from '~/shared/api/types';
 import type { GalleryItem } from '~/shared/api/types';
 import { KYRGYZSTAN_REGIONS } from '~/shared/lib/kyrgyzstan-regions';
 
@@ -36,9 +36,17 @@ const caption = ref('');
 const formRegion = ref<GalleryRegion | undefined>(undefined);
 const submitError = ref<string | null>(null);
 
+const pageSeoQuery = usePageSeo(SeoPage.GALLERY);
+await pageSeoQuery.suspense();
+const pageSeo = pageSeoQuery.data;
+
 useSeoMeta({
-  title: () => t('gallery.heading'),
-  description: () => t('home.tagline'),
+  title: () => pageSeo.value?.title || t('gallery.heading'),
+  description: () => pageSeo.value?.description || t('gallery.metaDescription'),
+  ogTitle: () => pageSeo.value?.title || t('gallery.heading'),
+  ogDescription: () => pageSeo.value?.description || t('gallery.metaDescription'),
+  ogImage: () =>
+    pageSeo.value?.ogImageUrl ? `${apiBaseUrl}${pageSeo.value.ogImageUrl}` : undefined,
 });
 
 function regionLabel(region: GalleryRegion): string {

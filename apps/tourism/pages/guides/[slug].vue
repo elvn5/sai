@@ -44,6 +44,24 @@ useSeoMeta({
   ogImage: guide.value.coverImageUrl ? `${apiBaseUrl}${guide.value.coverImageUrl}` : undefined,
 });
 
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: guide.value.title,
+        description: guide.value.seoDescription || guide.value.excerpt || undefined,
+        image: guide.value.coverImageUrl ? `${apiBaseUrl}${guide.value.coverImageUrl}` : undefined,
+        datePublished: guide.value.publishedAt ?? undefined,
+        dateModified: guide.value.updatedAt,
+        inLanguage: locale.value,
+      }),
+    },
+  ],
+});
+
 const deleteMutation = useMutation({
   mutationFn: (id: string) => api.delete(`/guides/${id}`),
   onSuccess: () => {

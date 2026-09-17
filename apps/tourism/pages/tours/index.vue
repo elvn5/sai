@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
-import { PartnerStatus } from '~/shared/api/types';
+import { PartnerStatus, SeoPage } from '~/shared/api/types';
 import type { Tour } from '~/shared/api/types';
 
 const { locale, t } = useI18n();
@@ -21,9 +21,17 @@ const tours = toursQuery.data;
 
 const canPost = computed(() => auth.user.value?.partnerStatus === PartnerStatus.APPROVED);
 
+const pageSeoQuery = usePageSeo(SeoPage.TOURS);
+await pageSeoQuery.suspense();
+const pageSeo = pageSeoQuery.data;
+
 useSeoMeta({
-  title: () => t('tours.heading'),
-  description: () => t('home.tagline'),
+  title: () => pageSeo.value?.title || t('tours.heading'),
+  description: () => pageSeo.value?.description || t('tours.metaDescription'),
+  ogTitle: () => pageSeo.value?.title || t('tours.heading'),
+  ogDescription: () => pageSeo.value?.description || t('tours.metaDescription'),
+  ogImage: () =>
+    pageSeo.value?.ogImageUrl ? `${apiBaseUrl}${pageSeo.value.ogImageUrl}` : undefined,
 });
 </script>
 

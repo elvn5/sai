@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/vue-query';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
 import { useApiClient } from '~/shared/api/client';
-import type { BlogPost } from '~/shared/api/types';
+import { type BlogPost, SeoPage } from '~/shared/api/types';
 
 const NEWS_LIMIT = 3;
 
@@ -20,11 +20,19 @@ await postsQuery.suspense();
 
 const latestPosts = computed(() => (postsQuery.data.value ?? []).slice(0, NEWS_LIMIT));
 
+const pageSeoQuery = usePageSeo(SeoPage.HOME);
+await pageSeoQuery.suspense();
+const pageSeo = pageSeoQuery.data;
+
 useSeoMeta({
-  description: () => t('home.tagline'),
-  ogTitle: () => t('brand.name'),
-  ogDescription: () => t('home.tagline'),
-  ogImage: '/images/hero-mountain.webp',
+  title: () => pageSeo.value?.title || undefined,
+  description: () => pageSeo.value?.description || t('home.tagline'),
+  ogTitle: () => pageSeo.value?.title || t('brand.name'),
+  ogDescription: () => pageSeo.value?.description || t('home.tagline'),
+  ogImage: () =>
+    pageSeo.value?.ogImageUrl
+      ? `${apiBaseUrl}${pageSeo.value.ogImageUrl}`
+      : '/images/hero-mountain.webp',
 });
 </script>
 

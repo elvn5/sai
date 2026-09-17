@@ -60,12 +60,16 @@ export enum SeoPage {
   HOME = 'home',
   BLOG = 'blog',
   GALLERY = 'gallery',
+  GUIDES = 'guides',
+  TOURS = 'tours',
 }
 
 export const SEO_PAGE_OPTIONS: { value: SeoPage; label: string }[] = [
   { value: SeoPage.HOME, label: 'Главная' },
   { value: SeoPage.BLOG, label: 'Блог' },
   { value: SeoPage.GALLERY, label: 'Галерея' },
+  { value: SeoPage.GUIDES, label: 'Гайды' },
+  { value: SeoPage.TOURS, label: 'Туры' },
 ];
 
 export interface PageSeo {

@@ -5,6 +5,8 @@ export enum SeoPage {
   HOME = 'home',
   BLOG = 'blog',
   GALLERY = 'gallery',
+  GUIDES = 'guides',
+  TOURS = 'tours',
 }
 
 @Entity('page_seo')

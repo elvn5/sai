@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
-import type { Guide } from '~/shared/api/types';
+import { type Guide, SeoPage } from '~/shared/api/types';
 
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
@@ -22,9 +22,17 @@ function difficultyLabel(difficulty: string): string {
   return t(`guides.difficulty.${difficulty}`);
 }
 
+const pageSeoQuery = usePageSeo(SeoPage.GUIDES);
+await pageSeoQuery.suspense();
+const pageSeo = pageSeoQuery.data;
+
 useSeoMeta({
-  title: () => t('guides.heading'),
-  description: () => t('home.tagline'),
+  title: () => pageSeo.value?.title || t('guides.heading'),
+  description: () => pageSeo.value?.description || t('guides.metaDescription'),
+  ogTitle: () => pageSeo.value?.title || t('guides.heading'),
+  ogDescription: () => pageSeo.value?.description || t('guides.metaDescription'),
+  ogImage: () =>
+    pageSeo.value?.ogImageUrl ? `${apiBaseUrl}${pageSeo.value.ogImageUrl}` : undefined,
 });
 </script>
 

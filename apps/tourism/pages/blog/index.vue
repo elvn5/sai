@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
-import type { BlogPost } from '~/shared/api/types';
+import { type BlogPost, SeoPage } from '~/shared/api/types';
 
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
@@ -17,9 +17,17 @@ await postsQuery.suspense();
 
 const posts = postsQuery.data;
 
+const pageSeoQuery = usePageSeo(SeoPage.BLOG);
+await pageSeoQuery.suspense();
+const pageSeo = pageSeoQuery.data;
+
 useSeoMeta({
-  title: () => t('blog.heading'),
-  description: () => t('home.tagline'),
+  title: () => pageSeo.value?.title || t('blog.heading'),
+  description: () => pageSeo.value?.description || t('blog.metaDescription'),
+  ogTitle: () => pageSeo.value?.title || t('blog.heading'),
+  ogDescription: () => pageSeo.value?.description || t('blog.metaDescription'),
+  ogImage: () =>
+    pageSeo.value?.ogImageUrl ? `${apiBaseUrl}${pageSeo.value.ogImageUrl}` : undefined,
 });
 </script>
 

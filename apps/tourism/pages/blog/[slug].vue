@@ -39,6 +39,24 @@ useSeoMeta({
   ogDescription: post.value.seoDescription || post.value.excerpt || undefined,
   ogImage: post.value.coverImageUrl ? `${apiBaseUrl}${post.value.coverImageUrl}` : undefined,
 });
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: post.value.title,
+        description: post.value.seoDescription || post.value.excerpt || undefined,
+        image: post.value.coverImageUrl ? `${apiBaseUrl}${post.value.coverImageUrl}` : undefined,
+        datePublished: post.value.publishedAt ?? undefined,
+        dateModified: post.value.updatedAt,
+        inLanguage: locale.value,
+      }),
+    },
+  ],
+});
 </script>
 
 <template>

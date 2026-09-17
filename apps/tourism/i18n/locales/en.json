@@ -19,10 +19,12 @@
   },
   "blog": {
     "heading": "Blog",
+    "metaDescription": "News, stories, and travel tips about exploring Kyrgyzstan from Ermekten.",
     "empty": "No posts yet"
   },
   "gallery": {
     "heading": "Gallery",
+    "metaDescription": "Photos of Kyrgyzstan's nature and culture from the Ermekten community.",
     "empty": "Gallery is empty",
     "addButton": "Add photo",
     "addTitle": "New photo",
@@ -47,6 +49,7 @@
   },
   "guides": {
     "heading": "Guides",
+    "metaDescription": "In-depth guides to routes, gear, and trip preparation for hiking in Kyrgyzstan.",
     "empty": "No guides yet",
     "equipment": "Equipment",
     "difficulty": { "easy": "Easy", "moderate": "Moderate", "hard": "Hard" },
@@ -87,6 +90,7 @@
   },
   "tours": {
     "heading": "Tours",
+    "metaDescription": "Ready-made tours across Kyrgyzstan from Ermekten's vetted partners.",
     "empty": "No tours yet",
     "addButton": "Add tour",
     "newTitle": "New tour",

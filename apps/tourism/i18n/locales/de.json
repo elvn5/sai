@@ -19,10 +19,12 @@
   },
   "blog": {
     "heading": "Blog",
+    "metaDescription": "Neuigkeiten, Geschichten und Reisetipps rund um Kirgisistan von Ermekten.",
     "empty": "Noch keine Beiträge"
   },
   "gallery": {
     "heading": "Galerie",
+    "metaDescription": "Fotos von Natur und Kultur Kirgisistans aus der Ermekten-Community.",
     "empty": "Die Galerie ist leer",
     "addButton": "Foto hinzufügen",
     "addTitle": "Neues Foto",
@@ -47,6 +49,7 @@
   },
   "guides": {
     "heading": "Guides",
+    "metaDescription": "Ausführliche Guides zu Routen, Ausrüstung und Vorbereitung für Wanderungen in Kirgisistan.",
     "empty": "Noch keine Guides",
     "equipment": "Ausrüstung",
     "difficulty": { "easy": "Leicht", "moderate": "Mittel", "hard": "Schwer" },
@@ -87,6 +90,7 @@
   },
   "tours": {
     "heading": "Touren",
+    "metaDescription": "Fertige Touren durch Kirgisistan von geprüften Ermekten-Partnern.",
     "empty": "Noch keine Touren",
     "addButton": "Tour hinzufügen",
     "newTitle": "Neue Tour",

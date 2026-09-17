@@ -3,6 +3,7 @@ import CookieConsent from '~/components/widgets/cookie-consent/CookieConsent.vue
 
 const { t } = useI18n();
 const head = useLocaleHead();
+const siteConfig = useSiteConfig();
 
 useHead({
   htmlAttrs: computed(() => head.value.htmlAttrs),
@@ -10,6 +11,19 @@ useHead({
   meta: computed(() => head.value.meta),
   titleTemplate: (title) =>
     title ? `${title} — ${t('brand.name')}` : `${t('brand.name')} — ${t('home.tagline')}`,
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: () =>
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: t('brand.name'),
+          url: siteConfig.url,
+          logo: `${siteConfig.url}/logo.svg`,
+        }),
+    },
+  ],
 });
 
 useSeoMeta({

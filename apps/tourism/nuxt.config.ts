@@ -1,9 +1,24 @@
+const siteUrl = process.env.NUXT_PUBLIC_SITE_URL ?? 'http://localhost:3011';
+// Only the canonical production domain should ever be indexable — staging
+// serves the same build and would otherwise create duplicate-content noise.
+const isProductionSite = siteUrl === 'https://ermekten.com';
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-01-01',
   devtools: { enabled: true },
   devServer: { port: 3011 },
   features: { inlineStyles: false },
-  modules: ['@nuxt/ui', '@nuxtjs/i18n'],
+  modules: ['@nuxt/ui', '@nuxtjs/i18n', '@nuxtjs/sitemap', '@nuxtjs/robots'],
+  site: {
+    url: siteUrl,
+    name: 'Ermekten',
+  },
+  robots: {
+    // Staging serves the same build as production and must stay out of search
+    // results entirely, so it gets a blanket disallow instead of the
+    // page-level rules below.
+    disallow: isProductionSite ? ['/login', '/profile', '/guides/new', '/tours/new'] : ['/'],
+  },
   css: ['~/assets/css/tokens.css'],
   ui: {
     safelistColors: ['secondary'],
@@ -25,7 +40,7 @@ export default defineNuxtConfig({
     defaultLocale: 'ru',
     strategy: 'prefix_except_default',
     lazy: true,
-    baseUrl: process.env.NUXT_PUBLIC_SITE_URL ?? 'http://localhost:3011',
+    baseUrl: siteUrl,
     detectBrowserLanguage: {
       useCookie: true,
       cookieKey: 'i18n_redirected',

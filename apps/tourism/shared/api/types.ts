@@ -88,9 +88,17 @@ export interface Tour {
   userId: string | null;
 }
 
+export enum SeoPage {
+  HOME = 'home',
+  BLOG = 'blog',
+  GALLERY = 'gallery',
+  GUIDES = 'guides',
+  TOURS = 'tours',
+}
+
 export interface PageSeo {
   id: string;
-  page: string;
+  page: SeoPage;
   locale: string;
   title: string | null;
   description: string | null;

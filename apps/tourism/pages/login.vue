@@ -452,7 +452,9 @@ onBeforeUnmount(() => {
         <p v-if="telegramUnavailable" class="text-center text-sm text-text-muted">
           {{ $t('login.telegramUnavailable') }}
         </p>
-        <div v-else ref="widgetContainer" class="flex min-h-[40px] justify-center" />
+        <div v-else class="flex min-h-[56px] justify-center py-2">
+          <div ref="widgetContainer" class="telegram-widget-glow rounded-2xl" />
+        </div>
       </template>
     </template>
   </section>

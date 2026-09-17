@@ -153,3 +153,19 @@ body {
 .icon-select-active {
   animation: icon-select-glow 1.8s ease-in-out infinite;
 }
+
+@keyframes telegram-widget-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgb(56 189 248 / 0.5), 0 0 16px 4px rgb(56 189 248 / 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgb(56 189 248 / 0.85), 0 0 26px 8px rgb(56 189 248 / 0.6);
+  }
+}
+
+.telegram-widget-glow {
+  transform: scale(1.25);
+  transform-origin: center;
+  animation: telegram-widget-glow 2.4s ease-in-out infinite;
+}

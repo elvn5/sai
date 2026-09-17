@@ -81,6 +81,8 @@ export interface Tour {
   price: number | null;
   durationDays: number | null;
   location: string | null;
+  startDate: string;
+  endDate: string;
   coverImageUrl: string | null;
   isPublished: boolean;
   publishedAt: string | null;

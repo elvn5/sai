@@ -20,14 +20,21 @@ const coverFile = ref<File | null>(null);
 const submitError = ref<string | null>(null);
 
 const formSchema = toTypedSchema(
-  z.object({
-    title: z.string().min(1, t('login.required')).max(255),
-    excerpt: z.string().max(500).optional(),
-    content: z.string().min(1, t('login.required')).max(20000),
-    price: z.number().int().nonnegative().optional(),
-    durationDays: z.number().int().positive().optional(),
-    location: z.string().max(255).optional(),
-  }),
+  z
+    .object({
+      title: z.string().min(1, t('login.required')).max(255),
+      excerpt: z.string().max(500).optional(),
+      content: z.string().min(1, t('login.required')).max(20000),
+      price: z.number().int().nonnegative().optional(),
+      durationDays: z.number().int().positive().optional(),
+      location: z.string().max(255).optional(),
+      startDate: z.string().min(1, t('login.required')),
+      endDate: z.string().min(1, t('login.required')),
+    })
+    .refine((data) => data.endDate >= data.startDate, {
+      message: t('tours.dateRangeInvalid'),
+      path: ['endDate'],
+    }),
 );
 
 const { handleSubmit, defineField, errors } = useForm({
@@ -41,6 +48,8 @@ const [content] = defineField('content');
 const [price, priceAttrs] = defineField('price');
 const [durationDays, durationDaysAttrs] = defineField('durationDays');
 const [location, locationAttrs] = defineField('location');
+const [startDate, startDateAttrs] = defineField('startDate');
+const [endDate, endDateAttrs] = defineField('endDate');
 
 useSeoMeta({
   title: () => t('tours.newTitle'),
@@ -73,6 +82,8 @@ const createMutation = useMutation({
     price?: number;
     durationDays?: number;
     location?: string;
+    startDate: string;
+    endDate: string;
   }) => {
     let coverImageUrl: string | null = null;
     if (coverFile.value) {
@@ -91,6 +102,8 @@ const createMutation = useMutation({
       price: values.price ?? null,
       durationDays: values.durationDays ?? null,
       location: values.location || null,
+      startDate: values.startDate,
+      endDate: values.endDate,
       coverImageUrl,
     });
   },
@@ -133,6 +146,16 @@ const onSubmit = handleSubmit((values) => {
 
         <UFormGroup :label="$t('tours.locationLabel')" :error="errors.location">
           <UInput v-model="location" v-bind="locationAttrs" />
+        </UFormGroup>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <UFormGroup :label="$t('tours.startDateLabel')" :error="errors.startDate">
+          <UInput v-model="startDate" v-bind="startDateAttrs" type="date" />
+        </UFormGroup>
+
+        <UFormGroup :label="$t('tours.endDateLabel')" :error="errors.endDate">
+          <UInput v-model="endDate" v-bind="endDateAttrs" type="date" />
         </UFormGroup>
       </div>
 

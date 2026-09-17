@@ -69,6 +69,10 @@ function handleDelete(): void {
       <UBadge v-if="tour.durationDays" color="gray" variant="subtle">
         {{ t('tours.durationValue', { days: tour.durationDays }) }}
       </UBadge>
+      <UBadge color="gray" variant="subtle">
+        <UIcon name="i-heroicons-calendar-days" class="mr-1 h-3.5 w-3.5" />
+        {{ formatDateRange(locale, tour.startDate, tour.endDate) }}
+      </UBadge>
     </div>
 
     <h1 class="mt-4 text-3xl font-extrabold text-text sm:text-4xl">{{ tour.title }}</h1>

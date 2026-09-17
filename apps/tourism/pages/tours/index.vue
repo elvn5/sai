@@ -62,6 +62,10 @@ useSeoMeta({
               <UBadge v-if="tour.durationDays" color="gray" variant="subtle">
                 {{ t('tours.durationValue', { days: tour.durationDays }) }}
               </UBadge>
+              <UBadge color="gray" variant="subtle">
+                <UIcon name="i-heroicons-calendar-days" class="mr-1 h-3.5 w-3.5" />
+                {{ formatDateRange(locale, tour.startDate, tour.endDate) }}
+              </UBadge>
             </div>
             <h2 class="text-xl font-semibold text-text">{{ tour.title }}</h2>
             <p v-if="tour.excerpt" class="mt-2 text-text-muted">{{ tour.excerpt }}</p>

@@ -41,6 +41,12 @@ export class Tour {
   @Column({ type: 'varchar', nullable: true })
   location!: string | null;
 
+  @Column({ type: 'date' })
+  startDate!: string;
+
+  @Column({ type: 'date' })
+  endDate!: string;
+
   @Column({ type: 'varchar', nullable: true })
   coverImageUrl!: string | null;
 

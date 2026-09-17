@@ -1,7 +1,7 @@
 import { Locale } from '@app/database';
 import { z } from 'zod';
 
-export const createTourSchema = z.object({
+const tourFieldsSchema = z.object({
   locale: z.nativeEnum(Locale),
   slug: z
     .string()
@@ -14,10 +14,17 @@ export const createTourSchema = z.object({
   price: z.number().int().nonnegative().nullable().optional(),
   durationDays: z.number().int().positive().nullable().optional(),
   location: z.string().max(255).nullable().optional(),
+  startDate: z.string().date(),
+  endDate: z.string().date(),
   coverImageUrl: z.string().max(2000).nullable().optional(),
 });
 
-export const updateTourSchema = createTourSchema.partial();
+export const createTourSchema = tourFieldsSchema.refine((data) => data.endDate >= data.startDate, {
+  message: 'endDate must be on or after startDate',
+  path: ['endDate'],
+});
+
+export const updateTourSchema = tourFieldsSchema.partial();
 
 export type CreateTourDto = z.infer<typeof createTourSchema>;
 export type UpdateTourDto = z.infer<typeof updateTourSchema>;

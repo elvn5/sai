@@ -9,6 +9,7 @@ const localePath = useLocalePath();
 const auth = useAuth();
 const api = useApiClient();
 const queryClient = useQueryClient();
+const { isTma, getInitData } = useTelegramWebApp();
 
 const tabs = [
   { key: 'info', label: t('profile.tabs.info'), icon: 'i-heroicons-user-circle' },
@@ -39,7 +40,7 @@ async function handleLogout(): Promise<void> {
 
 onMounted(async () => {
   if (!auth.checked.value) {
-    await auth.checkSession();
+    await auth.ensureSession({ isTma: isTma.value, initData: getInitData() });
   }
   if (!auth.user.value) {
     await navigateTo(localePath('/login'));

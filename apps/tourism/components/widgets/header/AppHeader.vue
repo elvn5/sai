@@ -4,7 +4,7 @@ import LanguageSwitcher from '~/components/features/language-switch/LanguageSwit
 import ThemeToggle from '~/components/features/theme-toggle/ThemeToggle.vue';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
 
-const { isTma } = useTelegramWebApp();
+const { isTma, getInitData } = useTelegramWebApp();
 const localePath = useLocalePath();
 const route = useRoute();
 const auth = useAuth();
@@ -20,7 +20,7 @@ const navLinks = [
 
 onMounted(() => {
   if (!auth.checked.value) {
-    void auth.checkSession();
+    void auth.ensureSession({ isTma: isTma.value, initData: getInitData() });
   }
 });
 

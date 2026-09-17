@@ -14,6 +14,7 @@ const localePath = useLocalePath();
 const api = useApiClient();
 const auth = useAuth();
 const queryClient = useQueryClient();
+const { isTma, getInitData } = useTelegramWebApp();
 
 const coverFile = ref<File | null>(null);
 const submitError = ref<string | null>(null);
@@ -48,7 +49,7 @@ useSeoMeta({
 
 onMounted(async () => {
   if (!auth.checked.value) {
-    await auth.checkSession();
+    await auth.ensureSession({ isTma: isTma.value, initData: getInitData() });
   }
   if (!auth.user.value) {
     await navigateTo(localePath('/login'));

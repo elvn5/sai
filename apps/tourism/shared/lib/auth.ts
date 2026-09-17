@@ -126,10 +126,30 @@ export function useAuth() {
     setUser(null);
   }
 
+  // The single entry point every page/layout should use to establish a
+  // session: inside a Telegram Mini App there's no login form to show, so
+  // Telegram's own initData silently authenticates the user instead of
+  // falling back to an existing (usually absent) cookie session. Takes the
+  // Telegram state as params rather than calling useTelegramWebApp() itself,
+  // since this is invoked from onMounted callbacks where registering a new
+  // onMounted (as that composable does) is no longer valid.
+  async function ensureSession(tma: { isTma: boolean; initData?: string }): Promise<boolean> {
+    if (tma.isTma && tma.initData) {
+      try {
+        await loginWithTelegramMiniApp(tma.initData);
+        return true;
+      } catch {
+        // Fall through to a normal session check below.
+      }
+    }
+    return checkSession();
+  }
+
   return {
     user: computed(() => query.data.value ?? null),
     checked: computed(() => query.isFetched.value),
     checkSession,
+    ensureSession,
     register,
     login,
     verifyCode,

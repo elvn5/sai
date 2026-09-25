@@ -1,7 +1,7 @@
 import { ZodValidationPipe } from '@/common/zod-validation.pipe';
 import { CurrentUser } from '@/user-auth/current-user.decorator';
 import { UserJwtAuthGuard } from '@/user-auth/user-jwt-auth.guard';
-import { GalleryRegion, User } from '@app/database';
+import { User } from '@app/database';
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import {
   type CreateGalleryItemDto,
@@ -11,16 +11,31 @@ import {
 } from './gallery.dto';
 import { GalleryService } from './gallery.service';
 
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 50;
+
 @Controller('gallery')
 export class GalleryController {
   constructor(private readonly service: GalleryService) {}
 
   @Get()
-  findPublished(@Query('region') region?: string) {
-    const validRegion = Object.values(GalleryRegion).includes(region as GalleryRegion)
-      ? (region as GalleryRegion)
-      : undefined;
-    return this.service.findPublished(validRegion);
+  findPublished(
+    @Query('location') location?: string,
+    @Query('search') search?: string,
+    @Query('limit') limitRaw?: string,
+    @Query('offset') offsetRaw?: string,
+  ) {
+    const limit = Math.min(
+      Math.max(Number.parseInt(limitRaw ?? '', 10) || DEFAULT_LIMIT, 1),
+      MAX_LIMIT,
+    );
+    const offset = Math.max(Number.parseInt(offsetRaw ?? '', 10) || 0, 0);
+    return this.service.findPublished({ location, search, limit, offset });
+  }
+
+  @Get('locations')
+  findLocations() {
+    return this.service.findLocations();
   }
 
   @Get('mine')

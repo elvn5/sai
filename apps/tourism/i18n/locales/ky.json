@@ -29,23 +29,19 @@
     "addButton": "Сүрөт кошуу",
     "addTitle": "Жаңы сүрөт",
     "uploadLabel": "Сүрөт",
-    "regionLabel": "Облус",
-    "regionHint": "Кыргызстандын облусун тандаңыз",
-    "allRegions": "Бардык облустар",
-    "regions": {
-      "batken": "Баткен облусу",
-      "jalal_abad": "Жалал-Абад облусу",
-      "issyk_kul": "Ысык-Көл облусу",
-      "naryn": "Нарын облусу",
-      "osh": "Ош облусу",
-      "talas": "Талас облусу",
-      "chuy": "Чүй облусу"
-    },
+    "locationLabel": "Локация",
+    "locationHint": "Мисалы, жердин же шаардын аты",
+    "allLocations": "Бардык локациялар",
+    "searchPlaceholder": "Тайпа же локация боюнча издөө...",
+    "loadingMore": "Жүктөлүүдө...",
     "captionLabel": "Тайпа",
     "submit": "Жарыялоо",
     "uploadError": "Сүрөттү жүктөө мүмкүн болбоду. Кайра аракет кылыңыз",
     "deleteButton": "Өчүрүү",
-    "deleteConfirm": "Бул сүрөттү өчүрөсүзбү?"
+    "deleteConfirm": "Бул сүрөттү өчүрөсүзбү?",
+    "next": "Кийинки",
+    "previous": "Мурунку",
+    "close": "Жабуу"
   },
   "guides": {
     "heading": "Гайддар",

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
-import RegionBanner from '~/components/features/region-picker/RegionBanner.vue';
-import RegionPicker from '~/components/features/region-picker/RegionPicker.vue';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
-import { GalleryRegion, SeoPage } from '~/shared/api/types';
+import { SeoPage } from '~/shared/api/types';
 import type { GalleryItem } from '~/shared/api/types';
-import { KYRGYZSTAN_REGIONS } from '~/shared/lib/kyrgyzstan-regions';
+
+const PAGE_SIZE = 20;
+const SEARCH_DEBOUNCE_MS = 300;
 
 const { t, locale } = useI18n();
 const api = useApiClient();
@@ -14,26 +14,74 @@ const queryClient = useQueryClient();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
-const activeRegion = ref<GalleryRegion | null>(null);
+const activeLocation = ref<string | null>(null);
+const searchInput = ref('');
+const search = ref('');
+let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-const galleryQuery = useQuery({
-  queryKey: computed(() => ['gallery', activeRegion.value] as const),
-  queryFn: () =>
-    api.get<GalleryItem[]>(
-      activeRegion.value ? `/gallery?region=${activeRegion.value}` : '/gallery',
-    ),
+watch(searchInput, (value) => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    search.value = value.trim();
+  }, SEARCH_DEBOUNCE_MS);
+});
+
+const locationsQuery = useQuery({
+  queryKey: ['gallery-locations'],
+  queryFn: () => api.get<string[]>('/gallery/locations'),
+});
+await locationsQuery.suspense();
+const locations = locationsQuery.data;
+
+const galleryQuery = useInfiniteQuery({
+  queryKey: computed(() => ['gallery', activeLocation.value, search.value] as const),
+  queryFn: ({ pageParam }) => {
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(pageParam) });
+    if (activeLocation.value) params.set('location', activeLocation.value);
+    if (search.value) params.set('search', search.value);
+    return api.get<GalleryItem[]>(`/gallery?${params.toString()}`);
+  },
+  initialPageParam: 0,
+  getNextPageParam: (lastPage, allPages) =>
+    lastPage.length === PAGE_SIZE ? allPages.length * PAGE_SIZE : undefined,
 });
 await galleryQuery.suspense();
 
-const items = galleryQuery.data;
+const items = computed(() => galleryQuery.data.value?.pages.flat() ?? []);
 
-const isOpen = ref(false);
-const selected = ref<GalleryItem | null>(null);
+const sentinel = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+function handleIntersect(entries: IntersectionObserverEntry[]): void {
+  if (
+    entries[0]?.isIntersecting &&
+    galleryQuery.hasNextPage.value &&
+    !galleryQuery.isFetchingNextPage.value
+  ) {
+    galleryQuery.fetchNextPage();
+  }
+}
+
+onMounted(() => {
+  observer = new IntersectionObserver(handleIntersect, { rootMargin: '200px' });
+  watch(
+    sentinel,
+    (el, prevEl) => {
+      if (prevEl) observer?.unobserve(prevEl);
+      if (el) observer?.observe(el);
+    },
+    { immediate: true },
+  );
+});
+
+onBeforeUnmount(() => {
+  observer?.disconnect();
+});
 
 const isAddOpen = ref(false);
 const selectedFile = ref<File | null>(null);
 const caption = ref('');
-const formRegion = ref<GalleryRegion | undefined>(undefined);
+const formLocation = ref('');
 const submitError = ref<string | null>(null);
 
 const pageSeoQuery = usePageSeo(SeoPage.GALLERY, locale);
@@ -49,19 +97,51 @@ useSeoMeta({
     pageSeo.value?.ogImageUrl ? `${apiBaseUrl}${pageSeo.value.ogImageUrl}` : undefined,
 });
 
-function regionLabel(region: GalleryRegion): string {
-  return t(`gallery.regions.${region}`);
+const lightboxIndex = ref<number | null>(null);
+const currentItem = computed(() =>
+  lightboxIndex.value !== null ? (items.value[lightboxIndex.value] ?? null) : null,
+);
+
+function openLightbox(index: number): void {
+  lightboxIndex.value = index;
 }
 
-function openItem(item: GalleryItem): void {
-  selected.value = item;
-  isOpen.value = true;
+function closeLightbox(): void {
+  lightboxIndex.value = null;
 }
+
+async function showNext(): Promise<void> {
+  if (lightboxIndex.value === null) return;
+  const nextIndex = lightboxIndex.value + 1;
+  if (nextIndex >= items.value.length) {
+    if (galleryQuery.hasNextPage.value && !galleryQuery.isFetchingNextPage.value) {
+      await galleryQuery.fetchNextPage();
+      if (nextIndex < items.value.length) lightboxIndex.value = nextIndex;
+    }
+    return;
+  }
+  lightboxIndex.value = nextIndex;
+}
+
+function showPrevious(): void {
+  if (lightboxIndex.value === null || lightboxIndex.value === 0) return;
+  lightboxIndex.value -= 1;
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (lightboxIndex.value === null) return;
+  if (event.key === 'ArrowRight') void showNext();
+  else if (event.key === 'ArrowLeft') showPrevious();
+  else if (event.key === 'Escape') closeLightbox();
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown));
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown));
 
 function openAdd(): void {
   selectedFile.value = null;
   caption.value = '';
-  formRegion.value = undefined;
+  formLocation.value = '';
   submitError.value = null;
   isAddOpen.value = true;
 }
@@ -73,7 +153,7 @@ function onFileChange(event: Event): void {
 
 const createMutation = useMutation({
   mutationFn: async () => {
-    if (!selectedFile.value || !formRegion.value) throw new Error('missing-fields');
+    if (!selectedFile.value) throw new Error('missing-fields');
 
     const formData = new FormData();
     formData.append('file', selectedFile.value);
@@ -81,12 +161,13 @@ const createMutation = useMutation({
 
     return api.post<GalleryItem>('/gallery', {
       imageUrl: upload.url,
-      region: formRegion.value,
+      location: formLocation.value.trim() || null,
       caption: caption.value || null,
     });
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['gallery'] });
+    queryClient.invalidateQueries({ queryKey: ['gallery-locations'] });
     isAddOpen.value = false;
   },
   onError: () => {
@@ -98,14 +179,15 @@ const deleteMutation = useMutation({
   mutationFn: (id: string) => api.delete(`/gallery/${id}`),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['gallery'] });
-    isOpen.value = false;
+    queryClient.invalidateQueries({ queryKey: ['gallery-locations'] });
+    closeLightbox();
   },
 });
 
 function handleDelete(): void {
-  if (!selected.value) return;
+  if (!currentItem.value) return;
   if (!confirm(t('gallery.deleteConfirm'))) return;
-  deleteMutation.mutate(selected.value.id);
+  deleteMutation.mutate(currentItem.value.id);
 }
 </script>
 
@@ -118,87 +200,130 @@ function handleDelete(): void {
       </UButton>
     </div>
 
-    <div class="mb-8 flex flex-wrap gap-2">
+    <UInput
+      v-model="searchInput"
+      icon="i-heroicons-magnifying-glass"
+      :placeholder="$t('gallery.searchPlaceholder')"
+      class="mb-6"
+    />
+
+    <div v-if="locations && locations.length > 0" class="mb-8 flex flex-wrap gap-2">
       <button
         type="button"
         class="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
         :class="
-          activeRegion === null
+          activeLocation === null
             ? 'border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400'
             : 'border-border text-text-muted hover:border-brand-500/50 hover:text-text'
         "
-        @click="activeRegion = null"
+        @click="activeLocation = null"
       >
-        {{ $t('gallery.allRegions') }}
+        {{ $t('gallery.allLocations') }}
       </button>
       <button
-        v-for="region in KYRGYZSTAN_REGIONS"
-        :key="region"
+        v-for="loc in locations"
+        :key="loc"
         type="button"
-        class="flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium transition-colors"
+        class="rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
         :class="
-          activeRegion === region
+          activeLocation === loc
             ? 'border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400'
             : 'border-border text-text-muted hover:border-brand-500/50 hover:text-text'
         "
-        @click="activeRegion = region"
+        @click="activeLocation = loc"
       >
-        <span class="h-5 w-7 overflow-hidden rounded-sm border border-black/10">
-          <RegionBanner :region="region" />
-        </span>
-        {{ regionLabel(region) }}
+        {{ loc }}
       </button>
     </div>
 
-    <div v-if="items && items.length > 0" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div v-if="items.length > 0" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       <button
-        v-for="item in items"
+        v-for="(item, index) in items"
         :key="item.id"
         type="button"
-        class="group relative overflow-hidden rounded-card border border-border"
-        @click="openItem(item)"
+        class="group relative aspect-square overflow-hidden rounded-card border border-border"
+        @click="openLightbox(index)"
       >
         <img
           :src="`${apiBaseUrl}${item.imageUrl}`"
           :alt="item.altText ?? ''"
-          class="h-40 w-full object-cover transition group-hover:scale-105"
+          loading="lazy"
+          class="h-full w-full object-cover transition group-hover:scale-105"
         />
-        <span class="absolute bottom-1.5 left-1.5 h-5 w-7 overflow-hidden rounded-sm shadow">
-          <RegionBanner :region="item.region" />
+        <span
+          v-if="item.location"
+          class="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5 text-left text-xs text-white"
+        >
+          <UIcon name="i-heroicons-map-pin" class="mr-1 h-3 w-3" />{{ item.location }}
         </span>
       </button>
     </div>
     <p v-else class="text-text-muted">{{ $t('gallery.empty') }}</p>
 
-    <UModal v-model="isOpen">
-      <div v-if="selected" class="p-2">
-        <img
-          :src="`${apiBaseUrl}${selected.imageUrl}`"
-          :alt="selected.altText ?? ''"
-          class="w-full rounded-lg"
-        />
-        <div class="mt-2 flex items-center justify-center gap-2 text-sm text-text-muted">
-          <span class="h-4 w-6 overflow-hidden rounded-sm border border-black/10">
-            <RegionBanner :region="selected.region" />
-          </span>
-          {{ regionLabel(selected.region) }}
-        </div>
-        <p v-if="selected.caption" class="mt-1 text-center text-sm text-text-muted">
-          {{ selected.caption }}
-        </p>
-        <UButton
-          v-if="auth.user.value && selected.userId === auth.user.value.id"
-          color="gray"
-          variant="soft"
-          class="mt-3"
-          block
-          :loading="deleteMutation.isPending.value"
-          @click="handleDelete"
+    <div ref="sentinel" class="h-1" />
+    <p v-if="galleryQuery.isFetchingNextPage.value" class="mt-4 text-center text-sm text-text-muted">
+      {{ $t('gallery.loadingMore') }}
+    </p>
+
+    <Teleport to="body">
+      <div v-if="currentItem" class="fixed inset-0 z-50 flex flex-col bg-black/95" @click.self="closeLightbox">
+        <button
+          type="button"
+          class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          :aria-label="$t('gallery.close')"
+          @click="closeLightbox"
         >
-          {{ $t('gallery.deleteButton') }}
-        </UButton>
+          <UIcon name="i-heroicons-x-mark" class="h-6 w-6" />
+        </button>
+
+        <button
+          v-if="lightboxIndex !== 0"
+          type="button"
+          class="absolute left-2 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:left-4"
+          :aria-label="$t('gallery.previous')"
+          @click="showPrevious"
+        >
+          <UIcon name="i-heroicons-chevron-left" class="h-7 w-7" />
+        </button>
+
+        <button
+          v-if="lightboxIndex !== null && (lightboxIndex < items.length - 1 || galleryQuery.hasNextPage.value)"
+          type="button"
+          class="absolute right-2 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:right-4"
+          :aria-label="$t('gallery.next')"
+          @click="showNext"
+        >
+          <UIcon name="i-heroicons-chevron-right" class="h-7 w-7" />
+        </button>
+
+        <div class="flex flex-1 items-center justify-center p-4 sm:p-12" @click.self="closeLightbox">
+          <img
+            :src="`${apiBaseUrl}${currentItem.imageUrl}`"
+            :alt="currentItem.altText ?? ''"
+            class="max-h-full max-w-full object-contain"
+          />
+        </div>
+
+        <div class="flex flex-col items-center gap-2 pb-6 text-center text-white">
+          <p v-if="currentItem.location" class="flex items-center gap-1 text-sm text-white/80">
+            <UIcon name="i-heroicons-map-pin" class="h-4 w-4" />{{ currentItem.location }}
+          </p>
+          <p v-if="currentItem.caption" class="max-w-lg px-4 text-sm text-white/90">
+            {{ currentItem.caption }}
+          </p>
+          <UButton
+            v-if="auth.user.value && currentItem.userId === auth.user.value.id"
+            color="gray"
+            variant="soft"
+            size="sm"
+            :loading="deleteMutation.isPending.value"
+            @click="handleDelete"
+          >
+            {{ $t('gallery.deleteButton') }}
+          </UButton>
+        </div>
       </div>
-    </UModal>
+    </Teleport>
 
     <UModal v-model="isAddOpen">
       <div class="flex flex-col gap-4 p-4">
@@ -213,8 +338,8 @@ function handleDelete(): void {
           />
         </UFormGroup>
 
-        <UFormGroup :label="$t('gallery.regionLabel')" :hint="$t('gallery.regionHint')">
-          <RegionPicker v-model="formRegion" />
+        <UFormGroup :label="$t('gallery.locationLabel')" :hint="$t('gallery.locationHint')">
+          <UInput v-model="formLocation" :maxlength="255" />
         </UFormGroup>
 
         <UFormGroup :label="$t('gallery.captionLabel')">
@@ -226,7 +351,7 @@ function handleDelete(): void {
         <UButton
           color="primary"
           block
-          :disabled="!selectedFile || !formRegion"
+          :disabled="!selectedFile"
           :loading="createMutation.isPending.value"
           @click="createMutation.mutate()"
         >

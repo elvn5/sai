@@ -29,23 +29,19 @@
     "addButton": "Foto hinzufügen",
     "addTitle": "Neues Foto",
     "uploadLabel": "Bild",
-    "regionLabel": "Region",
-    "regionHint": "Wählen Sie eine Region Kirgisistans",
-    "allRegions": "Alle Regionen",
-    "regions": {
-      "batken": "Region Batken",
-      "jalal_abad": "Region Dschalalabat",
-      "issyk_kul": "Region Yssykköl",
-      "naryn": "Region Naryn",
-      "osh": "Region Osch",
-      "talas": "Region Talas",
-      "chuy": "Region Tschüi"
-    },
+    "locationLabel": "Ort",
+    "locationHint": "Z. B. ein Ortsname oder eine Stadt",
+    "allLocations": "Alle Orte",
+    "searchPlaceholder": "Suche nach Bildunterschrift oder Ort...",
+    "loadingMore": "Wird geladen...",
     "captionLabel": "Beschriftung",
     "submit": "Veröffentlichen",
     "uploadError": "Foto konnte nicht hochgeladen werden. Bitte erneut versuchen",
     "deleteButton": "Löschen",
-    "deleteConfirm": "Dieses Foto löschen?"
+    "deleteConfirm": "Dieses Foto löschen?",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "close": "Schließen"
   },
   "guides": {
     "heading": "Guides",

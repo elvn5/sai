@@ -29,23 +29,19 @@
     "addButton": "Add photo",
     "addTitle": "New photo",
     "uploadLabel": "Image",
-    "regionLabel": "Region",
-    "regionHint": "Pick a region of Kyrgyzstan",
-    "allRegions": "All regions",
-    "regions": {
-      "batken": "Batken Region",
-      "jalal_abad": "Jalal-Abad Region",
-      "issyk_kul": "Issyk-Kul Region",
-      "naryn": "Naryn Region",
-      "osh": "Osh Region",
-      "talas": "Talas Region",
-      "chuy": "Chuy Region"
-    },
+    "locationLabel": "Location",
+    "locationHint": "E.g. a place or town name",
+    "allLocations": "All locations",
+    "searchPlaceholder": "Search by caption or location...",
+    "loadingMore": "Loading...",
     "captionLabel": "Caption",
     "submit": "Publish",
     "uploadError": "Could not upload the photo. Please try again",
     "deleteButton": "Delete",
-    "deleteConfirm": "Delete this photo?"
+    "deleteConfirm": "Delete this photo?",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close"
   },
   "guides": {
     "heading": "Guides",

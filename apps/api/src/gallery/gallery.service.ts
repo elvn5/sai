@@ -1,8 +1,15 @@
-import { GalleryItem, type GalleryRegion } from '@app/database';
+import { GalleryItem } from '@app/database';
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import type { CreateGalleryItemDto, UpdateGalleryItemDto } from './gallery.dto';
+
+export interface FindPublishedOptions {
+  location?: string;
+  search?: string;
+  limit: number;
+  offset: number;
+}
 
 @Injectable()
 export class GalleryService {
@@ -11,11 +18,36 @@ export class GalleryService {
     private readonly repository: Repository<GalleryItem>,
   ) {}
 
-  findPublished(region?: GalleryRegion): Promise<GalleryItem[]> {
-    return this.repository.find({
-      where: { isPublished: true, ...(region ? { region } : {}) },
-      order: { sortOrder: 'ASC', createdAt: 'DESC' },
-    });
+  findPublished(options: FindPublishedOptions): Promise<GalleryItem[]> {
+    const qb = this.repository
+      .createQueryBuilder('item')
+      .where('item.isPublished = :isPublished', { isPublished: true })
+      .orderBy('item.sortOrder', 'ASC')
+      .addOrderBy('item.createdAt', 'DESC')
+      .take(options.limit)
+      .skip(options.offset);
+
+    if (options.location) {
+      qb.andWhere('item.location = :location', { location: options.location });
+    }
+    if (options.search) {
+      qb.andWhere('(item.caption ILIKE :search OR item.location ILIKE :search)', {
+        search: `%${options.search}%`,
+      });
+    }
+
+    return qb.getMany();
+  }
+
+  async findLocations(): Promise<string[]> {
+    const rows = await this.repository
+      .createQueryBuilder('item')
+      .select('DISTINCT item.location', 'location')
+      .where('item.isPublished = :isPublished', { isPublished: true })
+      .andWhere('item.location IS NOT NULL')
+      .orderBy('item.location', 'ASC')
+      .getRawMany<{ location: string }>();
+    return rows.map((row) => row.location);
   }
 
   findMine(userId: string): Promise<GalleryItem[]> {

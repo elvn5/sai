@@ -37,6 +37,7 @@
     "captionLabel": "Beschriftung",
     "submit": "Veröffentlichen",
     "uploadError": "Foto konnte nicht hochgeladen werden. Bitte erneut versuchen",
+    "unsupportedFileType": "Nur JPEG, PNG und WEBP werden unterstützt",
     "deleteButton": "Löschen",
     "deleteConfirm": "Dieses Foto löschen?",
     "next": "Weiter",

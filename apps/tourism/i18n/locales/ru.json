@@ -37,6 +37,7 @@
     "captionLabel": "Подпись",
     "submit": "Опубликовать",
     "uploadError": "Не удалось загрузить фото. Попробуйте ещё раз",
+    "unsupportedFileType": "Поддерживаются только JPEG, PNG и WEBP",
     "deleteButton": "Удалить",
     "deleteConfirm": "Удалить это фото?",
     "next": "Следующее",

@@ -37,6 +37,7 @@
     "captionLabel": "Caption",
     "submit": "Publish",
     "uploadError": "Could not upload the photo. Please try again",
+    "unsupportedFileType": "Only JPEG, PNG and WEBP are supported",
     "deleteButton": "Delete",
     "deleteConfirm": "Delete this photo?",
     "next": "Next",

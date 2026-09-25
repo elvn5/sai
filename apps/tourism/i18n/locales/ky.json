@@ -37,6 +37,7 @@
     "captionLabel": "Тайпа",
     "submit": "Жарыялоо",
     "uploadError": "Сүрөттү жүктөө мүмкүн болбоду. Кайра аракет кылыңыз",
+    "unsupportedFileType": "Тек гана JPEG, PNG жана WEBP форматтары колдоого алынат",
     "deleteButton": "Өчүрүү",
     "deleteConfirm": "Бул сүрөттү өчүрөсүзбү?",
     "next": "Кийинки",

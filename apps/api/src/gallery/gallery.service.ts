@@ -1,5 +1,7 @@
+import { StorageService } from '@/storage/storage.service';
 import { GalleryItem } from '@app/database';
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import type { CreateGalleryItemDto, UpdateGalleryItemDto } from './gallery.dto';
@@ -13,9 +15,13 @@ export interface FindPublishedOptions {
 
 @Injectable()
 export class GalleryService {
+  private readonly logger = new Logger(GalleryService.name);
+
   constructor(
     @InjectRepository(GalleryItem)
     private readonly repository: Repository<GalleryItem>,
+    private readonly storageService: StorageService,
+    private readonly configService: ConfigService,
   ) {}
 
   findPublished(options: FindPublishedOptions): Promise<GalleryItem[]> {
@@ -76,6 +82,22 @@ export class GalleryService {
   async remove(userId: string, id: string): Promise<void> {
     const item = await this.findOwned(userId, id);
     await this.repository.remove(item);
+    await this.tryDeleteR2Object(item.imageUrl);
+  }
+
+  // Photos uploaded directly to R2 store the full public URL in imageUrl;
+  // legacy photos on local disk (served from /uploads/...) are left alone,
+  // matching the pre-R2 behavior of never cleaning those up either.
+  private async tryDeleteR2Object(imageUrl: string): Promise<void> {
+    const publicUrl = this.configService.get<string>('R2_PUBLIC_URL');
+    if (!publicUrl || !imageUrl.startsWith(`${publicUrl}/`)) return;
+
+    const key = imageUrl.slice(publicUrl.length + 1);
+    try {
+      await this.storageService.deleteFile(key);
+    } catch (error) {
+      this.logger.error(`Failed to clean up R2 object "${key}" after gallery item removal`, error);
+    }
   }
 
   private async findOwned(userId: string, id: string): Promise<GalleryItem> {

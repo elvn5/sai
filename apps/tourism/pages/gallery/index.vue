@@ -3,9 +3,11 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { useApiClient } from '~/shared/api/client';
 import { SeoPage } from '~/shared/api/types';
 import type { GalleryItem } from '~/shared/api/types';
+import { resolveMediaUrl } from '~/shared/lib/resolve-media-url';
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const { t, locale } = useI18n();
 const api = useApiClient();
@@ -148,19 +150,43 @@ function openAdd(): void {
 
 function onFileChange(event: Event): void {
   const target = event.target as HTMLInputElement;
-  selectedFile.value = target.files?.[0] ?? null;
+  const file = target.files?.[0] ?? null;
+  if (file && !ALLOWED_IMAGE_TYPES.has(file.type)) {
+    submitError.value = t('gallery.unsupportedFileType');
+    selectedFile.value = null;
+    target.value = '';
+    return;
+  }
+  submitError.value = null;
+  selectedFile.value = file;
 }
 
 const createMutation = useMutation({
   mutationFn: async () => {
-    if (!selectedFile.value) throw new Error('missing-fields');
+    const file = selectedFile.value;
+    if (!file) throw new Error('missing-fields');
 
-    const formData = new FormData();
-    formData.append('file', selectedFile.value);
-    const upload = await api.upload<{ url: string }>('/uploads/image', formData);
+    // Direct-to-R2 upload: the file goes straight from the browser to the
+    // bucket via a presigned URL, never through this server.
+    const { uploadUrl, publicUrl } = await api.post<{
+      uploadUrl: string;
+      key: string;
+      publicUrl: string;
+    }>('/storage/upload-url', {
+      filename: file.name,
+      contentType: file.type,
+      folder: 'gallery',
+    });
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+    if (!uploadResponse.ok) throw new Error('upload-failed');
 
     return api.post<GalleryItem>('/gallery', {
-      imageUrl: upload.url,
+      imageUrl: publicUrl,
       location: formLocation.value.trim() || null,
       caption: caption.value || null,
     });
@@ -245,7 +271,7 @@ function handleDelete(): void {
         @click="openLightbox(index)"
       >
         <img
-          :src="`${apiBaseUrl}${item.imageUrl}`"
+          :src="resolveMediaUrl(apiBaseUrl, item.imageUrl)"
           :alt="item.altText ?? ''"
           loading="lazy"
           class="h-full w-full object-cover transition group-hover:scale-105"
@@ -298,7 +324,7 @@ function handleDelete(): void {
 
         <div class="flex flex-1 items-center justify-center p-4 sm:p-12" @click.self="closeLightbox">
           <img
-            :src="`${apiBaseUrl}${currentItem.imageUrl}`"
+            :src="resolveMediaUrl(apiBaseUrl, currentItem.imageUrl)"
             :alt="currentItem.altText ?? ''"
             class="max-h-full max-w-full object-contain"
           />
@@ -332,7 +358,7 @@ function handleDelete(): void {
         <UFormGroup :label="$t('gallery.uploadLabel')">
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             class="block w-full text-sm text-text file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
             @change="onFileChange"
           />

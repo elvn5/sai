@@ -9,6 +9,7 @@ import { GuidesModule } from '@/guides/guides.module';
 import { PageSeoModule } from '@/page-seo/page-seo.module';
 import { ParcelsModule } from '@/parcels/parcels.module';
 import { PartnersModule } from '@/partners/partners.module';
+import { StorageModule } from '@/storage/storage.module';
 import { SupportModule } from '@/support/support.module';
 import { TelegramAuthModule } from '@/telegram-auth/telegram-auth.module';
 import { ToursModule } from '@/tours/tours.module';
@@ -57,6 +58,7 @@ import { LoggerModule } from 'nestjs-pino';
     PartnersModule,
     PageSeoModule,
     UploadsModule,
+    StorageModule,
     TelegramAuthModule,
     CredentialsAuthModule,
     UserAuthModule,

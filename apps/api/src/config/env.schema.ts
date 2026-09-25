@@ -19,6 +19,14 @@ export const envSchema = z.object({
   // until they're set, instead of crash-looping the whole API.
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('Ermekten <onboarding@resend.dev>'),
+  // Cloudflare R2 (direct-to-bucket uploads). Optional for the same reason
+  // as the Resend key above — StorageService throws a clear error per-request
+  // if these are missing rather than the whole API refusing to boot.
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  R2_PUBLIC_URL: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

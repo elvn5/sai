@@ -27,6 +27,6 @@
     "@tailwindcss/typography": "^0.5.20",
     "nuxt": "^3.15.1",
     "typescript": "^5.7.2",
-    "vue-tsc": "^2.2.0"
+    "vue-tsc": "^3.3.11"
   }
 }

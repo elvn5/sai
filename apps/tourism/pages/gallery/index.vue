@@ -322,11 +322,14 @@ function handleDelete(): void {
           <UIcon name="i-heroicons-chevron-right" class="h-7 w-7" />
         </button>
 
-        <div class="flex flex-1 items-center justify-center p-4 sm:p-12" @click.self="closeLightbox">
+        <div
+          class="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-12"
+          @click.self="closeLightbox"
+        >
           <img
             :src="resolveMediaUrl(apiBaseUrl, currentItem.imageUrl)"
             :alt="currentItem.altText ?? ''"
-            class="max-h-full max-w-full object-contain"
+            class="max-h-[80vh] max-w-[90vw] object-contain"
           />
         </div>
 

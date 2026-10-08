@@ -43,7 +43,7 @@ func setup(t *testing.T, cfg config.Config) env {
 		t.Fatal(err)
 	}
 	return env{
-		router: routes.Setup(cfg, storage.NewR2(cfg), slog.New(slog.DiscardHandler)),
+		router: routes.Setup(cfg, storage.NewR2(cfg), nil, slog.New(slog.DiscardHandler)),
 		dir:    cfg.UploadsDir,
 		cookie: &http.Cookie{Name: "user_token", Value: token},
 	}

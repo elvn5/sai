@@ -136,3 +136,51 @@ func TestNestedErrorsReportTopLevelField(t *testing.T) {
 		}
 	}
 }
+
+type ratingDTO struct {
+	Stars validation.Field[int]    `json:"stars" binding:"omitempty,gte=1,lte=5"`
+	Note  validation.Field[string] `json:"note" binding:"omitempty,min=1"`
+}
+
+// Zero values of nullable fields must still be validated.
+func TestNullableZeroValuesAreValidated(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for body, want := range map[string]string{
+		`{"stars":0}`:                `{"formErrors":[],"fieldErrors":{"stars":["Number must be greater than or equal to 1"]}}`,
+		`{"note":""}`:                `{"formErrors":[],"fieldErrors":{"note":["String must contain at least 1 character(s)"]}}`,
+		`{"stars":null,"note":null}`: ``,
+	} {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+		c.Request.Header.Set("Content-Type", "application/json")
+		var dto ratingDTO
+		validation.BindJSON(c, &dto)
+		if rec.Body.String() != want {
+			t.Errorf("%s\n got: %s\nwant: %s", body, rec.Body.String(), want)
+		}
+	}
+}
+
+type multiDTO struct {
+	Price validation.Field[int] `json:"price" binding:"omitempty,gte=0"`
+	Name  *validation.Trimmed   `json:"name" binding:"required,min=1"`
+	Stars validation.Field[int] `json:"stars" binding:"omitempty,gte=1"`
+	Tags  []string              `json:"tags" binding:"omitempty,dive,oneof=a b"`
+}
+
+// Every mistyped property is reported, and properties after one are still
+// decoded and validated (encoding/json alone would stop at the first).
+func TestAllTypeErrorsReported(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"price":1.5,"name":5,"stars":0,"tags":["z"],"Price":3}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	var dto multiDTO
+	validation.BindJSON(c, &dto)
+	want := `{"formErrors":[],"fieldErrors":{"name":["Expected string, received number"],"price":["Expected integer, received float"],"stars":["Number must be greater than or equal to 1"],"tags":["Invalid enum value. Expected 'a' | 'b', received 'z'"]}}`
+	if rec.Body.String() != want {
+		t.Fatalf("got  %s\nwant %s", rec.Body.String(), want)
+	}
+}

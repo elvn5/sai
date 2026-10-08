@@ -38,6 +38,10 @@ jobs:
             dockerfile: services/media/Dockerfile
           - service: content
             dockerfile: services/content/Dockerfile
+          - service: listings
+            dockerfile: services/listings/Dockerfile
+          - service: users
+            dockerfile: services/users/Dockerfile
     steps:
       - uses: actions/checkout@v4
         with:

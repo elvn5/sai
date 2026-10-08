@@ -43,3 +43,5 @@ require (
 )
 
 replace github.com/elvn5/sai/services/pkg => ../pkg
+
+replace github.com/elvn5/sai/services/proto => ../proto

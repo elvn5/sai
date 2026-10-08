@@ -16,7 +16,7 @@ import (
 )
 
 // Setup builds the router. It sits behind the gateway, which handles CORS.
-func Setup(cfg config.Config, r2 *storage.R2, log *slog.Logger) *gin.Engine {
+func Setup(cfg config.Config, r2 *storage.R2, users middleware.UserLookup, log *slog.Logger) *gin.Engine {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 	r.RedirectFixedPath = false
@@ -25,7 +25,7 @@ func Setup(cfg config.Config, r2 *storage.R2, log *slog.Logger) *gin.Engine {
 
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
-	requireSession := middleware.RequireAdminOrUser(auth.NewVerifier(cfg.JWTSecret))
+	requireSession := middleware.RequireAdminOrUser(auth.NewVerifier(cfg.JWTSecret), users)
 	uploads := &handlers.Uploads{Dir: cfg.UploadsDir, Log: log}
 	files := &handlers.Files{Dir: cfg.UploadsDir}
 	store := &handlers.Storage{R2: r2, Log: log}

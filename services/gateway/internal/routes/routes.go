@@ -48,6 +48,7 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 	}{
 		{"MEDIA_URL", cfg.MediaURL, []string{"/uploads", "/storage"}},
 		{"CONTENT_URL", cfg.ContentURL, []string{"/blog", "/guides", "/gallery", "/page-seo"}},
+		{"LISTINGS_URL", cfg.ListingsURL, []string{"/hotels", "/local-guides", "/tours", "/reviews", "/listing-posts"}},
 	}
 	for _, svc := range services {
 		if svc.url == "" {

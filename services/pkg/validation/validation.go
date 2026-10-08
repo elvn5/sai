@@ -63,6 +63,17 @@ func RegisterPattern(tag string, re *regexp.Regexp, message string) {
 	}
 }
 
+// RegisterRule adds a `binding:"<tag>"` rule for strings that a regexp
+// can't express, reported with message.
+func RegisterRule(tag string, valid func(string) bool, message string) {
+	patternMessages.Store(tag, message)
+	if err := validate.RegisterValidation(tag, func(fl validator.FieldLevel) bool {
+		return valid(fl.Field().String())
+	}); err != nil {
+		panic(fmt.Sprintf("validation: register %q: %v", tag, err))
+	}
+}
+
 // BindJSON decodes the request body into dst (a pointer to a struct) and
 // validates it. On failure it writes the 400 response and returns false.
 //
@@ -92,25 +103,13 @@ func BindJSON(c *gin.Context, dst any) bool {
 	}
 
 	result := Flattened{FormErrors: []string{}, FieldErrors: map[string][]string{}}
-
-	// encoding/json keeps decoding after a type mismatch and reports only
-	// the first one; record it and skip that field's validator errors so
-	// it isn't also reported as "Required".
-	var typeErr *json.UnmarshalTypeError
-	if err := json.Unmarshal(body, dst); err != nil {
-		if !errors.As(err, &typeErr) {
-			httperr.Abort(c, http.StatusBadRequest, "Invalid JSON body")
-			return false
-		}
-		typeErr.Field = topLevel(typeErr.Field)
-		result.FieldErrors[typeErr.Field] = []string{typeMismatchMessage(typeErr)}
-	}
+	typeErrors := decodeFields(body, dst, result.FieldErrors)
 
 	var verrs validator.ValidationErrors
 	if err := validate.Struct(dst); err != nil && errors.As(err, &verrs) {
 		for _, fe := range verrs {
 			field := fieldPath(fe)
-			if typeErr != nil && field == typeErr.Field {
+			if typeErrors[field] {
 				continue
 			}
 			result.FieldErrors[field] = append(result.FieldErrors[field], message(fe))
@@ -122,6 +121,40 @@ func BindJSON(c *gin.Context, dst any) bool {
 		return false
 	}
 	return true
+}
+
+// decodeFields decodes each top-level property into its struct field
+// separately. encoding/json stops at the first error a custom
+// UnmarshalJSON returns, leaving later fields unset; zod instead reports
+// every mistyped property. Keys match exactly (encoding/json would also
+// accept other casings). Returns the fields that had a type error.
+func decodeFields(body []byte, dst any, fieldErrors map[string][]string) map[string]bool {
+	var props map[string]json.RawMessage
+	_ = json.Unmarshal(body, &props) // already known to be an object
+
+	failed := map[string]bool{}
+	v := reflect.ValueOf(dst).Elem()
+	t := v.Type()
+	for i := range t.NumField() {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if name == "" || name == "-" {
+			continue
+		}
+		value, present := props[name]
+		if !present {
+			continue
+		}
+		if err := json.Unmarshal(value, v.Field(i).Addr().Interface()); err != nil {
+			failed[name] = true
+			var typeErr *json.UnmarshalTypeError
+			if errors.As(err, &typeErr) {
+				fieldErrors[name] = []string{typeMismatchMessage(typeErr)}
+			} else {
+				fieldErrors[name] = []string{"Invalid input"}
+			}
+		}
+	}
+	return failed
 }
 
 func abort(c *gin.Context, f Flattened) {
@@ -157,6 +190,10 @@ func message(fe validator.FieldError) string {
 		return boundMessage(kind, "at least", "greater than or equal to", fe.Param())
 	case "max", "lte":
 		return boundMessage(kind, "at most", "less than or equal to", fe.Param())
+	case "gt":
+		return "Number must be greater than " + fe.Param()
+	case "lt":
+		return "Number must be less than " + fe.Param()
 	case "oneof":
 		options := strings.Fields(fe.Param())
 		for i, o := range options {

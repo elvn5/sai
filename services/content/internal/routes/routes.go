@@ -17,6 +17,7 @@ import (
 type Deps struct {
 	Store     *store.Store
 	Media     handlers.PhotoDeleter // optional
+	Users     middleware.UserLookup // optional
 	JWTSecret string
 	Log       *slog.Logger
 }
@@ -31,7 +32,7 @@ func Setup(d Deps) *gin.Engine {
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
 	verifier := auth.NewVerifier(d.JWTSecret)
-	requireUser := middleware.RequireUser(verifier)
+	requireUser := middleware.RequireUser(verifier, d.Users)
 	requireAdmin := middleware.RequireAdmin(verifier)
 
 	blog := &handlers.Blog{Store: d.Store, Log: d.Log}

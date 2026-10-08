@@ -25,6 +25,8 @@ import (
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
+	"github.com/elvn5/sai/services/pkg/middleware"
+	"github.com/elvn5/sai/services/pkg/usersclient"
 )
 
 const shutdownTimeout = 15 * time.Second
@@ -71,11 +73,21 @@ func run(log *slog.Logger) error {
 		log.Warn("MEDIA_GRPC_ADDR not set: deleted gallery photos will stay in storage")
 	}
 
+	var users middleware.UserLookup
+	if cfg.UsersGRPCAddr != "" {
+		client, err := usersclient.New(cfg.UsersGRPCAddr)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = client.Close() }()
+		users = client
+	}
+
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: routes.Setup(routes.Deps{
-			Store: store.New(db), Media: media, JWTSecret: cfg.JWTSecret, Log: log,
+			Store: store.New(db), Media: media, Users: users, JWTSecret: cfg.JWTSecret, Log: log,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,

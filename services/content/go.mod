@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	github.com/elvn5/sai/services/pkg v0.0.0
-	github.com/elvn5/sai/services/proto v0.0.0-00010101000000-000000000000
+	github.com/elvn5/sai/services/proto v0.0.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0

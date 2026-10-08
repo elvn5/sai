@@ -37,13 +37,15 @@ func (f Field[T]) Ptr() *T {
 	return &v
 }
 
-// validationValue is what `binding` tags see: nil (so omitempty skips it)
-// unless a value was given.
+// validationValue is what `binding` tags see: a nil pointer (so omitempty
+// skips it) unless a value was given — then a pointer to it, so that zero
+// values like 0 or "" are still validated rather than treated as empty.
 func (f Field[T]) validationValue() any {
 	if !f.Valid {
-		return nil
+		return (*T)(nil)
 	}
-	return f.Value
+	v := f.Value
+	return &v
 }
 
 type fieldValuer interface{ validationValue() any }
@@ -54,5 +56,5 @@ func init() {
 			return f.validationValue()
 		}
 		return nil
-	}, Field[string]{}, Field[int]{}, Field[int64]{}, Field[float64]{}, Field[bool]{}, Field[[]string]{})
+	}, Field[string]{}, Field[Trimmed]{}, Field[int]{}, Field[int64]{}, Field[float64]{}, Field[bool]{}, Field[[]string]{})
 }

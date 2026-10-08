@@ -33,6 +33,20 @@ services:
       postgres:
         condition: service_healthy
 
+  users:
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-users:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Accounts stay in the NestJS database until stage 4 moves them.
+      USERS_DB_NAME: ${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   media:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-media:${IMAGE_TAG}
     restart: unless-stopped
@@ -44,9 +58,12 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      USERS_GRPC_ADDR: users:9083
     # Same volume as the NestJS API: existing files stay where they are.
     volumes:
       - uploads_data:/data/uploads
+    depends_on:
+      - users
 
   content:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-content:${IMAGE_TAG}
@@ -61,10 +78,32 @@ services:
       # One-time copy of existing content from the NestJS database on first start.
       LEGACY_DB_NAME: ${POSTGRES_DB}
       MEDIA_GRPC_ADDR: media:9081
+      USERS_GRPC_ADDR: users:9083
     depends_on:
       postgres:
         condition: service_healthy
       media:
+        condition: service_started
+      users:
+        condition: service_started
+
+  listings:
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-listings:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      LISTINGS_DB_NAME: listings
+      # One-time copy of existing listings from the NestJS database on first start.
+      LEGACY_DB_NAME: ${POSTGRES_DB}
+      USERS_GRPC_ADDR: users:9083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      users:
         condition: service_started
 
   gateway:
@@ -74,6 +113,7 @@ services:
       LEGACY_API_URL: http://api:3001
       MEDIA_URL: http://media:8081
       CONTENT_URL: http://content:8082
+      LISTINGS_URL: http://listings:8083
       ADMIN_ORIGIN: ${ADMIN_ORIGIN}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN}
       # nginx on the host reaches the gateway through the Docker bridge.
@@ -84,6 +124,7 @@ services:
       - api
       - media
       - content
+      - listings
 
   bot:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-bot:${IMAGE_TAG}

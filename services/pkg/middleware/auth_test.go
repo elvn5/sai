@@ -1,6 +1,7 @@
 package middleware_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -27,7 +28,7 @@ func token(t *testing.T, claims jwt.MapClaims) string {
 func TestRequireAdminOrUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.POST("/x", middleware.RequireAdminOrUser(auth.NewVerifier(jwtSecret)), func(c *gin.Context) {
+	r.POST("/x", middleware.RequireAdminOrUser(auth.NewVerifier(jwtSecret), nil), func(c *gin.Context) {
 		c.String(http.StatusOK, "%s|%v", c.GetString(middleware.ContextUserID), c.GetBool(middleware.ContextIsAdmin))
 	})
 
@@ -82,6 +83,45 @@ func TestRequireAdmin(t *testing.T) {
 			if tc.cookie != "" {
 				req.AddCookie(&http.Cookie{Name: "admin_token", Value: tc.cookie})
 			}
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+			if rec.Code != tc.status || !strings.Contains(rec.Body.String(), tc.contains) {
+				t.Fatalf("got %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}
+
+type fakeLookup map[string]string // id → partner status
+
+func (f fakeLookup) LookupUser(_ context.Context, id string) (middleware.SessionUser, error) {
+	status, ok := f[id]
+	if !ok {
+		return middleware.SessionUser{}, middleware.ErrUserNotFound
+	}
+	return middleware.SessionUser{ID: id, PartnerStatus: status}, nil
+}
+
+func TestRequireUserWithLookupAndPartner(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	lookup := fakeLookup{"partner": "approved", "regular": "none"}
+	v := auth.NewVerifier(jwtSecret)
+	r.POST("/tours", middleware.RequireUser(v, lookup), middleware.RequirePartner(), func(c *gin.Context) { c.String(http.StatusOK, "ok") })
+
+	cases := map[string]struct {
+		sub      string
+		status   int
+		contains string
+	}{
+		"approved partner": {"partner", 200, "ok"},
+		"not a partner":    {"regular", 403, "Only approved partners can do this"},
+		"deleted user":     {"ghost", 401, "User not found"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/tours", nil)
+			req.AddCookie(&http.Cookie{Name: "user_token", Value: token(t, jwt.MapClaims{"sub": tc.sub, "role": "user"})})
 			rec := httptest.NewRecorder()
 			r.ServeHTTP(rec, req)
 			if rec.Code != tc.status || !strings.Contains(rec.Body.String(), tc.contains) {

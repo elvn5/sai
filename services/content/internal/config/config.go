@@ -23,6 +23,10 @@ type Config struct {
 	// media service's internal gRPC address, for deleting gallery photos
 	// from R2. Without it, deleted photos stay in the bucket.
 	MediaGRPCAddr string `env:"MEDIA_GRPC_ADDR"`
+
+	// users service's gRPC address, to confirm a session's account still
+	// exists. Without it only the session token is checked.
+	UsersGRPCAddr string `env:"USERS_GRPC_ADDR"`
 }
 
 func (c Config) DSN() string {

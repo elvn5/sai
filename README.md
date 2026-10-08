@@ -11,6 +11,8 @@ NestJS, Nuxt 3, and TypeORM/PostgreSQL. Use this repository as a **GitHub templa
 | [`services/gateway`](services/gateway) | Go + Gin | Public API entry point; routes requests to backend services |
 | [`services/media`](services/media) | Go + Gin | Uploads: R2 presigned URLs, WebP image conversion, `/uploads` files |
 | [`services/content`](services/content) | Go + Gin | Blog, written guides, gallery, page SEO; own `content` database |
+| [`services/listings`](services/listings) | Go + Gin | Hotels, local guides, tours, reviews, owner posts; own `listings` database |
+| [`services/users`](services/users) | Go (gRPC) | Accounts for the other services: session checks, partner status, author profiles |
 | [`apps/api`](apps/api) | NestJS | Legacy REST API, being migrated to Go services behind the gateway |
 | [`apps/bot`](apps/bot) | NestJS + Telegraf | Telegram bot |
 | [`apps/admin`](apps/admin) | Nuxt 3 + @nuxt/ui | Admin panel (Pinia, VeeValidate, Zod) |
@@ -56,6 +58,8 @@ pnpm dev:api     # http://localhost:3001
 pnpm dev:gateway # http://localhost:8080, proxies to the API above
 pnpm dev:media   # http://localhost:8081 (set MEDIA_URL for the gateway to use it)
 pnpm dev:content # http://localhost:8082 (set CONTENT_URL for the gateway to use it)
+pnpm dev:listings # http://localhost:8083 (set LISTINGS_URL; needs dev:users)
+pnpm dev:users   # gRPC on :9083
 pnpm dev:bot
 pnpm dev:admin   # http://localhost:3000
 ```
@@ -74,7 +78,7 @@ The Nuxt apps can call the API directly (`:3001`) or through the gateway
 | `pnpm typecheck` | Type-check all workspace packages |
 | `pnpm migration:generate` | Generate a TypeORM migration (`packages/database`) |
 | `pnpm migration:run` | Run pending migrations |
-| `pnpm dev:gateway` / `dev:media` / `dev:content` | Run a Go service |
+| `pnpm dev:<service>` (gateway, media, content, listings, users) | Run a Go service |
 | `pnpm proto:generate` | Regenerate gRPC code from `services/proto` |
 | `pnpm test:go` | Test all Go modules |
 
@@ -85,6 +89,8 @@ services/   Go workspace (go.work)
   gateway/  Gin API gateway
   media/    Uploads service (R2, WebP, /uploads)
   content/  Blog, guides, gallery, page SEO (own database)
+  listings/ Hotels, local guides, tours, reviews, posts (own database)
+  users/    Accounts (gRPC for now; public API in stage 4)
   proto/    gRPC contracts between services (buf; `pnpm proto:generate`)
   pkg/      Shared Go code: config, logging, NestJS-compatible errors, CORS, JWT
 apps/

@@ -209,11 +209,11 @@ func TestServiceRouting(t *testing.T) {
 		t.Cleanup(srv.Close)
 		return srv
 	}
-	legacy, media, content := upstream("legacy"), upstream("media"), upstream("content")
+	legacy, media, content, listings := upstream("legacy"), upstream("media"), upstream("content"), upstream("listings")
 
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		LegacyAPIURL: legacy.URL, MediaURL: media.URL, ContentURL: content.URL, UpstreamTimeout: 5 * time.Second,
+		LegacyAPIURL: legacy.URL, MediaURL: media.URL, ContentURL: content.URL, ListingsURL: listings.URL, UpstreamTimeout: 5 * time.Second,
 	}, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -231,8 +231,13 @@ func TestServiceRouting(t *testing.T) {
 		"GET /gallery":             "content",
 		"DELETE /gallery/x":        "content",
 		"GET /guides/mine":         "content",
-		"GET /local-guides":        "legacy",
-		"GET /hotels":              "legacy",
+		"GET /local-guides":        "listings",
+		"GET /hotels":              "listings",
+		"POST /reviews":            "listings",
+		"GET /tours/ru/x":          "listings",
+		"DELETE /listing-posts/x":  "listings",
+		"GET /partners/requests":   "legacy",
+		"GET /auth/user/me":        "legacy",
 		"GET /uploadsx":            "legacy",
 		"GET /blogs":               "legacy",
 	}

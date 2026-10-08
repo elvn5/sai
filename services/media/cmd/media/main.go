@@ -24,6 +24,8 @@ import (
 	"github.com/elvn5/sai/services/media/internal/storage"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/logger"
+	"github.com/elvn5/sai/services/pkg/middleware"
+	"github.com/elvn5/sai/services/pkg/usersclient"
 	mediav1 "github.com/elvn5/sai/services/proto/gen/go/media/v1"
 )
 
@@ -48,10 +50,20 @@ func run(log *slog.Logger) error {
 
 	r2 := storage.NewR2(cfg)
 
+	var users middleware.UserLookup
+	if cfg.UsersGRPCAddr != "" {
+		client, err := usersclient.New(cfg.UsersGRPCAddr)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = client.Close() }()
+		users = client
+	}
+
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           routes.Setup(cfg, r2, log),
+		Handler:           routes.Setup(cfg, r2, users, log),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,
 	}

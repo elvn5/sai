@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package users.v1;
+
+option go_package = "github.com/elvn5/sai/services/proto/gen/go/users/v1;usersv1";
+
+// Internal API of the users service, for other backend services.
+service UsersService {
+  // Looks up one user. NOT_FOUND if there is no such user.
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  // Looks up several users at once; unknown ids are simply left out.
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+}
+
+enum PartnerStatus {
+  PARTNER_STATUS_UNSPECIFIED = 0;
+  PARTNER_STATUS_NONE = 1;
+  PARTNER_STATUS_PENDING = 2;
+  PARTNER_STATUS_APPROVED = 3;
+  PARTNER_STATUS_REJECTED = 4;
+}
+
+// The public profile of a user plus what other services need for
+// authorization. Contact details (email, phone) are deliberately absent.
+message User {
+  string id = 1;
+  optional string first_name = 2;
+  optional string username = 3;
+  optional string avatar_url = 4;
+  PartnerStatus partner_status = 5;
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetUsersRequest {
+  repeated string ids = 1;
+}
+
+message GetUsersResponse {
+  repeated User users = 1;
+}

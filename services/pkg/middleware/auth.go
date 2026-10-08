@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -13,25 +14,74 @@ import (
 const (
 	// ContextUserID holds the signed-in site user's id (empty for admins).
 	ContextUserID = "auth.userID"
+	// ContextPartnerStatus holds the signed-in user's partner status, when
+	// a UserLookup is configured.
+	ContextPartnerStatus = "auth.partnerStatus"
 	// ContextIsAdmin is true when the request carries an admin session.
 	ContextIsAdmin = "auth.isAdmin"
 )
 
-// RequireUser admits requests with a valid site-user session cookie,
-// failing with the same 401 messages as the NestJS UserJwtAuthGuard.
-//
-// TODO(stage 4): NestJS also checks the user still exists in the database;
-// add that check over gRPC once the users service exists.
-func RequireUser(v *auth.Verifier) gin.HandlerFunc {
+// ErrUserNotFound is what a UserLookup returns for an unknown id.
+var ErrUserNotFound = errors.New("user not found")
+
+// SessionUser is what the auth middleware needs to know about the account
+// behind a session.
+type SessionUser struct {
+	ID            string
+	PartnerStatus string // "none", "pending", "approved", "rejected"
+}
+
+// UserLookup confirms a session's user still exists (the users service).
+type UserLookup interface {
+	LookupUser(ctx context.Context, id string) (SessionUser, error)
+}
+
+// RequireUser admits requests with a valid site-user session cookie whose
+// account still exists, failing with the same messages as the NestJS
+// UserJwtAuthGuard. A nil lookup skips the existence check.
+func RequireUser(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, msg := checkUser(c, v)
-		if msg != "" {
-			httperr.Abort(c, http.StatusUnauthorized, msg)
+		if authenticateUser(c, v, lookup) {
+			c.Next()
+		}
+	}
+}
+
+// RequirePartner admits approved partners only; it runs after RequireUser
+// with a lookup, like the NestJS PartnerGuard.
+func RequirePartner() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString(ContextPartnerStatus) != "approved" {
+			httperr.Abort(c, http.StatusForbidden, "Only approved partners can do this")
 			return
 		}
-		c.Set(ContextUserID, userID)
 		c.Next()
 	}
+}
+
+// authenticateUser validates the user cookie (and, with a lookup, the
+// account), records the user in the context, and aborts on failure.
+func authenticateUser(c *gin.Context, v *auth.Verifier, lookup UserLookup) bool {
+	userID, msg := checkUser(c, v)
+	if msg != "" {
+		httperr.Abort(c, http.StatusUnauthorized, msg)
+		return false
+	}
+	if lookup != nil {
+		user, err := lookup.LookupUser(c.Request.Context(), userID)
+		switch {
+		case errors.Is(err, ErrUserNotFound):
+			httperr.Abort(c, http.StatusUnauthorized, "User not found")
+			return false
+		case err != nil:
+			_ = c.Error(err)
+			c.AbortWithStatusJSON(http.StatusInternalServerError, httperr.InternalServerError())
+			return false
+		}
+		c.Set(ContextPartnerStatus, user.PartnerStatus)
+	}
+	c.Set(ContextUserID, userID)
+	return true
 }
 
 // RequireAdminOrUser admits either an admin session or a site-user session,
@@ -40,20 +90,16 @@ func RequireUser(v *auth.Verifier) gin.HandlerFunc {
 //
 // Unlike the NestJS JwtAuthGuard, the admin cookie must carry role "admin" —
 // NestJS accepted any validly signed token there.
-func RequireAdminOrUser(v *auth.Verifier) gin.HandlerFunc {
+func RequireAdminOrUser(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if token, err := c.Cookie(auth.AdminCookie); err == nil && token != "" && v.Admin(token) == nil {
 			c.Set(ContextIsAdmin, true)
 			c.Next()
 			return
 		}
-		userID, msg := checkUser(c, v)
-		if msg != "" {
-			httperr.Abort(c, http.StatusUnauthorized, msg)
-			return
+		if authenticateUser(c, v, lookup) {
+			c.Next()
 		}
-		c.Set(ContextUserID, userID)
-		c.Next()
 	}
 }
 

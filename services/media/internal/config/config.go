@@ -22,4 +22,8 @@ type Config struct {
 	R2PublicURL       string `env:"R2_PUBLIC_URL"`
 	// Overrides https://<account>.r2.cloudflarestorage.com (tests, local S3).
 	R2Endpoint string `env:"R2_ENDPOINT"`
+
+	// users service's gRPC address, to confirm a session's account still
+	// exists. Without it only the session token is checked.
+	UsersGRPCAddr string `env:"USERS_GRPC_ADDR"`
 }

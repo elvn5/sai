@@ -35,10 +35,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [pkg, gateway]
+        module: [pkg, gateway, media]
     defaults:
       run:
         working-directory: services/${{ matrix.module }}
+    env:
+      # Same as the Docker builds: pure-Go WebP codec, no dlopen.
+      GOFLAGS: -tags=nodynamic
     steps:
       - uses: actions/checkout@v4
 

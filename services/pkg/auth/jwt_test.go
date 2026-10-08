@@ -42,25 +42,28 @@ func TestAdminAcceptsNestAdminToken(t *testing.T) {
 
 func TestRejectsInvalidTokens(t *testing.T) {
 	v := auth.NewVerifier(secret)
-	cases := map[string]string{
-		"expired": sign(t, jwt.SigningMethodHS256, []byte(secret), jwt.MapClaims{
+	cases := map[string]struct {
+		token string
+		want  error
+	}{
+		"expired": {sign(t, jwt.SigningMethodHS256, []byte(secret), jwt.MapClaims{
 			"sub": "u", "role": "user", "exp": time.Now().Add(-time.Minute).Unix(),
-		}),
-		"wrong secret":        sign(t, jwt.SigningMethodHS256, []byte("another-secret-value"), jwt.MapClaims{"sub": "u", "role": "user"}),
-		"admin token as user": sign(t, jwt.SigningMethodHS256, []byte(secret), jwt.MapClaims{"role": "admin"}),
-		"missing subject":     sign(t, jwt.SigningMethodHS256, []byte(secret), jwt.MapClaims{"role": "user"}),
-		"alg none":            sign(t, jwt.SigningMethodNone, jwt.UnsafeAllowNoneSignatureType, jwt.MapClaims{"sub": "u", "role": "user"}),
-		"garbage":             "not-a-jwt",
+		}), auth.ErrInvalidToken},
+		"wrong secret":        {sign(t, jwt.SigningMethodHS256, []byte("another-secret-value"), jwt.MapClaims{"sub": "u", "role": "user"}), auth.ErrInvalidToken},
+		"admin token as user": {sign(t, jwt.SigningMethodHS256, []byte(secret), jwt.MapClaims{"role": "admin"}), auth.ErrInvalidSession},
+		"missing subject":     {sign(t, jwt.SigningMethodHS256, []byte(secret), jwt.MapClaims{"role": "user"}), auth.ErrInvalidSession},
+		"alg none":            {sign(t, jwt.SigningMethodNone, jwt.UnsafeAllowNoneSignatureType, jwt.MapClaims{"sub": "u", "role": "user"}), auth.ErrInvalidToken},
+		"garbage":             {"not-a-jwt", auth.ErrInvalidToken},
 	}
-	for name, token := range cases {
+	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			if _, err := v.UserID(token); !errors.Is(err, auth.ErrInvalidToken) {
-				t.Fatalf("UserID error = %v, want ErrInvalidToken", err)
+			if _, err := v.UserID(tc.token); !errors.Is(err, tc.want) {
+				t.Fatalf("UserID error = %v, want %v", err, tc.want)
 			}
 		})
 	}
 	userToken := sign(t, jwt.SigningMethodHS256, []byte(secret), jwt.MapClaims{"sub": "u", "role": "user"})
-	if err := v.Admin(userToken); !errors.Is(err, auth.ErrInvalidToken) {
+	if err := v.Admin(userToken); !errors.Is(err, auth.ErrInvalidSession) {
 		t.Fatalf("Admin accepted a user token: %v", err)
 	}
 }

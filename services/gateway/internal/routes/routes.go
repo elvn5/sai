@@ -41,6 +41,16 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 
 	r.GET("/healthz", handlers.Health)
 
+	if cfg.MediaURL != "" {
+		mediaURL, err := url.Parse(cfg.MediaURL)
+		if err != nil {
+			return nil, fmt.Errorf("parse MEDIA_URL: %w", err)
+		}
+		media := proxy.New(mediaURL, cfg.UpstreamTimeout, log)
+		r.Any("/uploads/*path", media)
+		r.Any("/storage/*path", media)
+	}
+
 	r.NoRoute(proxy.New(legacyURL, cfg.UpstreamTimeout, log))
 
 	return r, nil

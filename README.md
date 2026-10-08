@@ -9,6 +9,7 @@ NestJS, Nuxt 3, and TypeORM/PostgreSQL. Use this repository as a **GitHub templa
 | App | Framework | Purpose |
 | --- | --- | --- |
 | [`services/gateway`](services/gateway) | Go + Gin | Public API entry point; routes requests to backend services |
+| [`services/media`](services/media) | Go + Gin | Uploads: R2 presigned URLs, WebP image conversion, `/uploads` files |
 | [`apps/api`](apps/api) | NestJS | Legacy REST API, being migrated to Go services behind the gateway |
 | [`apps/bot`](apps/bot) | NestJS + Telegraf | Telegram bot |
 | [`apps/admin`](apps/admin) | Nuxt 3 + @nuxt/ui | Admin panel (Pinia, VeeValidate, Zod) |
@@ -52,6 +53,7 @@ Start PostgreSQL (e.g. `docker compose up -d postgres`), then in separate termin
 ```bash
 pnpm dev:api     # http://localhost:3001
 pnpm dev:gateway # http://localhost:8080, proxies to the API above
+pnpm dev:media   # http://localhost:8081 (set MEDIA_URL for the gateway to use it)
 pnpm dev:bot
 pnpm dev:admin   # http://localhost:3000
 ```
@@ -70,7 +72,7 @@ The Nuxt apps can call the API directly (`:3001`) or through the gateway
 | `pnpm typecheck` | Type-check all workspace packages |
 | `pnpm migration:generate` | Generate a TypeORM migration (`packages/database`) |
 | `pnpm migration:run` | Run pending migrations |
-| `pnpm dev:gateway` | Run the Go gateway |
+| `pnpm dev:gateway` / `dev:media` | Run a Go service |
 | `pnpm test:go` | Test all Go modules |
 
 ## Project structure
@@ -78,6 +80,7 @@ The Nuxt apps can call the API directly (`:3001`) or through the gateway
 ```
 services/   Go workspace (go.work)
   gateway/  Gin API gateway
+  media/    Uploads service (R2, WebP, /uploads)
   pkg/      Shared Go code: config, logging, NestJS-compatible errors, CORS, JWT
 apps/
   api/      NestJS REST API (legacy, behind the gateway)

@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -196,5 +197,45 @@ func TestHealth(t *testing.T) {
 	res, _ := do(t, srv, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if res.StatusCode != http.StatusOK || got.method != "" {
 		t.Fatalf("health = %d, upstream hit = %q", res.StatusCode, got.method)
+	}
+}
+
+func TestMediaRoutesGoToMediaService(t *testing.T) {
+	hits := map[string]string{}
+	upstream := func(name string) *httptest.Server {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hits[r.Method+" "+r.URL.Path] = name
+		}))
+		t.Cleanup(srv.Close)
+		return srv
+	}
+	legacy, media := upstream("legacy"), upstream("media")
+
+	gin.SetMode(gin.TestMode)
+	router, err := routes.Setup(config.Config{
+		LegacyAPIURL: legacy.URL, MediaURL: media.URL, UpstreamTimeout: 5 * time.Second,
+	}, slog.New(slog.DiscardHandler))
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := serve(t, router)
+
+	want := map[string]string{
+		"POST /uploads/image":      "media",
+		"GET /uploads/a.webp":      "media",
+		"POST /storage/upload-url": "media",
+		"DELETE /storage/file":     "media",
+		"GET /hotels":              "legacy",
+		"GET /gallery":             "legacy",
+		"GET /uploadsx":            "legacy",
+	}
+	for route := range want {
+		method, path, _ := strings.Cut(route, " ")
+		do(t, srv, httptest.NewRequest(method, path, nil))
+	}
+	for route, name := range want {
+		if hits[route] != name {
+			t.Errorf("%s went to %q, want %q", route, hits[route], name)
+		}
 	}
 }

@@ -20,7 +20,13 @@ const (
 	RoleAdmin = "admin"
 )
 
-var ErrInvalidToken = errors.New("invalid or expired session")
+var (
+	// ErrInvalidToken: bad signature, malformed, or expired.
+	ErrInvalidToken = errors.New("invalid or expired session")
+	// ErrInvalidSession: a genuine token that isn't a session of the
+	// expected kind (wrong role, or no subject on a user token).
+	ErrInvalidSession = errors.New("invalid session")
+)
 
 // Claims is the payload NestJS's JwtService signs.
 type Claims struct {
@@ -44,7 +50,7 @@ func (v *Verifier) UserID(token string) (string, error) {
 		return "", err
 	}
 	if claims.Subject == "" {
-		return "", ErrInvalidToken
+		return "", ErrInvalidSession
 	}
 	return claims.Subject, nil
 }
@@ -64,7 +70,7 @@ func (v *Verifier) parse(token, role string) (*Claims, error) {
 		return nil, fmt.Errorf("%w: %w", ErrInvalidToken, err)
 	}
 	if claims.Role != role {
-		return nil, ErrInvalidToken
+		return nil, ErrInvalidSession
 	}
 	return claims, nil
 }

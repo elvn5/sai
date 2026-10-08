@@ -10,6 +10,10 @@ type Config struct {
 	// Go service.
 	LegacyAPIURL string `env:"LEGACY_API_URL,required"`
 
+	// Go services. Each is optional: while unset, its endpoints keep going
+	// to the legacy API, so unsetting one is the rollback for its stage.
+	MediaURL string `env:"MEDIA_URL"`
+
 	// Browser origins allowed by CORS — the same variables the NestJS API
 	// reads, with the same defaults.
 	AdminOrigin  string `env:"ADMIN_ORIGIN" envDefault:"http://localhost:3000"`

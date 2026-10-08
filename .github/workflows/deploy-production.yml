@@ -34,6 +34,8 @@ jobs:
             dockerfile: apps/tourism/Dockerfile
           - service: gateway
             dockerfile: services/gateway/Dockerfile
+          - service: media
+            dockerfile: services/media/Dockerfile
     steps:
       - uses: actions/checkout@v4
         with:

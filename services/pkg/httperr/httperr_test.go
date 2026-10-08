@@ -21,3 +21,9 @@ func TestAbortWritesNestShape(t *testing.T) {
 		t.Fatalf("got %d %s, want 404 %s", rec.Code, rec.Body.String(), want)
 	}
 }
+
+func TestPayloadTooLargeUsesNestName(t *testing.T) {
+	if got := httperr.New(http.StatusRequestEntityTooLarge, "File too large").Error; got != "Payload Too Large" {
+		t.Fatalf("error = %q", got)
+	}
+}

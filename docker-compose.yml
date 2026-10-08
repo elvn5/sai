@@ -34,6 +34,23 @@ services:
       postgres:
         condition: service_healthy
 
+  media:
+    build:
+      context: .
+      dockerfile: services/media/Dockerfile
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      UPLOADS_DIR: /data/uploads
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+    # Same volume as the NestJS API: existing files stay where they are.
+    volumes:
+      - uploads_data:/data/uploads
+
   gateway:
     build:
       context: .
@@ -41,12 +58,14 @@ services:
     restart: unless-stopped
     environment:
       LEGACY_API_URL: http://api:3001
+      MEDIA_URL: http://media:8081
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:3000}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3002}
     ports:
       - "${API_PORT:-3001}:8080"
     depends_on:
       - api
+      - media
 
   bot:
     build:

@@ -17,10 +17,19 @@ type Body struct {
 	StatusCode int    `json:"statusCode"`
 }
 
-// New builds the error body for a status code; Error is the standard
-// status text, as NestJS sets it.
+// NestJS's names where they differ from Go's http.StatusText.
+var nestStatusText = map[int]string{
+	http.StatusRequestEntityTooLarge: "Payload Too Large",
+}
+
+// New builds the error body for a status code; Error is the status text
+// NestJS would use.
 func New(status int, message string) Body {
-	return Body{Message: message, Error: http.StatusText(status), StatusCode: status}
+	text, ok := nestStatusText[status]
+	if !ok {
+		text = http.StatusText(status)
+	}
+	return Body{Message: message, Error: text, StatusCode: status}
 }
 
 // Abort stops the handler chain and writes a NestJS-shaped error.
@@ -32,4 +41,10 @@ func Abort(c *gin.Context, status int, message string) {
 // which omits the "error" field.
 func InternalServerError() Body {
 	return Body{Message: "Internal server error", StatusCode: http.StatusInternalServerError}
+}
+
+// RouteNotFound answers an unmatched route the way Express/NestJS does:
+// {"message":"Cannot GET /path","error":"Not Found","statusCode":404}.
+func RouteNotFound(c *gin.Context) {
+	Abort(c, http.StatusNotFound, "Cannot "+c.Request.Method+" "+c.Request.URL.Path)
 }

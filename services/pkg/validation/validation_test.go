@@ -83,3 +83,56 @@ func TestValidBody(t *testing.T) {
 		t.Fatalf("status = %d", status)
 	}
 }
+
+type attachment struct {
+	URL  string `json:"url" binding:"min=1,max=2000"`
+	Size int64  `json:"size" binding:"gte=0"`
+}
+
+type guideDTO struct {
+	Excerpt     validation.Field[string] `json:"excerpt" binding:"omitempty,max=5"`
+	Equipment   []string                 `json:"equipmentChecklist" binding:"omitempty,max=2,dive,min=1"`
+	Attachments []attachment             `json:"attachments" binding:"omitempty,dive"`
+}
+
+func bindGuide(t *testing.T, body string) (bool, guideDTO, string) {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	var dto guideDTO
+	ok := validation.BindJSON(c, &dto)
+	return ok, dto, rec.Body.String()
+}
+
+func TestNullableFieldStates(t *testing.T) {
+	_, absent, _ := bindGuide(t, `{}`)
+	_, null, _ := bindGuide(t, `{"excerpt":null}`)
+	_, value, _ := bindGuide(t, `{"excerpt":"hi"}`)
+	if absent.Excerpt.Set || !null.Excerpt.Set || null.Excerpt.Valid || !value.Excerpt.Valid || *value.Excerpt.Ptr() != "hi" {
+		t.Fatalf("absent=%+v null=%+v value=%+v", absent.Excerpt, null.Excerpt, value.Excerpt)
+	}
+	if ok, _, body := bindGuide(t, `{"excerpt":"too long"}`); ok || body != `{"formErrors":[],"fieldErrors":{"excerpt":["String must contain at most 5 character(s)"]}}` {
+		t.Fatalf("max on nullable: %v %s", ok, body)
+	}
+	if ok, _, body := bindGuide(t, `{"excerpt":5}`); ok || body != `{"formErrors":[],"fieldErrors":{"excerpt":["Expected string, received number"]}}` {
+		t.Fatalf("type on nullable: %v %s", ok, body)
+	}
+}
+
+// zod's flatten() files nested issues under the top-level property.
+func TestNestedErrorsReportTopLevelField(t *testing.T) {
+	cases := map[string]string{
+		`{"equipmentChecklist":["a",""]}`:          `{"formErrors":[],"fieldErrors":{"equipmentChecklist":["String must contain at least 1 character(s)"]}}`,
+		`{"equipmentChecklist":["a","b","c"]}`:     `{"formErrors":[],"fieldErrors":{"equipmentChecklist":["Array must contain at most 2 element(s)"]}}`,
+		`{"attachments":[{"url":"","size":-1}]}`:   `{"formErrors":[],"fieldErrors":{"attachments":["String must contain at least 1 character(s)","Number must be greater than or equal to 0"]}}`,
+		`{"attachments":[{"url":"x","size":1.5}]}`: `{"formErrors":[],"fieldErrors":{"attachments":["Expected integer, received float"]}}`,
+	}
+	for body, want := range cases {
+		if ok, _, got := bindGuide(t, body); ok || got != want {
+			t.Errorf("%s\n got: %v %s\nwant: %s", body, ok, got, want)
+		}
+	}
+}

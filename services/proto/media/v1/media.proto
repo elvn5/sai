@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package media.v1;
+
+option go_package = "github.com/elvn5/sai/services/proto/gen/go/media/v1;mediav1";
+
+// Internal API of the media service, for other backend services.
+service MediaService {
+  // Deletes a stored file given the public URL it was served from. URLs
+  // that don't belong to the R2 bucket (e.g. legacy /uploads/... files)
+  // are left alone and reported as not deleted.
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse);
+}
+
+message DeleteObjectRequest {
+  string public_url = 1;
+}
+
+message DeleteObjectResponse {
+  bool deleted = 1;
+}

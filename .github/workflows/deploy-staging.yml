@@ -32,6 +32,8 @@ jobs:
             dockerfile: services/gateway/Dockerfile
           - service: media
             dockerfile: services/media/Dockerfile
+          - service: content
+            dockerfile: services/content/Dockerfile
     steps:
       - uses: actions/checkout@v4
 

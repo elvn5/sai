@@ -3,6 +3,7 @@ package middleware_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -55,6 +56,36 @@ func TestRequireAdminOrUser(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			if rec.Code != tc.wantStatus || rec.Body.String() != tc.wantBody {
 				t.Fatalf("got %d %s, want %d %s", rec.Code, rec.Body.String(), tc.wantStatus, tc.wantBody)
+			}
+		})
+	}
+}
+
+func TestRequireAdmin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/x", middleware.RequireAdmin(auth.NewVerifier(jwtSecret)), func(c *gin.Context) { c.String(http.StatusOK, "ok") })
+
+	cases := map[string]struct {
+		cookie   string
+		status   int
+		contains string
+	}{
+		"none":                {"", 401, "Not authenticated"},
+		"admin":               {token(t, jwt.MapClaims{"role": "admin"}), 200, "ok"},
+		"user token as admin": {token(t, jwt.MapClaims{"sub": "u1", "role": "user"}), 401, "Invalid session"},
+		"garbage":             {"nope", 401, "Invalid or expired session"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/x", nil)
+			if tc.cookie != "" {
+				req.AddCookie(&http.Cookie{Name: "admin_token", Value: tc.cookie})
+			}
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+			if rec.Code != tc.status || !strings.Contains(rec.Body.String(), tc.contains) {
+				t.Fatalf("got %d %s", rec.Code, rec.Body.String())
 			}
 		})
 	}

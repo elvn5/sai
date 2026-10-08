@@ -200,7 +200,7 @@ func TestHealth(t *testing.T) {
 	}
 }
 
-func TestMediaRoutesGoToMediaService(t *testing.T) {
+func TestServiceRouting(t *testing.T) {
 	hits := map[string]string{}
 	upstream := func(name string) *httptest.Server {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -209,11 +209,11 @@ func TestMediaRoutesGoToMediaService(t *testing.T) {
 		t.Cleanup(srv.Close)
 		return srv
 	}
-	legacy, media := upstream("legacy"), upstream("media")
+	legacy, media, content := upstream("legacy"), upstream("media"), upstream("content")
 
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		LegacyAPIURL: legacy.URL, MediaURL: media.URL, UpstreamTimeout: 5 * time.Second,
+		LegacyAPIURL: legacy.URL, MediaURL: media.URL, ContentURL: content.URL, UpstreamTimeout: 5 * time.Second,
 	}, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -225,9 +225,16 @@ func TestMediaRoutesGoToMediaService(t *testing.T) {
 		"GET /uploads/a.webp":      "media",
 		"POST /storage/upload-url": "media",
 		"DELETE /storage/file":     "media",
+		"GET /blog":                "content",
+		"GET /blog/ru/hello":       "content",
+		"PUT /page-seo/home/ru":    "content",
+		"GET /gallery":             "content",
+		"DELETE /gallery/x":        "content",
+		"GET /guides/mine":         "content",
+		"GET /local-guides":        "legacy",
 		"GET /hotels":              "legacy",
-		"GET /gallery":             "legacy",
 		"GET /uploadsx":            "legacy",
+		"GET /blogs":               "legacy",
 	}
 	for route := range want {
 		method, path, _ := strings.Cut(route, " ")

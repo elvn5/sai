@@ -48,12 +48,32 @@ services:
     volumes:
       - uploads_data:/data/uploads
 
+  content:
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-content:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      CONTENT_DB_NAME: content
+      # One-time copy of existing content from the NestJS database on first start.
+      LEGACY_DB_NAME: ${POSTGRES_DB}
+      MEDIA_GRPC_ADDR: media:9081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      media:
+        condition: service_started
+
   gateway:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-gateway:${IMAGE_TAG}
     restart: unless-stopped
     environment:
       LEGACY_API_URL: http://api:3001
       MEDIA_URL: http://media:8081
+      CONTENT_URL: http://content:8082
       ADMIN_ORIGIN: ${ADMIN_ORIGIN}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN}
       # nginx on the host reaches the gateway through the Docker bridge.
@@ -63,6 +83,7 @@ services:
     depends_on:
       - api
       - media
+      - content
 
   bot:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-bot:${IMAGE_TAG}

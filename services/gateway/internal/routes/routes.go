@@ -41,14 +41,27 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 
 	r.GET("/healthz", handlers.Health)
 
-	if cfg.MediaURL != "" {
-		mediaURL, err := url.Parse(cfg.MediaURL)
-		if err != nil {
-			return nil, fmt.Errorf("parse MEDIA_URL: %w", err)
+	services := []struct {
+		env      string
+		url      string
+		prefixes []string
+	}{
+		{"MEDIA_URL", cfg.MediaURL, []string{"/uploads", "/storage"}},
+		{"CONTENT_URL", cfg.ContentURL, []string{"/blog", "/guides", "/gallery", "/page-seo"}},
+	}
+	for _, svc := range services {
+		if svc.url == "" {
+			continue
 		}
-		media := proxy.New(mediaURL, cfg.UpstreamTimeout, log)
-		r.Any("/uploads/*path", media)
-		r.Any("/storage/*path", media)
+		target, err := url.Parse(svc.url)
+		if err != nil {
+			return nil, fmt.Errorf("parse %s: %w", svc.env, err)
+		}
+		handler := proxy.New(target, cfg.UpstreamTimeout, log)
+		for _, prefix := range svc.prefixes {
+			r.Any(prefix, handler)
+			r.Any(prefix+"/*path", handler)
+		}
 	}
 
 	r.NoRoute(proxy.New(legacyURL, cfg.UpstreamTimeout, log))

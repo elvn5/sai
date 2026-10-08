@@ -3,6 +3,8 @@ package config
 
 type Config struct {
 	Port string `env:"PORT" envDefault:"8081"`
+	// Internal gRPC API for other backend services; not exposed publicly.
+	GRPCPort string `env:"GRPC_PORT" envDefault:"9081"`
 
 	// Shared with the NestJS API so existing session cookies stay valid.
 	JWTSecret string `env:"JWT_SECRET,required"`

@@ -71,3 +71,25 @@ func checkUser(c *gin.Context, v *auth.Verifier) (userID, errMessage string) {
 	}
 	return userID, ""
 }
+
+// RequireAdmin admits only admin-panel sessions, failing with the same 401
+// messages as the NestJS JwtAuthGuard.
+func RequireAdmin(v *auth.Verifier) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, err := c.Cookie(auth.AdminCookie)
+		if err != nil || token == "" {
+			httperr.Abort(c, http.StatusUnauthorized, "Not authenticated")
+			return
+		}
+		switch err := v.Admin(token); {
+		case errors.Is(err, auth.ErrInvalidSession):
+			httperr.Abort(c, http.StatusUnauthorized, "Invalid session")
+			return
+		case err != nil:
+			httperr.Abort(c, http.StatusUnauthorized, "Invalid or expired session")
+			return
+		}
+		c.Set(ContextIsAdmin, true)
+		c.Next()
+	}
+}

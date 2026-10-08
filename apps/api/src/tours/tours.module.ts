@@ -1,3 +1,4 @@
+import { ListingTargetsModule } from '@/listing-targets/listing-targets.module';
 import { PartnerGuard } from '@/user-auth/partner.guard';
 import { UserAuthModule } from '@/user-auth/user-auth.module';
 import { Tour } from '@app/database';
@@ -7,7 +8,7 @@ import { ToursController } from './tours.controller';
 import { ToursService } from './tours.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Tour]), UserAuthModule],
+  imports: [TypeOrmModule.forFeature([Tour]), UserAuthModule, ListingTargetsModule],
   controllers: [ToursController],
   providers: [ToursService, PartnerGuard],
 })

@@ -5,8 +5,10 @@ import { useForm } from 'vee-validate';
 import { z } from 'zod';
 import TiptapEditor from '~/components/features/guide-editor/TiptapEditor.vue';
 import { useApiClient } from '~/shared/api/client';
-import { PartnerStatus } from '~/shared/api/types';
+import { CancellationPolicy, Destination, PartnerStatus } from '~/shared/api/types';
 import type { Tour } from '~/shared/api/types';
+import { contactSchemas, emptyToNull } from '~/shared/lib/form-schemas';
+import { CANCELLATION_OPTIONS, DESTINATION_OPTIONS } from '~/shared/lib/listing-options';
 import { slugify } from '~/shared/lib/slugify';
 
 const { t, locale } = useI18n();
@@ -28,6 +30,12 @@ const formSchema = toTypedSchema(
       price: z.number().int().nonnegative().optional(),
       durationDays: z.number().int().positive().optional(),
       location: z.string().max(255).optional(),
+      destination: z.nativeEnum(Destination).optional(),
+      cancellationPolicy: z.nativeEnum(CancellationPolicy),
+      ...contactSchemas({
+        phone: t('listing.form.invalidPhone'),
+        telegram: t('listing.form.invalidTelegram'),
+      }),
       startDate: z.string().min(1, t('login.required')),
       endDate: z.string().min(1, t('login.required')),
     })
@@ -39,7 +47,7 @@ const formSchema = toTypedSchema(
 
 const { handleSubmit, defineField, errors } = useForm({
   validationSchema: formSchema,
-  initialValues: { content: '' },
+  initialValues: { content: '', cancellationPolicy: CancellationPolicy.FLEXIBLE },
 });
 
 const [title, titleAttrs] = defineField('title');
@@ -50,6 +58,18 @@ const [durationDays, durationDaysAttrs] = defineField('durationDays');
 const [location, locationAttrs] = defineField('location');
 const [startDate, startDateAttrs] = defineField('startDate');
 const [endDate, endDateAttrs] = defineField('endDate');
+const [destination] = defineField('destination');
+const [cancellationPolicy] = defineField('cancellationPolicy');
+const [phone, phoneAttrs] = defineField('phone');
+const [whatsapp, whatsappAttrs] = defineField('whatsapp');
+const [telegram, telegramAttrs] = defineField('telegram');
+
+const destinationOptions = computed(() =>
+  DESTINATION_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) })),
+);
+const cancellationOptions = computed(() =>
+  CANCELLATION_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) })),
+);
 
 useSeoMeta({
   title: () => t('tours.newTitle'),
@@ -84,6 +104,11 @@ const createMutation = useMutation({
     location?: string;
     startDate: string;
     endDate: string;
+    destination?: Destination;
+    cancellationPolicy: CancellationPolicy;
+    phone?: string;
+    whatsapp?: string;
+    telegram?: string;
   }) => {
     let coverImageUrl: string | null = null;
     if (coverFile.value) {
@@ -104,6 +129,11 @@ const createMutation = useMutation({
       location: values.location || null,
       startDate: values.startDate,
       endDate: values.endDate,
+      destination: values.destination ?? null,
+      cancellationPolicy: values.cancellationPolicy,
+      phone: emptyToNull(values.phone),
+      whatsapp: emptyToNull(values.whatsapp),
+      telegram: emptyToNull(values.telegram)?.replace(/^@/, '') ?? null,
       coverImageUrl,
     });
   },
@@ -156,6 +186,33 @@ const onSubmit = handleSubmit((values) => {
 
         <UFormGroup :label="$t('tours.endDateLabel')" :error="errors.endDate">
           <UInput v-model="endDate" v-bind="endDateAttrs" type="date" />
+        </UFormGroup>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <UFormGroup :label="$t('listing.form.destinationLabel')" :error="errors.destination">
+          <USelect
+            v-model="destination"
+            :options="destinationOptions"
+            option-attribute="label"
+            :placeholder="$t('listing.form.choose')"
+          />
+        </UFormGroup>
+
+        <UFormGroup :label="$t('listing.form.cancellationLabel')" :error="errors.cancellationPolicy">
+          <USelect v-model="cancellationPolicy" :options="cancellationOptions" option-attribute="label" />
+        </UFormGroup>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <UFormGroup :label="$t('listing.form.whatsappLabel')" :error="errors.whatsapp">
+          <UInput v-model="whatsapp" v-bind="whatsappAttrs" placeholder="+996 555 123 456" />
+        </UFormGroup>
+        <UFormGroup :label="$t('listing.form.telegramLabel')" :error="errors.telegram">
+          <UInput v-model="telegram" v-bind="telegramAttrs" placeholder="@username" />
+        </UFormGroup>
+        <UFormGroup :label="$t('listing.form.phoneLabel')" :error="errors.phone">
+          <UInput v-model="phone" v-bind="phoneAttrs" placeholder="+996 555 123 456" />
         </UFormGroup>
       </div>
 

@@ -18,7 +18,18 @@ export default defineNuxtConfig({
     // Staging serves the same build as production and must stay out of search
     // results entirely, so it gets a blanket disallow instead of the
     // page-level rules below.
-    disallow: isProductionSite ? ['/login', '/profile', '/guides/new', '/tours/new'] : ['/'],
+    disallow: isProductionSite
+      ? [
+          '/login',
+          '/profile',
+          '/guides/new',
+          '/tours/new',
+          '/hotels/new',
+          '/hotels/*/edit',
+          '/local-guides/new',
+          '/local-guides/*/edit',
+        ]
+      : ['/'],
   },
   css: ['~/assets/css/tokens.css'],
   ui: {

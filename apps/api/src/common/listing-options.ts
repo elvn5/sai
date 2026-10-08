@@ -1,0 +1,48 @@
+export const HOTEL_AMENITIES = [
+  'wifi',
+  'breakfast',
+  'parking',
+  'airport_transfer',
+  'hot_water',
+  'heating',
+  'kitchen',
+  'restaurant',
+  'sauna',
+  'pool',
+  'beach',
+  'laundry',
+  'family_friendly',
+  'pets_allowed',
+  'tours_desk',
+  'horse_riding',
+] as const;
+
+export const GUIDE_LANGUAGES = [
+  'ru',
+  'ky',
+  'en',
+  'de',
+  'fr',
+  'es',
+  'it',
+  'zh',
+  'ja',
+  'ko',
+  'tr',
+  'ar',
+  'kk',
+  'uz',
+] as const;
+
+export const GUIDE_SPECIALIZATIONS = [
+  'trekking',
+  'horse_riding',
+  'mountaineering',
+  'culture',
+  'nomad_life',
+  'city',
+  'photo',
+  'ski',
+  'jeep',
+  'food',
+] as const;

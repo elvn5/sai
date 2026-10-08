@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CancellationPolicy } from './listing.enums';
 import { Locale } from './locale.enum';
 import { User } from './user.entity';
 
@@ -48,7 +49,28 @@ export class Tour {
   endDate!: string;
 
   @Column({ type: 'varchar', nullable: true })
+  destination!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  cancellationPolicy!: CancellationPolicy | null;
+
+  @Column({ type: 'varchar', nullable: true })
   coverImageUrl!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  phone!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  whatsapp!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  telegram!: string | null;
+
+  @Column({ type: 'real', default: 0 })
+  ratingAverage!: number;
+
+  @Column({ type: 'int', default: 0 })
+  reviewCount!: number;
 
   @Column({ type: 'boolean', default: false })
   isPublished!: boolean;

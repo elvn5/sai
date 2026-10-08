@@ -1,10 +1,16 @@
 const DEFAULT_LOCALE = 'ru';
 const LOCALES = ['ru', 'ky', 'en', 'de'];
-const STATIC_PATHS = ['/', '/blog', '/gallery', '/guides', '/tours'];
+const STATIC_PATHS = ['/', '/blog', '/gallery', '/guides', '/tours', '/hotels', '/local-guides'];
+const LISTING_PAGE_SIZE = 50;
 
 interface PublishedItem {
   slug: string;
   publishedAt: string | null;
+}
+
+interface ListingItem {
+  slug: string;
+  updatedAt: string;
 }
 
 interface SitemapEntry {
@@ -21,8 +27,25 @@ function escapeXml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Hotels and guides are paginated and language-independent, so they're
+// fetched once and listed under every locale.
+async function fetchAllListings(apiBaseUrl: string, path: string): Promise<ListingItem[]> {
+  const items: ListingItem[] = [];
+  for (let offset = 0; ; offset += LISTING_PAGE_SIZE) {
+    const page = await $fetch<{ items: ListingItem[]; total: number }>(
+      `${apiBaseUrl}${path}?limit=${LISTING_PAGE_SIZE}&offset=${offset}&sort=newest`,
+    ).catch(() => ({ items: [], total: 0 }));
+    items.push(...page.items);
+    if (page.items.length < LISTING_PAGE_SIZE || items.length >= page.total) return items;
+  }
+}
+
 async function collectEntries(apiBaseUrl: string): Promise<SitemapEntry[]> {
   const entries: SitemapEntry[] = [];
+  const [hotels, localGuides] = await Promise.all([
+    fetchAllListings(apiBaseUrl, '/hotels'),
+    fetchAllListings(apiBaseUrl, '/local-guides'),
+  ]);
 
   for (const locale of LOCALES) {
     for (const path of STATIC_PATHS) {
@@ -54,6 +77,18 @@ async function collectEntries(apiBaseUrl: string): Promise<SitemapEntry[]> {
       entries.push({
         loc: localizedPath(locale, `/tours/${tour.slug}`),
         lastmod: tour.publishedAt ?? undefined,
+      });
+    }
+    for (const hotel of hotels) {
+      entries.push({
+        loc: localizedPath(locale, `/hotels/${hotel.slug}`),
+        lastmod: hotel.updatedAt,
+      });
+    }
+    for (const guide of localGuides) {
+      entries.push({
+        loc: localizedPath(locale, `/local-guides/${guide.slug}`),
+        lastmod: guide.updatedAt,
       });
     }
   }

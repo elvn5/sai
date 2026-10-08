@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useMutation, useQueryClient } from '@tanstack/vue-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { useApiClient } from '~/shared/api/client';
 import { PartnerStatus } from '~/shared/api/types';
-import type { AppUser } from '~/shared/api/types';
+import type { AppUser, Hotel, LocalGuide } from '~/shared/api/types';
 
 const { t } = useI18n();
 const localePath = useLocalePath();
@@ -13,9 +13,24 @@ const { isTma, getInitData } = useTelegramWebApp();
 
 const tabs = [
   { key: 'info', label: t('profile.tabs.info'), icon: 'i-heroicons-user-circle' },
+  { key: 'listings', label: t('profile.tabs.listings'), icon: 'i-heroicons-building-storefront' },
   { key: 'history', label: t('profile.tabs.history'), icon: 'i-heroicons-map' },
   { key: 'partner', label: t('profile.tabs.partner'), icon: 'i-heroicons-briefcase' },
 ];
+
+const isSignedIn = computed(() => Boolean(auth.user.value));
+const myHotelsQuery = useQuery({
+  queryKey: ['my-hotels'],
+  queryFn: () => api.get<Hotel[]>('/hotels/mine'),
+  enabled: isSignedIn,
+});
+const myGuideQuery = useQuery({
+  queryKey: ['my-local-guide'],
+  queryFn: () => api.get<{ guide: LocalGuide | null }>('/local-guides/mine'),
+  enabled: isSignedIn,
+});
+const myHotels = computed(() => myHotelsQuery.data.value ?? []);
+const myGuide = computed(() => myGuideQuery.data.value?.guide ?? null);
 
 const applyMutation = useMutation({
   mutationFn: () => api.post<{ user: AppUser }>('/partners/apply'),
@@ -90,6 +105,61 @@ onMounted(async () => {
           <UButton color="gray" variant="soft" class="mt-2 self-start" @click="handleLogout">
             {{ $t('profile.logout') }}
           </UButton>
+        </div>
+
+        <div v-else-if="item.key === 'listings'" class="mt-6 flex flex-col gap-8">
+          <div>
+            <div class="mb-3 flex items-center justify-between">
+              <h2 class="font-semibold text-text">{{ $t('profile.listings.guideHeading') }}</h2>
+            </div>
+            <div
+              v-if="myGuide"
+              class="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3"
+            >
+              <NuxtLink :to="localePath(`/local-guides/${myGuide.slug}`)" class="font-medium text-text hover:underline">
+                {{ myGuide.name }}
+              </NuxtLink>
+              <UButton size="sm" color="gray" icon="i-heroicons-pencil-square" :to="localePath(`/local-guides/${myGuide.slug}/edit`)">
+                {{ $t('listing.edit') }}
+              </UButton>
+            </div>
+            <div
+              v-else
+              class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center"
+            >
+              <p class="max-w-sm text-sm text-text-muted">{{ $t('profile.listings.guidePitch') }}</p>
+              <UButton color="primary" :to="localePath('/local-guides/new')">{{ $t('localGuides.addButton') }}</UButton>
+            </div>
+          </div>
+
+          <div>
+            <div class="mb-3 flex items-center justify-between">
+              <h2 class="font-semibold text-text">{{ $t('profile.listings.hotelsHeading') }}</h2>
+              <UButton size="sm" color="primary" icon="i-heroicons-plus" :to="localePath('/hotels/new')">
+                {{ $t('hotels.addButton') }}
+              </UButton>
+            </div>
+            <div v-if="myHotels.length > 0" class="flex flex-col gap-2">
+              <div
+                v-for="hotel in myHotels"
+                :key="hotel.id"
+                class="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3"
+              >
+                <NuxtLink :to="localePath(`/hotels/${hotel.slug}`)" class="min-w-0">
+                  <span class="block truncate font-medium text-text hover:underline">{{ hotel.name }}</span>
+                  <span class="block text-xs text-text-muted">
+                    {{ $t(`destinations.${hotel.destination}`) }} · {{ $t('reviews.count', { count: hotel.reviewCount }) }}
+                  </span>
+                </NuxtLink>
+                <UButton size="sm" color="gray" icon="i-heroicons-pencil-square" :to="localePath(`/hotels/${hotel.slug}/edit`)">
+                  {{ $t('listing.edit') }}
+                </UButton>
+              </div>
+            </div>
+            <p v-else class="rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center text-sm text-text-muted">
+              {{ $t('profile.listings.noHotels') }}
+            </p>
+          </div>
         </div>
 
         <div v-else-if="item.key === 'history'" class="mt-6">

@@ -1,5 +1,6 @@
 import { sanitizeUserContent } from '@/common/sanitize-user-content';
-import { type Locale, Tour } from '@app/database';
+import { ListingTargetsService } from '@/listing-targets/listing-targets.service';
+import { type Locale, ReviewTargetType, Tour } from '@app/database';
 import {
   ConflictException,
   ForbiddenException,
@@ -8,18 +9,23 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
-import type { CreateTourDto, UpdateTourDto } from './tour.dto';
+import type { CreateTourDto, TourListQueryDto, UpdateTourDto } from './tour.dto';
 
 @Injectable()
 export class ToursService {
   constructor(
     @InjectRepository(Tour)
     private readonly repository: Repository<Tour>,
+    private readonly targets: ListingTargetsService,
   ) {}
 
-  findPublished(locale: Locale): Promise<Tour[]> {
+  findPublished(query: TourListQueryDto): Promise<Tour[]> {
     return this.repository.find({
-      where: { locale, isPublished: true },
+      where: {
+        locale: query.locale,
+        isPublished: true,
+        ...(query.destination ? { destination: query.destination } : {}),
+      },
       order: { publishedAt: 'DESC', createdAt: 'DESC' },
     });
   }
@@ -64,6 +70,7 @@ export class ToursService {
 
   async remove(userId: string, id: string): Promise<void> {
     const item = await this.findOwned(userId, id);
+    await this.targets.deleteContentFor(ReviewTargetType.TOUR, item.id);
     await this.repository.remove(item);
   }
 

@@ -6,9 +6,13 @@ import { validateEnv } from '@/config/env.schema';
 import { CredentialsAuthModule } from '@/credentials-auth/credentials-auth.module';
 import { GalleryModule } from '@/gallery/gallery.module';
 import { GuidesModule } from '@/guides/guides.module';
+import { HotelsModule } from '@/hotels/hotels.module';
+import { ListingPostsModule } from '@/listing-posts/listing-posts.module';
+import { LocalGuidesModule } from '@/local-guides/local-guides.module';
 import { PageSeoModule } from '@/page-seo/page-seo.module';
 import { ParcelsModule } from '@/parcels/parcels.module';
 import { PartnersModule } from '@/partners/partners.module';
+import { ReviewsModule } from '@/reviews/reviews.module';
 import { StorageModule } from '@/storage/storage.module';
 import { SupportModule } from '@/support/support.module';
 import { TelegramAuthModule } from '@/telegram-auth/telegram-auth.module';
@@ -55,6 +59,10 @@ import { LoggerModule } from 'nestjs-pino';
     GalleryModule,
     GuidesModule,
     ToursModule,
+    HotelsModule,
+    LocalGuidesModule,
+    ReviewsModule,
+    ListingPostsModule,
     PartnersModule,
     PageSeoModule,
     UploadsModule,

@@ -3,14 +3,15 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { useApiClient } from '~/shared/api/client';
 import { SeoPage } from '~/shared/api/types';
 import type { GalleryItem } from '~/shared/api/types';
+import { ALLOWED_IMAGE_TYPES, useImageUpload } from '~/shared/lib/image-upload';
 import { resolveMediaUrl } from '~/shared/lib/resolve-media-url';
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
-const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 const { t, locale } = useI18n();
 const api = useApiClient();
+const { uploadImage } = useImageUpload();
 const auth = useAuth();
 const queryClient = useQueryClient();
 const config = useRuntimeConfig();
@@ -21,7 +22,7 @@ const searchInput = ref('');
 const search = ref('');
 let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-watch(searchInput, (value) => {
+watch(searchInput, (value: string) => {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => {
     search.value = value.trim();
@@ -68,7 +69,7 @@ onMounted(() => {
   observer = new IntersectionObserver(handleIntersect, { rootMargin: '200px' });
   watch(
     sentinel,
-    (el, prevEl) => {
+    (el: HTMLElement | null, prevEl: HTMLElement | null) => {
       if (prevEl) observer?.unobserve(prevEl);
       if (el) observer?.observe(el);
     },
@@ -166,24 +167,7 @@ const createMutation = useMutation({
     const file = selectedFile.value;
     if (!file) throw new Error('missing-fields');
 
-    // Direct-to-R2 upload: the file goes straight from the browser to the
-    // bucket via a presigned URL, never through this server.
-    const { uploadUrl, publicUrl } = await api.post<{
-      uploadUrl: string;
-      key: string;
-      publicUrl: string;
-    }>('/storage/upload-url', {
-      filename: file.name,
-      contentType: file.type,
-      folder: 'gallery',
-    });
-
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type },
-      body: file,
-    });
-    if (!uploadResponse.ok) throw new Error('upload-failed');
+    const publicUrl = await uploadImage(file, 'gallery');
 
     return api.post<GalleryItem>('/gallery', {
       imageUrl: publicUrl,

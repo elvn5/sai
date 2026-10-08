@@ -12,9 +12,11 @@ const mobileMenuOpen = ref(false);
 
 const navLinks = [
   { to: '/', label: 'nav.feed' },
-  { to: '/gallery', label: 'nav.gallery' },
-  { to: '/guides', label: 'nav.guides' },
+  { to: '/hotels', label: 'nav.hotels' },
   { to: '/tours', label: 'nav.tours' },
+  { to: '/local-guides', label: 'nav.localGuides' },
+  { to: '/guides', label: 'nav.guides' },
+  { to: '/gallery', label: 'nav.gallery' },
   { to: '/blog', label: 'nav.blog' },
 ] as const;
 
@@ -50,7 +52,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
         {{ $t('brand.name') }}
       </NuxtLink>
 
-      <nav class="hidden items-center gap-6 text-sm font-medium text-white/75 sm:flex">
+      <nav class="hidden items-center gap-5 text-sm font-medium text-white/75 lg:flex">
         <NuxtLink
           v-for="link in navLinks"
           :key="link.to"
@@ -61,7 +63,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
         </NuxtLink>
       </nav>
 
-      <div class="hidden items-center gap-2 sm:flex">
+      <div class="hidden items-center gap-2 lg:flex">
         <div
           class="flex items-center gap-2 [&_button:not([role=menuitem])]:!text-white [&_button:hover:not([role=menuitem])]:!bg-white/10"
         >
@@ -76,7 +78,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
                 :alt="displayName"
                 class="h-8 w-8 rounded-full object-cover ring-2 ring-white/30"
               />
-              <span class="hidden text-sm text-white sm:inline">{{ displayName }}</span>
+              <span class="hidden text-sm text-white xl:inline">{{ displayName }}</span>
             </NuxtLink>
             <UButton color="gray" variant="ghost" @click="handleLogout">
               {{ $t('profile.logout') }}
@@ -94,7 +96,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
 
       <button
         type="button"
-        class="flex h-10 w-10 items-center justify-center rounded-md text-white transition-colors hover:bg-white/10 sm:hidden"
+        class="flex h-10 w-10 items-center justify-center rounded-md text-white transition-colors hover:bg-white/10 lg:hidden"
         :aria-label="$t('nav.menu')"
         :aria-expanded="mobileMenuOpen"
         @click="mobileMenuOpen = !mobileMenuOpen"
@@ -109,7 +111,7 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
       leave-active-class="transition duration-150 ease-in"
       leave-to-class="-translate-y-2 opacity-0"
     >
-      <div v-if="mobileMenuOpen" class="border-t border-white/15 bg-brand-900/95 px-4 py-4 sm:hidden">
+      <div v-if="mobileMenuOpen" class="border-t border-white/15 bg-brand-900/95 px-4 py-4 lg:hidden">
         <nav class="flex flex-col gap-1">
           <NuxtLink
             v-for="link in navLinks"

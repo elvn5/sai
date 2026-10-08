@@ -6,8 +6,10 @@ import { Locale, User } from '@app/database';
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import {
   type CreateTourDto,
+  type TourListQueryDto,
   type UpdateTourDto,
   createTourSchema,
+  tourListQuerySchema,
   updateTourSchema,
 } from './tour.dto';
 import { ToursService } from './tours.service';
@@ -17,8 +19,8 @@ export class ToursController {
   constructor(private readonly service: ToursService) {}
 
   @Get()
-  findPublished(@Query('locale') locale: Locale) {
-    return this.service.findPublished(locale);
+  findPublished(@Query(new ZodValidationPipe(tourListQuerySchema)) query: TourListQueryDto) {
+    return this.service.findPublished(query);
   }
 
   @Get('mine')

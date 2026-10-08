@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query';
+import HotelCard from '~/components/entities/hotel/HotelCard.vue';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
 import { useApiClient } from '~/shared/api/client';
-import { type BlogPost, SeoPage } from '~/shared/api/types';
+import { type BlogPost, type Hotel, type Paginated, SeoPage } from '~/shared/api/types';
+import { FEATURED_DESTINATIONS } from '~/shared/lib/listing-options';
 
 const NEWS_LIMIT = 3;
+const TOP_HOTELS_LIMIT = 3;
+
+const QUICK_LINKS = [
+  { to: '/hotels', icon: 'i-heroicons-building-office-2', key: 'hotels' },
+  { to: '/tours', icon: 'i-heroicons-map', key: 'tours' },
+  { to: '/local-guides', icon: 'i-heroicons-user-group', key: 'localGuides' },
+] as const;
 
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
@@ -19,6 +28,13 @@ const postsQuery = useQuery({
 await postsQuery.suspense();
 
 const latestPosts = computed(() => (postsQuery.data.value ?? []).slice(0, NEWS_LIMIT));
+
+const topHotelsQuery = useQuery({
+  queryKey: ['hotels', 'top'],
+  queryFn: () => api.get<Paginated<Hotel>>(`/hotels?sort=rating&limit=${TOP_HOTELS_LIMIT}`),
+});
+await topHotelsQuery.suspense();
+const topHotels = computed(() => topHotelsQuery.data.value?.items ?? []);
 
 const pageSeoQuery = usePageSeo(SeoPage.HOME, locale);
 await pageSeoQuery.suspense();
@@ -49,9 +65,74 @@ useSeoMeta({
         <AppLogo class="mx-auto h-16 w-16 text-white" />
         <h1 class="mt-4 text-3xl font-extrabold text-white sm:text-4xl">{{ $t('brand.name') }}</h1>
         <p class="mx-auto mt-3 max-w-xl text-white/85">{{ $t('home.tagline') }}</p>
-        <UButton class="mt-6" color="primary" size="lg" :to="localePath('/guides')">
-          {{ $t('home.ctaPrimary') }}
-        </UButton>
+        <div class="mt-6 flex flex-wrap justify-center gap-3">
+          <UButton color="primary" size="lg" :to="localePath('/hotels')">
+            {{ $t('home.ctaHotels') }}
+          </UButton>
+          <UButton size="lg" class="!bg-white/15 !text-white hover:!bg-white/25" :to="localePath('/guides')">
+            {{ $t('home.ctaPrimary') }}
+          </UButton>
+        </div>
+      </div>
+    </section>
+
+    <section class="mx-auto -mt-10 max-w-4xl px-4">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <NuxtLink
+          v-for="link in QUICK_LINKS"
+          :key="link.key"
+          :to="localePath(link.to)"
+          class="flex items-center gap-3 rounded-card border border-border bg-surface p-4 shadow-sm transition hover:shadow-md"
+        >
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500/10">
+            <UIcon :name="link.icon" class="h-6 w-6 text-brand-600 dark:text-brand-400" />
+          </span>
+          <span>
+            <span class="block font-semibold text-text">{{ $t(`home.quick.${link.key}.title`) }}</span>
+            <span class="block text-sm text-text-muted">{{ $t(`home.quick.${link.key}.description`) }}</span>
+          </span>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-4xl px-4 py-14">
+      <h2 class="text-xl font-bold text-text">{{ $t('home.destinationsHeading') }}</h2>
+      <p class="mt-1 text-sm text-text-muted">{{ $t('home.destinationsSubheading') }}</p>
+      <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          v-for="destination in FEATURED_DESTINATIONS"
+          :key="destination"
+          class="flex flex-col rounded-card border border-border bg-gradient-to-br from-brand-500/10 via-surface to-secondary-500/10 p-5"
+        >
+          <h3 class="flex items-center gap-2 text-lg font-semibold text-text">
+            <UIcon name="i-heroicons-map-pin" class="h-5 w-5 text-brand-600" />
+            {{ $t(`destinations.${destination}`) }}
+          </h3>
+          <p class="mt-2 flex-1 text-sm text-text-muted">{{ $t(`home.destinationBlurbs.${destination}`) }}</p>
+          <div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
+            <NuxtLink :to="localePath(`/hotels?destination=${destination}`)" class="text-primary-600 hover:underline dark:text-primary-400">
+              {{ $t('nav.hotels') }}
+            </NuxtLink>
+            <NuxtLink :to="localePath(`/tours?destination=${destination}`)" class="text-primary-600 hover:underline dark:text-primary-400">
+              {{ $t('nav.tours') }}
+            </NuxtLink>
+            <NuxtLink :to="localePath(`/local-guides?destination=${destination}`)" class="text-primary-600 hover:underline dark:text-primary-400">
+              {{ $t('nav.localGuides') }}
+            </NuxtLink>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="topHotels.length > 0" class="mx-auto max-w-4xl px-4 pb-14">
+      <div class="mb-6 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-text">{{ $t('home.topHotels') }}</h2>
+        <NuxtLink :to="localePath('/hotels')" class="text-sm text-primary-600 hover:underline dark:text-primary-400">
+          {{ $t('home.viewAllHotels') }}
+        </NuxtLink>
+      </div>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <HotelCard v-for="hotel in topHotels" :key="hotel.id" :hotel="hotel" />
       </div>
     </section>
 

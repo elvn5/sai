@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import ListingContactCard from '~/components/widgets/listing-contact/ListingContactCard.vue';
+import ListingPostsFeed from '~/components/widgets/listing-posts/ListingPostsFeed.vue';
+import ReviewsSection from '~/components/widgets/reviews/ReviewsSection.vue';
 import { useApiClient } from '~/shared/api/client';
-import type { Tour } from '~/shared/api/types';
+import { ReviewTargetType, type Tour } from '~/shared/api/types';
+import { formatAmount } from '~/shared/lib/format-price';
+import { resolveMediaUrl } from '~/shared/lib/resolve-media-url';
 
 const route = useRoute();
 const { locale, t } = useI18n();
@@ -37,8 +42,20 @@ useSeoMeta({
   description: tour.value.excerpt || undefined,
   ogTitle: tour.value.title,
   ogDescription: tour.value.excerpt || undefined,
-  ogImage: tour.value.coverImageUrl ? `${apiBaseUrl}${tour.value.coverImageUrl}` : undefined,
+  ogImage: tour.value.coverImageUrl
+    ? resolveMediaUrl(apiBaseUrl, tour.value.coverImageUrl)
+    : undefined,
 });
+
+const priceLabel = computed(() =>
+  tour.value?.price
+    ? t('tours.priceValue', { price: formatAmount(locale.value, tour.value.price) })
+    : null,
+);
+
+function refreshTour(): void {
+  void tourQuery.refetch();
+}
 
 const deleteMutation = useMutation({
   mutationFn: (id: string) => api.delete(`/tours/${id}`),
@@ -56,16 +73,19 @@ function handleDelete(): void {
 </script>
 
 <template>
-  <article v-if="tour" class="mx-auto max-w-3xl px-4 py-12">
+  <article v-if="tour" class="mx-auto max-w-6xl px-4 py-12">
     <NuxtLink :to="localePath('/tours')" class="text-sm text-primary-600 hover:underline dark:text-primary-400">
       &larr; {{ $t('tours.heading') }}
     </NuxtLink>
 
     <div class="mt-4 flex flex-wrap gap-2">
-      <UBadge v-if="tour.location" color="secondary" variant="subtle">
-        <UIcon name="i-heroicons-map-pin" class="mr-1 h-3.5 w-3.5" />
-        {{ tour.location }}
-      </UBadge>
+      <NuxtLink v-if="tour.destination" :to="localePath(`/tours?destination=${tour.destination}`)">
+        <UBadge color="secondary" variant="subtle">
+          <UIcon name="i-heroicons-map-pin" class="mr-1 h-3.5 w-3.5" />
+          {{ $t(`destinations.${tour.destination}`) }}
+        </UBadge>
+      </NuxtLink>
+      <UBadge v-if="tour.location" color="gray" variant="subtle">{{ tour.location }}</UBadge>
       <UBadge v-if="tour.durationDays" color="gray" variant="subtle">
         {{ t('tours.durationValue', { days: tour.durationDays }) }}
       </UBadge>
@@ -77,28 +97,54 @@ function handleDelete(): void {
 
     <h1 class="mt-4 text-3xl font-extrabold text-text sm:text-4xl">{{ tour.title }}</h1>
 
-    <p v-if="tour.price" class="mt-2 text-xl font-semibold text-brand-600 dark:text-brand-400">
-      {{ t('tours.priceValue', { price: tour.price }) }}
-    </p>
+    <div class="mt-6 flex flex-col gap-10 lg:flex-row">
+      <div class="flex min-w-0 flex-1 flex-col gap-10">
+        <div>
+          <img
+            v-if="tour.coverImageUrl"
+            :src="resolveMediaUrl(apiBaseUrl, tour.coverImageUrl)"
+            :alt="tour.title"
+            class="w-full rounded-lg object-cover"
+          />
 
-    <img
-      v-if="tour.coverImageUrl"
-      :src="`${apiBaseUrl}${tour.coverImageUrl}`"
-      :alt="tour.title"
-      class="mt-6 w-full rounded-lg object-cover"
-    />
+          <div class="prose prose-neutral dark:prose-invert mt-8 max-w-none" v-html="tour.content" />
 
-    <div class="prose prose-neutral dark:prose-invert mt-8 max-w-none" v-html="tour.content" />
+          <UButton
+            v-if="auth.user.value && tour.userId === auth.user.value.id"
+            color="gray"
+            variant="soft"
+            class="mt-8"
+            :loading="deleteMutation.isPending.value"
+            @click="handleDelete"
+          >
+            {{ $t('tours.deleteButton') }}
+          </UButton>
+        </div>
 
-    <UButton
-      v-if="auth.user.value && tour.userId === auth.user.value.id"
-      color="gray"
-      variant="soft"
-      class="mt-8"
-      :loading="deleteMutation.isPending.value"
-      @click="handleDelete"
-    >
-      {{ $t('tours.deleteButton') }}
-    </UButton>
+        <ListingPostsFeed :target-type="ReviewTargetType.TOUR" :target-id="tour.id" :owner-id="tour.userId" />
+
+        <ReviewsSection
+          :target-type="ReviewTargetType.TOUR"
+          :target-id="tour.id"
+          :owner-id="tour.userId"
+          @changed="refreshTour"
+        />
+      </div>
+
+      <aside class="order-first lg:order-none lg:w-80 lg:shrink-0">
+        <div class="lg:sticky lg:top-20">
+          <ListingContactCard
+            :listing-name="tour.title"
+            :price-label="priceLabel"
+            :rating-average="tour.ratingAverage"
+            :review-count="tour.reviewCount"
+            :cancellation-policy="tour.cancellationPolicy"
+            :phone="tour.phone"
+            :whatsapp="tour.whatsapp"
+            :telegram="tour.telegram"
+          />
+        </div>
+      </aside>
+    </div>
   </article>
 </template>

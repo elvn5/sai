@@ -97,6 +97,17 @@ func (r *R2) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+// KeyFromPublicURL returns the object key for a URL under R2_PUBLIC_URL.
+// Anything else (e.g. a legacy /uploads/... path) isn't in the bucket.
+func (r *R2) KeyFromPublicURL(publicURL string) (string, bool) {
+	base := strings.TrimSuffix(r.cfg.R2PublicURL, "/")
+	if base == "" || !strings.HasPrefix(publicURL, base+"/") {
+		return "", false
+	}
+	key := strings.TrimPrefix(publicURL, base+"/")
+	return key, key != ""
+}
+
 func (r *R2) init() error {
 	r.once.Do(func() {
 		c := r.cfg

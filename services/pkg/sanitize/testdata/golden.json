@@ -1,0 +1,134 @@
+[
+  {
+    "input": "<p>Hello <strong>world</strong></p>",
+    "want": "<p>Hello <strong>world</strong></p>"
+  },
+  {
+    "input": "<p>Line one<br>Line two</p>",
+    "want": "<p>Line one<br />Line two</p>"
+  },
+  {
+    "input": "<h2>Day 1</h2><ul><li><p>Karakol</p></li><li><p>Ala-Kul &amp; Altyn-Arashan</p></li></ul>",
+    "want": "<h2>Day 1</h2><ul><li><p>Karakol</p></li><li><p>Ala-Kul &amp; Altyn-Arashan</p></li></ul>"
+  },
+  {
+    "input": "<p><a href=\"https://ermekten.com/tours\">link</a></p>",
+    "want": "<p><a href=\"https://ermekten.com/tours\" target=\"_blank\" rel=\"noopener noreferrer\">link</a></p>"
+  },
+  {
+    "input": "<p><a href=\"https://x.com\" target=\"_self\" rel=\"nofollow\" onclick=\"evil()\">x</a></p>",
+    "want": "<p><a href=\"https://x.com\" target=\"_blank\" rel=\"noopener noreferrer\">x</a></p>"
+  },
+  {
+    "input": "<p><a href=\"javascript:alert(1)\">bad</a></p>",
+    "want": "<p><a target=\"_blank\" rel=\"noopener noreferrer\">bad</a></p>"
+  },
+  {
+    "input": "<p><a href=\"/relative/path?a=1&b=2\">rel</a></p>",
+    "want": "<p><a href=\"/relative/path?a=1&amp;b=2\" target=\"_blank\" rel=\"noopener noreferrer\">rel</a></p>"
+  },
+  {
+    "input": "<p><a href=\"//cdn.example.com/x\">proto-rel</a></p>",
+    "want": "<p><a href=\"//cdn.example.com/x\" target=\"_blank\" rel=\"noopener noreferrer\">proto-rel</a></p>"
+  },
+  {
+    "input": "<p><a href=\"  JaVaScRiPt:alert(1)\">spaced</a></p>",
+    "want": "<p><a target=\"_blank\" rel=\"noopener noreferrer\">spaced</a></p>"
+  },
+  {
+    "input": "<p><a href=\"mailto:a@b.c\">mail</a></p>",
+    "want": "<p><a target=\"_blank\" rel=\"noopener noreferrer\">mail</a></p>"
+  },
+  {
+    "input": "<img src=\"https://cdn.example.com/a.webp\" alt=\"Song-Kol\" title=\"t\" width=\"100\">",
+    "want": "<img src=\"https://cdn.example.com/a.webp\" alt=\"Song-Kol\" title=\"t\" />"
+  },
+  {
+    "input": "<img src=\"data:image/png;base64,AAAA\" alt=\"x\">",
+    "want": "<img alt=\"x\" />"
+  },
+  {
+    "input": "<img src=\"/uploads/a.webp\" alt=\"\">",
+    "want": "<img src=\"/uploads/a.webp\" alt=\"\" />"
+  },
+  {
+    "input": "<script>alert(1)</script><p>after</p>",
+    "want": "<p>after</p>"
+  },
+  {
+    "input": "<style>p{color:red}</style><p>styled</p>",
+    "want": "<p>styled</p>"
+  },
+  {
+    "input": "<div><span style=\"color:red\">kept text</span></div>",
+    "want": "kept text"
+  },
+  {
+    "input": "<p>5 &lt; 6 &gt; 4 \"quoted\" &#39;single&#39; &nbsp;nbsp</p>",
+    "want": "<p>5 &lt; 6 &gt; 4 \"quoted\" 'single'  nbsp</p>"
+  },
+  {
+    "input": "<p>Unicode: Кыргызстан — Иссык-Куль ✓</p>",
+    "want": "<p>Unicode: Кыргызстан — Иссык-Куль ✓</p>"
+  },
+  {
+    "input": "<P CLASS=\"x\">Upper</P>",
+    "want": "<p>Upper</p>"
+  },
+  {
+    "input": "<p>unclosed <em>emphasis",
+    "want": "<p>unclosed <em>emphasis</em></p>"
+  },
+  {
+    "input": "<blockquote><p>quote</p></blockquote><pre><code>let x = 1 &amp;&amp; 2;</code></pre>",
+    "want": "<blockquote><p>quote</p></blockquote><pre><code>let x = 1 &amp;&amp; 2;</code></pre>"
+  },
+  {
+    "input": "<h1>Title</h1><h3>Sub</h3><h4>Small</h4>",
+    "want": "Title<h3>Sub</h3>Small"
+  },
+  {
+    "input": "<!-- comment --><p>after comment</p>",
+    "want": "<p>after comment</p>"
+  },
+  {
+    "input": "<p><s>strike</s> <u>under</u> <em>em</em></p>",
+    "want": "<p><s>strike</s> <u>under</u> <em>em</em></p>"
+  },
+  {
+    "input": "<textarea>secret</textarea><p>ok</p>",
+    "want": "<p>ok</p>"
+  },
+  {
+    "input": "<iframe src=\"https://evil\"></iframe><p>x</p>",
+    "want": "<p>x</p>"
+  },
+  {
+    "input": "<p onmouseover=\"x()\">attr removed</p>",
+    "want": "<p>attr removed</p>"
+  },
+  {
+    "input": "<a href=\"https://a.com\" title=\"t\">no title on a</a>",
+    "want": "<a href=\"https://a.com\" target=\"_blank\" rel=\"noopener noreferrer\">no title on a</a>"
+  },
+  {
+    "input": "plain text with <b>bold</b> & ampersand",
+    "want": "plain text with bold &amp; ampersand"
+  },
+  {
+    "input": "<ol><li>one</li><li>two</li></ol>",
+    "want": "<ol><li>one</li><li>two</li></ol>"
+  },
+  {
+    "input": "<p><a>no href</a></p>",
+    "want": "<p><a target=\"_blank\" rel=\"noopener noreferrer\">no href</a></p>"
+  },
+  {
+    "input": "<img src=\"https://a.com/x.png\">",
+    "want": "<img src=\"https://a.com/x.png\" />"
+  },
+  {
+    "input": "",
+    "want": ""
+  }
+]

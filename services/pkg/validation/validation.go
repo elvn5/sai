@@ -102,9 +102,8 @@ func BindJSON(c *gin.Context, dst any) bool {
 			httperr.Abort(c, http.StatusBadRequest, "Invalid JSON body")
 			return false
 		}
-		result.FieldErrors[typeErr.Field] = []string{
-			fmt.Sprintf("Expected %s, received %s", zodType(typeErr.Type), zodKindFromJSON(typeErr.Value)),
-		}
+		typeErr.Field = topLevel(typeErr.Field)
+		result.FieldErrors[typeErr.Field] = []string{typeMismatchMessage(typeErr)}
 	}
 
 	var verrs validator.ValidationErrors
@@ -129,11 +128,19 @@ func abort(c *gin.Context, f Flattened) {
 	c.AbortWithStatusJSON(http.StatusBadRequest, f)
 }
 
-// fieldPath drops the struct name: "PresignDTO.filename" → "filename".
+// fieldPath is the top-level property an error belongs to, as zod's
+// flatten() reports it: "Dto.attachments[0].url" → "attachments".
 func fieldPath(fe validator.FieldError) string {
 	_, path, found := strings.Cut(fe.Namespace(), ".")
 	if !found {
 		return fe.Field()
+	}
+	return topLevel(path)
+}
+
+func topLevel(path string) string {
+	if i := strings.IndexAny(path, ".["); i >= 0 {
+		return path[:i]
 	}
 	return path
 }
@@ -178,6 +185,27 @@ func boundMessage(kind reflect.Kind, stringWord, numberWord, n string) string {
 	default:
 		return fmt.Sprintf("Number must be %s %s", numberWord, n)
 	}
+}
+
+func typeMismatchMessage(e *json.UnmarshalTypeError) string {
+	want, got := zodType(e.Type), zodKindFromJSON(e.Value)
+	// A fractional number for an integer field: z.number().int().
+	if want == "number" && got == "number" && isInteger(e.Type) {
+		return "Expected integer, received float"
+	}
+	return fmt.Sprintf("Expected %s, received %s", want, got)
+}
+
+func isInteger(t reflect.Type) bool {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	switch t.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return true
+	}
+	return false
 }
 
 // zodType names a Go destination type the way zod names expected types.

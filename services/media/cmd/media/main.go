@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,11 +16,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 
 	"github.com/elvn5/sai/services/media/internal/config"
+	"github.com/elvn5/sai/services/media/internal/grpcserver"
 	"github.com/elvn5/sai/services/media/internal/routes"
+	"github.com/elvn5/sai/services/media/internal/storage"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/logger"
+	mediav1 "github.com/elvn5/sai/services/proto/gen/go/media/v1"
 )
 
 const shutdownTimeout = 15 * time.Second
@@ -41,10 +46,12 @@ func run(log *slog.Logger) error {
 		return fmt.Errorf("create uploads dir: %w", err)
 	}
 
+	r2 := storage.NewR2(cfg)
+
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           routes.Setup(cfg, log),
+		Handler:           routes.Setup(cfg, r2, log),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,
 	}
@@ -52,13 +59,25 @@ func run(log *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	errCh := make(chan error, 1)
+	grpcSrv := grpc.NewServer()
+	mediav1.RegisterMediaServiceServer(grpcSrv, &grpcserver.Server{R2: r2, Log: log})
+	grpcLis, err := (&net.ListenConfig{}).Listen(ctx, "tcp", ":"+cfg.GRPCPort)
+	if err != nil {
+		return fmt.Errorf("listen gRPC: %w", err)
+	}
+
+	errCh := make(chan error, 2)
 	go func() {
 		log.Info("media listening", slog.String("addr", srv.Addr), slog.String("uploads_dir", cfg.UploadsDir))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
-		close(errCh)
+	}()
+	go func() {
+		log.Info("media gRPC listening", slog.String("addr", grpcLis.Addr().String()))
+		if err := grpcSrv.Serve(grpcLis); err != nil {
+			errCh <- fmt.Errorf("gRPC server: %w", err)
+		}
 	}()
 
 	select {
@@ -70,5 +89,6 @@ func run(log *slog.Logger) error {
 	log.Info("shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
+	grpcSrv.GracefulStop()
 	return srv.Shutdown(shutdownCtx)
 }

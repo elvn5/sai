@@ -29,3 +29,32 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  go:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [pkg, gateway]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/${{ matrix.module }}/go.mod
+          cache-dependency-path: services/${{ matrix.module }}/go.sum
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.6.2
+          working-directory: services/${{ matrix.module }}
+
+      - name: Test
+        run: go test -race ./...
+
+      - name: Build
+        run: go build ./...

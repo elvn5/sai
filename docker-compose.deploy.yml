@@ -25,13 +25,27 @@ services:
       POSTGRES_PORT: 5432
       UPLOADS_DIR: /repo/apps/api/uploads
       API_PORT: 3001
-    ports:
-      - "${API_PORT}:3001"
+    # Internal only — the gateway owns the public API port and proxies
+    # every endpoint not yet migrated to a Go service here.
     volumes:
       - uploads_data:/repo/apps/api/uploads
     depends_on:
       postgres:
         condition: service_healthy
+
+  gateway:
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-gateway:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      LEGACY_API_URL: http://api:3001
+      ADMIN_ORIGIN: ${ADMIN_ORIGIN}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN}
+      # nginx on the host reaches the gateway through the Docker bridge.
+      TRUSTED_PROXIES: 172.16.0.0/12
+    ports:
+      - "${API_PORT}:8080"
+    depends_on:
+      - api
 
   bot:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-bot:${IMAGE_TAG}
@@ -52,7 +66,7 @@ services:
     ports:
       - "${ADMIN_PORT}:3000"
     depends_on:
-      - api
+      - gateway
 
   tourism:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-tourism:${IMAGE_TAG}
@@ -61,7 +75,7 @@ services:
     ports:
       - "${CLIENT_PORT}:3000"
     depends_on:
-      - api
+      - gateway
 
 volumes:
   postgres_data:

@@ -26,13 +26,27 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       UPLOADS_DIR: /repo/apps/api/uploads
-    ports:
-      - "${API_PORT:-3001}:3001"
+    # Internal only — the gateway owns the public API port and proxies
+    # every endpoint not yet migrated to a Go service here.
     volumes:
       - uploads_data:/repo/apps/api/uploads
     depends_on:
       postgres:
         condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      LEGACY_API_URL: http://api:3001
+      ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:3000}
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3002}
+    ports:
+      - "${API_PORT:-3001}:8080"
+    depends_on:
+      - api
 
   bot:
     build:
@@ -59,7 +73,7 @@ services:
     ports:
       - "${ADMIN_PORT:-3000}:3000"
     depends_on:
-      - api
+      - gateway
 
   tourism:
     build:
@@ -74,7 +88,7 @@ services:
     ports:
       - "${CLIENT_PORT:-3002}:3000"
     depends_on:
-      - api
+      - gateway
 
 volumes:
   postgres_data:

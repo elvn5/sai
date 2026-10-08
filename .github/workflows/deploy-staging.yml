@@ -19,7 +19,17 @@ jobs:
     environment: staging
     strategy:
       matrix:
-        service: [api, bot, admin, tourism]
+        include:
+          - service: api
+            dockerfile: apps/api/Dockerfile
+          - service: bot
+            dockerfile: apps/bot/Dockerfile
+          - service: admin
+            dockerfile: apps/admin/Dockerfile
+          - service: tourism
+            dockerfile: apps/tourism/Dockerfile
+          - service: gateway
+            dockerfile: services/gateway/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +44,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: apps/${{ matrix.service }}/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/ermekten-${{ matrix.service }}:staging

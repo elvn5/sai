@@ -7,6 +7,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 
+interface AdminJwtPayload {
+  role?: string;
+}
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
@@ -19,11 +23,18 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Not authenticated');
     }
 
+    let payload: AdminJwtPayload;
     try {
-      this.jwtService.verify(token);
-      return true;
+      payload = this.jwtService.verify<AdminJwtPayload>(token);
     } catch {
       throw new UnauthorizedException('Invalid or expired session');
     }
+
+    // Site-user sessions are signed with the same secret, so a valid
+    // signature alone doesn't make a token an admin session.
+    if (payload.role !== 'admin') {
+      throw new UnauthorizedException('Invalid session');
+    }
+    return true;
   }
 }

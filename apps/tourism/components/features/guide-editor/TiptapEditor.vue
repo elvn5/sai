@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import ImageExtension from '@tiptap/extension-image';
-import LinkExtension from '@tiptap/extension-link';
 import PlaceholderExtension from '@tiptap/extension-placeholder';
 import StarterKit from '@tiptap/starter-kit';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
@@ -21,8 +20,10 @@ const uploadingImage = ref(false);
 const editor = useEditor({
   content: props.modelValue ?? '',
   extensions: [
-    StarterKit.configure({ heading: { levels: [2, 3] } }),
-    LinkExtension.configure({ openOnClick: false, autolink: true }),
+    StarterKit.configure({
+      heading: { levels: [2, 3] },
+      link: { openOnClick: false, autolink: true },
+    }),
     ImageExtension,
     PlaceholderExtension.configure({ placeholder: props.placeholder ?? '' }),
   ],
@@ -42,7 +43,7 @@ watch(
   (value: string | undefined) => {
     const html = value ?? '';
     if (editor.value && html !== editor.value.getHTML()) {
-      editor.value.commands.setContent(html, false);
+      editor.value.commands.setContent(html, { emitUpdate: false });
     }
   },
 );

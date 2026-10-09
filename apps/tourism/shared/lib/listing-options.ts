@@ -1,6 +1,6 @@
 import { CancellationPolicy, Destination, HotelType } from '~/shared/api/types';
 
-// Mirrors apps/api/src/common/listing-options.ts — keep the two in sync.
+// Mirrors services/listings/internal/models/options.go — keep the two in sync.
 
 export interface ListingOption {
   value: string;

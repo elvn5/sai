@@ -16,6 +16,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/elvn5/sai/services/pkg/legacy"
 )
 
 const importName = "nestjs-content"
@@ -30,11 +32,15 @@ func Run(ctx context.Context, db *pgxpool.Pool, legacyDSN string, log *slog.Logg
 		return nil
 	}
 
-	legacy, err := pgx.Connect(ctx, legacyDSN)
+	conn, ok, err := legacy.Connect(ctx, legacyDSN)
 	if err != nil {
-		return fmt.Errorf("connect to legacy database: %w", err)
+		return err
 	}
-	defer func() { _ = legacy.Close(ctx) }()
+	if !ok {
+		log.Info("no legacy database; nothing to import")
+		return nil
+	}
+	defer func() { _ = conn.Close(ctx) }()
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
@@ -43,7 +49,7 @@ func Run(ctx context.Context, db *pgxpool.Pool, legacyDSN string, log *slog.Logg
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, step := range steps {
-		n, err := step.run(ctx, legacy, tx)
+		n, err := step.run(ctx, conn, tx)
 		if err != nil {
 			return fmt.Errorf("import %s: %w", step.table, err)
 		}
@@ -58,8 +64,8 @@ func Run(ctx context.Context, db *pgxpool.Pool, legacyDSN string, log *slog.Logg
 
 type step struct {
 	table  string
-	query  string // against the legacy database
-	insert string // into the content database; ON CONFLICT DO NOTHING
+	cols   []legacy.Column // read from the legacy table, in insert order
+	insert string          // into the content database; ON CONFLICT DO NOTHING
 	// convert adapts a legacy row to the insert's parameters.
 	convert func(values []any) []any
 }
@@ -67,17 +73,26 @@ type step struct {
 var steps = []step{
 	{
 		table: "blog_posts",
-		query: `SELECT id, locale::text, slug, title, excerpt, content, "coverImageUrl", "seoTitle",
-			"seoDescription", "isPublished", "publishedAt", "createdAt", "updatedAt" FROM blog_posts`,
+		cols: []legacy.Column{
+			legacy.Col("id"), {Name: "locale", Cast: "::text"}, legacy.Col("slug"), legacy.Col("title"),
+			legacy.Col("excerpt"), legacy.Col("content"), legacy.Col("coverImageUrl"), legacy.Col("seoTitle"),
+			legacy.Col("seoDescription"), legacy.Col("isPublished"), legacy.Col("publishedAt"),
+			legacy.Col("createdAt"), legacy.Col("updatedAt"),
+		},
 		insert: `INSERT INTO blog_posts (id, locale, slug, title, excerpt, content, cover_image_url,
 			seo_title, seo_description, is_published, published_at, created_at, updated_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) ON CONFLICT DO NOTHING`,
 	},
 	{
 		table: "guides",
-		query: `SELECT id, locale::text, slug, title, excerpt, content, difficulty::text, season::text,
-			"equipmentChecklist", "coverImageUrl", attachments, "seoTitle", "seoDescription",
-			"isPublished", "publishedAt", "userId", "createdAt", "updatedAt" FROM guides`,
+		cols: []legacy.Column{
+			legacy.Col("id"), {Name: "locale", Cast: "::text"}, legacy.Col("slug"), legacy.Col("title"),
+			legacy.Col("excerpt"), legacy.Col("content"), {Name: "difficulty", Cast: "::text"},
+			{Name: "season", Cast: "::text"}, legacy.Col("equipmentChecklist"), legacy.Col("coverImageUrl"),
+			{Name: "attachments", Fallback: "'[]'"}, legacy.Col("seoTitle"), legacy.Col("seoDescription"),
+			legacy.Col("isPublished"), legacy.Col("publishedAt"), {Name: "userId", Fallback: "NULL::uuid"},
+			legacy.Col("createdAt"), legacy.Col("updatedAt"),
+		},
 		insert: `INSERT INTO guides (id, locale, slug, title, excerpt, content, difficulty, season,
 			equipment_checklist, cover_image_url, attachments, seo_title, seo_description, is_published,
 			published_at, user_id, created_at, updated_at)
@@ -100,31 +115,40 @@ var steps = []step{
 	},
 	{
 		table: "gallery_items",
-		query: `SELECT id, "imageUrl", location, caption, "altText", "sortOrder", "isPublished",
-			"userId", "createdAt", "updatedAt" FROM gallery_items`,
+		cols: []legacy.Column{
+			legacy.Col("id"), legacy.Col("imageUrl"),
+			// Older releases had a "region" enum instead; the NestJS migration
+			// that replaced it dropped those values, so they're not carried over.
+			{Name: "location", Fallback: "NULL"},
+			legacy.Col("caption"), legacy.Col("altText"), legacy.Col("sortOrder"), legacy.Col("isPublished"),
+			{Name: "userId", Fallback: "NULL::uuid"}, legacy.Col("createdAt"), legacy.Col("updatedAt"),
+		},
 		insert: `INSERT INTO gallery_items (id, image_url, location, caption, alt_text, sort_order,
 			is_published, user_id, created_at, updated_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT DO NOTHING`,
 	},
 	{
 		table: "page_seo",
-		query: `SELECT id, page::text, locale::text, title, description, "ogImageUrl", "updatedAt" FROM page_seo`,
+		cols: []legacy.Column{
+			legacy.Col("id"), {Name: "page", Cast: "::text"}, {Name: "locale", Cast: "::text"},
+			legacy.Col("title"), legacy.Col("description"), legacy.Col("ogImageUrl"), legacy.Col("updatedAt"),
+		},
 		insert: `INSERT INTO page_seo (id, page, locale, title, description, og_image_url, updated_at)
 			VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING`,
 	},
 }
 
-func (s step) run(ctx context.Context, legacy *pgx.Conn, tx pgx.Tx) (int, error) {
+func (s step) run(ctx context.Context, conn *pgx.Conn, tx pgx.Tx) (int, error) {
 	// A fresh install may not have the table; nothing to copy then.
-	var exists bool
-	if err := legacy.QueryRow(ctx, `SELECT to_regclass($1) IS NOT NULL`, "public."+s.table).Scan(&exists); err != nil {
+	exists, err := legacy.TableExists(ctx, conn, s.table)
+	if err != nil || !exists {
 		return 0, err
 	}
-	if !exists {
-		return 0, nil
+	query, err := legacy.Select(ctx, conn, s.table, s.cols)
+	if err != nil {
+		return 0, err
 	}
-
-	rows, err := legacy.Query(ctx, s.query)
+	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		return 0, err
 	}

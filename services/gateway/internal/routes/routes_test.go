@@ -25,7 +25,7 @@ type seen struct {
 	body                                                                 []byte
 }
 
-// newGateway starts a fake legacy API that records what it received and
+// newGateway starts a fake service (behind every prefix) that records what it received and
 // replies like NestJS (including its own CORS headers and a session cookie).
 func newGateway(t *testing.T) (*httptest.Server, *seen) {
 	t.Helper()
@@ -49,7 +49,7 @@ func newGateway(t *testing.T) (*httptest.Server, *seen) {
 
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		LegacyAPIURL:    upstream.URL,
+		MediaURL: upstream.URL, ContentURL: upstream.URL, ListingsURL: upstream.URL, UsersURL: upstream.URL,
 		AdminOrigin:     "https://admin.ermekten.com",
 		ClientOrigin:    clientOrigin,
 		UpstreamTimeout: 5 * time.Second,
@@ -177,7 +177,8 @@ func TestMultipartUploadStreamsThrough(t *testing.T) {
 func TestUpstreamDownReturnsNestStyle502(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		LegacyAPIURL:    "http://127.0.0.1:1",
+		MediaURL: "http://127.0.0.1:1", ContentURL: "http://127.0.0.1:1",
+		ListingsURL: "http://127.0.0.1:1", UsersURL: "http://127.0.0.1:1",
 		UpstreamTimeout: time.Second,
 	}, slog.New(slog.DiscardHandler))
 	if err != nil {
@@ -209,11 +210,11 @@ func TestServiceRouting(t *testing.T) {
 		t.Cleanup(srv.Close)
 		return srv
 	}
-	legacy, media, content, listings, users := upstream("legacy"), upstream("media"), upstream("content"), upstream("listings"), upstream("users")
+	media, content, listings, users := upstream("media"), upstream("content"), upstream("listings"), upstream("users")
 
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		LegacyAPIURL: legacy.URL, MediaURL: media.URL, ContentURL: content.URL, ListingsURL: listings.URL, UsersURL: users.URL, UpstreamTimeout: 5 * time.Second,
+		MediaURL: media.URL, ContentURL: content.URL, ListingsURL: listings.URL, UsersURL: users.URL, UpstreamTimeout: 5 * time.Second,
 	}, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -242,10 +243,6 @@ func TestServiceRouting(t *testing.T) {
 		"POST /auth/telegram/widget": "users",
 		"GET /users":                 "users",
 		"PUT /support":               "users",
-		"GET /parcels":               "legacy",
-		"GET /addresses":             "legacy",
-		"GET /uploadsx":              "legacy",
-		"GET /blogs":                 "legacy",
 	}
 	for route := range want {
 		method, path, _ := strings.Cut(route, " ")
@@ -255,5 +252,17 @@ func TestServiceRouting(t *testing.T) {
 		if hits[route] != name {
 			t.Errorf("%s went to %q, want %q", route, hits[route], name)
 		}
+	}
+
+	// Paths no service owns (incl. the removed NestJS parcel endpoints)
+	// get the gateway's own 404, and never reach a service.
+	for _, path := range []string{"/parcels", "/addresses/1", "/banned-items", "/uploadsx", "/blogs"} {
+		res, body := do(t, srv, httptest.NewRequest(http.MethodGet, path, nil))
+		if res.StatusCode != http.StatusNotFound || body != `{"message":"Cannot GET `+path+`","error":"Not Found","statusCode":404}` {
+			t.Errorf("GET %s = %d %s", path, res.StatusCode, body)
+		}
+	}
+	if len(hits) != len(want) {
+		t.Errorf("unrouted paths reached a service: %v", hits)
 	}
 }

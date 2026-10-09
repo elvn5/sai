@@ -11,20 +11,13 @@ import (
 	"github.com/elvn5/sai/services/gateway/internal/config"
 	"github.com/elvn5/sai/services/gateway/internal/handlers"
 	"github.com/elvn5/sai/services/gateway/internal/proxy"
+	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
 )
 
-// Setup builds the gateway router.
-//
-// Endpoints move to Go services one domain at a time: each migrated domain
-// gets its path prefixes registered here, pointing at its service. Anything
-// not registered falls through to the legacy NestJS API.
+// Setup builds the gateway router: each service's path prefixes are
+// proxied to it; anything else is a NestJS-style 404.
 func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
-	legacyURL, err := url.Parse(cfg.LegacyAPIURL)
-	if err != nil {
-		return nil, fmt.Errorf("parse LEGACY_API_URL: %w", err)
-	}
-
 	r := gin.New()
 	// Paths are forwarded verbatim; Gin must not redirect or rewrite them.
 	r.RedirectTrailingSlash = false
@@ -52,9 +45,6 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 		{"USERS_URL", cfg.UsersURL, []string{"/auth", "/users", "/partners", "/support"}},
 	}
 	for _, svc := range services {
-		if svc.url == "" {
-			continue
-		}
 		target, err := url.Parse(svc.url)
 		if err != nil {
 			return nil, fmt.Errorf("parse %s: %w", svc.env, err)
@@ -66,7 +56,7 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 		}
 	}
 
-	r.NoRoute(proxy.New(legacyURL, cfg.UpstreamTimeout, log))
+	r.NoRoute(httperr.RouteNotFound)
 
 	return r, nil
 }

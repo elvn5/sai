@@ -24,8 +24,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - service: api
-            dockerfile: apps/api/Dockerfile
           - service: bot
             dockerfile: apps/bot/Dockerfile
           - service: admin
@@ -79,18 +77,18 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref_name }}
 
-      - name: Copy compose file to server
+      - name: Copy compose file and scripts to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ vars.SSH_PORT || 22 }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: docker-compose.deploy.yml
+          source: docker-compose.deploy.yml,scripts/drop-legacy-db.sh
           target: ${{ vars.DEPLOY_PATH }}
           strip_components: 0
 
-      - name: Write .env, deploy and migrate
+      - name: Write .env and deploy
         uses: appleboy/ssh-action@v1.2.0
         env:
           GHCR_USER: ${{ github.actor }}
@@ -167,8 +165,7 @@ jobs:
 
             docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env pull
             docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
-            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/packages/database api \
-              ./node_modules/.bin/typeorm migration:run -d dist/data-source.js
-            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/apps/api api \
-              node dist/scripts/convert-uploads-to-webp.js
+            # Once every service has copied its data out of the former NestJS
+            # database, back it up to ./backups and drop it (no-op after that).
+            POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" bash scripts/drop-legacy-db.sh ermekten-prod
             docker image prune -f

@@ -13,6 +13,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/elvn5/sai/services/pkg/legacy"
 )
 
 const importName = "nestjs-listings"
@@ -26,11 +28,15 @@ func Run(ctx context.Context, db *pgxpool.Pool, legacyDSN string, log *slog.Logg
 		return nil
 	}
 
-	legacy, err := pgx.Connect(ctx, legacyDSN)
+	conn, ok, err := legacy.Connect(ctx, legacyDSN)
 	if err != nil {
-		return fmt.Errorf("connect to legacy database: %w", err)
+		return err
 	}
-	defer func() { _ = legacy.Close(ctx) }()
+	if !ok {
+		log.Info("no legacy database; nothing to import")
+		return nil
+	}
+	defer func() { _ = conn.Close(ctx) }()
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
@@ -39,7 +45,7 @@ func Run(ctx context.Context, db *pgxpool.Pool, legacyDSN string, log *slog.Logg
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	for _, s := range steps {
-		n, err := s.run(ctx, legacy, tx)
+		n, err := s.run(ctx, conn, tx)
 		if err != nil {
 			return fmt.Errorf("import %s: %w", s.table, err)
 		}
@@ -53,7 +59,7 @@ func Run(ctx context.Context, db *pgxpool.Pool, legacyDSN string, log *slog.Logg
 
 type step struct {
 	table  string
-	query  string
+	cols   []legacy.Column
 	insert string
 	// Columns (by index in query) holding TypeORM simple-array / simple-json
 	// text, converted to string slices.
@@ -63,10 +69,9 @@ type step struct {
 var steps = []step{
 	{
 		table: "hotels",
-		query: `SELECT id, slug, name, type::text, description, destination, address, latitude, longitude,
-			"priceFrom", stars, amenities, "cancellationPolicy", "checkInTime", "checkOutTime",
-			"coverImageUrl", photos, phone, whatsapp, telegram, website, "ratingAverage", "reviewCount",
-			"isPublished", "userId", "createdAt", "updatedAt" FROM hotels`,
+		cols: cols(`id slug name type:text description destination address latitude longitude priceFrom
+			stars amenities cancellationPolicy checkInTime checkOutTime coverImageUrl photos phone whatsapp
+			telegram website ratingAverage reviewCount isPublished userId createdAt updatedAt`),
 		insert: `INSERT INTO hotels (id, slug, name, type, description, destination, address, latitude,
 			longitude, price_from, stars, amenities, cancellation_policy, check_in_time, check_out_time,
 			cover_image_url, photos, phone, whatsapp, telegram, website, rating_average, review_count,
@@ -78,10 +83,9 @@ var steps = []step{
 	},
 	{
 		table: "local_guides",
-		query: `SELECT id, slug, name, headline, bio, "avatarUrl", "coverImageUrl", photos, languages,
-			specializations, destinations, "pricePerDay", "experienceYears", "hasVehicle", phone,
-			whatsapp, telegram, "ratingAverage", "reviewCount", "isPublished", "userId", "createdAt",
-			"updatedAt" FROM local_guides`,
+		cols: cols(`id slug name headline bio avatarUrl coverImageUrl photos languages specializations
+			destinations pricePerDay experienceYears hasVehicle phone whatsapp telegram ratingAverage
+			reviewCount isPublished userId createdAt updatedAt`),
 		insert: `INSERT INTO local_guides (id, slug, name, headline, bio, avatar_url, cover_image_url,
 			photos, languages, specializations, destinations, price_per_day, experience_years,
 			has_vehicle, phone, whatsapp, telegram, rating_average, review_count, is_published, user_id,
@@ -93,10 +97,21 @@ var steps = []step{
 	},
 	{
 		table: "tours",
-		query: `SELECT id, locale::text, slug, title, excerpt, content, price, "durationDays", location,
-			"startDate", "endDate", destination, "cancellationPolicy", "coverImageUrl", phone, whatsapp,
-			telegram, "ratingAverage", "reviewCount", "isPublished", "publishedAt", "userId",
-			"createdAt", "updatedAt" FROM tours`,
+		cols: append(cols(`id locale:text slug title excerpt content price durationDays location`),
+			// Added by later NestJS migrations than the one creating the table.
+			legacy.Column{Name: "startDate", Fallback: `"createdAt"::date`},
+			legacy.Column{Name: "endDate", Fallback: `"createdAt"::date`},
+			legacy.Column{Name: "destination", Fallback: "NULL"},
+			legacy.Column{Name: "cancellationPolicy", Fallback: "NULL"},
+			legacy.Col("coverImageUrl"),
+			legacy.Column{Name: "phone", Fallback: "NULL"},
+			legacy.Column{Name: "whatsapp", Fallback: "NULL"},
+			legacy.Column{Name: "telegram", Fallback: "NULL"},
+			legacy.Column{Name: "ratingAverage", Fallback: "0"},
+			legacy.Column{Name: "reviewCount", Fallback: "0"},
+			legacy.Col("isPublished"), legacy.Col("publishedAt"), legacy.Col("userId"),
+			legacy.Col("createdAt"), legacy.Col("updatedAt"),
+		),
 		insert: `INSERT INTO tours (id, locale, slug, title, excerpt, content, price, duration_days,
 			location, start_date, end_date, destination, cancellation_policy, cover_image_url, phone,
 			whatsapp, telegram, rating_average, review_count, is_published, published_at, user_id,
@@ -106,32 +121,45 @@ var steps = []step{
 	},
 	{
 		table: "reviews",
-		query: `SELECT id, "targetType", "targetId", rating, text, photos, "userId", "createdAt",
-			"updatedAt" FROM reviews`,
+		cols:  cols(`id targetType targetId rating text photos userId createdAt updatedAt`),
 		insert: `INSERT INTO reviews (id, target_type, target_id, rating, text, photos, user_id, created_at, updated_at)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING`,
 		simpleJSON: []int{5},
 	},
 	{
 		table: "listing_posts",
-		query: `SELECT id, "targetType", "targetId", text, photos, "userId", "createdAt", "updatedAt"
-			FROM listing_posts`,
+		cols:  cols(`id targetType targetId text photos userId createdAt updatedAt`),
 		insert: `INSERT INTO listing_posts (id, target_type, target_id, text, photos, user_id, created_at, updated_at)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`,
 		simpleJSON: []int{4},
 	},
 }
 
-func (s step) run(ctx context.Context, legacy *pgx.Conn, tx pgx.Tx) (int, error) {
-	var exists bool
-	if err := legacy.QueryRow(ctx, `SELECT to_regclass($1) IS NOT NULL`, "public."+s.table).Scan(&exists); err != nil {
+// cols lists required columns by name; "name:text" casts an enum to text.
+func cols(spec string) []legacy.Column {
+	var out []legacy.Column
+	for _, f := range strings.Fields(spec) {
+		name, cast, _ := strings.Cut(f, ":")
+		c := legacy.Col(name)
+		if cast != "" {
+			c.Cast = "::" + cast
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+func (s step) run(ctx context.Context, conn *pgx.Conn, tx pgx.Tx) (int, error) {
+	// A fresh install may not have the table; nothing to copy then.
+	exists, err := legacy.TableExists(ctx, conn, s.table)
+	if err != nil || !exists {
 		return 0, err
 	}
-	if !exists {
-		return 0, nil
+	query, err := legacy.Select(ctx, conn, s.table, s.cols)
+	if err != nil {
+		return 0, err
 	}
-
-	rows, err := legacy.Query(ctx, s.query)
+	rows, err := conn.Query(ctx, query)
 	if err != nil {
 		return 0, err
 	}

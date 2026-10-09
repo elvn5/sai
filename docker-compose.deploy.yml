@@ -16,23 +16,6 @@ services:
       timeout: 5s
       retries: 10
 
-  api:
-    image: ghcr.io/${IMAGE_OWNER}/ermekten-api:${IMAGE_TAG}
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
-      UPLOADS_DIR: /repo/apps/api/uploads
-      API_PORT: 3001
-    # Internal only — the gateway owns the public API port and proxies
-    # every endpoint not yet migrated to a Go service here.
-    volumes:
-      - uploads_data:/repo/apps/api/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   users:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-users:${IMAGE_TAG}
     restart: unless-stopped
@@ -118,7 +101,6 @@ services:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-gateway:${IMAGE_TAG}
     restart: unless-stopped
     environment:
-      LEGACY_API_URL: http://api:3001
       MEDIA_URL: http://media:8081
       CONTENT_URL: http://content:8082
       LISTINGS_URL: http://listings:8083
@@ -130,7 +112,6 @@ services:
     ports:
       - "${API_PORT}:8080"
     depends_on:
-      - api
       - media
       - content
       - listings

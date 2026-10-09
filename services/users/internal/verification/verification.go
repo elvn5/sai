@@ -1,5 +1,5 @@
 // Package verification generates and checks the codes that confirm a new
-// email or phone registration (apps/api/src/credentials-auth/verification-code.ts).
+// email or phone registration.
 package verification
 
 import (

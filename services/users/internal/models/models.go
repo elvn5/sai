@@ -31,8 +31,7 @@ type User struct {
 	UpdatedAt                 time.Time
 }
 
-// PublicUser is what the site sees about the signed-in user
-// (apps/api/src/user-auth/public-user.ts).
+// PublicUser is what the site sees about the signed-in user.
 type PublicUser struct {
 	ID            string  `json:"id"`
 	TelegramID    *string `json:"telegramId"`

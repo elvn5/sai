@@ -1,7 +1,7 @@
 package models
 
-// Mirrors apps/api/src/common/listing-options.ts and the enums in
-// packages/database (and the frontend's listing-options.ts).
+// Allowed values for listing fields; apps/tourism/shared/lib/listing-options.ts
+// mirrors them — keep the two in sync.
 
 var (
 	Locales      = []string{"ru", "ky", "en", "de"}

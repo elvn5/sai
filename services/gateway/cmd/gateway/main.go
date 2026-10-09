@@ -55,7 +55,7 @@ func run(log *slog.Logger) error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		log.Info("gateway listening", slog.String("addr", srv.Addr), slog.String("legacy_api", cfg.LegacyAPIURL))
+		log.Info("gateway listening", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}

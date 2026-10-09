@@ -1,6 +1,5 @@
 // Package telegramauth checks the signatures Telegram puts on Login Widget
-// payloads and Mini App initData
-// (apps/api/src/telegram-auth/telegram-verify.util.ts).
+// payloads and Mini App initData.
 package telegramauth
 
 import (

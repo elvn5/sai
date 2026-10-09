@@ -366,3 +366,28 @@ func TestLegacyImport(t *testing.T) {
 		t.Errorf("guide with empty list: %s", body)
 	}
 }
+
+// v1.0.3 (production before the migration) had gallery "region" instead of
+// "location" and no tours/listing tables; the import still works.
+func TestLegacyImportFromOldSchema(t *testing.T) {
+	db, _ := newDatabase(t)
+	legacyDB, legacyDSN := newLegacyDatabase(t)
+	ctx := context.Background()
+	_, err := legacyDB.Exec(ctx, `
+		CREATE TYPE region AS ENUM ('issyk_kul', 'chuy');
+		CREATE TABLE gallery_items (id uuid PRIMARY KEY, "imageUrl" varchar, caption varchar, "altText" varchar,
+			"sortOrder" int, "isPublished" boolean, "createdAt" timestamp, "updatedAt" timestamp, "userId" uuid, region region);
+		INSERT INTO gallery_items VALUES ('cccccccc-0000-0000-0000-000000000001', '/uploads/lake.jpg', 'Озеро', NULL, 0,
+			true, '2026-09-05 10:00', '2026-09-05 10:00', NULL, 'issyk_kul');`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := legacyimport.Run(ctx, db, legacyDSN, slog.New(slog.DiscardHandler)); err != nil {
+		t.Fatal(err)
+	}
+	gin.SetMode(gin.TestMode)
+	c := client{t, routes.Setup(routes.Deps{Store: store.New(db), JWTSecret: secret, Log: slog.New(slog.DiscardHandler)})}
+	if _, body := c.do("GET", "/gallery", ""); !strings.Contains(body, `"imageUrl":"/uploads/lake.jpg","location":null,"caption":"Озеро"`) {
+		t.Errorf("gallery: %s", body)
+	}
+}

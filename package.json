@@ -1,5 +1,5 @@
 {
-  "name": "parcel-bot-monorepo",
+  "name": "ermekten",
   "private": true,
   "version": "1.0.0",
   "packageManager": "pnpm@9.15.9",
@@ -7,11 +7,10 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev:api": "pnpm --filter @app/database build && pnpm --filter @app/api dev",
     "dev:bot": "pnpm --filter @app/bot dev",
     "dev:admin": "pnpm --filter @app/admin dev",
     "dev:tourism": "pnpm --filter @app/tourism dev",
-    "dev:gateway": "cd services/gateway && LEGACY_API_URL=${LEGACY_API_URL:-http://localhost:3001} MEDIA_URL=${MEDIA_URL:-} CONTENT_URL=${CONTENT_URL:-} LISTINGS_URL=${LISTINGS_URL:-} USERS_URL=${USERS_URL:-} go run ./cmd/gateway",
+    "dev:gateway": "cd services/gateway && MEDIA_URL=${MEDIA_URL:-http://localhost:8081} CONTENT_URL=${CONTENT_URL:-http://localhost:8082} LISTINGS_URL=${LISTINGS_URL:-http://localhost:8083} USERS_URL=${USERS_URL:-http://localhost:8084} go run ./cmd/gateway",
     "dev:media": "cd services/media && go run ./cmd/media",
     "dev:content": "cd services/content && go run ./cmd/content",
     "dev:listings": "cd services/listings && go run ./cmd/listings",
@@ -21,9 +20,7 @@
     "build": "pnpm -r build",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "typecheck": "pnpm --filter @app/database build && pnpm -r typecheck",
-    "migration:generate": "pnpm --filter @app/database migration:generate",
-    "migration:run": "pnpm --filter @app/database migration:run"
+    "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

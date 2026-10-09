@@ -11,8 +11,30 @@ updates:
           - minor
           - patch
 
+  - package-ecosystem: gomod
+    directories:
+      - "/services/pkg"
+      - "/services/proto"
+      - "/services/gateway"
+      - "/services/media"
+      - "/services/content"
+      - "/services/listings"
+      - "/services/users"
+    schedule:
+      interval: weekly
+    groups:
+      go-dependencies:
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: docker
-    directory: "/apps/api"
+    directories:
+      - "/services/gateway"
+      - "/services/media"
+      - "/services/content"
+      - "/services/listings"
+      - "/services/users"
     schedule:
       interval: weekly
 

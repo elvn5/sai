@@ -3,8 +3,8 @@
 // allowed (scripts, event handlers, javascript: URLs, other tags) must be
 // removed.
 //
-// It reproduces the NestJS API's sanitize-html configuration output
-// (apps/api/src/common/sanitize-user-content.ts), including its
+// It reproduces the output of the sanitize-html configuration the former
+// NestJS API used (so stored content stays consistent), including its
 // serialization: `<br />`, links forced to open in a new tab, entities
 // decoded and only & < > (and " in attributes) re-escaped. testdata holds
 // sanitize-html's own output for the comparison.

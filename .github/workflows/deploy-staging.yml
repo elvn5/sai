@@ -20,8 +20,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - service: api
-            dockerfile: apps/api/Dockerfile
           - service: bot
             dockerfile: apps/bot/Dockerfile
           - service: admin
@@ -82,7 +80,7 @@ jobs:
           target: ${{ vars.DEPLOY_PATH }}
           strip_components: 0
 
-      - name: Write .env, deploy and migrate
+      - name: Write .env and deploy
         uses: appleboy/ssh-action@v1.2.0
         env:
           GHCR_USER: ${{ github.actor }}
@@ -159,8 +157,4 @@ jobs:
 
             docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env pull
             docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
-            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/packages/database api \
-              ./node_modules/.bin/typeorm migration:run -d dist/data-source.js
-            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env exec -T -w /repo/apps/api api \
-              node dist/scripts/convert-uploads-to-webp.js
             docker image prune -f

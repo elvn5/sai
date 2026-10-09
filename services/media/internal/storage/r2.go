@@ -1,7 +1,11 @@
 // Package storage hands out presigned R2 upload URLs and deletes objects.
 // File bytes go straight from the browser to R2 and never pass through
-// this service. The bucket's CORS policy must allow PUT from the site's
-// origins (see the comment in apps/api/src/storage/storage.service.ts).
+// this service — so the bucket's CORS policy must allow it. Configure once
+// per bucket (Cloudflare dashboard: R2 > <bucket> > Settings > CORS Policy):
+//
+//	[{"AllowedOrigins": ["https://ermekten.com", "https://test.ermekten.com"],
+//	  "AllowedMethods": ["PUT", "GET"], "AllowedHeaders": ["Content-Type"],
+//	  "MaxAgeSeconds": 3600}]
 package storage
 
 import (

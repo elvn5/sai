@@ -146,3 +146,27 @@ func TestLegacyImport(t *testing.T) {
 		t.Errorf("support: %+v %v", support, err)
 	}
 }
+
+// A database still at the v1.0.3 NestJS schema (production before the
+// migration) has no partner or verification columns; their defaults apply.
+func TestLegacyImportFromOldSchema(t *testing.T) {
+	db, _ := testdb.New(t, true)
+	legacy, legacyDSN := testdb.New(t, false)
+	ctx := context.Background()
+	_, err := legacy.Exec(ctx, `
+		CREATE TABLE users (id uuid PRIMARY KEY, "telegramId" bigint, username varchar, "firstName" varchar,
+			"lastName" varchar, phone varchar, "createdAt" timestamp, "updatedAt" timestamp, "avatarUrl" varchar,
+			email varchar, "passwordHash" varchar);
+		INSERT INTO users VALUES ('11111111-1111-1111-1111-111111111111', 7000000001, 'aibek', 'Айбек', NULL,
+			'+996555', '2026-09-01 10:00', '2026-09-01 10:00', NULL, NULL, NULL);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := legacyimport.Run(ctx, db, legacyDSN, slog.New(slog.DiscardHandler)); err != nil {
+		t.Fatal(err)
+	}
+	u, err := store.New(db).ByTelegramID(ctx, "7000000001")
+	if err != nil || !u.IsVerified || u.PartnerStatus != "none" || u.VerificationAttempts != 0 || u.VerificationCodeHash != nil {
+		t.Fatalf("imported: %+v %v", u, err)
+	}
+}

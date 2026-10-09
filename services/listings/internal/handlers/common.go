@@ -20,7 +20,7 @@ import (
 	"github.com/elvn5/sai/services/pkg/validation"
 )
 
-// Rules from apps/api/src/common/listing.schemas.ts.
+// Field rules shared by the listing request bodies.
 func init() {
 	validation.RegisterPattern("slug", regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`),
 		"Slug must be lowercase, alphanumeric, hyphen-separated")

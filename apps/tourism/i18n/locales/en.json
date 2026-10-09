@@ -8,7 +8,8 @@
     "blog": "Blog",
     "hotels": "Stays",
     "localGuides": "Local guides",
-    "menu": "Menu"
+    "menu": "Menu",
+    "hallOfFame": "Hall of fame"
   },
   "theme": { "toggle": "Theme" },
   "colorTheme": { "toggle": "Color theme" },
@@ -49,7 +50,21 @@
   "blog": {
     "heading": "Blog",
     "metaDescription": "News, stories, and travel tips about exploring Kyrgyzstan from Ermekten.",
-    "empty": "No posts yet"
+    "empty": "No posts yet",
+    "form": {
+      "newTitle": "Write a post",
+      "editTitle": "Edit post",
+      "title": "Title",
+      "excerpt": "Short summary",
+      "cover": "Cover image",
+      "content": "Text",
+      "contentPlaceholder": "Tell travelers about a trip, news or useful tips…",
+      "publish": "Publish right away",
+      "save": "Save",
+      "create": "Publish",
+      "saveError": "Couldn't save the post. Please try again.",
+      "notFound": "Post not found."
+    }
   },
   "gallery": {
     "heading": "Gallery",
@@ -439,13 +454,20 @@
       "info": "Profile",
       "history": "Trip history",
       "partner": "Partnership",
-      "listings": "My listings"
+      "listings": "My listings",
+      "achievements": "Achievements"
     },
     "listings": {
       "guideHeading": "Guide profile",
       "guidePitch": "Are you a guide? Create a profile so travelers can find you and contact you directly.",
       "hotelsHeading": "My properties",
-      "noHotels": "You haven't listed any properties yet."
+      "noHotels": "You haven't listed any properties yet.",
+      "postsHeading": "My blog posts",
+      "noPosts": "You haven't written any posts yet.",
+      "published": "Published",
+      "draft": "Draft",
+      "deletePost": "Delete post",
+      "deletePostConfirm": "Delete the post “{title}”?"
     },
     "fields": {
       "username": "Username",
@@ -459,12 +481,18 @@
       "cta": "Browse guides"
     },
     "partner": {
-      "pitch": "Become an Ermekten partner and publish your own tours for travelers.",
+      "pitch": "Become an Ermekten partner: publish stays, tours, guides and posts, and award travelers achievements.",
       "applyCta": "Become a partner",
       "pending": "Your request is waiting for admin review.",
       "rejected": "Your request was declined. You can apply again.",
-      "approved": "You're an Ermekten partner. You can now publish tours.",
-      "addTourCta": "Add a tour"
+      "approved": "You're an Ermekten partner: publish stays, tours, guides, photos and posts, and award travelers achievements.",
+      "addTourCta": "Add a tour",
+      "awardCta": "Award an achievement",
+      "publishOnly": "Only partners can publish stays, guides, local-guide profiles, photos and blog posts."
+    },
+    "achievements": {
+      "summary": "Achievements earned: {count}",
+      "open": "Open the hall of fame"
     }
   },
   "footer": {
@@ -481,5 +509,66 @@
     "title": "Cookie notice",
     "message": "We use cookies required for signing in and remembering your preferences.",
     "accept": "Got it"
+  },
+  "hallOfFame": {
+    "title": "Hall of fame",
+    "subtitle": "Kyrgyzstan's travelers and their achievements — from the first pass to legendary routes.",
+    "points": "{count} XP",
+    "awardedBy": "from {name}",
+    "rarity": {
+      "common": "Common",
+      "rare": "Rare",
+      "epic": "Epic",
+      "legendary": "Legendary"
+    },
+    "code": {
+      "title": "Your traveler code",
+      "hint": "Show the code or QR to a partner to receive an achievement.",
+      "copy": "Copy code",
+      "copied": "Code copied!",
+      "qrLabel": "QR code for receiving an achievement"
+    },
+    "mine": {
+      "heading": "My hall of fame",
+      "points": "experience points",
+      "earned": "achievements",
+      "rank": "place",
+      "empty": "No achievements yet — plenty of routes ahead!",
+      "howTo": "Partner stays, guides and tour operators award achievements for completed routes, trips and community contributions."
+    },
+    "guest": {
+      "pitch": "Sign in to collect achievements from Ermekten partners and join the hall of fame.",
+      "cta": "Sign in"
+    },
+    "leaders": {
+      "heading": "Top travelers",
+      "empty": "The hall of fame is waiting for its first heroes."
+    },
+    "reveal": {
+      "heading": "New achievement",
+      "next": "Next",
+      "done": "Hooray!"
+    }
+  },
+  "award": {
+    "title": "Award an achievement",
+    "subtitle": "Enter the traveler's code or scan their QR code with your phone camera.",
+    "codePlaceholder": "ABCD-EFGH",
+    "find": "Find",
+    "unknownCode": "No traveler has this code.",
+    "lookupError": "Couldn't look up the traveler. Please try again.",
+    "codeFormat": "The code has 8 characters.",
+    "alreadyHas": "Achievements: {count}",
+    "success": "{name} receives “{title}”!",
+    "choose": "Choose an achievement",
+    "earned": "Already earned",
+    "emptyCatalog": "The admin hasn't added any achievements yet.",
+    "note": "A few words (optional)",
+    "noteHint": "The traveler sees this with the award.",
+    "give": "Award “{title}”",
+    "history": "You awarded",
+    "duplicate": "The traveler already has this achievement.",
+    "self": "You can't award yourself.",
+    "awardError": "Couldn't award the achievement. Please try again."
   }
 }

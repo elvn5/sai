@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/vue-query';
 import { computed } from 'vue';
 import { useApiClient } from '~/shared/api/client';
-import type { AppUser, TelegramWidgetPayload } from '~/shared/api/types';
+import { type AppUser, PartnerStatus, type TelegramWidgetPayload } from '~/shared/api/types';
 
 export interface RegisterPayload {
   email?: string;
@@ -147,6 +147,8 @@ export function useAuth() {
 
   return {
     user: computed(() => query.data.value ?? null),
+    // Only approved partners publish hotels, guides, photos and posts.
+    isPartner: computed(() => query.data.value?.partnerStatus === PartnerStatus.APPROVED),
     checked: computed(() => query.isFetched.value),
     checkSession,
     ensureSession,

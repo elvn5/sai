@@ -10,6 +10,8 @@ export interface BlogPost {
   seoDescription: string | null;
   isPublished: boolean;
   publishedAt: string | null;
+  // The partner who wrote it; null for posts from the editorial team.
+  userId: string | null;
   updatedAt: string;
 }
 
@@ -261,4 +263,67 @@ export interface ListingPost {
   photos: string[];
   createdAt: string;
   author: PublicAuthor;
+}
+
+export enum AchievementRarity {
+  COMMON = 'common',
+  RARE = 'rare',
+  EPIC = 'epic',
+  LEGENDARY = 'legendary',
+}
+
+// Texts keyed by locale; `ru` is always present.
+export type LocalizedText = Partial<Record<'ru' | 'ky' | 'en' | 'de', string>>;
+
+export interface Achievement {
+  id: string;
+  title: LocalizedText;
+  description: LocalizedText;
+  icon: string;
+  rarity: AchievementRarity;
+  points: number;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+// The public part of a profile.
+export interface Person {
+  id: string;
+  firstName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
+export interface Award {
+  id: string;
+  achievement: Achievement;
+  user: Person;
+  awardedBy: Person | null;
+  note: string | null;
+  awardedAt: string;
+  isNew: boolean;
+}
+
+export interface MyAchievements {
+  code: string;
+  points: number;
+  awards: Award[];
+}
+
+export interface HallEntry {
+  rank: number;
+  user: Person;
+  points: number;
+  count: number;
+  achievements: Achievement[];
+}
+
+export interface HallOfFame {
+  leaders: HallEntry[];
+  recent: Award[];
+}
+
+export interface AwardRecipient {
+  user: Person;
+  earnedAchievementIds: string[];
 }

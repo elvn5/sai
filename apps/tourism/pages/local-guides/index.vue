@@ -155,7 +155,7 @@ useSeoMeta({
         {{ $t('localGuides.myProfile') }}
       </UButton>
       <UButton
-        v-else-if="auth.user.value && myGuideQuery.isFetched.value"
+        v-else-if="auth.isPartner.value && myGuideQuery.isFetched.value"
         color="primary"
         icon="i-heroicons-plus"
         :to="localePath('/local-guides/new')"

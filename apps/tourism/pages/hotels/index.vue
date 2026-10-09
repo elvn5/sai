@@ -147,7 +147,7 @@ useSeoMeta({
         <p class="mt-1 text-text-muted">{{ $t('hotels.subheading') }}</p>
       </div>
       <UButton
-        v-if="auth.user.value"
+        v-if="auth.isPartner.value"
         color="primary"
         icon="i-heroicons-plus"
         :to="localePath('/hotels/new')"

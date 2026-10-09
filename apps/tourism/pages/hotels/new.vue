@@ -12,7 +12,7 @@ const localePath = useLocalePath();
 const api = useApiClient();
 const queryClient = useQueryClient();
 
-useRequireAuth();
+useRequirePartner();
 useSeoMeta({ title: () => t('hotels.newTitle'), robots: 'noindex' });
 
 const submitError = ref<string | null>(null);

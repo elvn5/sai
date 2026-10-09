@@ -41,7 +41,7 @@ useSeoMeta({
     <div class="mb-8 flex items-center justify-between">
       <h1 class="text-3xl font-extrabold text-text">{{ $t('guides.heading') }}</h1>
       <UButton
-        v-if="auth.user.value"
+        v-if="auth.isPartner.value"
         color="primary"
         icon="i-heroicons-plus"
         :to="localePath('/guides/new')"

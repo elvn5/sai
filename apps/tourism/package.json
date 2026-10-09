@@ -20,6 +20,7 @@
     "@tiptap/starter-kit": "^3.31.4",
     "@tiptap/vue-3": "^3.31.4",
     "@vee-validate/zod": "^4.15.0",
+    "uqr": "^0.1.2",
     "vee-validate": "^4.15.0",
     "zod": "^3.24.1"
   },

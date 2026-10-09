@@ -5,7 +5,7 @@ import { useForm } from 'vee-validate';
 import { z } from 'zod';
 import TiptapEditor from '~/components/features/guide-editor/TiptapEditor.vue';
 import { useApiClient } from '~/shared/api/client';
-import { CancellationPolicy, Destination, PartnerStatus } from '~/shared/api/types';
+import { CancellationPolicy, Destination } from '~/shared/api/types';
 import type { Tour } from '~/shared/api/types';
 import { contactSchemas, emptyToNull } from '~/shared/lib/form-schemas';
 import { CANCELLATION_OPTIONS, DESTINATION_OPTIONS } from '~/shared/lib/listing-options';
@@ -14,9 +14,7 @@ import { slugify } from '~/shared/lib/slugify';
 const { t, locale } = useI18n();
 const localePath = useLocalePath();
 const api = useApiClient();
-const auth = useAuth();
 const queryClient = useQueryClient();
-const { isTma, getInitData } = useTelegramWebApp();
 
 const coverFile = ref<File | null>(null);
 const submitError = ref<string | null>(null);
@@ -76,18 +74,7 @@ useSeoMeta({
   robots: 'noindex',
 });
 
-onMounted(async () => {
-  if (!auth.checked.value) {
-    await auth.ensureSession({ isTma: isTma.value, initData: getInitData() });
-  }
-  if (!auth.user.value) {
-    await navigateTo(localePath('/login'));
-    return;
-  }
-  if (auth.user.value.partnerStatus !== PartnerStatus.APPROVED) {
-    await navigateTo(localePath('/profile'));
-  }
-});
+useRequirePartner();
 
 function onCoverChange(event: Event): void {
   const target = event.target as HTMLInputElement;

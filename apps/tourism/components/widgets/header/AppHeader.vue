@@ -18,6 +18,7 @@ const navLinks = [
   { to: '/guides', label: 'nav.guides' },
   { to: '/gallery', label: 'nav.gallery' },
   { to: '/blog', label: 'nav.blog' },
+  { to: '/hall-of-fame', label: 'nav.hallOfFame' },
 ] as const;
 
 onMounted(() => {

@@ -13,7 +13,7 @@ const api = useApiClient();
 const auth = useAuth();
 const queryClient = useQueryClient();
 
-useRequireAuth();
+useRequirePartner();
 useSeoMeta({ title: () => t('localGuides.newTitle'), robots: 'noindex' });
 
 // One profile per user — send people who already have one to it.

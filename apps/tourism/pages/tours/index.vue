@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/vue-query';
 import RatingStars from '~/components/shared/ui/RatingStars.vue';
 import { useApiClient } from '~/shared/api/client';
-import { PartnerStatus, SeoPage } from '~/shared/api/types';
+import { SeoPage } from '~/shared/api/types';
 import type { Tour } from '~/shared/api/types';
 import { formatAmount } from '~/shared/lib/format-price';
 import { DESTINATION_OPTIONS } from '~/shared/lib/listing-options';
@@ -35,7 +35,7 @@ await toursQuery.suspense();
 
 const tours = toursQuery.data;
 
-const canPost = computed(() => auth.user.value?.partnerStatus === PartnerStatus.APPROVED);
+const canPost = auth.isPartner;
 
 const pageSeoQuery = usePageSeo(SeoPage.TOURS, locale);
 await pageSeoQuery.suspense();

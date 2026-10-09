@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import AwardCodeCard from '~/components/features/award-code/AwardCodeCard.vue';
 import { useApiClient } from '~/shared/api/client';
 import { PartnerStatus } from '~/shared/api/types';
-import type { AppUser, Hotel, LocalGuide } from '~/shared/api/types';
+import type { AppUser, BlogPost, Hotel, LocalGuide, MyAchievements } from '~/shared/api/types';
 
 const { t } = useI18n();
 const localePath = useLocalePath();
@@ -11,26 +12,75 @@ const api = useApiClient();
 const queryClient = useQueryClient();
 const { isTma, getInitData } = useTelegramWebApp();
 
-const tabs = [
+const route = useRoute();
+
+// Listings are for partners only (they alone publish).
+const tabs = computed(() => [
   { key: 'info', label: t('profile.tabs.info'), icon: 'i-heroicons-user-circle' },
-  { key: 'listings', label: t('profile.tabs.listings'), icon: 'i-heroicons-building-storefront' },
+  { key: 'achievements', label: t('profile.tabs.achievements'), icon: 'i-mdi-trophy-outline' },
+  ...(auth.isPartner.value
+    ? [
+        {
+          key: 'listings',
+          label: t('profile.tabs.listings'),
+          icon: 'i-heroicons-building-storefront',
+        },
+      ]
+    : []),
   { key: 'history', label: t('profile.tabs.history'), icon: 'i-heroicons-map' },
   { key: 'partner', label: t('profile.tabs.partner'), icon: 'i-heroicons-briefcase' },
-];
+]);
+// ?tab=partner (etc.) opens that tab.
+const selectedTab = computed({
+  get: () =>
+    Math.max(
+      0,
+      tabs.value.findIndex((tab: { key: string }) => tab.key === route.query.tab),
+    ),
+  set: (index: number) => {
+    void navigateTo({ query: { ...route.query, tab: tabs.value[index]?.key } }, { replace: true });
+  },
+});
 
 const isSignedIn = computed(() => Boolean(auth.user.value));
 const myHotelsQuery = useQuery({
   queryKey: ['my-hotels'],
   queryFn: () => api.get<Hotel[]>('/hotels/mine'),
-  enabled: isSignedIn,
+  enabled: auth.isPartner,
 });
 const myGuideQuery = useQuery({
   queryKey: ['my-local-guide'],
   queryFn: () => api.get<{ guide: LocalGuide | null }>('/local-guides/mine'),
+  enabled: auth.isPartner,
+});
+const myPostsQuery = useQuery({
+  queryKey: ['my-blog-posts'],
+  queryFn: () => api.get<BlogPost[]>('/blog/mine'),
+  enabled: auth.isPartner,
+});
+const myAchievementsQuery = useQuery({
+  queryKey: ['my-achievements'],
+  queryFn: () => api.get<MyAchievements>('/achievements/me'),
   enabled: isSignedIn,
 });
 const myHotels = computed(() => myHotelsQuery.data.value ?? []);
 const myGuide = computed(() => myGuideQuery.data.value?.guide ?? null);
+const myPosts = computed(() => myPostsQuery.data.value ?? []);
+const myAchievements = computed(() => myAchievementsQuery.data.value ?? null);
+
+const deletePostMutation = useMutation({
+  mutationFn: (id: string) => api.delete(`/blog/${id}`),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['my-blog-posts'] });
+    queryClient.invalidateQueries({ queryKey: ['blog'] });
+  },
+});
+
+function deletePost(post: BlogPost): void {
+  if (window.confirm(t('profile.listings.deletePostConfirm', { title: post.title }))) {
+    deletePostMutation.mutate(post.id);
+  }
+}
 
 const applyMutation = useMutation({
   mutationFn: () => api.post<{ user: AppUser }>('/partners/apply'),
@@ -84,7 +134,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <UTabs :items="tabs" class="mt-8">
+    <UTabs v-model="selectedTab" :items="tabs" class="mt-8">
       <template #item="{ item }">
         <div v-if="item.key === 'info'" class="mt-6 flex flex-col gap-4">
           <div class="flex items-center justify-between rounded-card border border-border bg-surface px-4 py-3">
@@ -104,6 +154,20 @@ onMounted(async () => {
 
           <UButton color="gray" variant="soft" class="mt-2 self-start" @click="handleLogout">
             {{ $t('profile.logout') }}
+          </UButton>
+        </div>
+
+        <div v-else-if="item.key === 'achievements'" class="mt-6 flex flex-col gap-4">
+          <template v-if="myAchievements">
+            <div class="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3">
+              <span class="text-sm text-text-muted">{{ $t('profile.achievements.summary', { count: myAchievements.awards.length }) }}</span>
+              <span class="text-lg font-black text-amber-500">{{ $t('hallOfFame.points', { count: myAchievements.points }) }}</span>
+            </div>
+            <AwardCodeCard :code="myAchievements.code" />
+            <p class="text-sm text-text-muted">{{ $t('hallOfFame.mine.howTo') }}</p>
+          </template>
+          <UButton color="primary" icon="i-mdi-trophy" class="self-start" :to="localePath('/hall-of-fame')">
+            {{ $t('profile.achievements.open') }}
           </UButton>
         </div>
 
@@ -160,6 +224,52 @@ onMounted(async () => {
               {{ $t('profile.listings.noHotels') }}
             </p>
           </div>
+
+          <div>
+            <div class="mb-3 flex items-center justify-between">
+              <h2 class="font-semibold text-text">{{ $t('profile.listings.postsHeading') }}</h2>
+              <UButton size="sm" color="primary" icon="i-heroicons-plus" :to="localePath('/blog/new')">
+                {{ $t('blog.form.newTitle') }}
+              </UButton>
+            </div>
+            <div v-if="myPosts.length > 0" class="flex flex-col gap-2">
+              <div
+                v-for="post in myPosts"
+                :key="post.id"
+                class="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3"
+              >
+                <div class="min-w-0">
+                  <NuxtLink
+                    v-if="post.isPublished"
+                    :to="localePath(`/blog/${post.slug}`)"
+                    class="block truncate font-medium text-text hover:underline"
+                  >
+                    {{ post.title }}
+                  </NuxtLink>
+                  <span v-else class="block truncate font-medium text-text">{{ post.title }}</span>
+                  <span class="block text-xs text-text-muted">
+                    {{ post.isPublished ? $t('profile.listings.published') : $t('profile.listings.draft') }}
+                  </span>
+                </div>
+                <div class="flex shrink-0 gap-2">
+                  <UButton size="sm" color="gray" icon="i-heroicons-pencil-square" :to="localePath(`/blog/edit/${post.id}`)">
+                    {{ $t('listing.edit') }}
+                  </UButton>
+                  <UButton
+                    size="sm"
+                    color="gray"
+                    variant="ghost"
+                    icon="i-heroicons-trash"
+                    :aria-label="$t('profile.listings.deletePost')"
+                    @click="deletePost(post)"
+                  />
+                </div>
+              </div>
+            </div>
+            <p v-else class="rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center text-sm text-text-muted">
+              {{ $t('profile.listings.noPosts') }}
+            </p>
+          </div>
         </div>
 
         <div v-else-if="item.key === 'history'" class="mt-6">
@@ -182,9 +292,17 @@ onMounted(async () => {
           >
             <UIcon name="i-heroicons-check-badge" class="h-10 w-10 text-brand-600 dark:text-brand-400" />
             <p class="font-medium text-text">{{ $t('profile.partner.approved') }}</p>
-            <UButton color="primary" class="mt-2" @click="navigateTo(localePath('/tours/new'))">
-              {{ $t('profile.partner.addTourCta') }}
-            </UButton>
+            <div class="mt-2 flex flex-wrap justify-center gap-2">
+              <UButton color="primary" icon="i-mdi-medal" :to="localePath('/achievements/award')">
+                {{ $t('profile.partner.awardCta') }}
+              </UButton>
+              <UButton color="gray" icon="i-heroicons-map" :to="localePath('/tours/new')">
+                {{ $t('profile.partner.addTourCta') }}
+              </UButton>
+              <UButton color="gray" icon="i-heroicons-pencil-square" :to="localePath('/blog/new')">
+                {{ $t('blog.form.newTitle') }}
+              </UButton>
+            </div>
           </div>
 
           <div
@@ -204,6 +322,7 @@ onMounted(async () => {
               {{ $t('profile.partner.rejected') }}
             </p>
             <p class="max-w-sm text-sm text-text-muted">{{ $t('profile.partner.pitch') }}</p>
+            <p class="max-w-sm text-sm text-text-muted">{{ $t('profile.partner.publishOnly') }}</p>
             <UButton
               color="primary"
               class="mt-2"

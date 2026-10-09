@@ -10,6 +10,21 @@ service UsersService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   // Looks up several users at once; unknown ids are simply left out.
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+
+  // For the Telegram bot.
+
+  // Finds the account for a Telegram user, creating it on first contact,
+  // and refreshes the profile fields that were provided.
+  rpc UpsertTelegramUser(UpsertTelegramUserRequest) returns (UpsertTelegramUserResponse);
+  // Completes a phone registration started on the website: the site hands
+  // the user a t.me deep link carrying this token. NOT_FOUND if the token is
+  // unknown, expired or the account is already verified.
+  rpc ConfirmTelegramVerification(ConfirmTelegramVerificationRequest) returns (ConfirmTelegramVerificationResponse);
+  // Updates fields edited from the bot. ALREADY_EXISTS if the phone number
+  // belongs to another account.
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  // Support contacts shown by the bot (edited in the admin panel).
+  rpc GetSupportInfo(GetSupportInfoRequest) returns (GetSupportInfoResponse);
 }
 
 enum PartnerStatus {
@@ -44,4 +59,55 @@ message GetUsersRequest {
 
 message GetUsersResponse {
   repeated User users = 1;
+}
+
+// What the bot shows a user about their own account.
+message TelegramAccount {
+  string id = 1;
+  optional string first_name = 2;
+  optional string username = 3;
+  optional string phone = 4;
+}
+
+message UpsertTelegramUserRequest {
+  string telegram_id = 1;
+  optional string username = 2;
+  optional string first_name = 3;
+  optional string last_name = 4;
+}
+
+message UpsertTelegramUserResponse {
+  TelegramAccount account = 1;
+}
+
+message ConfirmTelegramVerificationRequest {
+  string token = 1;
+}
+
+message ConfirmTelegramVerificationResponse {
+  TelegramAccount account = 1;
+}
+
+message UpdateProfileRequest {
+  string user_id = 1;
+  optional string first_name = 2;
+  optional string phone = 3;
+}
+
+message UpdateProfileResponse {
+  TelegramAccount account = 1;
+}
+
+message GetSupportInfoRequest {}
+
+message GetSupportInfoResponse {
+  SupportInfo support = 1;
+}
+
+message SupportInfo {
+  string message = 1;
+  optional string phone = 2;
+  optional string telegram_contact = 3;
+  optional string email = 4;
+  optional string working_hours = 5;
 }

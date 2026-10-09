@@ -15,6 +15,7 @@ type Config struct {
 	MediaURL    string `env:"MEDIA_URL"`
 	ContentURL  string `env:"CONTENT_URL"`
 	ListingsURL string `env:"LISTINGS_URL"`
+	UsersURL    string `env:"USERS_URL"`
 
 	// Browser origins allowed by CORS — the same variables the NestJS API
 	// reads, with the same defaults.

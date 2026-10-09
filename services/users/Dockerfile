@@ -15,5 +15,5 @@ RUN cd users && go build -trimpath -ldflags="-s -w" -o /out/users ./cmd/users
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/users /users
-EXPOSE 9083
+EXPOSE 8084 9083
 ENTRYPOINT ["/users"]

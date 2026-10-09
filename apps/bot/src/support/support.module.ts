@@ -1,10 +1,9 @@
-import { SupportInfo } from '@app/database';
+import { UsersGrpcModule } from '@/users-grpc/users-grpc.module';
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { SupportService } from './support.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SupportInfo])],
+  imports: [UsersGrpcModule],
   providers: [SupportService],
   exports: [SupportService],
 })

@@ -40,12 +40,20 @@ services:
       dockerfile: services/users/Dockerfile
     restart: unless-stopped
     environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-12h}
+      COOKIE_SECURE: "false"
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      BOT_TOKEN: ${BOT_TOKEN}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-Ermekten <onboarding@resend.dev>}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
-      # Accounts stay in the NestJS database until stage 4 moves them.
-      USERS_DB_NAME: ${POSTGRES_DB:-parcel_bot}
+      USERS_DB_NAME: users
+      # One-time copy of accounts and support contacts from the NestJS database on first start.
+      LEGACY_DB_NAME: ${POSTGRES_DB:-parcel_bot}
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,6 +133,7 @@ services:
       MEDIA_URL: http://media:8081
       CONTENT_URL: http://content:8082
       LISTINGS_URL: http://listings:8083
+      USERS_URL: http://users:8084
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:3000}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3002}
     ports:
@@ -134,6 +143,7 @@ services:
       - media
       - content
       - listings
+      - users
 
   bot:
     build:
@@ -142,12 +152,12 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_PORT: 5432
       MINI_APP_URL: ${MINI_APP_URL:-http://localhost:3002}
+      # Accounts and support contacts come from the users service; the bot
+      # has no database of its own.
+      USERS_GRPC_ADDR: users:9083
     depends_on:
-      postgres:
-        condition: service_healthy
+      - users
 
   admin:
     build:

@@ -1,4 +1,5 @@
 import { SupportService } from '@/support/support.service';
+import { PhoneTakenError } from '@/users-grpc/users-grpc.client';
 import { UsersService } from '@/users/users.service';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -150,7 +151,18 @@ export class BotUpdate implements OnModuleInit {
       await this.usersService.updateFirstName(user.id, text);
       await ctx.reply('Имя обновлено.', mainMenuKeyboard(this.miniAppUrl));
     } else {
-      await this.usersService.updatePhone(user.id, text);
+      try {
+        await this.usersService.updatePhone(user.id, text);
+      } catch (error) {
+        if (error instanceof PhoneTakenError) {
+          await ctx.reply(
+            'Этот номер уже привязан к другому аккаунту.',
+            mainMenuKeyboard(this.miniAppUrl),
+          );
+          return;
+        }
+        throw error;
+      }
       await ctx.reply('Телефон обновлен.', mainMenuKeyboard(this.miniAppUrl));
     }
   }

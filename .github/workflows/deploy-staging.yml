@@ -69,14 +69,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy compose file to server
+      - name: Copy compose file and scripts to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ vars.SSH_PORT || 22 }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          source: docker-compose.deploy.yml
+          source: docker-compose.deploy.yml,scripts/drop-legacy-db.sh
           target: ${{ vars.DEPLOY_PATH }}
           strip_components: 0
 
@@ -157,4 +157,7 @@ jobs:
 
             docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env pull
             docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
+            # Once every service has copied its data out of the former NestJS
+            # database, back it up to ./backups and drop it (no-op after that).
+            POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" bash scripts/drop-legacy-db.sh ermekten-staging
             docker image prune -f

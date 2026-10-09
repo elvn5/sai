@@ -10,10 +10,12 @@ package legacy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // Column is one value read from a legacy table.
@@ -64,4 +66,19 @@ func Select(ctx context.Context, conn *pgx.Conn, table string, cols []Column) (s
 		}
 	}
 	return "SELECT " + strings.Join(exprs, ", ") + " FROM " + pgx.Identifier{table}.Sanitize(), nil
+}
+
+// Connect opens the legacy database. ok is false (with no error) when the
+// database doesn't exist — it is dropped once every service has imported,
+// and a fresh install may never have one — so there is nothing to import.
+func Connect(ctx context.Context, dsn string) (conn *pgx.Conn, ok bool, err error) {
+	conn, err = pgx.Connect(ctx, dsn)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "3D000" { // invalid_catalog_name
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("connect to legacy database: %w", err)
+	}
+	return conn, true, nil
 }

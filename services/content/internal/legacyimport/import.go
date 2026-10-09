@@ -32,9 +32,13 @@ func Run(ctx context.Context, db *pgxpool.Pool, legacyDSN string, log *slog.Logg
 		return nil
 	}
 
-	conn, err := pgx.Connect(ctx, legacyDSN)
+	conn, ok, err := legacy.Connect(ctx, legacyDSN)
 	if err != nil {
-		return fmt.Errorf("connect to legacy database: %w", err)
+		return err
+	}
+	if !ok {
+		log.Info("no legacy database; nothing to import")
+		return nil
 	}
 	defer func() { _ = conn.Close(ctx) }()
 

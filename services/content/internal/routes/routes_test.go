@@ -24,14 +24,40 @@ import (
 	"github.com/elvn5/sai/services/content/internal/routes"
 	"github.com/elvn5/sai/services/content/internal/store"
 	"github.com/elvn5/sai/services/pkg/database"
+	"github.com/elvn5/sai/services/pkg/middleware"
 )
 
 const secret = "test-secret-at-least-16-chars"
 
 const (
-	ownerID = "11111111-1111-1111-1111-111111111111"
-	otherID = "22222222-2222-2222-2222-222222222222"
+	// ownerID and otherID are approved partners; regularID isn't.
+	ownerID   = "11111111-1111-1111-1111-111111111111"
+	otherID   = "22222222-2222-2222-2222-222222222222"
+	regularID = "33333333-3333-3333-3333-333333333333"
 )
+
+// fakeUsers stands in for the users service: id → partner status.
+type fakeUsers map[string]string
+
+var testUsers = fakeUsers{ownerID: "approved", otherID: "approved", regularID: "none"}
+
+func (f fakeUsers) LookupUser(_ context.Context, id string) (middleware.SessionUser, error) {
+	status, ok := f[id]
+	if !ok {
+		return middleware.SessionUser{}, middleware.ErrUserNotFound
+	}
+	return middleware.SessionUser{ID: id, PartnerStatus: status}, nil
+}
+
+func (f fakeUsers) PartnerStatuses(_ context.Context, ids []string) (map[string]string, error) {
+	out := map[string]string{}
+	for _, id := range ids {
+		if status, ok := f[id]; ok {
+			out[id] = status
+		}
+	}
+	return out, nil
+}
 
 // newDatabase creates a throwaway, migrated content database on the server
 // in TEST_POSTGRES_DSN (any database name; it's replaced). Skips without it.
@@ -134,7 +160,7 @@ func setup(t *testing.T) (client, *fakeMedia, *pgxpool.Pool) {
 	db, _ := newDatabase(t)
 	media := &fakeMedia{}
 	gin.SetMode(gin.TestMode)
-	r := routes.Setup(routes.Deps{Store: store.New(db), Media: media, JWTSecret: secret, Log: slog.New(slog.DiscardHandler)})
+	r := routes.Setup(routes.Deps{Store: store.New(db), Media: media, Users: testUsers, JWTSecret: secret, Log: slog.New(slog.DiscardHandler)})
 	return client{t, r}, media, db
 }
 
@@ -197,9 +223,12 @@ func TestBlogPublishingLifecycle(t *testing.T) {
 	if status, _ := c.do("GET", "/blog/admin/not-a-uuid", "", admin); status != 404 {
 		t.Errorf("malformed id: %d", status)
 	}
-	user := cookie(t, "user_token", jwt.MapClaims{"sub": ownerID, "role": "user"})
-	if status, body := c.do("POST", "/blog", `{}`, user); status != 401 || !strings.Contains(body, "Not authenticated") {
-		t.Errorf("user creating blog post: %d %s", status, body)
+	user := cookie(t, "user_token", jwt.MapClaims{"sub": regularID, "role": "user"})
+	if status, body := c.do("POST", "/blog", `{}`, user); status != 403 || !strings.Contains(body, "Only approved partners") {
+		t.Errorf("non-partner creating blog post: %d %s", status, body)
+	}
+	if status, body := c.do("POST", "/blog", `{}`); status != 401 || !strings.Contains(body, "Not authenticated") {
+		t.Errorf("anonymous creating blog post: %d %s", status, body)
 	}
 }
 

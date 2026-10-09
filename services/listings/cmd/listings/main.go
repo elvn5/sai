@@ -19,11 +19,13 @@ import (
 	"github.com/elvn5/sai/services/listings/internal/handlers"
 	"github.com/elvn5/sai/services/listings/internal/legacyimport"
 	"github.com/elvn5/sai/services/listings/internal/migrations"
+	"github.com/elvn5/sai/services/listings/internal/purge"
 	"github.com/elvn5/sai/services/listings/internal/routes"
 	"github.com/elvn5/sai/services/listings/internal/store"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
+	"github.com/elvn5/sai/services/pkg/partnerpurge"
 	"github.com/elvn5/sai/services/pkg/usersclient"
 )
 
@@ -63,6 +65,8 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	defer func() { _ = users.Close() }()
+	// In the background: it waits for the users service.
+	go partnerpurge.Run(ctx, db, users, purge.Service(), log)
 
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{

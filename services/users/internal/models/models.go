@@ -114,3 +114,50 @@ type SavedAdminUser struct {
 func (u User) SavedAdmin() SavedAdminUser {
 	return SavedAdminUser{AdminUser: u.Admin()}
 }
+
+// Achievement rarities, lowest first, with the points each is worth in the
+// hall of fame.
+var AchievementRarities = map[string]int{"common": 10, "rare": 25, "epic": 50, "legendary": 100}
+
+// Achievement is a catalog entry. Title and Description map a locale to
+// its text.
+type Achievement struct {
+	ID          string            `json:"id"`
+	Title       map[string]string `json:"title"`
+	Description map[string]string `json:"description"`
+	Icon        string            `json:"icon"`
+	Rarity      string            `json:"rarity"`
+	Points      int               `json:"points"`
+	IsActive    bool              `json:"isActive"`
+	SortOrder   int               `json:"sortOrder"`
+	CreatedAt   jsontime.Time     `json:"createdAt"`
+	UpdatedAt   jsontime.Time     `json:"updatedAt"`
+}
+
+// Person is the public part of a profile (never email or phone).
+type Person struct {
+	ID        string  `json:"id"`
+	FirstName *string `json:"firstName"`
+	Username  *string `json:"username"`
+	AvatarURL *string `json:"avatarUrl"`
+}
+
+// Award is an achievement a partner handed to a user.
+type Award struct {
+	ID          string        `json:"id"`
+	Achievement Achievement   `json:"achievement"`
+	User        Person        `json:"user"`
+	AwardedBy   *Person       `json:"awardedBy"`
+	Note        *string       `json:"note"`
+	AwardedAt   jsontime.Time `json:"awardedAt"`
+	IsNew       bool          `json:"isNew"`
+}
+
+// HallEntry is one traveler on the hall-of-fame leaderboard.
+type HallEntry struct {
+	Rank         int           `json:"rank"`
+	User         Person        `json:"user"`
+	Points       int           `json:"points"`
+	Count        int           `json:"count"`
+	Achievements []Achievement `json:"achievements"`
+}

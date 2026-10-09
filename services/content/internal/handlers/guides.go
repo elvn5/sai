@@ -51,7 +51,7 @@ func (r createGuideRequest) options() guideRequest {
 	return guideRequest{Difficulty: r.Difficulty, Season: r.Season, EquipmentChecklist: r.EquipmentChecklist, Attachments: r.Attachments}
 }
 
-// Guides serves /guides: written route guides that any signed-in user can
+// Guides serves /guides: written route guides that approved partners
 // publish and manage their own of.
 type Guides struct {
 	Store *store.Store

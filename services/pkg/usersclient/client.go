@@ -81,3 +81,22 @@ func (c *Client) Authors(ctx context.Context, ids []string) (map[string]Author, 
 	}
 	return out, nil
 }
+
+// PartnerStatuses returns the partner status ("none", "pending",
+// "approved", "rejected") of each known id; unknown ids are absent.
+func (c *Client) PartnerStatuses(ctx context.Context, ids []string) (map[string]string, error) {
+	out := make(map[string]string, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	res, err := c.client.GetUsers(ctx, &usersv1.GetUsersRequest{Ids: ids})
+	if err != nil {
+		return nil, fmt.Errorf("get users: %w", err)
+	}
+	for _, u := range res.GetUsers() {
+		out[u.GetId()] = partnerStatuses[u.GetPartnerStatus()]
+	}
+	return out, nil
+}

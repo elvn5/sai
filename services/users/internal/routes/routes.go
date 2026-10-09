@@ -55,5 +55,21 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	r.GET("/support", requireAdmin, admin.GetSupport)
 	r.PUT("/support", requireAdmin, admin.UpdateSupport)
 
+	achievements := &handlers.Achievements{Deps: d}
+	requirePartner := middleware.RequirePartner()
+	r.GET("/hall-of-fame", achievements.HallOfFame)
+	r.GET("/achievements", achievements.Catalog)
+	r.GET("/achievements/me", requireUser, achievements.Mine)
+	r.POST("/achievements/me/seen", requireUser, achievements.MarkSeen)
+	r.GET("/achievements/recipients/:code", requireUser, requirePartner, achievements.Recipient)
+	r.POST("/achievements/awards", requireUser, requirePartner, achievements.Award)
+	r.GET("/achievements/awards/given", requireUser, requirePartner, achievements.Given)
+	r.GET("/achievements/admin/all", requireAdmin, achievements.AdminList)
+	r.GET("/achievements/admin/awards", requireAdmin, achievements.AdminAwards)
+	r.DELETE("/achievements/awards/:id", requireAdmin, achievements.Revoke)
+	r.POST("/achievements", requireAdmin, achievements.Create)
+	r.PUT("/achievements/:id", requireAdmin, achievements.Update)
+	r.DELETE("/achievements/:id", requireAdmin, achievements.Delete)
+
 	return r
 }

@@ -243,6 +243,8 @@ func TestServiceRouting(t *testing.T) {
 		"POST /auth/telegram/widget": "users",
 		"GET /users":                 "users",
 		"PUT /support":               "users",
+		"GET /hall-of-fame":          "users",
+		"POST /achievements/awards":  "users",
 	}
 	for route := range want {
 		method, path, _ := strings.Cut(route, " ")

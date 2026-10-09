@@ -23,8 +23,10 @@ type BlogPost struct {
 	SeoDescription *string        `json:"seoDescription"`
 	IsPublished    bool           `json:"isPublished"`
 	PublishedAt    *jsontime.Time `json:"publishedAt"`
-	CreatedAt      jsontime.Time  `json:"createdAt"`
-	UpdatedAt      jsontime.Time  `json:"updatedAt"`
+	// The partner who wrote it; nil for posts written in the admin panel.
+	UserID    *string       `json:"userId"`
+	CreatedAt jsontime.Time `json:"createdAt"`
+	UpdatedAt jsontime.Time `json:"updatedAt"`
 }
 
 type Attachment struct {

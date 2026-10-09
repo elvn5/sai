@@ -12,14 +12,14 @@ import (
 )
 
 const blogColumns = `id, locale, slug, title, excerpt, content, cover_image_url, seo_title,
-	seo_description, is_published, published_at, created_at, updated_at`
+	seo_description, is_published, published_at, user_id::text, created_at, updated_at`
 
 func scanBlogPost(row pgx.Row) (models.BlogPost, error) {
 	var p models.BlogPost
 	var publishedAt *time.Time
 	var createdAt, updatedAt time.Time
 	err := row.Scan(&p.ID, &p.Locale, &p.Slug, &p.Title, &p.Excerpt, &p.Content, &p.CoverImageURL,
-		&p.SeoTitle, &p.SeoDescription, &p.IsPublished, &publishedAt, &createdAt, &updatedAt)
+		&p.SeoTitle, &p.SeoDescription, &p.IsPublished, &publishedAt, &p.UserID, &createdAt, &updatedAt)
 	p.PublishedAt, p.CreatedAt, p.UpdatedAt = timePtr(publishedAt), jsontime.New(createdAt), jsontime.New(updatedAt)
 	return p, err
 }
@@ -51,6 +51,12 @@ func (s *Store) AllBlogPosts(ctx context.Context, locale *string) ([]models.Blog
 		ORDER BY updated_at DESC`, locale)
 }
 
+// BlogPostsByUser lists a partner's own posts, drafts included.
+func (s *Store) BlogPostsByUser(ctx context.Context, userID string) ([]models.BlogPost, error) {
+	return s.collectBlogPosts(ctx, `SELECT `+blogColumns+` FROM blog_posts
+		WHERE user_id = $1 ORDER BY created_at DESC`, userID)
+}
+
 func (s *Store) BlogPost(ctx context.Context, id string) (models.BlogPost, error) {
 	p, err := scanBlogPost(s.db.QueryRow(ctx, `SELECT `+blogColumns+` FROM blog_posts WHERE id = $1`, id))
 	return p, notFound(err)
@@ -68,11 +74,12 @@ func (s *Store) BlogSlugTaken(ctx context.Context, locale, slug, excludeID strin
 
 func (s *Store) InsertBlogPost(ctx context.Context, p models.BlogPost) (models.BlogPost, error) {
 	saved, err := scanBlogPost(s.db.QueryRow(ctx, `INSERT INTO blog_posts
-		(locale, slug, title, excerpt, content, cover_image_url, seo_title, seo_description, is_published, published_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		(locale, slug, title, excerpt, content, cover_image_url, seo_title, seo_description, is_published,
+		 published_at, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING `+blogColumns,
 		p.Locale, p.Slug, p.Title, p.Excerpt, p.Content, p.CoverImageURL, p.SeoTitle, p.SeoDescription,
-		p.IsPublished, publishedTime(p.PublishedAt)))
+		p.IsPublished, publishedTime(p.PublishedAt), p.UserID))
 	return saved, uniqueViolation(err)
 }
 

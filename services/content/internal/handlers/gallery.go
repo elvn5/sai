@@ -39,7 +39,7 @@ type PhotoDeleter interface {
 	DeleteObject(ctx context.Context, publicURL string) error
 }
 
-// Gallery serves /gallery: community photos.
+// Gallery serves /gallery: travel photos that approved partners publish.
 type Gallery struct {
 	Store *store.Store
 	// Optional; without it deleted photos' files stay in storage.

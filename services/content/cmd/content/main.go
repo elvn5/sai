@@ -20,12 +20,14 @@ import (
 	"github.com/elvn5/sai/services/content/internal/legacyimport"
 	"github.com/elvn5/sai/services/content/internal/mediaclient"
 	"github.com/elvn5/sai/services/content/internal/migrations"
+	"github.com/elvn5/sai/services/content/internal/purge"
 	"github.com/elvn5/sai/services/content/internal/routes"
 	"github.com/elvn5/sai/services/content/internal/store"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
 	"github.com/elvn5/sai/services/pkg/middleware"
+	"github.com/elvn5/sai/services/pkg/partnerpurge"
 	"github.com/elvn5/sai/services/pkg/usersclient"
 )
 
@@ -81,6 +83,8 @@ func run(log *slog.Logger) error {
 		}
 		defer func() { _ = client.Close() }()
 		users = client
+		// In the background: it waits for the users service.
+		go partnerpurge.Run(ctx, db, client, purge.Service(media, log), log)
 	}
 
 	gin.SetMode(gin.ReleaseMode)

@@ -76,7 +76,7 @@ useSeoMeta({
       </div>
     </section>
 
-    <section class="mx-auto -mt-10 max-w-4xl px-4">
+    <section class="relative z-10 mx-auto -mt-10 max-w-4xl px-4">
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <NuxtLink
           v-for="link in QUICK_LINKS"

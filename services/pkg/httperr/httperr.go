@@ -48,3 +48,14 @@ func InternalServerError() Body {
 func RouteNotFound(c *gin.Context) {
 	Abort(c, http.StatusNotFound, "Cannot "+c.Request.Method+" "+c.Request.URL.Path)
 }
+
+// Plain mirrors a NestJS `new HttpException(message, status)` — its body
+// has no "error" field and lists statusCode first.
+type Plain struct {
+	StatusCode int    `json:"statusCode"`
+	Message    string `json:"message"`
+}
+
+func AbortPlain(c *gin.Context, status int, message string) {
+	c.AbortWithStatusJSON(status, Plain{StatusCode: status, Message: message})
+}

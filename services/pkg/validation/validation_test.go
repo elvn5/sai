@@ -184,3 +184,20 @@ func TestAllTypeErrorsReported(t *testing.T) {
 		t.Fatalf("got  %s\nwant %s", rec.Body.String(), want)
 	}
 }
+
+type numberDTO struct {
+	ID *json.Number `json:"id" binding:"required"`
+}
+
+func TestJSONNumberTypeMismatch(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(`{"id":"x"}`))
+	c.Request.Header.Set("Content-Type", "application/json")
+	var dto numberDTO
+	validation.BindJSON(c, &dto)
+	if want := `{"formErrors":[],"fieldErrors":{"id":["Expected number, received string"]}}`; rec.Body.String() != want {
+		t.Fatalf("got %s", rec.Body.String())
+	}
+}

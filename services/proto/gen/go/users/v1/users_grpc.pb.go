@@ -19,8 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UsersService_GetUser_FullMethodName  = "/users.v1.UsersService/GetUser"
-	UsersService_GetUsers_FullMethodName = "/users.v1.UsersService/GetUsers"
+	UsersService_GetUser_FullMethodName                     = "/users.v1.UsersService/GetUser"
+	UsersService_GetUsers_FullMethodName                    = "/users.v1.UsersService/GetUsers"
+	UsersService_UpsertTelegramUser_FullMethodName          = "/users.v1.UsersService/UpsertTelegramUser"
+	UsersService_ConfirmTelegramVerification_FullMethodName = "/users.v1.UsersService/ConfirmTelegramVerification"
+	UsersService_UpdateProfile_FullMethodName               = "/users.v1.UsersService/UpdateProfile"
+	UsersService_GetSupportInfo_FullMethodName              = "/users.v1.UsersService/GetSupportInfo"
 )
 
 // UsersServiceClient is the client API for UsersService service.
@@ -33,6 +37,18 @@ type UsersServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	// Looks up several users at once; unknown ids are simply left out.
 	GetUsers(ctx context.Context, in *GetUsersRequest, opts ...grpc.CallOption) (*GetUsersResponse, error)
+	// Finds the account for a Telegram user, creating it on first contact,
+	// and refreshes the profile fields that were provided.
+	UpsertTelegramUser(ctx context.Context, in *UpsertTelegramUserRequest, opts ...grpc.CallOption) (*UpsertTelegramUserResponse, error)
+	// Completes a phone registration started on the website: the site hands
+	// the user a t.me deep link carrying this token. NOT_FOUND if the token is
+	// unknown, expired or the account is already verified.
+	ConfirmTelegramVerification(ctx context.Context, in *ConfirmTelegramVerificationRequest, opts ...grpc.CallOption) (*ConfirmTelegramVerificationResponse, error)
+	// Updates fields edited from the bot. ALREADY_EXISTS if the phone number
+	// belongs to another account.
+	UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error)
+	// Support contacts shown by the bot (edited in the admin panel).
+	GetSupportInfo(ctx context.Context, in *GetSupportInfoRequest, opts ...grpc.CallOption) (*GetSupportInfoResponse, error)
 }
 
 type usersServiceClient struct {
@@ -63,6 +79,46 @@ func (c *usersServiceClient) GetUsers(ctx context.Context, in *GetUsersRequest, 
 	return out, nil
 }
 
+func (c *usersServiceClient) UpsertTelegramUser(ctx context.Context, in *UpsertTelegramUserRequest, opts ...grpc.CallOption) (*UpsertTelegramUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertTelegramUserResponse)
+	err := c.cc.Invoke(ctx, UsersService_UpsertTelegramUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) ConfirmTelegramVerification(ctx context.Context, in *ConfirmTelegramVerificationRequest, opts ...grpc.CallOption) (*ConfirmTelegramVerificationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmTelegramVerificationResponse)
+	err := c.cc.Invoke(ctx, UsersService_ConfirmTelegramVerification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateProfileResponse)
+	err := c.cc.Invoke(ctx, UsersService_UpdateProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) GetSupportInfo(ctx context.Context, in *GetSupportInfoRequest, opts ...grpc.CallOption) (*GetSupportInfoResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSupportInfoResponse)
+	err := c.cc.Invoke(ctx, UsersService_GetSupportInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServiceServer is the server API for UsersService service.
 // All implementations must embed UnimplementedUsersServiceServer
 // for forward compatibility.
@@ -73,6 +129,18 @@ type UsersServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	// Looks up several users at once; unknown ids are simply left out.
 	GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error)
+	// Finds the account for a Telegram user, creating it on first contact,
+	// and refreshes the profile fields that were provided.
+	UpsertTelegramUser(context.Context, *UpsertTelegramUserRequest) (*UpsertTelegramUserResponse, error)
+	// Completes a phone registration started on the website: the site hands
+	// the user a t.me deep link carrying this token. NOT_FOUND if the token is
+	// unknown, expired or the account is already verified.
+	ConfirmTelegramVerification(context.Context, *ConfirmTelegramVerificationRequest) (*ConfirmTelegramVerificationResponse, error)
+	// Updates fields edited from the bot. ALREADY_EXISTS if the phone number
+	// belongs to another account.
+	UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error)
+	// Support contacts shown by the bot (edited in the admin panel).
+	GetSupportInfo(context.Context, *GetSupportInfoRequest) (*GetSupportInfoResponse, error)
 	mustEmbedUnimplementedUsersServiceServer()
 }
 
@@ -88,6 +156,18 @@ func (UnimplementedUsersServiceServer) GetUser(context.Context, *GetUserRequest)
 }
 func (UnimplementedUsersServiceServer) GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
+}
+func (UnimplementedUsersServiceServer) UpsertTelegramUser(context.Context, *UpsertTelegramUserRequest) (*UpsertTelegramUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpsertTelegramUser not implemented")
+}
+func (UnimplementedUsersServiceServer) ConfirmTelegramVerification(context.Context, *ConfirmTelegramVerificationRequest) (*ConfirmTelegramVerificationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmTelegramVerification not implemented")
+}
+func (UnimplementedUsersServiceServer) UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateProfile not implemented")
+}
+func (UnimplementedUsersServiceServer) GetSupportInfo(context.Context, *GetSupportInfoRequest) (*GetSupportInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSupportInfo not implemented")
 }
 func (UnimplementedUsersServiceServer) mustEmbedUnimplementedUsersServiceServer() {}
 func (UnimplementedUsersServiceServer) testEmbeddedByValue()                      {}
@@ -146,6 +226,78 @@ func _UsersService_GetUsers_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UsersService_UpsertTelegramUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertTelegramUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).UpsertTelegramUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_UpsertTelegramUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).UpsertTelegramUser(ctx, req.(*UpsertTelegramUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_ConfirmTelegramVerification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmTelegramVerificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).ConfirmTelegramVerification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_ConfirmTelegramVerification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).ConfirmTelegramVerification(ctx, req.(*ConfirmTelegramVerificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_UpdateProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).UpdateProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_UpdateProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).UpdateProfile(ctx, req.(*UpdateProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_GetSupportInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSupportInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).GetSupportInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_GetSupportInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).GetSupportInfo(ctx, req.(*GetSupportInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UsersService_ServiceDesc is the grpc.ServiceDesc for UsersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -160,6 +312,22 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUsers",
 			Handler:    _UsersService_GetUsers_Handler,
+		},
+		{
+			MethodName: "UpsertTelegramUser",
+			Handler:    _UsersService_UpsertTelegramUser_Handler,
+		},
+		{
+			MethodName: "ConfirmTelegramVerification",
+			Handler:    _UsersService_ConfirmTelegramVerification_Handler,
+		},
+		{
+			MethodName: "UpdateProfile",
+			Handler:    _UsersService_UpdateProfile_Handler,
+		},
+		{
+			MethodName: "GetSupportInfo",
+			Handler:    _UsersService_GetSupportInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

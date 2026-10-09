@@ -8,10 +8,10 @@
   },
   "scripts": {
     "dev:api": "pnpm --filter @app/database build && pnpm --filter @app/api dev",
-    "dev:bot": "pnpm --filter @app/database build && pnpm --filter @app/bot dev",
+    "dev:bot": "pnpm --filter @app/bot dev",
     "dev:admin": "pnpm --filter @app/admin dev",
     "dev:tourism": "pnpm --filter @app/tourism dev",
-    "dev:gateway": "cd services/gateway && LEGACY_API_URL=${LEGACY_API_URL:-http://localhost:3001} MEDIA_URL=${MEDIA_URL:-} CONTENT_URL=${CONTENT_URL:-} LISTINGS_URL=${LISTINGS_URL:-} go run ./cmd/gateway",
+    "dev:gateway": "cd services/gateway && LEGACY_API_URL=${LEGACY_API_URL:-http://localhost:3001} MEDIA_URL=${MEDIA_URL:-} CONTENT_URL=${CONTENT_URL:-} LISTINGS_URL=${LISTINGS_URL:-} USERS_URL=${USERS_URL:-} go run ./cmd/gateway",
     "dev:media": "cd services/media && go run ./cmd/media",
     "dev:content": "cd services/content && go run ./cmd/content",
     "dev:listings": "cd services/listings && go run ./cmd/listings",

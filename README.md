@@ -12,9 +12,9 @@ NestJS, Nuxt 3, and TypeORM/PostgreSQL. Use this repository as a **GitHub templa
 | [`services/media`](services/media) | Go + Gin | Uploads: R2 presigned URLs, WebP image conversion, `/uploads` files |
 | [`services/content`](services/content) | Go + Gin | Blog, written guides, gallery, page SEO; own `content` database |
 | [`services/listings`](services/listings) | Go + Gin | Hotels, local guides, tours, reviews, owner posts; own `listings` database |
-| [`services/users`](services/users) | Go (gRPC) | Accounts for the other services: session checks, partner status, author profiles |
+| [`services/users`](services/users) | Go + Gin | Accounts: sign-in (password, Telegram, admin), registration, partners, support; gRPC for the other services and the bot; own `users` database |
 | [`apps/api`](apps/api) | NestJS | Legacy REST API, being migrated to Go services behind the gateway |
-| [`apps/bot`](apps/bot) | NestJS + Telegraf | Telegram bot |
+| [`apps/bot`](apps/bot) | NestJS + Telegraf | Telegram bot (no database; accounts via the users service's gRPC API) |
 | [`apps/admin`](apps/admin) | Nuxt 3 + @nuxt/ui | Admin panel (Pinia, VeeValidate, Zod) |
 | [`packages/database`](packages/database) | TypeORM | Shared entities, migrations, data source |
 
@@ -59,7 +59,7 @@ pnpm dev:gateway # http://localhost:8080, proxies to the API above
 pnpm dev:media   # http://localhost:8081 (set MEDIA_URL for the gateway to use it)
 pnpm dev:content # http://localhost:8082 (set CONTENT_URL for the gateway to use it)
 pnpm dev:listings # http://localhost:8083 (set LISTINGS_URL; needs dev:users)
-pnpm dev:users   # gRPC on :9083
+pnpm dev:users   # http://localhost:8084 + gRPC :9083 (set USERS_URL; the bot needs USERS_GRPC_ADDR)
 pnpm dev:bot
 pnpm dev:admin   # http://localhost:3000
 ```
@@ -90,7 +90,7 @@ services/   Go workspace (go.work)
   media/    Uploads service (R2, WebP, /uploads)
   content/  Blog, guides, gallery, page SEO (own database)
   listings/ Hotels, local guides, tours, reviews, posts (own database)
-  users/    Accounts (gRPC for now; public API in stage 4)
+  users/    Accounts, sign-in, partners, support (own database; HTTP + gRPC)
   proto/    gRPC contracts between services (buf; `pnpm proto:generate`)
   pkg/      Shared Go code: config, logging, NestJS-compatible errors, CORS, JWT
 apps/

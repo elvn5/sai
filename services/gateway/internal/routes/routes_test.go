@@ -209,11 +209,11 @@ func TestServiceRouting(t *testing.T) {
 		t.Cleanup(srv.Close)
 		return srv
 	}
-	legacy, media, content, listings := upstream("legacy"), upstream("media"), upstream("content"), upstream("listings")
+	legacy, media, content, listings, users := upstream("legacy"), upstream("media"), upstream("content"), upstream("listings"), upstream("users")
 
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		LegacyAPIURL: legacy.URL, MediaURL: media.URL, ContentURL: content.URL, ListingsURL: listings.URL, UpstreamTimeout: 5 * time.Second,
+		LegacyAPIURL: legacy.URL, MediaURL: media.URL, ContentURL: content.URL, ListingsURL: listings.URL, UsersURL: users.URL, UpstreamTimeout: 5 * time.Second,
 	}, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -221,25 +221,31 @@ func TestServiceRouting(t *testing.T) {
 	srv := serve(t, router)
 
 	want := map[string]string{
-		"POST /uploads/image":      "media",
-		"GET /uploads/a.webp":      "media",
-		"POST /storage/upload-url": "media",
-		"DELETE /storage/file":     "media",
-		"GET /blog":                "content",
-		"GET /blog/ru/hello":       "content",
-		"PUT /page-seo/home/ru":    "content",
-		"GET /gallery":             "content",
-		"DELETE /gallery/x":        "content",
-		"GET /guides/mine":         "content",
-		"GET /local-guides":        "listings",
-		"GET /hotels":              "listings",
-		"POST /reviews":            "listings",
-		"GET /tours/ru/x":          "listings",
-		"DELETE /listing-posts/x":  "listings",
-		"GET /partners/requests":   "legacy",
-		"GET /auth/user/me":        "legacy",
-		"GET /uploadsx":            "legacy",
-		"GET /blogs":               "legacy",
+		"POST /uploads/image":        "media",
+		"GET /uploads/a.webp":        "media",
+		"POST /storage/upload-url":   "media",
+		"DELETE /storage/file":       "media",
+		"GET /blog":                  "content",
+		"GET /blog/ru/hello":         "content",
+		"PUT /page-seo/home/ru":      "content",
+		"GET /gallery":               "content",
+		"DELETE /gallery/x":          "content",
+		"GET /guides/mine":           "content",
+		"GET /local-guides":          "listings",
+		"GET /hotels":                "listings",
+		"POST /reviews":              "listings",
+		"GET /tours/ru/x":            "listings",
+		"DELETE /listing-posts/x":    "listings",
+		"GET /partners/requests":     "users",
+		"GET /auth/user/me":          "users",
+		"POST /auth/login":           "users",
+		"POST /auth/telegram/widget": "users",
+		"GET /users":                 "users",
+		"PUT /support":               "users",
+		"GET /parcels":               "legacy",
+		"GET /addresses":             "legacy",
+		"GET /uploadsx":              "legacy",
+		"GET /blogs":                 "legacy",
 	}
 	for route := range want {
 		method, path, _ := strings.Cut(route, " ")

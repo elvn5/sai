@@ -1,9 +1,5 @@
-import { SupportInfo } from '@app/database';
+import { type SupportInfo, UsersGrpcClient } from '@/users-grpc/users-grpc.client';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import type { Repository } from 'typeorm';
-
-const DEFAULT_MESSAGE = 'Служба поддержки пока не настроена. Обратитесь к администратору.';
 
 export interface SupportContact {
   message: string;
@@ -13,23 +9,20 @@ export interface SupportContact {
   workingHours: string | null;
 }
 
+// Support contacts are edited in the admin panel and served by the users
+// service (which falls back to a default message).
 @Injectable()
 export class SupportService {
-  constructor(
-    @InjectRepository(SupportInfo)
-    private readonly repository: Repository<SupportInfo>,
-  ) {}
+  constructor(private readonly users: UsersGrpcClient) {}
 
   async get(): Promise<SupportContact> {
-    const existing = await this.repository.find({ take: 1 });
-    return (
-      existing[0] ?? {
-        message: DEFAULT_MESSAGE,
-        phone: null,
-        telegramContact: null,
-        email: null,
-        workingHours: null,
-      }
-    );
+    const info: SupportInfo = await this.users.getSupportInfo();
+    return {
+      message: info.message,
+      phone: info.phone ?? null,
+      telegramContact: info.telegramContact ?? null,
+      email: info.email ?? null,
+      workingHours: info.workingHours ?? null,
+    };
   }
 }

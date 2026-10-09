@@ -74,6 +74,14 @@ func RegisterRule(tag string, valid func(string) bool, message string) {
 	}
 }
 
+// Refiner is implemented by request structs with cross-field rules — zod's
+// .refine() on the object schema. Like zod, Refine runs only when no
+// property had a type error, and its issues are added after the field
+// checks'. It returns field → message for each failed rule.
+type Refiner interface {
+	Refine() map[string]string
+}
+
 // BindJSON decodes the request body into dst (a pointer to a struct) and
 // validates it. On failure it writes the 400 response and returns false.
 //
@@ -116,6 +124,12 @@ func BindJSON(c *gin.Context, dst any) bool {
 		}
 	}
 
+	if r, ok := dst.(Refiner); ok && len(typeErrors) == 0 {
+		for field, msg := range r.Refine() {
+			result.FieldErrors[field] = append(result.FieldErrors[field], msg)
+		}
+	}
+
 	if len(result.FieldErrors) > 0 {
 		abort(c, result)
 		return false
@@ -150,7 +164,7 @@ func decodeFields(body []byte, dst any, fieldErrors map[string][]string) map[str
 			if errors.As(err, &typeErr) {
 				fieldErrors[name] = []string{typeMismatchMessage(typeErr)}
 			} else {
-				fieldErrors[name] = []string{"Invalid input"}
+				fieldErrors[name] = []string{mismatchFromRaw(t.Field(i).Type, value)}
 			}
 		}
 	}
@@ -224,6 +238,18 @@ func boundMessage(kind reflect.Kind, stringWord, numberWord, n string) string {
 	}
 }
 
+// mismatchFromRaw builds zod's type message when the field's own
+// UnmarshalJSON (e.g. json.Number, which takes only numbers) failed.
+func mismatchFromRaw(t reflect.Type, raw json.RawMessage) string {
+	var v any
+	if err := json.Unmarshal(raw, &v); err != nil {
+		return "Invalid input"
+	}
+	return fmt.Sprintf("Expected %s, received %s", zodType(t), jsonKind(v))
+}
+
+var jsonNumberType = reflect.TypeFor[json.Number]()
+
 func typeMismatchMessage(e *json.UnmarshalTypeError) string {
 	want, got := zodType(e.Type), zodKindFromJSON(e.Value)
 	// A fractional number for an integer field: z.number().int().
@@ -249,6 +275,9 @@ func isInteger(t reflect.Type) bool {
 func zodType(t reflect.Type) string {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
+	}
+	if t == jsonNumberType {
+		return "number"
 	}
 	switch t.Kind() {
 	case reflect.String:

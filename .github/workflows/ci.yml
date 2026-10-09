@@ -9,11 +9,11 @@ jobs:
   lint-typecheck-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
@@ -58,17 +58,17 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: services/${{ matrix.module }}/go.mod
           cache-dependency-path: services/${{ matrix.module }}/go.sum
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.6.2
+          version: v2.14.0
           working-directory: services/${{ matrix.module }}
 
       - name: Test
@@ -85,9 +85,9 @@ jobs:
       run:
         working-directory: services/proto
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: services/proto/go.mod
           cache-dependency-path: services/proto/go.sum

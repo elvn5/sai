@@ -82,7 +82,11 @@ const saveMutation = useMutation({
     };
     if (props.post) return api.put<BlogPost>(`/blog/${props.post.id}`, body);
     // slugify adds a random suffix, so titles can repeat.
-    return api.post<BlogPost>('/blog', { ...body, locale: locale.value, slug: slugify(values.title) });
+    return api.post<BlogPost>('/blog', {
+      ...body,
+      locale: locale.value,
+      slug: slugify(values.title),
+    });
   },
   onSuccess: (post) => {
     queryClient.invalidateQueries({ queryKey: ['blog'] });

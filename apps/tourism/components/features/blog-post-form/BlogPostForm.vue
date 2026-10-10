@@ -4,7 +4,7 @@ import { toTypedSchema } from '@vee-validate/zod';
 import { useForm } from 'vee-validate';
 import { z } from 'zod';
 import TiptapEditor from '~/components/features/guide-editor/TiptapEditor.vue';
-import { ApiError, useApiClient } from '~/shared/api/client';
+import { useApiClient } from '~/shared/api/client';
 import type { BlogPost } from '~/shared/api/types';
 
 // Creates a partner's blog post, or edits one when `post` is set.
@@ -65,22 +65,6 @@ interface FormValues {
   isPublished: boolean;
 }
 
-// A new post's slug comes from its title; on a clash, a short suffix
-// keeps it unique.
-async function create(body: Record<string, unknown>, baseSlug: string): Promise<BlogPost> {
-  try {
-    return await api.post<BlogPost>('/blog', { ...body, locale: locale.value, slug: baseSlug });
-  } catch (error) {
-    if (!(error instanceof ApiError) || error.status !== 409) throw error;
-    const suffix = Math.random().toString(36).slice(2, 6);
-    return api.post<BlogPost>('/blog', {
-      ...body,
-      locale: locale.value,
-      slug: `${baseSlug}-${suffix}`,
-    });
-  }
-}
-
 const saveMutation = useMutation({
   mutationFn: async (values: FormValues) => {
     let coverImageUrl = props.post?.coverImageUrl ?? null;
@@ -97,7 +81,8 @@ const saveMutation = useMutation({
       isPublished: values.isPublished,
     };
     if (props.post) return api.put<BlogPost>(`/blog/${props.post.id}`, body);
-    return create(body, slugify(values.title));
+    // slugify adds a random suffix, so titles can repeat.
+    return api.post<BlogPost>('/blog', { ...body, locale: locale.value, slug: slugify(values.title) });
   },
   onSuccess: (post) => {
     queryClient.invalidateQueries({ queryKey: ['blog'] });

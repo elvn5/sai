@@ -60,6 +60,7 @@ onMounted(load);
           <tr v-for="item in items" :key="item.id" class="border-t">
             <td class="px-4 py-2">
               <NuxtLink :to="`/blog/${item.id}`" class="hover:underline">{{ item.title }}</NuxtLink>
+              <span v-if="item.userId" class="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800">партнёр</span>
             </td>
             <td class="px-4 py-2 text-gray-500">{{ localeLabel(item.locale) }}</td>
             <td class="px-4 py-2 text-gray-500">{{ item.slug }}</td>

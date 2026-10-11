@@ -205,7 +205,7 @@ function handleDelete(): void {
   <section class="mx-auto max-w-6xl px-4 py-12">
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-3xl font-extrabold text-text">{{ $t('gallery.heading') }}</h1>
-      <UButton v-if="auth.user.value" color="primary" icon="i-heroicons-plus" @click="openAdd">
+      <UButton v-if="auth.isPartner.value" color="primary" icon="i-heroicons-plus" @click="openAdd">
         {{ $t('gallery.addButton') }}
       </UButton>
     </div>

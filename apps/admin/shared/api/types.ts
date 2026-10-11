@@ -53,6 +53,8 @@ export interface BlogPost {
   seoDescription: string | null;
   isPublished: boolean;
   publishedAt: string | null;
+  // Set when a partner wrote it on the site; null for posts made here.
+  userId: string | null;
   updatedAt: string;
 }
 
@@ -79,4 +81,44 @@ export interface PageSeo {
   title: string | null;
   description: string | null;
   ogImageUrl: string | null;
+}
+
+export enum AchievementRarity {
+  COMMON = 'common',
+  RARE = 'rare',
+  EPIC = 'epic',
+  LEGENDARY = 'legendary',
+}
+
+// Texts keyed by locale; `ru` is required.
+export type LocalizedText = Partial<Record<'ru' | 'ky' | 'en' | 'de', string>>;
+
+export interface Achievement {
+  id: string;
+  title: LocalizedText;
+  description: LocalizedText;
+  icon: string;
+  rarity: AchievementRarity;
+  points: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Person {
+  id: string;
+  firstName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
+export interface Award {
+  id: string;
+  achievement: Achievement;
+  user: Person;
+  awardedBy: Person | null;
+  note: string | null;
+  awardedAt: string;
+  isNew: boolean;
 }

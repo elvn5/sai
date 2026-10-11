@@ -8,7 +8,8 @@
     "blog": "Blog",
     "hotels": "Unterkünfte",
     "localGuides": "Lokale Guides",
-    "menu": "Menü"
+    "menu": "Menü",
+    "hallOfFame": "Ruhmeshalle"
   },
   "theme": { "toggle": "Design" },
   "colorTheme": { "toggle": "Farbthema" },
@@ -49,7 +50,21 @@
   "blog": {
     "heading": "Blog",
     "metaDescription": "Neuigkeiten, Geschichten und Reisetipps rund um Kirgisistan von Ermekten.",
-    "empty": "Noch keine Beiträge"
+    "empty": "Noch keine Beiträge",
+    "form": {
+      "newTitle": "Beitrag schreiben",
+      "editTitle": "Beitrag bearbeiten",
+      "title": "Titel",
+      "excerpt": "Kurzbeschreibung",
+      "cover": "Titelbild",
+      "content": "Text",
+      "contentPlaceholder": "Erzählen Sie von einer Reise, Neuigkeiten oder nützlichen Tipps…",
+      "publish": "Sofort veröffentlichen",
+      "save": "Speichern",
+      "create": "Veröffentlichen",
+      "saveError": "Der Beitrag konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "notFound": "Beitrag nicht gefunden."
+    }
   },
   "gallery": {
     "heading": "Galerie",
@@ -439,13 +454,20 @@
       "info": "Profil",
       "history": "Tourenverlauf",
       "partner": "Partnerschaft",
-      "listings": "Meine Einträge"
+      "listings": "Meine Einträge",
+      "achievements": "Erfolge"
     },
     "listings": {
       "guideHeading": "Guide-Profil",
       "guidePitch": "Sie sind Guide? Erstellen Sie ein Profil, damit Reisende Sie finden und direkt kontaktieren können.",
       "hotelsHeading": "Meine Unterkünfte",
-      "noHotels": "Sie haben noch keine Unterkunft eingetragen."
+      "noHotels": "Sie haben noch keine Unterkunft eingetragen.",
+      "postsHeading": "Meine Blogbeiträge",
+      "noPosts": "Sie haben noch keine Beiträge geschrieben.",
+      "published": "Veröffentlicht",
+      "draft": "Entwurf",
+      "deletePost": "Beitrag löschen",
+      "deletePostConfirm": "Beitrag „{title}“ löschen?"
     },
     "fields": {
       "username": "Benutzername",
@@ -459,12 +481,18 @@
       "cta": "Guides ansehen"
     },
     "partner": {
-      "pitch": "Werden Sie Ermekten-Partner und veröffentlichen Sie eigene Touren für Reisende.",
+      "pitch": "Werden Sie Ermekten-Partner: Veröffentlichen Sie Unterkünfte, Touren, Guides und Beiträge und verleihen Sie Reisenden Erfolge.",
       "applyCta": "Partner werden",
       "pending": "Ihre Anfrage wird vom Administrator geprüft.",
       "rejected": "Die Anfrage wurde abgelehnt. Sie können erneut anfragen.",
-      "approved": "Sie sind Ermekten-Partner. Sie können jetzt Touren veröffentlichen.",
-      "addTourCta": "Tour hinzufügen"
+      "approved": "Sie sind Ermekten-Partner: Veröffentlichen Sie Unterkünfte, Touren, Guides, Fotos und Beiträge und verleihen Sie Reisenden Erfolge.",
+      "addTourCta": "Tour hinzufügen",
+      "awardCta": "Erfolg verleihen",
+      "publishOnly": "Nur Partner können Unterkünfte, Guides, Bergführer-Profile, Fotos und Blogbeiträge veröffentlichen."
+    },
+    "achievements": {
+      "summary": "Erhaltene Erfolge: {count}",
+      "open": "Ruhmeshalle öffnen"
     }
   },
   "footer": {
@@ -481,5 +509,66 @@
     "title": "Cookie-Hinweis",
     "message": "Wir verwenden Cookies, die für die Anmeldung und das Speichern Ihrer Einstellungen erforderlich sind.",
     "accept": "Verstanden"
+  },
+  "hallOfFame": {
+    "title": "Ruhmeshalle",
+    "subtitle": "Kirgistans Reisende und ihre Erfolge — vom ersten Pass bis zu legendären Routen.",
+    "points": "{count} XP",
+    "awardedBy": "von {name}",
+    "rarity": {
+      "common": "Gewöhnlich",
+      "rare": "Selten",
+      "epic": "Episch",
+      "legendary": "Legendär"
+    },
+    "code": {
+      "title": "Ihr Reisenden-Code",
+      "hint": "Zeigen Sie den Code oder QR einem Partner, um einen Erfolg zu erhalten.",
+      "copy": "Code kopieren",
+      "copied": "Code kopiert!",
+      "qrLabel": "QR-Code zum Erhalten eines Erfolgs"
+    },
+    "mine": {
+      "heading": "Meine Ruhmeshalle",
+      "points": "Erfahrungspunkte",
+      "earned": "Erfolge",
+      "rank": "Platz",
+      "empty": "Noch keine Erfolge — viele Routen warten!",
+      "howTo": "Partner-Unterkünfte, Bergführer und Reiseveranstalter verleihen Erfolge für absolvierte Routen, Reisen und Beiträge zur Community."
+    },
+    "guest": {
+      "pitch": "Melden Sie sich an, um Erfolge von Ermekten-Partnern zu sammeln und in die Ruhmeshalle zu kommen.",
+      "cta": "Anmelden"
+    },
+    "leaders": {
+      "heading": "Top-Reisende",
+      "empty": "Die Ruhmeshalle wartet auf ihre ersten Helden."
+    },
+    "reveal": {
+      "heading": "Neuer Erfolg",
+      "next": "Weiter",
+      "done": "Hurra!"
+    }
+  },
+  "award": {
+    "title": "Erfolg verleihen",
+    "subtitle": "Geben Sie den Code des Reisenden ein oder scannen Sie seinen QR-Code mit der Handykamera.",
+    "codePlaceholder": "ABCD-EFGH",
+    "find": "Suchen",
+    "unknownCode": "Kein Reisender mit diesem Code gefunden.",
+    "lookupError": "Der Reisende konnte nicht gefunden werden. Bitte erneut versuchen.",
+    "codeFormat": "Der Code hat 8 Zeichen.",
+    "alreadyHas": "Erfolge: {count}",
+    "success": "{name} erhält „{title}“!",
+    "choose": "Erfolg auswählen",
+    "earned": "Bereits erhalten",
+    "emptyCatalog": "Der Administrator hat noch keine Erfolge angelegt.",
+    "note": "Ein paar Worte (optional)",
+    "noteHint": "Der Reisende sieht dies zusammen mit der Auszeichnung.",
+    "give": "„{title}“ verleihen",
+    "history": "Von Ihnen verliehen",
+    "duplicate": "Der Reisende hat diesen Erfolg bereits.",
+    "self": "Sie können sich keinen Erfolg selbst verleihen.",
+    "awardError": "Der Erfolg konnte nicht verliehen werden. Bitte erneut versuchen."
   }
 }

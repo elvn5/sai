@@ -42,7 +42,7 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 		{"MEDIA_URL", cfg.MediaURL, []string{"/uploads", "/storage"}},
 		{"CONTENT_URL", cfg.ContentURL, []string{"/blog", "/guides", "/gallery", "/page-seo"}},
 		{"LISTINGS_URL", cfg.ListingsURL, []string{"/hotels", "/local-guides", "/tours", "/reviews", "/listing-posts"}},
-		{"USERS_URL", cfg.UsersURL, []string{"/auth", "/users", "/partners", "/support"}},
+		{"USERS_URL", cfg.UsersURL, []string{"/auth", "/users", "/partners", "/support", "/achievements", "/hall-of-fame"}},
 	}
 	for _, svc := range services {
 		target, err := url.Parse(svc.url)

@@ -33,6 +33,8 @@ const (
 	owner   = "11111111-1111-1111-1111-111111111111"
 	guest   = "22222222-2222-2222-2222-222222222222"
 	partner = "33333333-3333-3333-3333-333333333333"
+	// regular is the only account that isn't an approved partner.
+	regular = "44444444-4444-4444-4444-444444444444"
 )
 
 func createDatabase(t *testing.T, migrate bool) (*pgxpool.Pool, string) {
@@ -77,6 +79,8 @@ func createDatabase(t *testing.T, migrate bool) (*pgxpool.Pool, string) {
 	})
 	return db, dsn
 }
+
+var testUsers = fakeUsers{owner: "approved", guest: "approved", partner: "approved", regular: "none"}
 
 // fakeUsers stands in for the users service.
 type fakeUsers map[string]string // id → partner status
@@ -123,7 +127,7 @@ func (c client) do(method, path, body, userID string) (int, string) {
 func setup(t *testing.T) client {
 	t.Helper()
 	db, _ := createDatabase(t, true)
-	users := fakeUsers{owner: "none", guest: "none", partner: "approved"}
+	users := testUsers
 	gin.SetMode(gin.TestMode)
 	return client{t, routes.Setup(handlers.Deps{Store: store.New(db), Authors: users, Log: slog.New(slog.DiscardHandler)}, users, secret)}
 }
@@ -216,7 +220,7 @@ func TestHotels(t *testing.T) {
 	if _, body := c.do("GET", "/reviews?targetType=hotel&targetId="+id, "", ""); !strings.Contains(body, `"total":0`) {
 		t.Errorf("reviews survived delete: %s", body)
 	}
-	if status, _ := c.do("GET", "/hotels/mine", "", "44444444-4444-4444-4444-444444444444"); status != 401 {
+	if status, _ := c.do("GET", "/hotels/mine", "", "55555555-5555-5555-5555-555555555555"); status != 401 {
 		t.Errorf("unknown user: %d", status)
 	}
 }
@@ -254,7 +258,7 @@ func TestLocalGuides(t *testing.T) {
 func TestToursRequirePartnerAndDates(t *testing.T) {
 	c := setup(t)
 	tour := `{"locale":"ru","slug":"ala-kul","title":"Ала-Куль","content":"<p>3 дня</p>","startDate":"2027-06-10","endDate":"2027-06-12","destination":"karakol","cancellationPolicy":"free"}`
-	if status, body := c.do("POST", "/tours", tour, owner); status != 403 || !strings.Contains(body, "Only approved partners can do this") {
+	if status, body := c.do("POST", "/tours", tour, regular); status != 403 || !strings.Contains(body, "Only approved partners can do this") {
 		t.Errorf("non-partner: %d %s", status, body)
 	}
 	status, body := c.do("POST", "/tours", tour, partner)
@@ -377,7 +381,7 @@ func TestLegacyImport(t *testing.T) {
 		}
 	}
 
-	users := fakeUsers{owner: "none", guest: "none", partner: "approved"}
+	users := testUsers
 	gin.SetMode(gin.TestMode)
 	c := client{t, routes.Setup(handlers.Deps{Store: store.New(db), Authors: users, Log: log}, users, secret)}
 	_, body := c.do("GET", "/hotels/old-inn", "", "")
@@ -393,4 +397,14 @@ func TestLegacyImport(t *testing.T) {
 	if !strings.Contains(body, `"total":1`) || !strings.Contains(body, `"photos":[]`) {
 		t.Errorf("reviews: %s", body)
 	}
+}
+
+func (f fakeUsers) PartnerStatuses(_ context.Context, ids []string) (map[string]string, error) {
+	out := map[string]string{}
+	for _, id := range ids {
+		if status, ok := f[id]; ok {
+			out[id] = status
+		}
+	}
+	return out, nil
 }

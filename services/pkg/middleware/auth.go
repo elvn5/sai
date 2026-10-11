@@ -103,6 +103,26 @@ func RequireAdminOrUser(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {
 	}
 }
 
+// RequireAdminOrPartner admits an admin session or an approved partner's
+// site session (lookup must be set, to know the partner status).
+func RequireAdminOrPartner(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if token, err := c.Cookie(auth.AdminCookie); err == nil && token != "" && v.Admin(token) == nil {
+			c.Set(ContextIsAdmin, true)
+			c.Next()
+			return
+		}
+		if !authenticateUser(c, v, lookup) {
+			return
+		}
+		if c.GetString(ContextPartnerStatus) != "approved" {
+			httperr.Abort(c, http.StatusForbidden, "Only approved partners can do this")
+			return
+		}
+		c.Next()
+	}
+}
+
 func checkUser(c *gin.Context, v *auth.Verifier) (userID, errMessage string) {
 	token, err := c.Cookie(auth.UserCookie)
 	if err != nil || token == "" {

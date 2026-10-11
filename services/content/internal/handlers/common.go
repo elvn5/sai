@@ -59,6 +59,10 @@ func optionalEnumQuery(c *gin.Context, name string, allowed []string) (value *st
 	return &raw, true
 }
 
+func isAdmin(c *gin.Context) bool {
+	return c.GetBool(middleware.ContextIsAdmin)
+}
+
 func currentUserID(c *gin.Context) string {
 	return c.GetString(middleware.ContextUserID)
 }

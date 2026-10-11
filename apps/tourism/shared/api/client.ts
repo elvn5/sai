@@ -26,11 +26,9 @@ export function useApiClient() {
       throw new ApiError(body.message ?? 'Request failed', response.status);
     }
 
-    if (response.status === 204) {
-      return undefined as T;
-    }
-
-    return response.json() as Promise<T>;
+    // An empty body (deletes, or a lookup that found nothing) means null.
+    const text = await response.text();
+    return (text ? JSON.parse(text) : null) as T;
   }
 
   return {

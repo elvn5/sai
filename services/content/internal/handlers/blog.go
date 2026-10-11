@@ -9,8 +9,10 @@ import (
 
 	"github.com/elvn5/sai/services/content/internal/models"
 	"github.com/elvn5/sai/services/content/internal/store"
+	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/jsontime"
 	"github.com/elvn5/sai/services/pkg/respond"
+	"github.com/elvn5/sai/services/pkg/sanitize"
 	"github.com/elvn5/sai/services/pkg/validation"
 )
 
@@ -40,7 +42,8 @@ type updateBlogPostRequest struct {
 	IsPublished    *bool                    `json:"isPublished"`
 }
 
-// Blog serves /blog: public reading, admin-only writing.
+// Blog serves /blog: public reading; the admin writes any post, approved
+// partners write and manage their own.
 type Blog struct {
 	Store *store.Store
 	Log   *slog.Logger
@@ -67,6 +70,16 @@ func (h *Blog) ListAll(c *gin.Context) {
 		return
 	}
 	posts, err := h.Store.AllBlogPosts(c.Request.Context(), locale)
+	if err != nil {
+		fail(c, h.Log, err, postNotFound)
+		return
+	}
+	respond.JSON(c, http.StatusOK, posts)
+}
+
+// ListMine lists the signed-in partner's posts.
+func (h *Blog) ListMine(c *gin.Context) {
+	posts, err := h.Store.BlogPostsByUser(c.Request.Context(), currentUserID(c))
 	if err != nil {
 		fail(c, h.Log, err, postNotFound)
 		return
@@ -109,6 +122,14 @@ func (h *Blog) Create(c *gin.Context) {
 		SeoTitle: req.SeoTitle.Ptr(), SeoDescription: req.SeoDescription.Ptr(),
 		IsPublished: req.IsPublished != nil && *req.IsPublished,
 	}
+	if !isAdmin(c) {
+		// A partner's post: their HTML is untrusted, and it goes live
+		// unless they save it as a draft.
+		userID := currentUserID(c)
+		post.UserID = &userID
+		post.Content = sanitize.HTML(post.Content)
+		post.IsPublished = req.IsPublished == nil || *req.IsPublished
+	}
 	if post.IsPublished {
 		now := jsontime.New(time.Now())
 		post.PublishedAt = &now
@@ -127,9 +148,8 @@ func (h *Blog) Update(c *gin.Context) {
 		return
 	}
 	ctx := c.Request.Context()
-	post, err := h.load(c, c.Param("id"))
-	if err != nil {
-		fail(c, h.Log, err, postNotFound)
+	post, ok := h.editable(c)
+	if !ok {
 		return
 	}
 
@@ -154,6 +174,9 @@ func (h *Blog) Update(c *gin.Context) {
 	}
 	if req.Content != nil {
 		post.Content = *req.Content
+		if !isAdmin(c) {
+			post.Content = sanitize.HTML(post.Content)
+		}
 	}
 	applyField(&post.Excerpt, req.Excerpt)
 	applyField(&post.CoverImageURL, req.CoverImageURL)
@@ -179,16 +202,29 @@ func (h *Blog) Update(c *gin.Context) {
 }
 
 func (h *Blog) Delete(c *gin.Context) {
-	id := c.Param("id")
-	if !validID(id) {
-		fail(c, h.Log, store.ErrNotFound, postNotFound)
+	post, ok := h.editable(c)
+	if !ok {
 		return
 	}
-	if err := h.Store.DeleteBlogPost(c.Request.Context(), id); err != nil {
+	if err := h.Store.DeleteBlogPost(c.Request.Context(), post.ID); err != nil {
 		fail(c, h.Log, err, postNotFound)
 		return
 	}
 	respond.Empty(c, http.StatusOK)
+}
+
+// editable loads the post in the path; a partner may only touch their own.
+func (h *Blog) editable(c *gin.Context) (models.BlogPost, bool) {
+	post, err := h.load(c, c.Param("id"))
+	if err != nil {
+		fail(c, h.Log, err, postNotFound)
+		return models.BlogPost{}, false
+	}
+	if !isAdmin(c) && (post.UserID == nil || *post.UserID != currentUserID(c)) {
+		httperr.Abort(c, http.StatusForbidden, "You can only manage your own posts")
+		return models.BlogPost{}, false
+	}
+	return post, true
 }
 
 func (h *Blog) load(c *gin.Context, id string) (models.BlogPost, error) {

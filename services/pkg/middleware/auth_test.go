@@ -130,3 +130,36 @@ func TestRequireUserWithLookupAndPartner(t *testing.T) {
 		})
 	}
 }
+
+func TestRequireAdminOrPartner(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	lookup := fakeLookup{"partner": "approved", "regular": "pending"}
+	r.POST("/blog", middleware.RequireAdminOrPartner(auth.NewVerifier(jwtSecret), lookup), func(c *gin.Context) {
+		c.String(http.StatusOK, "%s|%v", c.GetString(middleware.ContextUserID), c.GetBool(middleware.ContextIsAdmin))
+	})
+
+	cases := map[string]struct {
+		cookie   *http.Cookie
+		status   int
+		contains string
+	}{
+		"admin":       {&http.Cookie{Name: "admin_token", Value: token(t, jwt.MapClaims{"role": "admin"})}, 200, "|true"},
+		"partner":     {&http.Cookie{Name: "user_token", Value: token(t, jwt.MapClaims{"sub": "partner", "role": "user"})}, 200, "partner|false"},
+		"not partner": {&http.Cookie{Name: "user_token", Value: token(t, jwt.MapClaims{"sub": "regular", "role": "user"})}, 403, "Only approved partners"},
+		"anonymous":   {nil, 401, "Not authenticated"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/blog", nil)
+			if tc.cookie != nil {
+				req.AddCookie(tc.cookie)
+			}
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+			if rec.Code != tc.status || !strings.Contains(rec.Body.String(), tc.contains) {
+				t.Fatalf("got %d %s", rec.Code, rec.Body.String())
+			}
+		})
+	}
+}

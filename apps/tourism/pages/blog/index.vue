@@ -6,6 +6,7 @@ import { type BlogPost, SeoPage } from '~/shared/api/types';
 const { locale, t } = useI18n();
 const localePath = useLocalePath();
 const api = useApiClient();
+const auth = useAuth();
 const config = useRuntimeConfig();
 const apiBaseUrl = config.public.apiBaseUrl;
 
@@ -33,7 +34,12 @@ useSeoMeta({
 
 <template>
   <section class="mx-auto max-w-4xl px-4 py-12">
-    <h1 class="mb-8 text-3xl font-extrabold text-text">{{ $t('blog.heading') }}</h1>
+    <div class="mb-8 flex items-center justify-between gap-4">
+      <h1 class="text-3xl font-extrabold text-text">{{ $t('blog.heading') }}</h1>
+      <UButton v-if="auth.isPartner.value" color="primary" icon="i-heroicons-pencil-square" :to="localePath('/blog/new')">
+        {{ $t('blog.form.newTitle') }}
+      </UButton>
+    </div>
 
     <div v-if="posts && posts.length > 0" class="flex flex-col gap-4">
       <UCard v-for="post in posts" :key="post.id">

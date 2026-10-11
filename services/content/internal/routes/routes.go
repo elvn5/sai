@@ -34,21 +34,24 @@ func Setup(d Deps) *gin.Engine {
 	verifier := auth.NewVerifier(d.JWTSecret)
 	requireUser := middleware.RequireUser(verifier, d.Users)
 	requireAdmin := middleware.RequireAdmin(verifier)
+	requirePartner := middleware.RequirePartner()
+	requireAdminOrPartner := middleware.RequireAdminOrPartner(verifier, d.Users)
 
 	blog := &handlers.Blog{Store: d.Store, Log: d.Log}
 	r.GET("/blog", blog.ListPublished)
 	r.GET("/blog/admin/all", requireAdmin, blog.ListAll)
 	r.GET("/blog/admin/:id", requireAdmin, blog.GetAdmin)
+	r.GET("/blog/mine", requireUser, requirePartner, blog.ListMine)
 	r.GET("/blog/:locale/:slug", blog.GetBySlug)
-	r.POST("/blog", requireAdmin, blog.Create)
-	r.PUT("/blog/:id", requireAdmin, blog.Update)
-	r.DELETE("/blog/:id", requireAdmin, blog.Delete)
+	r.POST("/blog", requireAdminOrPartner, blog.Create)
+	r.PUT("/blog/:id", requireAdminOrPartner, blog.Update)
+	r.DELETE("/blog/:id", requireAdminOrPartner, blog.Delete)
 
 	guides := &handlers.Guides{Store: d.Store, Log: d.Log}
 	r.GET("/guides", guides.ListPublished)
 	r.GET("/guides/mine", requireUser, guides.ListMine)
 	r.GET("/guides/:locale/:slug", guides.GetBySlug)
-	r.POST("/guides", requireUser, guides.Create)
+	r.POST("/guides", requireUser, requirePartner, guides.Create)
 	r.PUT("/guides/:id", requireUser, guides.Update)
 	r.DELETE("/guides/:id", requireUser, guides.Delete)
 
@@ -56,7 +59,7 @@ func Setup(d Deps) *gin.Engine {
 	r.GET("/gallery", gallery.ListPublished)
 	r.GET("/gallery/locations", gallery.Locations)
 	r.GET("/gallery/mine", requireUser, gallery.ListMine)
-	r.POST("/gallery", requireUser, gallery.Create)
+	r.POST("/gallery", requireUser, requirePartner, gallery.Create)
 	r.PUT("/gallery/:id", requireUser, gallery.Update)
 	r.DELETE("/gallery/:id", requireUser, gallery.Delete)
 

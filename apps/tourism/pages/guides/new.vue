@@ -13,9 +13,7 @@ import { EQUIPMENT_CATALOG } from '~/shared/lib/guide-equipment';
 const { t, locale } = useI18n();
 const localePath = useLocalePath();
 const api = useApiClient();
-const auth = useAuth();
 const queryClient = useQueryClient();
-const { isTma, getInitData } = useTelegramWebApp();
 
 const coverFile = ref<File | null>(null);
 const coverPreviewUrl = ref<string | null>(null);
@@ -87,14 +85,7 @@ useSeoMeta({
   robots: 'noindex',
 });
 
-onMounted(async () => {
-  if (!auth.checked.value) {
-    await auth.ensureSession({ isTma: isTma.value, initData: getInitData() });
-  }
-  if (!auth.user.value) {
-    await navigateTo(localePath('/login'));
-  }
-});
+useRequirePartner();
 
 function onCoverChange(event: Event): void {
   const target = event.target as HTMLInputElement;

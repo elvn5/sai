@@ -19,6 +19,7 @@ updates:
       - "/services/media"
       - "/services/content"
       - "/services/listings"
+      - "/services/trails"
       - "/services/users"
     schedule:
       interval: weekly
@@ -34,6 +35,7 @@ updates:
       - "/services/media"
       - "/services/content"
       - "/services/listings"
+      - "/services/trails"
       - "/services/users"
     schedule:
       interval: weekly

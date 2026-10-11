@@ -163,3 +163,33 @@ func TestRequireAdminOrPartner(t *testing.T) {
 		})
 	}
 }
+
+func TestOptionalUser(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.GET("/x", middleware.OptionalUser(auth.NewVerifier(jwtSecret)), func(c *gin.Context) {
+		c.String(http.StatusOK, "%s|%v", c.GetString(middleware.ContextUserID), c.GetBool(middleware.ContextIsAdmin))
+	})
+	cases := map[string]struct {
+		cookie *http.Cookie
+		want   string
+	}{
+		"anonymous": {nil, "|false"},
+		"user":      {&http.Cookie{Name: "user_token", Value: token(t, jwt.MapClaims{"sub": "u1", "role": "user"})}, "u1|false"},
+		"garbage":   {&http.Cookie{Name: "user_token", Value: "nope"}, "|false"},
+		"admin":     {&http.Cookie{Name: "admin_token", Value: token(t, jwt.MapClaims{"role": "admin"})}, "|true"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/x", nil)
+			if tc.cookie != nil {
+				req.AddCookie(tc.cookie)
+			}
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+			if rec.Code != 200 || rec.Body.String() != tc.want {
+				t.Fatalf("got %d %s, want %s", rec.Code, rec.Body.String(), tc.want)
+			}
+		})
+	}
+}

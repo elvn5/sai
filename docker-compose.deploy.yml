@@ -97,6 +97,23 @@ services:
       users:
         condition: service_started
 
+  trails:
+    image: ghcr.io/${IMAGE_OWNER}/ermekten-trails:${IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TRAILS_DB_NAME: trails
+      USERS_GRPC_ADDR: users:9083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      users:
+        condition: service_started
+
   gateway:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-gateway:${IMAGE_TAG}
     restart: unless-stopped
@@ -105,6 +122,7 @@ services:
       CONTENT_URL: http://content:8082
       LISTINGS_URL: http://listings:8083
       USERS_URL: http://users:8084
+      TRAILS_URL: http://trails:8085
       ADMIN_ORIGIN: ${ADMIN_ORIGIN}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN}
       # nginx on the host reaches the gateway through the Docker bridge.
@@ -116,6 +134,7 @@ services:
       - content
       - listings
       - users
+      - trails
 
   bot:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-bot:${IMAGE_TAG}

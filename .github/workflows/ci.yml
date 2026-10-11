@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [pkg, proto, gateway, media, content, listings, users]
+        module: [pkg, proto, gateway, media, content, listings, users, trails]
     defaults:
       run:
         working-directory: services/${{ matrix.module }}

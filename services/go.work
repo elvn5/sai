@@ -7,5 +7,6 @@ use (
 	./media
 	./pkg
 	./proto
+	./trails
 	./users
 )

@@ -49,7 +49,7 @@ func newGateway(t *testing.T) (*httptest.Server, *seen) {
 
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		MediaURL: upstream.URL, ContentURL: upstream.URL, ListingsURL: upstream.URL, UsersURL: upstream.URL,
+		MediaURL: upstream.URL, ContentURL: upstream.URL, ListingsURL: upstream.URL, UsersURL: upstream.URL, TrailsURL: upstream.URL,
 		AdminOrigin:     "https://admin.ermekten.com",
 		ClientOrigin:    clientOrigin,
 		UpstreamTimeout: 5 * time.Second,
@@ -178,7 +178,7 @@ func TestUpstreamDownReturnsNestStyle502(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
 		MediaURL: "http://127.0.0.1:1", ContentURL: "http://127.0.0.1:1",
-		ListingsURL: "http://127.0.0.1:1", UsersURL: "http://127.0.0.1:1",
+		ListingsURL: "http://127.0.0.1:1", UsersURL: "http://127.0.0.1:1", TrailsURL: "http://127.0.0.1:1",
 		UpstreamTimeout: time.Second,
 	}, slog.New(slog.DiscardHandler))
 	if err != nil {
@@ -211,10 +211,12 @@ func TestServiceRouting(t *testing.T) {
 		return srv
 	}
 	media, content, listings, users := upstream("media"), upstream("content"), upstream("listings"), upstream("users")
+	trails := upstream("trails")
 
 	gin.SetMode(gin.TestMode)
 	router, err := routes.Setup(config.Config{
-		MediaURL: media.URL, ContentURL: content.URL, ListingsURL: listings.URL, UsersURL: users.URL, UpstreamTimeout: 5 * time.Second,
+		MediaURL: media.URL, ContentURL: content.URL, ListingsURL: listings.URL, UsersURL: users.URL, TrailsURL: trails.URL,
+		UpstreamTimeout: 5 * time.Second,
 	}, slog.New(slog.DiscardHandler))
 	if err != nil {
 		t.Fatal(err)
@@ -245,6 +247,9 @@ func TestServiceRouting(t *testing.T) {
 		"PUT /support":               "users",
 		"GET /hall-of-fame":          "users",
 		"POST /achievements/awards":  "users",
+		"GET /trails/komsomolets":    "trails",
+		"GET /conditions":            "trails",
+		"POST /outings/x/join":       "trails",
 	}
 	for route := range want {
 		method, path, _ := strings.Cut(route, " ")

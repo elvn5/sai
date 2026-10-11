@@ -103,6 +103,21 @@ func RequireAdminOrUser(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {
 	}
 }
 
+// OptionalUser records the site user behind a valid session cookie, if
+// any, and always continues: for public pages that show more to members.
+// The account isn't looked up.
+func OptionalUser(v *auth.Verifier) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if userID, msg := checkUser(c, v); msg == "" {
+			c.Set(ContextUserID, userID)
+		}
+		if token, err := c.Cookie(auth.AdminCookie); err == nil && token != "" && v.Admin(token) == nil {
+			c.Set(ContextIsAdmin, true)
+		}
+		c.Next()
+	}
+}
+
 // RequireAdminOrPartner admits an admin session or an approved partner's
 // site session (lookup must be set, to know the partner status).
 func RequireAdminOrPartner(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {

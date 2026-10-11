@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query';
 import HotelCard from '~/components/entities/hotel/HotelCard.vue';
+import OutingCard from '~/components/entities/outing/OutingCard.vue';
 import AppLogo from '~/components/shared/ui/AppLogo.vue';
 import { useApiClient } from '~/shared/api/client';
-import { type BlogPost, type Hotel, type Paginated, SeoPage } from '~/shared/api/types';
+import {
+  type BlogPost,
+  type Hotel,
+  type Outing,
+  type Paginated,
+  SeoPage,
+} from '~/shared/api/types';
 import { FEATURED_DESTINATIONS } from '~/shared/lib/listing-options';
 
 const NEWS_LIMIT = 3;
@@ -35,6 +42,14 @@ const topHotelsQuery = useQuery({
 });
 await topHotelsQuery.suspense();
 const topHotels = computed(() => topHotelsQuery.data.value?.items ?? []);
+
+// Loaded in the browser: it changes too often to matter for SEO.
+const outingsQuery = useQuery({
+  queryKey: ['outings', 'home'],
+  queryFn: () => api.get<Outing[]>('/outings?limit=4'),
+  enabled: import.meta.client,
+});
+const upcomingOutings = computed(() => outingsQuery.data.value ?? []);
 
 const pageSeoQuery = usePageSeo(SeoPage.HOME, locale);
 await pageSeoQuery.suspense();
@@ -92,6 +107,21 @@ useSeoMeta({
             <span class="block text-sm text-text-muted">{{ $t(`home.quick.${link.key}.description`) }}</span>
           </span>
         </NuxtLink>
+      </div>
+    </section>
+
+    <section v-if="upcomingOutings.length > 0" class="mx-auto max-w-4xl px-4 pt-14">
+      <div class="mb-4 flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-text">{{ $t('home.outingsHeading') }}</h2>
+          <p class="mt-1 text-sm text-text-muted">{{ $t('home.outingsSubheading') }}</p>
+        </div>
+        <NuxtLink :to="localePath('/outings')" class="text-sm text-primary-600 hover:underline dark:text-primary-400">
+          {{ $t('home.viewAllOutings') }}
+        </NuxtLink>
+      </div>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <OutingCard v-for="outing in upcomingOutings" :key="outing.id" :outing="outing" />
       </div>
     </section>
 

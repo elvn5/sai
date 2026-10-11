@@ -11,6 +11,7 @@ type Config struct {
 	ContentURL  string `env:"CONTENT_URL,required"`
 	ListingsURL string `env:"LISTINGS_URL,required"`
 	UsersURL    string `env:"USERS_URL,required"`
+	TrailsURL   string `env:"TRAILS_URL,required"`
 
 	// Browser origins allowed by CORS.
 	AdminOrigin  string `env:"ADMIN_ORIGIN" envDefault:"http://localhost:3000"`

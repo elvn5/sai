@@ -105,6 +105,25 @@ services:
       users:
         condition: service_started
 
+  trails:
+    build:
+      context: .
+      dockerfile: services/trails/Dockerfile
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      TRAILS_DB_NAME: trails
+      USERS_GRPC_ADDR: users:9083
+    depends_on:
+      postgres:
+        condition: service_healthy
+      users:
+        condition: service_started
+
   gateway:
     build:
       context: .
@@ -115,6 +134,7 @@ services:
       CONTENT_URL: http://content:8082
       LISTINGS_URL: http://listings:8083
       USERS_URL: http://users:8084
+      TRAILS_URL: http://trails:8085
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:3000}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3002}
     ports:
@@ -124,6 +144,7 @@ services:
       - content
       - listings
       - users
+      - trails
 
   bot:
     build:

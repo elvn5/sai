@@ -40,6 +40,8 @@ jobs:
             dockerfile: services/listings/Dockerfile
           - service: users
             dockerfile: services/users/Dockerfile
+          - service: trails
+            dockerfile: services/trails/Dockerfile
     steps:
       - uses: actions/checkout@v7
         with:

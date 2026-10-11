@@ -26,7 +26,7 @@
 - **Linter/Formatter:** Biome
 
 ## Commands
-- **Dev:** `pnpm dev:<app>` (bot, admin, tourism) / `pnpm dev:<service>` (gateway, media, content, listings, users)
+- **Dev:** `pnpm dev:<app>` (bot, admin, tourism) / `pnpm dev:<service>` (gateway, media, content, listings, users, trails)
 - **Build:** `npm run build` / `pnpm build`
 - **Lint/Format:** `npx @biomejs/biome check --write .`
 - **Type Check:** `pnpm typecheck`

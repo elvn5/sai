@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import OutingCard from '~/components/entities/outing/OutingCard.vue';
 import AwardCodeCard from '~/components/features/award-code/AwardCodeCard.vue';
 import { useApiClient } from '~/shared/api/client';
 import { PartnerStatus } from '~/shared/api/types';
-import type { AppUser, BlogPost, Hotel, LocalGuide, MyAchievements } from '~/shared/api/types';
+import type {
+  AppUser,
+  BlogPost,
+  Hotel,
+  LocalGuide,
+  MyAchievements,
+  Outing,
+} from '~/shared/api/types';
 
 const { t } = useI18n();
 const localePath = useLocalePath();
@@ -58,6 +66,19 @@ const myPostsQuery = useQuery({
   queryFn: () => api.get<BlogPost[]>('/blog/mine'),
   enabled: auth.isPartner,
 });
+const myOutingsQuery = useQuery({
+  queryKey: ['outings', 'mine'],
+  queryFn: () => api.get<Outing[]>('/outings/mine'),
+  enabled: isSignedIn,
+});
+const myOutings = computed(() => myOutingsQuery.data.value ?? []);
+const upcomingOutings = computed(() =>
+  myOutings.value.filter((o: Outing) => new Date(o.startsAt) > new Date()).reverse(),
+);
+const pastOutings = computed(() =>
+  myOutings.value.filter((o: Outing) => new Date(o.startsAt) <= new Date()),
+);
+
 const myAchievementsQuery = useQuery({
   queryKey: ['my-achievements'],
   queryFn: () => api.get<MyAchievements>('/achievements/me'),
@@ -272,14 +293,27 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div v-else-if="item.key === 'history'" class="mt-6">
+        <div v-else-if="item.key === 'history'" class="mt-6 flex flex-col gap-8">
+          <div v-if="upcomingOutings.length > 0">
+            <h2 class="mb-3 font-semibold text-text">{{ $t('profile.history.upcoming') }}</h2>
+            <div class="flex flex-col gap-2">
+              <OutingCard v-for="outing in upcomingOutings" :key="outing.id" :outing="outing" />
+            </div>
+          </div>
+          <div v-if="pastOutings.length > 0">
+            <h2 class="mb-3 font-semibold text-text">{{ $t('profile.history.past') }}</h2>
+            <div class="flex flex-col gap-2">
+              <OutingCard v-for="outing in pastOutings" :key="outing.id" :outing="outing" />
+            </div>
+          </div>
           <div
+            v-if="myOutings.length === 0"
             class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border bg-surface px-6 py-14 text-center"
           >
             <UIcon name="i-heroicons-map" class="h-10 w-10 text-text-muted" />
             <p class="font-medium text-text">{{ $t('profile.history.empty') }}</p>
             <p class="max-w-sm text-sm text-text-muted">{{ $t('profile.history.emptyHint') }}</p>
-            <UButton color="primary" class="mt-2" @click="navigateTo(localePath('/guides'))">
+            <UButton color="primary" class="mt-2" @click="navigateTo(localePath('/outings'))">
               {{ $t('profile.history.cta') }}
             </UButton>
           </div>

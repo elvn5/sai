@@ -108,6 +108,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       TRAILS_DB_NAME: trails
       USERS_GRPC_ADDR: users:9083
+      # Telegram notifications about outings, sent as the bot.
+      BOT_TOKEN: ${BOT_TOKEN}
+      SITE_URL: ${NUXT_PUBLIC_SITE_URL}
     depends_on:
       postgres:
         condition: service_healthy

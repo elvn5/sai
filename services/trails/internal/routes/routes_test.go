@@ -69,6 +69,13 @@ type client struct {
 
 func setup(t *testing.T) client {
 	t.Helper()
+	gin.SetMode(gin.TestMode)
+	return client{t, routes.Setup(newDeps(t), users, secret)}
+}
+
+// newDeps gives handler dependencies on a fresh, migrated database.
+func newDeps(t *testing.T) handlers.Deps {
+	t.Helper()
 	base := os.Getenv("TEST_POSTGRES_DSN")
 	if base == "" {
 		t.Skip("TEST_POSTGRES_DSN not set")
@@ -95,10 +102,8 @@ func setup(t *testing.T) client {
 			_ = conn.Close(context.Background())
 		}
 	})
-	gin.SetMode(gin.TestMode)
-	deps := handlers.Deps{Store: store.New(db), Authors: users, Log: slog.New(slog.DiscardHandler),
+	return handlers.Deps{Store: store.New(db), Authors: users, Log: slog.New(slog.DiscardHandler),
 		Now: func() time.Time { return now }}
-	return client{t, routes.Setup(deps, users, secret)}
 }
 
 // do sends a request as userID ("admin" for the admin panel, "" for

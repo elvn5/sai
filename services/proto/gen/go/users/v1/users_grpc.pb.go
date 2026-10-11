@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	UsersService_GetUser_FullMethodName                     = "/users.v1.UsersService/GetUser"
 	UsersService_GetUsers_FullMethodName                    = "/users.v1.UsersService/GetUsers"
+	UsersService_GetTelegramChats_FullMethodName            = "/users.v1.UsersService/GetTelegramChats"
 	UsersService_UpsertTelegramUser_FullMethodName          = "/users.v1.UsersService/UpsertTelegramUser"
 	UsersService_ConfirmTelegramVerification_FullMethodName = "/users.v1.UsersService/ConfirmTelegramVerification"
 	UsersService_UpdateProfile_FullMethodName               = "/users.v1.UsersService/UpdateProfile"
@@ -37,6 +38,9 @@ type UsersServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	// Looks up several users at once; unknown ids are simply left out.
 	GetUsers(ctx context.Context, in *GetUsersRequest, opts ...grpc.CallOption) (*GetUsersResponse, error)
+	// Telegram chat ids for sending notifications; users without a linked
+	// Telegram account are left out.
+	GetTelegramChats(ctx context.Context, in *GetTelegramChatsRequest, opts ...grpc.CallOption) (*GetTelegramChatsResponse, error)
 	// Finds the account for a Telegram user, creating it on first contact,
 	// and refreshes the profile fields that were provided.
 	UpsertTelegramUser(ctx context.Context, in *UpsertTelegramUserRequest, opts ...grpc.CallOption) (*UpsertTelegramUserResponse, error)
@@ -73,6 +77,16 @@ func (c *usersServiceClient) GetUsers(ctx context.Context, in *GetUsersRequest, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUsersResponse)
 	err := c.cc.Invoke(ctx, UsersService_GetUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) GetTelegramChats(ctx context.Context, in *GetTelegramChatsRequest, opts ...grpc.CallOption) (*GetTelegramChatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTelegramChatsResponse)
+	err := c.cc.Invoke(ctx, UsersService_GetTelegramChats_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +143,9 @@ type UsersServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	// Looks up several users at once; unknown ids are simply left out.
 	GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error)
+	// Telegram chat ids for sending notifications; users without a linked
+	// Telegram account are left out.
+	GetTelegramChats(context.Context, *GetTelegramChatsRequest) (*GetTelegramChatsResponse, error)
 	// Finds the account for a Telegram user, creating it on first contact,
 	// and refreshes the profile fields that were provided.
 	UpsertTelegramUser(context.Context, *UpsertTelegramUserRequest) (*UpsertTelegramUserResponse, error)
@@ -156,6 +173,9 @@ func (UnimplementedUsersServiceServer) GetUser(context.Context, *GetUserRequest)
 }
 func (UnimplementedUsersServiceServer) GetUsers(context.Context, *GetUsersRequest) (*GetUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
+}
+func (UnimplementedUsersServiceServer) GetTelegramChats(context.Context, *GetTelegramChatsRequest) (*GetTelegramChatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTelegramChats not implemented")
 }
 func (UnimplementedUsersServiceServer) UpsertTelegramUser(context.Context, *UpsertTelegramUserRequest) (*UpsertTelegramUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpsertTelegramUser not implemented")
@@ -222,6 +242,24 @@ func _UsersService_GetUsers_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UsersServiceServer).GetUsers(ctx, req.(*GetUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_GetTelegramChats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTelegramChatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).GetTelegramChats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_GetTelegramChats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).GetTelegramChats(ctx, req.(*GetTelegramChatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -312,6 +350,10 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUsers",
 			Handler:    _UsersService_GetUsers_Handler,
+		},
+		{
+			MethodName: "GetTelegramChats",
+			Handler:    _UsersService_GetTelegramChats_Handler,
 		},
 		{
 			MethodName: "UpsertTelegramUser",

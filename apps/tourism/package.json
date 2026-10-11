@@ -10,7 +10,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
-    "@nuxt/ui": "^2.20.0",
+    "@nuxt/ui": "^4.11.3",
     "@nuxtjs/i18n": "9.5.6",
     "@nuxtjs/robots": "^6.2.3",
     "@tanstack/vue-query": "^5.62.0",

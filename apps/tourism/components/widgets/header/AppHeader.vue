@@ -12,6 +12,8 @@ const mobileMenuOpen = ref(false);
 
 const navLinks = [
   { to: '/', label: 'nav.feed' },
+  { to: '/trails', label: 'nav.trails' },
+  { to: '/outings', label: 'nav.outings' },
   { to: '/hotels', label: 'nav.hotels' },
   { to: '/tours', label: 'nav.tours' },
   { to: '/local-guides', label: 'nav.localGuides' },

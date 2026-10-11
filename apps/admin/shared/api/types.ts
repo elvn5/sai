@@ -122,3 +122,25 @@ export interface Award {
   awardedAt: string;
   isNew: boolean;
 }
+
+export interface TrailSummary {
+  id: string;
+  slug: string;
+  name: string;
+  area: string;
+  grade: string;
+  isPublished: boolean;
+  userId: string | null;
+  createdAt: string;
+}
+
+export interface ConditionReportSummary {
+  id: string;
+  trail: { id: string; slug: string; name: string };
+  author: Person;
+  observedOn: string;
+  trailState: string;
+  traction: string;
+  text: string | null;
+  createdAt: string;
+}

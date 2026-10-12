@@ -42,6 +42,10 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	r.POST("/auth/user/logout", account.Logout)
 	r.POST("/partners/apply", requireUser, account.ApplyForPartnership)
 
+	telegramLink := &handlers.TelegramLink{Deps: d}
+	r.POST("/auth/user/telegram/link", requireUser, telegramLink.Start)
+	r.DELETE("/auth/user/telegram", requireUser, telegramLink.Unlink)
+
 	telegram := &handlers.Telegram{Deps: d}
 	r.POST("/auth/telegram/widget", telegram.Widget)
 	r.POST("/auth/telegram/miniapp", telegram.MiniApp)

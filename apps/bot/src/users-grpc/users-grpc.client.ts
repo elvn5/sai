@@ -32,6 +32,23 @@ interface UpsertTelegramUserRequest {
   lastName?: string;
 }
 
+interface LinkTelegramRequest {
+  token: string;
+  telegramId: string;
+  username?: string;
+  moveFromOtherAccount?: boolean;
+}
+
+// How a link attempt ended.
+export type LinkTelegramResult =
+  | { status: 'linked'; account: TelegramAccount }
+  // Unknown, expired or already-used token.
+  | { status: 'invalid' }
+  // The Telegram account belongs to another account with its own sign-in.
+  | { status: 'taken' }
+  // It belongs to a Telegram-only account; linking moves it from there.
+  | { status: 'needsMove' };
+
 interface UpdateProfileRequest {
   userId: string;
   firstName?: string;
@@ -46,6 +63,7 @@ type Unary<Req, Res> = (
 interface RawClient {
   upsertTelegramUser: Unary<UpsertTelegramUserRequest, { account: TelegramAccount }>;
   confirmTelegramVerification: Unary<{ token: string }, { account: TelegramAccount }>;
+  linkTelegram: Unary<LinkTelegramRequest, { account: TelegramAccount }>;
   updateProfile: Unary<UpdateProfileRequest, { account: TelegramAccount }>;
   getSupportInfo: Unary<Record<string, never>, { support: SupportInfo }>;
   close(): void;
@@ -92,6 +110,24 @@ export class UsersGrpcClient implements OnModuleDestroy {
     } catch (error) {
       if ((error as ServiceError).code === status.NOT_FOUND) return null;
       throw error;
+    }
+  }
+
+  async linkTelegram(request: LinkTelegramRequest): Promise<LinkTelegramResult> {
+    try {
+      const res = await this.call(this.client.linkTelegram, request);
+      return { status: 'linked', account: res.account };
+    } catch (error) {
+      switch ((error as ServiceError).code) {
+        case status.NOT_FOUND:
+          return { status: 'invalid' };
+        case status.ALREADY_EXISTS:
+          return { status: 'taken' };
+        case status.FAILED_PRECONDITION:
+          return { status: 'needsMove' };
+        default:
+          throw error;
+      }
     }
   }
 

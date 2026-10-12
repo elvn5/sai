@@ -854,7 +854,20 @@
     "telegram": {
       "linked": "You'll get outing notifications in Telegram: who joined, changes, a reminder the day before.",
       "startBot": "Open {bot} and press Start if you haven't yet.",
-      "notLinked": "Outing notifications are sent in Telegram. Sign in with Telegram to get them."
+      "notLinked": "Outing notifications are sent in Telegram — link it to your account."
     }
+  },
+  "telegramLink": {
+    "why": "Link Telegram to get outing notifications and sign in with Telegram.",
+    "link": "Link Telegram",
+    "open": "Open {bot}",
+    "waiting": "Press Start in the bot — waiting for confirmation…",
+    "linked": "Telegram linked",
+    "justLinked": "Done, Telegram is linked!",
+    "unlink": "Unlink",
+    "unlinkConfirm": "Unlink Telegram? You'll stop getting outing notifications.",
+    "onlySignIn": "Telegram is your only way to sign in, so it can't be unlinked.",
+    "expired": "The link expired. Press “Link Telegram” again.",
+    "error": "Something went wrong. Please try again."
   }
 }

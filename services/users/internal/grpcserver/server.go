@@ -105,6 +105,40 @@ func (s *Server) ConfirmTelegramVerification(ctx context.Context, req *usersv1.C
 	return &usersv1.ConfirmTelegramVerificationResponse{Account: toAccount(saved)}, nil
 }
 
+func (s *Server) LinkTelegram(ctx context.Context, req *usersv1.LinkTelegramRequest) (*usersv1.LinkTelegramResponse, error) {
+	if req.GetTelegramId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "telegram_id is required")
+	}
+	u, err := s.Store.ByTelegramLinkToken(ctx, verification.Hash(req.GetToken()), s.now())
+	if err != nil {
+		return nil, s.storeError(ctx, err, "invalid or expired token")
+	}
+	if u.TelegramID != nil && *u.TelegramID != req.GetTelegramId() {
+		return nil, status.Error(codes.AlreadyExists, "the account is linked to another Telegram account")
+	}
+
+	moveFrom := ""
+	other, err := s.Store.ByTelegramID(ctx, req.GetTelegramId())
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+	case err != nil:
+		return nil, s.storeError(ctx, err, "")
+	case other.ID != u.ID && (other.Email != nil || other.Phone != nil || other.PasswordHash != nil):
+		return nil, status.Error(codes.AlreadyExists, "this Telegram account belongs to another Ermekten account")
+	case other.ID != u.ID && !req.GetMoveFromOtherAccount():
+		return nil, status.Error(codes.FailedPrecondition, "this Telegram account has its own Ermekten account")
+	case other.ID != u.ID:
+		moveFrom = other.ID
+		s.Log.InfoContext(ctx, "moving a Telegram id to a site account", slog.String("from", other.ID), slog.String("to", u.ID))
+	}
+
+	linked, err := s.Store.LinkTelegram(ctx, u.ID, req.GetTelegramId(), req.Username, moveFrom)
+	if err != nil {
+		return nil, s.storeError(ctx, err, "")
+	}
+	return &usersv1.LinkTelegramResponse{Account: toAccount(linked)}, nil
+}
+
 func (s *Server) UpdateProfile(ctx context.Context, req *usersv1.UpdateProfileRequest) (*usersv1.UpdateProfileResponse, error) {
 	u, err := s.Store.ByID(ctx, req.GetUserId())
 	if err != nil {

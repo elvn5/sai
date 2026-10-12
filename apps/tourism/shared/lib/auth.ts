@@ -121,6 +121,24 @@ export function useAuth() {
     setUser(res.user);
   }
 
+  // Re-reads the account (e.g. after the bot linked Telegram to it).
+  async function refresh(): Promise<AppUser | null> {
+    const user = await fetchCurrentUser(api);
+    setUser(user);
+    return user;
+  }
+
+  // Issues a one-time token for the bot's t.me/<bot>?start=link_<token>
+  // deep link, which links the Telegram account opening it.
+  async function startTelegramLink(): Promise<{ token: string; expiresAt: string }> {
+    return api.post<{ token: string; expiresAt: string }>('/auth/user/telegram/link');
+  }
+
+  async function unlinkTelegram(): Promise<void> {
+    const res = await api.delete<{ user: AppUser }>('/auth/user/telegram');
+    setUser(res.user);
+  }
+
   async function logout(): Promise<void> {
     await api.post('/auth/user/logout');
     setUser(null);
@@ -160,5 +178,8 @@ export function useAuth() {
     loginWithTelegramWidget,
     loginWithTelegramMiniApp,
     logout,
+    refresh,
+    startTelegramLink,
+    unlinkTelegram,
   };
 }

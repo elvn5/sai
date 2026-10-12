@@ -24,6 +24,7 @@ const (
 	UsersService_GetTelegramChats_FullMethodName            = "/users.v1.UsersService/GetTelegramChats"
 	UsersService_UpsertTelegramUser_FullMethodName          = "/users.v1.UsersService/UpsertTelegramUser"
 	UsersService_ConfirmTelegramVerification_FullMethodName = "/users.v1.UsersService/ConfirmTelegramVerification"
+	UsersService_LinkTelegram_FullMethodName                = "/users.v1.UsersService/LinkTelegram"
 	UsersService_UpdateProfile_FullMethodName               = "/users.v1.UsersService/UpdateProfile"
 	UsersService_GetSupportInfo_FullMethodName              = "/users.v1.UsersService/GetSupportInfo"
 )
@@ -48,6 +49,13 @@ type UsersServiceClient interface {
 	// the user a t.me deep link carrying this token. NOT_FOUND if the token is
 	// unknown, expired or the account is already verified.
 	ConfirmTelegramVerification(ctx context.Context, in *ConfirmTelegramVerificationRequest, opts ...grpc.CallOption) (*ConfirmTelegramVerificationResponse, error)
+	// Links a Telegram account to the site account that requested a link
+	// token (/start link_<token>). NOT_FOUND: unknown or expired token.
+	// ALREADY_EXISTS: the Telegram id belongs to another account that has its
+	// own sign-in (email, phone or password). FAILED_PRECONDITION: it belongs
+	// to a Telegram-only account; repeat with move_from_other_account to move
+	// the Telegram id over (that account can no longer be signed in to).
+	LinkTelegram(ctx context.Context, in *LinkTelegramRequest, opts ...grpc.CallOption) (*LinkTelegramResponse, error)
 	// Updates fields edited from the bot. ALREADY_EXISTS if the phone number
 	// belongs to another account.
 	UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error)
@@ -113,6 +121,16 @@ func (c *usersServiceClient) ConfirmTelegramVerification(ctx context.Context, in
 	return out, nil
 }
 
+func (c *usersServiceClient) LinkTelegram(ctx context.Context, in *LinkTelegramRequest, opts ...grpc.CallOption) (*LinkTelegramResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LinkTelegramResponse)
+	err := c.cc.Invoke(ctx, UsersService_LinkTelegram_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *usersServiceClient) UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateProfileResponse)
@@ -153,6 +171,13 @@ type UsersServiceServer interface {
 	// the user a t.me deep link carrying this token. NOT_FOUND if the token is
 	// unknown, expired or the account is already verified.
 	ConfirmTelegramVerification(context.Context, *ConfirmTelegramVerificationRequest) (*ConfirmTelegramVerificationResponse, error)
+	// Links a Telegram account to the site account that requested a link
+	// token (/start link_<token>). NOT_FOUND: unknown or expired token.
+	// ALREADY_EXISTS: the Telegram id belongs to another account that has its
+	// own sign-in (email, phone or password). FAILED_PRECONDITION: it belongs
+	// to a Telegram-only account; repeat with move_from_other_account to move
+	// the Telegram id over (that account can no longer be signed in to).
+	LinkTelegram(context.Context, *LinkTelegramRequest) (*LinkTelegramResponse, error)
 	// Updates fields edited from the bot. ALREADY_EXISTS if the phone number
 	// belongs to another account.
 	UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error)
@@ -182,6 +207,9 @@ func (UnimplementedUsersServiceServer) UpsertTelegramUser(context.Context, *Upse
 }
 func (UnimplementedUsersServiceServer) ConfirmTelegramVerification(context.Context, *ConfirmTelegramVerificationRequest) (*ConfirmTelegramVerificationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConfirmTelegramVerification not implemented")
+}
+func (UnimplementedUsersServiceServer) LinkTelegram(context.Context, *LinkTelegramRequest) (*LinkTelegramResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method LinkTelegram not implemented")
 }
 func (UnimplementedUsersServiceServer) UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProfile not implemented")
@@ -300,6 +328,24 @@ func _UsersService_ConfirmTelegramVerification_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UsersService_LinkTelegram_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LinkTelegramRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).LinkTelegram(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_LinkTelegram_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).LinkTelegram(ctx, req.(*LinkTelegramRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UsersService_UpdateProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateProfileRequest)
 	if err := dec(in); err != nil {
@@ -362,6 +408,10 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ConfirmTelegramVerification",
 			Handler:    _UsersService_ConfirmTelegramVerification_Handler,
+		},
+		{
+			MethodName: "LinkTelegram",
+			Handler:    _UsersService_LinkTelegram_Handler,
 		},
 		{
 			MethodName: "UpdateProfile",

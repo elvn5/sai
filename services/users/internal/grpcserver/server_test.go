@@ -196,3 +196,67 @@ func TestGetTelegramChats(t *testing.T) {
 		t.Errorf("empty: %v %v", res, err)
 	}
 }
+
+func TestLinkTelegram(t *testing.T) {
+	db, _ := testdb.New(t, true)
+	st := store.New(db)
+	c := client(t, st)
+	ctx := context.Background()
+
+	issue := func(userID string, ttl time.Duration) string {
+		t.Helper()
+		token, _ := verification.Token()
+		if err := st.SetTelegramLinkToken(ctx, userID, verification.Hash(token), time.Now().Add(ttl)); err != nil {
+			t.Fatal(err)
+		}
+		return token
+	}
+	pass := "hash"
+	site, _ := st.Insert(ctx, models.User{Email: str("site@x.kg"), PasswordHash: &pass, IsVerified: true})
+	if _, err := st.Insert(ctx, models.User{Email: str("full@x.kg"), PasswordHash: &pass, IsVerified: true, TelegramID: str("500")}); err != nil {
+		t.Fatal(err)
+	}
+	shell, _ := c.UpsertTelegramUser(ctx, &usersv1.UpsertTelegramUserRequest{TelegramId: "600", FirstName: str("Bot user")})
+
+	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: "nope", TelegramId: "700"}); status.Code(err) != codes.NotFound {
+		t.Errorf("unknown token: %v", err)
+	}
+	expired := issue(site.ID, -time.Minute)
+	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: expired, TelegramId: "700"}); status.Code(err) != codes.NotFound {
+		t.Errorf("expired token: %v", err)
+	}
+
+	// A Telegram id owned by an account with its own sign-in is refused.
+	token := issue(site.ID, time.Minute)
+	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: token, TelegramId: "500"}); status.Code(err) != codes.AlreadyExists {
+		t.Errorf("full account: %v", err)
+	}
+	// A Telegram-only account needs confirmation, then loses the id.
+	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: token, TelegramId: "600"}); status.Code(err) != codes.FailedPrecondition {
+		t.Errorf("shell without confirmation: %v", err)
+	}
+	res, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: token, TelegramId: "600", Username: str("aibek"), MoveFromOtherAccount: true})
+	if err != nil || res.GetAccount().GetId() != site.ID || res.GetAccount().GetUsername() != "aibek" {
+		t.Fatalf("move: %v %v", res, err)
+	}
+	if u, _ := st.ByID(ctx, site.ID); u.TelegramID == nil || *u.TelegramID != "600" {
+		t.Errorf("site account telegram: %v", u.TelegramID)
+	}
+	if u, _ := st.ByID(ctx, shell.GetAccount().GetId()); u.TelegramID != nil {
+		t.Errorf("shell kept telegram: %v", *u.TelegramID)
+	}
+	// The token is single-use.
+	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: token, TelegramId: "600"}); status.Code(err) != codes.NotFound {
+		t.Errorf("token reused: %v", err)
+	}
+	// The bot now finds the site account for that Telegram user.
+	if again, err := c.UpsertTelegramUser(ctx, &usersv1.UpsertTelegramUserRequest{TelegramId: "600"}); err != nil || again.GetAccount().GetId() != site.ID {
+		t.Errorf("upsert after link: %v %v", again, err)
+	}
+
+	// A brand-new Telegram id links directly.
+	other, _ := st.Insert(ctx, models.User{Phone: str("+996700111222"), PasswordHash: &pass, IsVerified: true})
+	if res, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: issue(other.ID, time.Minute), TelegramId: "800"}); err != nil || res.GetAccount().GetId() != other.ID {
+		t.Errorf("fresh link: %v %v", res, err)
+	}
+}

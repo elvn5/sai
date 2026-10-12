@@ -850,6 +850,11 @@
       "checkFields": "Bitte prüfen Sie die Felder.",
       "futureStart": "Der Treffpunkt muss in der Zukunft liegen",
       "returnAfterStart": "Die Rückkehr muss nach dem Start liegen"
+    },
+    "telegram": {
+      "linked": "Benachrichtigungen zur Tour kommen per Telegram: wer mitmacht, Änderungen, eine Erinnerung am Vortag.",
+      "startBot": "Öffnen Sie {bot} und tippen Sie auf „Start“, falls noch nicht geschehen.",
+      "notLinked": "Benachrichtigungen zu Gruppentouren kommen per Telegram. Melden Sie sich mit Telegram an, um sie zu erhalten."
     }
   }
 }

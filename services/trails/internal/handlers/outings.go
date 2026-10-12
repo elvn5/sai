@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -101,6 +102,7 @@ func (h *Outings) Create(c *gin.Context) {
 	if !h.apply(c, req, &outing, 0) {
 		return
 	}
+	outing.Schedule(h.now())
 	saved, err := h.Store.InsertOuting(c.Request.Context(), outing)
 	if err != nil {
 		h.internalError(c, err)
@@ -118,14 +120,17 @@ func (h *Outings) Update(c *gin.Context) {
 	if !ok {
 		return
 	}
+	before := outing
 	if !h.apply(c, req, &outing, outing.Taken) {
 		return
 	}
+	outing.Schedule(h.now())
 	saved, err := h.Store.UpdateOuting(c.Request.Context(), outing)
 	if err != nil {
 		h.internalError(c, err)
 		return
 	}
+	h.notifyParticipants(c, saved, func(ids []string) { h.Notify.Changed(c.Request.Context(), before, saved, ids) })
 	h.respondDetail(c, saved, http.StatusOK)
 }
 
@@ -140,6 +145,7 @@ func (h *Outings) Cancel(c *gin.Context) {
 		h.internalError(c, err)
 		return
 	}
+	h.notifyParticipants(c, saved, func(ids []string) { h.Notify.Cancelled(c.Request.Context(), saved, ids) })
 	h.respondDetail(c, saved, http.StatusOK)
 }
 
@@ -166,7 +172,9 @@ func (h *Outings) Join(c *gin.Context) {
 		h.fail(c, err, outingNotFound)
 		return
 	}
-	h.reload(c, outing.ID)
+	if updated, ok := h.reload(c, outing.ID); ok && h.Notify != nil {
+		h.Notify.Joined(c.Request.Context(), updated, currentUserID(c))
+	}
 }
 
 func (h *Outings) Leave(c *gin.Context) {
@@ -178,7 +186,10 @@ func (h *Outings) Leave(c *gin.Context) {
 		h.fail(c, err, "You haven't joined this outing")
 		return
 	}
-	h.reload(c, outing.ID)
+	// Dropping out of a cancelled or finished outing isn't news.
+	if updated, ok := h.reload(c, outing.ID); ok && h.Notify != nil && updated.Status == "open" && updated.StartsAt.After(h.now()) {
+		h.Notify.Left(c.Request.Context(), updated, currentUserID(c))
+	}
 }
 
 // apply validates req against the outing being created or edited (taken:
@@ -279,13 +290,29 @@ func (h *Outings) organized(c *gin.Context) (models.Outing, bool) {
 	return outing, true
 }
 
-func (h *Outings) reload(c *gin.Context, id string) {
+// reload answers with the outing's current state and returns it.
+func (h *Outings) reload(c *gin.Context, id string) (models.Outing, bool) {
 	outing, err := h.Store.Outing(c.Request.Context(), id)
 	if err != nil {
 		h.fail(c, err, outingNotFound)
-		return
+		return outing, false
 	}
 	h.respondDetail(c, outing, http.StatusOK)
+	return outing, true
+}
+
+// notifyParticipants calls send with the outing's participants, if
+// notifications are on and anyone joined.
+func (h *Outings) notifyParticipants(c *gin.Context, o models.Outing, send func(ids []string)) {
+	if h.Notify == nil || o.Taken == 0 {
+		return
+	}
+	ids, err := h.Store.ParticipantIDs(c.Request.Context(), o.ID)
+	if err != nil {
+		h.Log.ErrorContext(c.Request.Context(), "could not load participants to notify", slog.Any("error", err))
+		return
+	}
+	send(ids)
 }
 
 // respondList names organizers and hides contacts.

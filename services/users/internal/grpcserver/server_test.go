@@ -170,3 +170,29 @@ func TestLegacyImportFromOldSchema(t *testing.T) {
 		t.Fatalf("imported: %+v %v", u, err)
 	}
 }
+
+func TestGetTelegramChats(t *testing.T) {
+	db, _ := testdb.New(t, true)
+	st := store.New(db)
+	c := client(t, st)
+	ctx := context.Background()
+
+	tg, err := c.UpsertTelegramUser(ctx, &usersv1.UpsertTelegramUserRequest{TelegramId: "777000123"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	web, err := st.Insert(ctx, models.User{Email: str("a@b.kg"), IsVerified: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := c.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{UserIds: []string{tg.GetAccount().GetId(), web.ID, "not-a-uuid"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := res.GetChatIds(); len(got) != 1 || got[tg.GetAccount().GetId()] != 777000123 {
+		t.Errorf("chats: %v", got)
+	}
+	if res, err := c.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{}); err != nil || len(res.GetChatIds()) != 0 {
+		t.Errorf("empty: %v %v", res, err)
+	}
+}

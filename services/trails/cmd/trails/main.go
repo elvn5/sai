@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,10 +19,12 @@ import (
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
+	"github.com/elvn5/sai/services/pkg/telegram"
 	"github.com/elvn5/sai/services/pkg/usersclient"
 	"github.com/elvn5/sai/services/trails/internal/config"
 	"github.com/elvn5/sai/services/trails/internal/handlers"
 	"github.com/elvn5/sai/services/trails/internal/migrations"
+	"github.com/elvn5/sai/services/trails/internal/notify"
 	"github.com/elvn5/sai/services/trails/internal/routes"
 	"github.com/elvn5/sai/services/trails/internal/store"
 )
@@ -57,10 +60,23 @@ func run(log *slog.Logger) error {
 	}
 	defer func() { _ = users.Close() }()
 
+	st := store.New(db)
+	deps := handlers.Deps{Store: st, Authors: users, Log: log}
+	if cfg.BotToken != "" {
+		notifier := &notify.Notifier{
+			Store: st, Users: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL),
+			SiteURL: strings.TrimRight(cfg.SiteURL, "/"), Log: log,
+		}
+		deps.Notify = notifier
+		go notifier.Run(ctx)
+	} else {
+		log.Warn("BOT_TOKEN not set: Telegram notifications about outings are off")
+	}
+
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           routes.Setup(handlers.Deps{Store: store.New(db), Authors: users, Log: log}, users, cfg.JWTSecret),
+		Handler:           routes.Setup(deps, users, cfg.JWTSecret),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,
 	}

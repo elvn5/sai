@@ -10,6 +10,9 @@ service UsersService {
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
   // Looks up several users at once; unknown ids are simply left out.
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+  // Telegram chat ids for sending notifications; users without a linked
+  // Telegram account are left out.
+  rpc GetTelegramChats(GetTelegramChatsRequest) returns (GetTelegramChatsResponse);
 
   // For the Telegram bot.
 
@@ -59,6 +62,15 @@ message GetUsersRequest {
 
 message GetUsersResponse {
   repeated User users = 1;
+}
+
+message GetTelegramChatsRequest {
+  repeated string user_ids = 1;
+}
+
+message GetTelegramChatsResponse {
+  // user id → Telegram chat id (for a private chat, the Telegram user id).
+  map<string, int64> chat_ids = 1;
 }
 
 // What the bot shows a user about their own account.

@@ -330,6 +330,95 @@ func (x *GetUsersResponse) GetUsers() []*User {
 	return nil
 }
 
+type GetTelegramChatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserIds       []string               `protobuf:"bytes,1,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTelegramChatsRequest) Reset() {
+	*x = GetTelegramChatsRequest{}
+	mi := &file_users_v1_users_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTelegramChatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTelegramChatsRequest) ProtoMessage() {}
+
+func (x *GetTelegramChatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_users_v1_users_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTelegramChatsRequest.ProtoReflect.Descriptor instead.
+func (*GetTelegramChatsRequest) Descriptor() ([]byte, []int) {
+	return file_users_v1_users_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *GetTelegramChatsRequest) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+type GetTelegramChatsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// user id → Telegram chat id (for a private chat, the Telegram user id).
+	ChatIds       map[string]int64 `protobuf:"bytes,1,rep,name=chat_ids,json=chatIds,proto3" json:"chat_ids,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTelegramChatsResponse) Reset() {
+	*x = GetTelegramChatsResponse{}
+	mi := &file_users_v1_users_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTelegramChatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTelegramChatsResponse) ProtoMessage() {}
+
+func (x *GetTelegramChatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_users_v1_users_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTelegramChatsResponse.ProtoReflect.Descriptor instead.
+func (*GetTelegramChatsResponse) Descriptor() ([]byte, []int) {
+	return file_users_v1_users_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *GetTelegramChatsResponse) GetChatIds() map[string]int64 {
+	if x != nil {
+		return x.ChatIds
+	}
+	return nil
+}
+
 // What the bot shows a user about their own account.
 type TelegramAccount struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -343,7 +432,7 @@ type TelegramAccount struct {
 
 func (x *TelegramAccount) Reset() {
 	*x = TelegramAccount{}
-	mi := &file_users_v1_users_proto_msgTypes[5]
+	mi := &file_users_v1_users_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -355,7 +444,7 @@ func (x *TelegramAccount) String() string {
 func (*TelegramAccount) ProtoMessage() {}
 
 func (x *TelegramAccount) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[5]
+	mi := &file_users_v1_users_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -368,7 +457,7 @@ func (x *TelegramAccount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TelegramAccount.ProtoReflect.Descriptor instead.
 func (*TelegramAccount) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{5}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TelegramAccount) GetId() string {
@@ -411,7 +500,7 @@ type UpsertTelegramUserRequest struct {
 
 func (x *UpsertTelegramUserRequest) Reset() {
 	*x = UpsertTelegramUserRequest{}
-	mi := &file_users_v1_users_proto_msgTypes[6]
+	mi := &file_users_v1_users_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -423,7 +512,7 @@ func (x *UpsertTelegramUserRequest) String() string {
 func (*UpsertTelegramUserRequest) ProtoMessage() {}
 
 func (x *UpsertTelegramUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[6]
+	mi := &file_users_v1_users_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -436,7 +525,7 @@ func (x *UpsertTelegramUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertTelegramUserRequest.ProtoReflect.Descriptor instead.
 func (*UpsertTelegramUserRequest) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{6}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpsertTelegramUserRequest) GetTelegramId() string {
@@ -476,7 +565,7 @@ type UpsertTelegramUserResponse struct {
 
 func (x *UpsertTelegramUserResponse) Reset() {
 	*x = UpsertTelegramUserResponse{}
-	mi := &file_users_v1_users_proto_msgTypes[7]
+	mi := &file_users_v1_users_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -488,7 +577,7 @@ func (x *UpsertTelegramUserResponse) String() string {
 func (*UpsertTelegramUserResponse) ProtoMessage() {}
 
 func (x *UpsertTelegramUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[7]
+	mi := &file_users_v1_users_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -501,7 +590,7 @@ func (x *UpsertTelegramUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpsertTelegramUserResponse.ProtoReflect.Descriptor instead.
 func (*UpsertTelegramUserResponse) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{7}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpsertTelegramUserResponse) GetAccount() *TelegramAccount {
@@ -520,7 +609,7 @@ type ConfirmTelegramVerificationRequest struct {
 
 func (x *ConfirmTelegramVerificationRequest) Reset() {
 	*x = ConfirmTelegramVerificationRequest{}
-	mi := &file_users_v1_users_proto_msgTypes[8]
+	mi := &file_users_v1_users_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -532,7 +621,7 @@ func (x *ConfirmTelegramVerificationRequest) String() string {
 func (*ConfirmTelegramVerificationRequest) ProtoMessage() {}
 
 func (x *ConfirmTelegramVerificationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[8]
+	mi := &file_users_v1_users_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -545,7 +634,7 @@ func (x *ConfirmTelegramVerificationRequest) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ConfirmTelegramVerificationRequest.ProtoReflect.Descriptor instead.
 func (*ConfirmTelegramVerificationRequest) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{8}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ConfirmTelegramVerificationRequest) GetToken() string {
@@ -564,7 +653,7 @@ type ConfirmTelegramVerificationResponse struct {
 
 func (x *ConfirmTelegramVerificationResponse) Reset() {
 	*x = ConfirmTelegramVerificationResponse{}
-	mi := &file_users_v1_users_proto_msgTypes[9]
+	mi := &file_users_v1_users_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -576,7 +665,7 @@ func (x *ConfirmTelegramVerificationResponse) String() string {
 func (*ConfirmTelegramVerificationResponse) ProtoMessage() {}
 
 func (x *ConfirmTelegramVerificationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[9]
+	mi := &file_users_v1_users_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -589,7 +678,7 @@ func (x *ConfirmTelegramVerificationResponse) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use ConfirmTelegramVerificationResponse.ProtoReflect.Descriptor instead.
 func (*ConfirmTelegramVerificationResponse) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{9}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ConfirmTelegramVerificationResponse) GetAccount() *TelegramAccount {
@@ -610,7 +699,7 @@ type UpdateProfileRequest struct {
 
 func (x *UpdateProfileRequest) Reset() {
 	*x = UpdateProfileRequest{}
-	mi := &file_users_v1_users_proto_msgTypes[10]
+	mi := &file_users_v1_users_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -622,7 +711,7 @@ func (x *UpdateProfileRequest) String() string {
 func (*UpdateProfileRequest) ProtoMessage() {}
 
 func (x *UpdateProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[10]
+	mi := &file_users_v1_users_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -635,7 +724,7 @@ func (x *UpdateProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProfileRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProfileRequest) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{10}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpdateProfileRequest) GetUserId() string {
@@ -668,7 +757,7 @@ type UpdateProfileResponse struct {
 
 func (x *UpdateProfileResponse) Reset() {
 	*x = UpdateProfileResponse{}
-	mi := &file_users_v1_users_proto_msgTypes[11]
+	mi := &file_users_v1_users_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -680,7 +769,7 @@ func (x *UpdateProfileResponse) String() string {
 func (*UpdateProfileResponse) ProtoMessage() {}
 
 func (x *UpdateProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[11]
+	mi := &file_users_v1_users_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -693,7 +782,7 @@ func (x *UpdateProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProfileResponse.ProtoReflect.Descriptor instead.
 func (*UpdateProfileResponse) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{11}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UpdateProfileResponse) GetAccount() *TelegramAccount {
@@ -711,7 +800,7 @@ type GetSupportInfoRequest struct {
 
 func (x *GetSupportInfoRequest) Reset() {
 	*x = GetSupportInfoRequest{}
-	mi := &file_users_v1_users_proto_msgTypes[12]
+	mi := &file_users_v1_users_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -723,7 +812,7 @@ func (x *GetSupportInfoRequest) String() string {
 func (*GetSupportInfoRequest) ProtoMessage() {}
 
 func (x *GetSupportInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[12]
+	mi := &file_users_v1_users_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -736,7 +825,7 @@ func (x *GetSupportInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSupportInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetSupportInfoRequest) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{12}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{14}
 }
 
 type GetSupportInfoResponse struct {
@@ -748,7 +837,7 @@ type GetSupportInfoResponse struct {
 
 func (x *GetSupportInfoResponse) Reset() {
 	*x = GetSupportInfoResponse{}
-	mi := &file_users_v1_users_proto_msgTypes[13]
+	mi := &file_users_v1_users_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -760,7 +849,7 @@ func (x *GetSupportInfoResponse) String() string {
 func (*GetSupportInfoResponse) ProtoMessage() {}
 
 func (x *GetSupportInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[13]
+	mi := &file_users_v1_users_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +862,7 @@ func (x *GetSupportInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSupportInfoResponse.ProtoReflect.Descriptor instead.
 func (*GetSupportInfoResponse) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{13}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetSupportInfoResponse) GetSupport() *SupportInfo {
@@ -796,7 +885,7 @@ type SupportInfo struct {
 
 func (x *SupportInfo) Reset() {
 	*x = SupportInfo{}
-	mi := &file_users_v1_users_proto_msgTypes[14]
+	mi := &file_users_v1_users_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -808,7 +897,7 @@ func (x *SupportInfo) String() string {
 func (*SupportInfo) ProtoMessage() {}
 
 func (x *SupportInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_users_v1_users_proto_msgTypes[14]
+	mi := &file_users_v1_users_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -821,7 +910,7 @@ func (x *SupportInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SupportInfo.ProtoReflect.Descriptor instead.
 func (*SupportInfo) Descriptor() ([]byte, []int) {
-	return file_users_v1_users_proto_rawDescGZIP(), []int{14}
+	return file_users_v1_users_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SupportInfo) GetMessage() string {
@@ -882,7 +971,14 @@ const file_users_v1_users_proto_rawDesc = "" +
 	"\x0fGetUsersRequest\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\tR\x03ids\"8\n" +
 	"\x10GetUsersResponse\x12$\n" +
-	"\x05users\x18\x01 \x03(\v2\x0e.users.v1.UserR\x05users\"\xa7\x01\n" +
+	"\x05users\x18\x01 \x03(\v2\x0e.users.v1.UserR\x05users\"4\n" +
+	"\x17GetTelegramChatsRequest\x12\x19\n" +
+	"\buser_ids\x18\x01 \x03(\tR\auserIds\"\xa2\x01\n" +
+	"\x18GetTelegramChatsResponse\x12J\n" +
+	"\bchat_ids\x18\x01 \x03(\v2/.users.v1.GetTelegramChatsResponse.ChatIdsEntryR\achatIds\x1a:\n" +
+	"\fChatIdsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x03R\x05value:\x028\x01\"\xa7\x01\n" +
 	"\x0fTelegramAccount\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\"\n" +
 	"\n" +
@@ -936,10 +1032,11 @@ const file_users_v1_users_proto_rawDesc = "" +
 	"\x13PARTNER_STATUS_NONE\x10\x01\x12\x1a\n" +
 	"\x16PARTNER_STATUS_PENDING\x10\x02\x12\x1b\n" +
 	"\x17PARTNER_STATUS_APPROVED\x10\x03\x12\x1b\n" +
-	"\x17PARTNER_STATUS_REJECTED\x10\x042\x95\x04\n" +
+	"\x17PARTNER_STATUS_REJECTED\x10\x042\xf0\x04\n" +
 	"\fUsersService\x12>\n" +
 	"\aGetUser\x12\x18.users.v1.GetUserRequest\x1a\x19.users.v1.GetUserResponse\x12A\n" +
-	"\bGetUsers\x12\x19.users.v1.GetUsersRequest\x1a\x1a.users.v1.GetUsersResponse\x12_\n" +
+	"\bGetUsers\x12\x19.users.v1.GetUsersRequest\x1a\x1a.users.v1.GetUsersResponse\x12Y\n" +
+	"\x10GetTelegramChats\x12!.users.v1.GetTelegramChatsRequest\x1a\".users.v1.GetTelegramChatsResponse\x12_\n" +
 	"\x12UpsertTelegramUser\x12#.users.v1.UpsertTelegramUserRequest\x1a$.users.v1.UpsertTelegramUserResponse\x12z\n" +
 	"\x1bConfirmTelegramVerification\x12,.users.v1.ConfirmTelegramVerificationRequest\x1a-.users.v1.ConfirmTelegramVerificationResponse\x12P\n" +
 	"\rUpdateProfile\x12\x1e.users.v1.UpdateProfileRequest\x1a\x1f.users.v1.UpdateProfileResponse\x12S\n" +
@@ -958,7 +1055,7 @@ func file_users_v1_users_proto_rawDescGZIP() []byte {
 }
 
 var file_users_v1_users_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_users_v1_users_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_users_v1_users_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_users_v1_users_proto_goTypes = []any{
 	(PartnerStatus)(0),                          // 0: users.v1.PartnerStatus
 	(*User)(nil),                                // 1: users.v1.User
@@ -966,42 +1063,48 @@ var file_users_v1_users_proto_goTypes = []any{
 	(*GetUserResponse)(nil),                     // 3: users.v1.GetUserResponse
 	(*GetUsersRequest)(nil),                     // 4: users.v1.GetUsersRequest
 	(*GetUsersResponse)(nil),                    // 5: users.v1.GetUsersResponse
-	(*TelegramAccount)(nil),                     // 6: users.v1.TelegramAccount
-	(*UpsertTelegramUserRequest)(nil),           // 7: users.v1.UpsertTelegramUserRequest
-	(*UpsertTelegramUserResponse)(nil),          // 8: users.v1.UpsertTelegramUserResponse
-	(*ConfirmTelegramVerificationRequest)(nil),  // 9: users.v1.ConfirmTelegramVerificationRequest
-	(*ConfirmTelegramVerificationResponse)(nil), // 10: users.v1.ConfirmTelegramVerificationResponse
-	(*UpdateProfileRequest)(nil),                // 11: users.v1.UpdateProfileRequest
-	(*UpdateProfileResponse)(nil),               // 12: users.v1.UpdateProfileResponse
-	(*GetSupportInfoRequest)(nil),               // 13: users.v1.GetSupportInfoRequest
-	(*GetSupportInfoResponse)(nil),              // 14: users.v1.GetSupportInfoResponse
-	(*SupportInfo)(nil),                         // 15: users.v1.SupportInfo
+	(*GetTelegramChatsRequest)(nil),             // 6: users.v1.GetTelegramChatsRequest
+	(*GetTelegramChatsResponse)(nil),            // 7: users.v1.GetTelegramChatsResponse
+	(*TelegramAccount)(nil),                     // 8: users.v1.TelegramAccount
+	(*UpsertTelegramUserRequest)(nil),           // 9: users.v1.UpsertTelegramUserRequest
+	(*UpsertTelegramUserResponse)(nil),          // 10: users.v1.UpsertTelegramUserResponse
+	(*ConfirmTelegramVerificationRequest)(nil),  // 11: users.v1.ConfirmTelegramVerificationRequest
+	(*ConfirmTelegramVerificationResponse)(nil), // 12: users.v1.ConfirmTelegramVerificationResponse
+	(*UpdateProfileRequest)(nil),                // 13: users.v1.UpdateProfileRequest
+	(*UpdateProfileResponse)(nil),               // 14: users.v1.UpdateProfileResponse
+	(*GetSupportInfoRequest)(nil),               // 15: users.v1.GetSupportInfoRequest
+	(*GetSupportInfoResponse)(nil),              // 16: users.v1.GetSupportInfoResponse
+	(*SupportInfo)(nil),                         // 17: users.v1.SupportInfo
+	nil,                                         // 18: users.v1.GetTelegramChatsResponse.ChatIdsEntry
 }
 var file_users_v1_users_proto_depIdxs = []int32{
 	0,  // 0: users.v1.User.partner_status:type_name -> users.v1.PartnerStatus
 	1,  // 1: users.v1.GetUserResponse.user:type_name -> users.v1.User
 	1,  // 2: users.v1.GetUsersResponse.users:type_name -> users.v1.User
-	6,  // 3: users.v1.UpsertTelegramUserResponse.account:type_name -> users.v1.TelegramAccount
-	6,  // 4: users.v1.ConfirmTelegramVerificationResponse.account:type_name -> users.v1.TelegramAccount
-	6,  // 5: users.v1.UpdateProfileResponse.account:type_name -> users.v1.TelegramAccount
-	15, // 6: users.v1.GetSupportInfoResponse.support:type_name -> users.v1.SupportInfo
-	2,  // 7: users.v1.UsersService.GetUser:input_type -> users.v1.GetUserRequest
-	4,  // 8: users.v1.UsersService.GetUsers:input_type -> users.v1.GetUsersRequest
-	7,  // 9: users.v1.UsersService.UpsertTelegramUser:input_type -> users.v1.UpsertTelegramUserRequest
-	9,  // 10: users.v1.UsersService.ConfirmTelegramVerification:input_type -> users.v1.ConfirmTelegramVerificationRequest
-	11, // 11: users.v1.UsersService.UpdateProfile:input_type -> users.v1.UpdateProfileRequest
-	13, // 12: users.v1.UsersService.GetSupportInfo:input_type -> users.v1.GetSupportInfoRequest
-	3,  // 13: users.v1.UsersService.GetUser:output_type -> users.v1.GetUserResponse
-	5,  // 14: users.v1.UsersService.GetUsers:output_type -> users.v1.GetUsersResponse
-	8,  // 15: users.v1.UsersService.UpsertTelegramUser:output_type -> users.v1.UpsertTelegramUserResponse
-	10, // 16: users.v1.UsersService.ConfirmTelegramVerification:output_type -> users.v1.ConfirmTelegramVerificationResponse
-	12, // 17: users.v1.UsersService.UpdateProfile:output_type -> users.v1.UpdateProfileResponse
-	14, // 18: users.v1.UsersService.GetSupportInfo:output_type -> users.v1.GetSupportInfoResponse
-	13, // [13:19] is the sub-list for method output_type
-	7,  // [7:13] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	18, // 3: users.v1.GetTelegramChatsResponse.chat_ids:type_name -> users.v1.GetTelegramChatsResponse.ChatIdsEntry
+	8,  // 4: users.v1.UpsertTelegramUserResponse.account:type_name -> users.v1.TelegramAccount
+	8,  // 5: users.v1.ConfirmTelegramVerificationResponse.account:type_name -> users.v1.TelegramAccount
+	8,  // 6: users.v1.UpdateProfileResponse.account:type_name -> users.v1.TelegramAccount
+	17, // 7: users.v1.GetSupportInfoResponse.support:type_name -> users.v1.SupportInfo
+	2,  // 8: users.v1.UsersService.GetUser:input_type -> users.v1.GetUserRequest
+	4,  // 9: users.v1.UsersService.GetUsers:input_type -> users.v1.GetUsersRequest
+	6,  // 10: users.v1.UsersService.GetTelegramChats:input_type -> users.v1.GetTelegramChatsRequest
+	9,  // 11: users.v1.UsersService.UpsertTelegramUser:input_type -> users.v1.UpsertTelegramUserRequest
+	11, // 12: users.v1.UsersService.ConfirmTelegramVerification:input_type -> users.v1.ConfirmTelegramVerificationRequest
+	13, // 13: users.v1.UsersService.UpdateProfile:input_type -> users.v1.UpdateProfileRequest
+	15, // 14: users.v1.UsersService.GetSupportInfo:input_type -> users.v1.GetSupportInfoRequest
+	3,  // 15: users.v1.UsersService.GetUser:output_type -> users.v1.GetUserResponse
+	5,  // 16: users.v1.UsersService.GetUsers:output_type -> users.v1.GetUsersResponse
+	7,  // 17: users.v1.UsersService.GetTelegramChats:output_type -> users.v1.GetTelegramChatsResponse
+	10, // 18: users.v1.UsersService.UpsertTelegramUser:output_type -> users.v1.UpsertTelegramUserResponse
+	12, // 19: users.v1.UsersService.ConfirmTelegramVerification:output_type -> users.v1.ConfirmTelegramVerificationResponse
+	14, // 20: users.v1.UsersService.UpdateProfile:output_type -> users.v1.UpdateProfileResponse
+	16, // 21: users.v1.UsersService.GetSupportInfo:output_type -> users.v1.GetSupportInfoResponse
+	15, // [15:22] is the sub-list for method output_type
+	8,  // [8:15] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_users_v1_users_proto_init() }
@@ -1010,17 +1113,17 @@ func file_users_v1_users_proto_init() {
 		return
 	}
 	file_users_v1_users_proto_msgTypes[0].OneofWrappers = []any{}
-	file_users_v1_users_proto_msgTypes[5].OneofWrappers = []any{}
-	file_users_v1_users_proto_msgTypes[6].OneofWrappers = []any{}
-	file_users_v1_users_proto_msgTypes[10].OneofWrappers = []any{}
-	file_users_v1_users_proto_msgTypes[14].OneofWrappers = []any{}
+	file_users_v1_users_proto_msgTypes[7].OneofWrappers = []any{}
+	file_users_v1_users_proto_msgTypes[8].OneofWrappers = []any{}
+	file_users_v1_users_proto_msgTypes[12].OneofWrappers = []any{}
+	file_users_v1_users_proto_msgTypes[16].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_users_v1_users_proto_rawDesc), len(file_users_v1_users_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

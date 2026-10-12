@@ -60,6 +60,20 @@ func (s *Server) GetUsers(ctx context.Context, req *usersv1.GetUsersRequest) (*u
 	return &usersv1.GetUsersResponse{Users: out}, nil
 }
 
+func (s *Server) GetTelegramChats(ctx context.Context, req *usersv1.GetTelegramChatsRequest) (*usersv1.GetTelegramChatsResponse, error) {
+	if len(req.GetUserIds()) > maxBatch {
+		return nil, status.Errorf(codes.InvalidArgument, "at most %d ids per call", maxBatch)
+	}
+	chats := map[string]int64{}
+	if len(req.GetUserIds()) > 0 {
+		var err error
+		if chats, err = s.Store.TelegramChats(ctx, req.GetUserIds()); err != nil {
+			return nil, s.storeError(ctx, err, "")
+		}
+	}
+	return &usersv1.GetTelegramChatsResponse{ChatIds: chats}, nil
+}
+
 func (s *Server) UpsertTelegramUser(ctx context.Context, req *usersv1.UpsertTelegramUserRequest) (*usersv1.UpsertTelegramUserResponse, error) {
 	if req.GetTelegramId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "telegram_id is required")

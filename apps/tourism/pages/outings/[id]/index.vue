@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import PersonAvatar from '~/components/entities/achievement/PersonAvatar.vue';
+import TelegramNotice from '~/components/features/telegram-notice/TelegramNotice.vue';
 import { ApiError, useApiClient } from '~/shared/api/client';
 import type { Outing } from '~/shared/api/types';
 import { formatAmount } from '~/shared/lib/format-price';
@@ -209,6 +210,10 @@ useSeoMeta({
           {{ $t('outings.reportAfter') }}
         </UButton>
         <p v-if="actionError" class="w-full text-sm text-brand-600">{{ actionError }}</p>
+      </div>
+
+      <div v-if="!closed && (outing.isJoined || outing.isOrganizer)" class="border-t border-border px-6 py-4">
+        <TelegramNotice />
       </div>
     </div>
   </section>

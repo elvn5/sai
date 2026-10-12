@@ -153,3 +153,24 @@ func SetVerification(u *models.User, hash string, ttl time.Duration, now time.Ti
 	u.VerificationCodeSentAt = &now
 	u.VerificationAttempts = 0
 }
+
+// TelegramChats maps the given users that have a Telegram account to
+// their Telegram id (the chat id of their private chat with the bot).
+func (s *Store) TelegramChats(ctx context.Context, ids []string) (map[string]int64, error) {
+	rows, err := s.db.Query(ctx, `SELECT id::text, telegram_id FROM users
+		WHERE id::text = ANY($1) AND telegram_id IS NOT NULL`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int64{}
+	for rows.Next() {
+		var id string
+		var chat int64
+		if err := rows.Scan(&id, &chat); err != nil {
+			return nil, err
+		}
+		out[id] = chat
+	}
+	return out, rows.Err()
+}

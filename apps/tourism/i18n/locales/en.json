@@ -850,6 +850,11 @@
       "checkFields": "Please check the fields.",
       "futureStart": "The meeting time must be in the future",
       "returnAfterStart": "The return must be after the start"
+    },
+    "telegram": {
+      "linked": "You'll get outing notifications in Telegram: who joined, changes, a reminder the day before.",
+      "startBot": "Open {bot} and press Start if you haven't yet.",
+      "notLinked": "Outing notifications are sent in Telegram. Sign in with Telegram to get them."
     }
   }
 }

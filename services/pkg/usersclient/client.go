@@ -100,3 +100,18 @@ func (c *Client) PartnerStatuses(ctx context.Context, ids []string) (map[string]
 	}
 	return out, nil
 }
+
+// TelegramChats returns the Telegram chat id of each user who has a
+// linked Telegram account; others are absent.
+func (c *Client) TelegramChats(ctx context.Context, ids []string) (map[string]int64, error) {
+	if len(ids) == 0 {
+		return map[string]int64{}, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	res, err := c.client.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{UserIds: ids})
+	if err != nil {
+		return nil, fmt.Errorf("get telegram chats: %w", err)
+	}
+	return res.GetChatIds(), nil
+}

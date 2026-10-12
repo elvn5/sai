@@ -5,6 +5,7 @@ use (
 	./gateway
 	./listings
 	./media
+	./payments
 	./pkg
 	./proto
 	./trails

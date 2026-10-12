@@ -13,6 +13,7 @@ frontends are Nuxt 3 and the bot is NestJS + Telegraf.
 | [`services/content`](services/content) | Go + Gin | Blog, written guides, gallery, page SEO; own `content` database |
 | [`services/listings`](services/listings) | Go + Gin | Hotels, local guides, tours, reviews, owner posts; own `listings` database |
 | [`services/trails`](services/trails) | Go + Gin | Route catalog with GPX tracks, trail condition reports, group outings; own `trails` database |
+| [`services/payments`](services/payments) | Go + Gin | Online payments for bookings via Bakai Bank Open Banking (or a test page), partner balances and payouts; own `payments` database |
 | [`services/users`](services/users) | Go + Gin | Accounts: sign-in (password, Telegram, admin), registration, partners, support; gRPC for the other services and the bot; own `users` database |
 | [`apps/bot`](apps/bot) | NestJS + Telegraf | Telegram bot (no database; accounts via the users service's gRPC API) |
 | [`apps/tourism`](apps/tourism) | Nuxt 3 + @nuxt/ui | Public site and Telegram Mini App |
@@ -62,6 +63,7 @@ pnpm dev:media    # http://localhost:8081 + gRPC :9081
 pnpm dev:content  # http://localhost:8082
 pnpm dev:listings # http://localhost:8083
 pnpm dev:trails   # http://localhost:8085
+pnpm dev:payments # http://localhost:8086 (needs listings gRPC :9082)
 pnpm dev:gateway  # http://localhost:8080 — the API the Nuxt apps call
 pnpm dev:bot      # needs USERS_GRPC_ADDR=localhost:9083
 pnpm dev:tourism  # http://localhost:3011
@@ -79,7 +81,7 @@ The services read their settings from `.env` (see [.env.example](.env.example)).
 | `pnpm build` | Build all workspace packages |
 | `pnpm lint` / `pnpm lint:fix` | Biome check / check --write |
 | `pnpm typecheck` | Type-check all workspace packages |
-| `pnpm dev:<service>` (gateway, media, content, listings, users, trails) | Run a Go service |
+| `pnpm dev:<service>` (gateway, media, content, listings, users, trails, payments) | Run a Go service |
 | `pnpm proto:generate` | Regenerate gRPC code from `services/proto` |
 | `pnpm test:go` | Test all Go modules |
 
@@ -92,6 +94,7 @@ services/   Go workspace (go.work)
   content/  Blog, guides, gallery, page SEO (own database)
   listings/ Hotels, local guides, tours, reviews, posts (own database)
   trails/   Routes, condition reports, group outings (own database)
+  payments/ Bookings paid online (Bakai), partner payouts (own database)
   users/    Accounts, sign-in, partners, support (own database; HTTP + gRPC)
   proto/    gRPC contracts between services (buf; `pnpm proto:generate`)
   pkg/      Shared Go code: config, logging, errors, validation, CORS, JWT, databases

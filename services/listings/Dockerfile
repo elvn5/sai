@@ -15,5 +15,5 @@ RUN cd listings && go build -trimpath -ldflags="-s -w" -o /out/listings ./cmd/li
 
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/listings /listings
-EXPOSE 8083
+EXPOSE 8083 9082
 ENTRYPOINT ["/listings"]

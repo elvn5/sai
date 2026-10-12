@@ -192,3 +192,39 @@ func TestNotificationDelivery(t *testing.T) {
 		t.Fatalf("cancelled: %+v", sent)
 	}
 }
+
+func TestMovedOutingIsRemindedAgain(t *testing.T) {
+	clock := now
+	deps := newDeps(t)
+	deps.Now = func() time.Time { return clock }
+	tg := &fakeTelegram{blocked: map[int64]bool{}}
+	notifier := &notify.Notifier{Store: deps.Store, Users: usersWithChats{users}, Sender: tg,
+		SiteURL: "https://ermekten.kg", Log: slog.New(slog.DiscardHandler), Now: func() time.Time { return clock }}
+	deps.Notify = notifier
+	gin.SetMode(gin.TestMode)
+	c := client{t, routes.Setup(deps, users, secret)}
+	ctx := context.Background()
+
+	_, body := c.do("POST", "/outings", `{"title":"Хайк","startsAt":"2026-10-17T06:00:00+06:00","meetingPoint":"Ала-Арча","transport":"bus","seats":3,"level":"beginner"}`, hiker)
+	id := obj(t, body)["id"].(string)
+
+	clock = time.Date(2026, 10, 16, 14, 0, 0, 0, time.UTC) // inside the window
+	notifier.Tick(ctx)
+	if sent := tg.take(); len(sent) != 1 || !strings.Contains(sent[0].text, "сб, 17 окт., 06:00") {
+		t.Fatalf("first reminder: %+v", sent)
+	}
+
+	// Moved a week later: a new reminder when the new window opens.
+	c.do("PUT", "/outings/"+id, `{"startsAt":"2026-10-24T06:00:00+06:00"}`, hiker)
+	notifier.Tick(ctx)
+	tg.take()
+	clock = time.Date(2026, 10, 23, 14, 0, 0, 0, time.UTC)
+	notifier.Tick(ctx)
+	if sent := tg.take(); len(sent) != 1 || !strings.Contains(sent[0].text, "сб, 24 окт., 06:00") {
+		t.Fatalf("reminder after the move: %+v", sent)
+	}
+	notifier.Tick(ctx)
+	if sent := tg.take(); len(sent) != 0 {
+		t.Fatalf("reminded twice: %+v", sent)
+	}
+}

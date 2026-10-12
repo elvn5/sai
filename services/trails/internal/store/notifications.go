@@ -58,29 +58,22 @@ func (s *Store) MarkNotification(ctx context.Context, id, status string, attempt
 	return err
 }
 
-// OutingsDueForReminder: open outings starting within `ahead` that existed
-// before that window opened (a last-minute outing gets no reminder) and
-// haven't been reminded yet.
-func (s *Store) OutingsDueForReminder(ctx context.Context, now time.Time, ahead time.Duration) ([]string, error) {
+// OutingsDueForReminder: open, not-yet-started outings whose reminder is
+// due and unsent.
+func (s *Store) OutingsDueForReminder(ctx context.Context, now time.Time) ([]string, error) {
 	rows, err := s.db.Query(ctx, `SELECT id::text FROM outings WHERE status = 'open' AND reminder_sent_at IS NULL
-		AND starts_at > $1 AND starts_at <= $1 + $2 * interval '1 second'
-		AND created_at <= starts_at - $2 * interval '1 second'`,
-		now, ahead.Seconds())
+		AND remind_at <= $1 AND starts_at > $1`, now)
 	if err != nil {
 		return nil, err
 	}
 	return pgx.CollectRows(rows, pgx.RowTo[string])
 }
 
-// OutingsDueForFollowUp: open outings on a catalog route that ended
-// (their return time, or start + assumedLength) at least `after` ago, but
-// not more than two days ago, and haven't had the follow-up yet.
-func (s *Store) OutingsDueForFollowUp(ctx context.Context, now time.Time, assumedLength, after time.Duration) ([]string, error) {
+// OutingsDueForFollowUp: open outings whose follow-up is due and unsent;
+// ones that became due before staleBefore are skipped (too late to ask).
+func (s *Store) OutingsDueForFollowUp(ctx context.Context, now, staleBefore time.Time) ([]string, error) {
 	rows, err := s.db.Query(ctx, `SELECT id::text FROM outings WHERE status = 'open' AND followup_sent_at IS NULL
-		AND trail_id IS NOT NULL
-		AND coalesce(returns_at, starts_at + $2 * interval '1 second') + $3 * interval '1 second' <= $1
-		AND coalesce(returns_at, starts_at + $2 * interval '1 second') > $1 - interval '2 days'`,
-		now, assumedLength.Seconds(), after.Seconds())
+		AND followup_at <= $1 AND followup_at > $2`, now, staleBefore)
 	if err != nil {
 		return nil, err
 	}

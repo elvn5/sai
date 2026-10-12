@@ -13,7 +13,8 @@ import (
 const outingColumns = `o.id::text, t.id::text, t.slug, t.name, t.area, o.title, o.starts_at, o.returns_at,
 	o.meeting_point, o.transport, o.seats,
 	(SELECT count(*) FROM outing_participants p WHERE p.outing_id = o.id)::int,
-	o.cost_per_person, o.level, o.description, o.contact, o.status, o.user_id::text, o.created_at
+	o.cost_per_person, o.level, o.description, o.contact, o.status, o.user_id::text, o.created_at,
+	o.remind_at, o.followup_at
 	FROM outings o LEFT JOIN trails t ON t.id = o.trail_id`
 
 func scanOuting(row pgx.Row) (models.Outing, error) {
@@ -23,7 +24,7 @@ func scanOuting(row pgx.Row) (models.Outing, error) {
 	var returns *time.Time
 	err := row.Scan(&o.ID, &trailID, &slug, &name, &area, &o.Title, &starts, &returns, &o.MeetingPoint,
 		&o.Transport, &o.Seats, &o.Taken, &o.CostPerPerson, &o.Level, &o.Description, &o.Contact, &o.Status,
-		&o.UserID, &created)
+		&o.UserID, &created, &o.RemindAt, &o.FollowUpAt)
 	if err != nil {
 		return o, notFound(err)
 	}
@@ -75,10 +76,10 @@ func (s *Store) ParticipantIDs(ctx context.Context, outingID string) ([]string, 
 func (s *Store) InsertOuting(ctx context.Context, o models.Outing) (models.Outing, error) {
 	var id string
 	err := s.db.QueryRow(ctx, `INSERT INTO outings (trail_id, title, starts_at, returns_at, meeting_point,
-		transport, seats, cost_per_person, level, description, contact, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id::text`,
+		transport, seats, cost_per_person, level, description, contact, user_id, remind_at, followup_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id::text`,
 		trailIDArg(o.Trail), o.Title, o.StartsAt.Time, returnsArg(o.ReturnsAt), o.MeetingPoint, o.Transport,
-		o.Seats, o.CostPerPerson, o.Level, o.Description, o.Contact, o.UserID).Scan(&id)
+		o.Seats, o.CostPerPerson, o.Level, o.Description, o.Contact, o.UserID, o.RemindAt, o.FollowUpAt).Scan(&id)
 	if err != nil {
 		return models.Outing{}, err
 	}
@@ -88,9 +89,13 @@ func (s *Store) InsertOuting(ctx context.Context, o models.Outing) (models.Outin
 func (s *Store) UpdateOuting(ctx context.Context, o models.Outing) (models.Outing, error) {
 	_, err := s.db.Exec(ctx, `UPDATE outings SET trail_id = $2, title = $3, starts_at = $4, returns_at = $5,
 		meeting_point = $6, transport = $7, seats = $8, cost_per_person = $9, level = $10, description = $11,
-		contact = $12, status = $13, updated_at = now() WHERE id::text = $1`,
+		contact = $12, status = $13, remind_at = $14, followup_at = $15,
+		-- A moved outing gets its reminder and follow-up again.
+		reminder_sent_at = CASE WHEN starts_at = $4 THEN reminder_sent_at END,
+		followup_sent_at = CASE WHEN starts_at = $4 AND returns_at IS NOT DISTINCT FROM $5 THEN followup_sent_at END,
+		updated_at = now() WHERE id::text = $1`,
 		o.ID, trailIDArg(o.Trail), o.Title, o.StartsAt.Time, returnsArg(o.ReturnsAt), o.MeetingPoint, o.Transport,
-		o.Seats, o.CostPerPerson, o.Level, o.Description, o.Contact, o.Status)
+		o.Seats, o.CostPerPerson, o.Level, o.Description, o.Contact, o.Status, o.RemindAt, o.FollowUpAt)
 	if err != nil {
 		return models.Outing{}, err
 	}

@@ -1,7 +1,11 @@
 // Package models defines the trails service's entities and their JSON.
 package models
 
-import "github.com/elvn5/sai/services/pkg/jsontime"
+import (
+	"time"
+
+	"github.com/elvn5/sai/services/pkg/jsontime"
+)
 
 // Person is the public part of a profile (from the users service).
 type Person struct {
@@ -115,4 +119,7 @@ type Outing struct {
 	IsOrganizer  bool          `json:"isOrganizer"`
 	CreatedAt    jsontime.Time `json:"createdAt"`
 	UserID       string        `json:"-"`
+	// When the reminder and follow-up notifications are due (see Schedule).
+	RemindAt   *time.Time `json:"-"`
+	FollowUpAt *time.Time `json:"-"`
 }

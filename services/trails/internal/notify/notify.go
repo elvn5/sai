@@ -20,13 +20,8 @@ import (
 )
 
 const (
-	// ReminderAhead: the reminder goes out this long before the start
-	// (an early-morning start gets it the evening before).
-	ReminderAhead = 12 * time.Hour
-	// AssumedLength stands in for a missing return time.
-	AssumedLength = 10 * time.Hour
-	// FollowUpAfter: the "how did it go?" message, after the return.
-	FollowUpAfter = 2 * time.Hour
+	// A follow-up that couldn't go out within this long is dropped.
+	followUpStale = 48 * time.Hour
 
 	batchSize   = 50
 	maxAttempts = 5
@@ -177,7 +172,7 @@ func (n *Notifier) Tick(ctx context.Context) {
 
 func (n *Notifier) schedule(ctx context.Context) error {
 	now := n.now()
-	due, err := n.Store.OutingsDueForReminder(ctx, now, ReminderAhead)
+	due, err := n.Store.OutingsDueForReminder(ctx, now)
 	if err != nil {
 		return err
 	}
@@ -186,9 +181,9 @@ func (n *Notifier) schedule(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		items := []store.Notification{n.once(n.message(o.UserID, "reminder", o, reminderText(o, true)))}
+		items := []store.Notification{once(n.message(o.UserID, "reminder", o, reminderText(o, true)), o.RemindAt)}
 		for _, p := range participants {
-			items = append(items, n.once(n.message(p, "reminder", o, reminderText(o, false))))
+			items = append(items, once(n.message(p, "reminder", o, reminderText(o, false)), o.RemindAt))
 		}
 		if err := n.Store.Enqueue(ctx, items, n.now()); err != nil {
 			return err
@@ -198,7 +193,7 @@ func (n *Notifier) schedule(ctx context.Context) error {
 		}
 	}
 
-	due, err = n.Store.OutingsDueForFollowUp(ctx, now, AssumedLength, FollowUpAfter)
+	due, err = n.Store.OutingsDueForFollowUp(ctx, now, now.Add(-followUpStale))
 	if err != nil {
 		return err
 	}
@@ -210,9 +205,9 @@ func (n *Notifier) schedule(ctx context.Context) error {
 		text, url := "Оставить сводку", n.SiteURL+"/trails/"+o.Trail.Slug
 		items := make([]store.Notification, 0, len(participants)+1)
 		for _, userID := range append([]string{o.UserID}, participants...) {
-			items = append(items, n.once(store.Notification{
+			items = append(items, once(store.Notification{
 				UserID: userID, Kind: "followup", OutingID: &o.ID, Text: followUpText(o), ButtonText: &text, ButtonURL: &url,
-			}))
+			}, o.FollowUpAt))
 		}
 		if err := n.Store.Enqueue(ctx, items, n.now()); err != nil {
 			return err
@@ -224,9 +219,14 @@ func (n *Notifier) schedule(ctx context.Context) error {
 	return nil
 }
 
-// once sets a dedup key so a scheduled message is queued at most once.
-func (n *Notifier) once(item store.Notification) store.Notification {
-	key := fmt.Sprintf("%s:%s:%s", item.Kind, *item.OutingID, item.UserID)
+// once sets a dedup key so a scheduled message is queued at most once per
+// due time (a moved outing is reminded again).
+func once(item store.Notification, due *time.Time) store.Notification {
+	var at int64
+	if due != nil {
+		at = due.Unix()
+	}
+	key := fmt.Sprintf("%s:%s:%s:%d", item.Kind, *item.OutingID, item.UserID, at)
 	item.DedupKey = &key
 	return item
 }

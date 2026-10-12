@@ -20,11 +20,19 @@ CREATE TABLE notifications (
 );
 CREATE INDEX notifications_pending_idx ON notifications (send_after) WHERE status = 'pending';
 
--- When the day-before reminder and the "how did it go?" message went out.
+-- When the reminder and the "how did it go?" message are due (computed by
+-- models.Outing.Schedule; null: not sent for this outing), and when they
+-- went out.
+ALTER TABLE outings ADD COLUMN remind_at timestamptz;
+ALTER TABLE outings ADD COLUMN followup_at timestamptz;
 ALTER TABLE outings ADD COLUMN reminder_sent_at timestamptz;
 ALTER TABLE outings ADD COLUMN followup_sent_at timestamptz;
+CREATE INDEX outings_remind_at_idx ON outings (remind_at) WHERE reminder_sent_at IS NULL;
+CREATE INDEX outings_followup_at_idx ON outings (followup_at) WHERE followup_sent_at IS NULL;
 
 -- +goose Down
 ALTER TABLE outings DROP COLUMN followup_sent_at;
 ALTER TABLE outings DROP COLUMN reminder_sent_at;
+ALTER TABLE outings DROP COLUMN followup_at;
+ALTER TABLE outings DROP COLUMN remind_at;
 DROP TABLE notifications;

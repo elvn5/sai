@@ -102,6 +102,7 @@ func (h *Outings) Create(c *gin.Context) {
 	if !h.apply(c, req, &outing, 0) {
 		return
 	}
+	outing.Schedule(h.now())
 	saved, err := h.Store.InsertOuting(c.Request.Context(), outing)
 	if err != nil {
 		h.internalError(c, err)
@@ -123,6 +124,7 @@ func (h *Outings) Update(c *gin.Context) {
 	if !h.apply(c, req, &outing, outing.Taken) {
 		return
 	}
+	outing.Schedule(h.now())
 	saved, err := h.Store.UpdateOuting(c.Request.Context(), outing)
 	if err != nil {
 		h.internalError(c, err)

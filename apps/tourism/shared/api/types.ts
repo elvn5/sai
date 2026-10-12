@@ -430,3 +430,31 @@ export interface Outing {
   isOrganizer: boolean;
   createdAt: string;
 }
+
+// services/payments
+
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
+
+export interface Order {
+  id: string;
+  kind: 'tour';
+  itemId: string;
+  itemTitle: string;
+  itemSlug: string | null;
+  itemLocale: string | null;
+  itemDate: string | null;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  fee: number;
+  payeeAmount: number;
+  contactName: string;
+  contactPhone: string;
+  comment: string | null;
+  status: OrderStatus;
+  paymentUrl: string | null;
+  expiresAt: string;
+  paidAt: string | null;
+  createdAt: string;
+  payer?: Person;
+}

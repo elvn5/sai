@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,8 +15,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 
 	"github.com/elvn5/sai/services/listings/internal/config"
+	"github.com/elvn5/sai/services/listings/internal/grpcserver"
 	"github.com/elvn5/sai/services/listings/internal/handlers"
 	"github.com/elvn5/sai/services/listings/internal/legacyimport"
 	"github.com/elvn5/sai/services/listings/internal/migrations"
@@ -27,6 +30,7 @@ import (
 	"github.com/elvn5/sai/services/pkg/logger"
 	"github.com/elvn5/sai/services/pkg/partnerpurge"
 	"github.com/elvn5/sai/services/pkg/usersclient"
+	listingsv1 "github.com/elvn5/sai/services/proto/gen/go/listings/v1"
 )
 
 const shutdownTimeout = 15 * time.Second
@@ -68,19 +72,33 @@ func run(log *slog.Logger) error {
 	// In the background: it waits for the users service.
 	go partnerpurge.Run(ctx, db, users, purge.Service(), log)
 
+	st := store.New(db)
+	grpcSrv := grpc.NewServer()
+	listingsv1.RegisterListingsServiceServer(grpcSrv, &grpcserver.Server{Store: st, Log: log})
+	grpcLis, err := (&net.ListenConfig{}).Listen(ctx, "tcp", ":"+cfg.GRPCPort)
+	if err != nil {
+		return fmt.Errorf("listen gRPC: %w", err)
+	}
+
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           routes.Setup(handlers.Deps{Store: store.New(db), Authors: users, Log: log}, users, cfg.JWTSecret),
+		Handler:           routes.Setup(handlers.Deps{Store: st, Authors: users, Log: log}, users, cfg.JWTSecret),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,
 	}
 
-	errCh := make(chan error, 1)
+	errCh := make(chan error, 2)
 	go func() {
 		log.Info("listings listening", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
+		}
+	}()
+	go func() {
+		log.Info("listings gRPC listening", slog.String("addr", grpcLis.Addr().String()))
+		if err := grpcSrv.Serve(grpcLis); err != nil {
+			errCh <- fmt.Errorf("gRPC server: %w", err)
 		}
 	}()
 
@@ -93,5 +111,6 @@ func run(log *slog.Logger) error {
 	log.Info("shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
+	grpcSrv.GracefulStop()
 	return srv.Shutdown(shutdownCtx)
 }

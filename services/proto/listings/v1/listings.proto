@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package listings.v1;
+
+option go_package = "github.com/elvn5/sai/services/proto/gen/go/listings/v1;listingsv1";
+
+// Internal API of the listings service, for other backend services.
+service ListingsService {
+  // Looks up a tour by id, published or not. NOT_FOUND if there is none.
+  rpc GetTour(GetTourRequest) returns (GetTourResponse);
+}
+
+message GetTourRequest {
+  string id = 1;
+}
+
+message Tour {
+  string id = 1;
+  string slug = 2;
+  string locale = 3;
+  string title = 4;
+  // Price per person in som; absent when the tour has no price.
+  optional int32 price = 5;
+  // YYYY-MM-DD.
+  string start_date = 6;
+  string end_date = 7;
+  // The partner who published it; absent for editorial tours.
+  optional string user_id = 8;
+  bool is_published = 9;
+}
+
+message GetTourResponse {
+  Tour tour = 1;
+}

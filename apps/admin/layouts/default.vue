@@ -10,6 +10,7 @@ const links = [
   { label: 'Партнёры', to: '/partners' },
   { label: 'Достижения', to: '/achievements' },
   { label: 'Маршруты', to: '/trails' },
+  { label: 'Платежи', to: '/payments' },
   { label: 'Блог', to: '/blog' },
   { label: 'SEO', to: '/seo' },
 ];

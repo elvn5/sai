@@ -460,7 +460,8 @@
       "history": "Trip history",
       "partner": "Partnership",
       "listings": "My listings",
-      "achievements": "Achievements"
+      "achievements": "Achievements",
+      "bookings": "Bookings"
     },
     "listings": {
       "guideHeading": "Guide profile",
@@ -869,5 +870,55 @@
     "onlySignIn": "Telegram is your only way to sign in, so it can't be unlinked.",
     "expired": "The link expired. Press “Link Telegram” again.",
     "error": "Something went wrong. Please try again."
+  },
+  "booking": {
+    "title": "Book online",
+    "places": "People",
+    "less": "Fewer",
+    "more": "More",
+    "name": "Your name",
+    "phone": "Contact phone",
+    "comment": "A note for the organizer (optional)",
+    "total": "Total",
+    "pay": "Book and pay",
+    "secure": "Paid via Bakai Bank — by card or QR. Card details never reach us.",
+    "signIn": "Sign in to book a place and pay online.",
+    "signInCta": "Sign in",
+    "checkFields": "Please enter your name and phone.",
+    "gatewayDown": "The payment service is temporarily unavailable. Please try later.",
+    "unavailable": "This tour can't be booked online right now.",
+    "error": "Couldn't place the booking. Please try again.",
+    "placesCount": "People: {count}",
+    "continuePayment": "Continue to payment",
+    "checkStatus": "Check payment",
+    "myBookings": "My bookings",
+    "noBookings": "You haven't booked anything yet",
+    "browseTours": "Browse tours",
+    "received": "Bookings of my tours",
+    "noReceived": "No paid bookings yet.",
+    "status": {
+      "pending": "Awaiting payment",
+      "paid": "Paid",
+      "failed": "Not paid",
+      "expired": "Expired",
+      "refunded": "Refunded"
+    },
+    "result": {
+      "title": "Payment",
+      "paid": "Payment received!",
+      "paidText": "The organizer has your booking and will contact you at the phone you gave.",
+      "failed": "The payment didn't go through",
+      "failedText": "No money was taken. You can try again from the tour page.",
+      "expired": "The payment window has expired",
+      "pending": "Checking the payment…",
+      "pendingText": "This usually takes a few seconds. Please keep this page open.",
+      "notFound": "Booking not found"
+    },
+    "test": {
+      "title": "Test payment",
+      "banner": "Test mode: no money is charged",
+      "pay": "Pay (test)",
+      "decline": "Decline"
+    }
   }
 }

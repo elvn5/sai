@@ -127,6 +127,36 @@ services:
       users:
         condition: service_started
 
+  payments:
+    build:
+      context: .
+      dockerfile: services/payments/Dockerfile
+    restart: unless-stopped
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      PAYMENTS_DB_NAME: payments
+      USERS_GRPC_ADDR: users:9083
+      LISTINGS_GRPC_ADDR: listings:9082
+      # "fake" (test page) until Bakai access is set up, then "bakai".
+      PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-fake}
+      BAKAI_LOGIN: ${BAKAI_LOGIN:-}
+      BAKAI_PASSWORD: ${BAKAI_PASSWORD:-}
+      BAKAI_QR_TYPE: ${BAKAI_QR_TYPE:-}
+      PLATFORM_FEE_PERCENT: ${PLATFORM_FEE_PERCENT:-0}
+      SITE_URL: ${NUXT_PUBLIC_SITE_URL:-http://localhost:3002}
+      BOT_TOKEN: ${BOT_TOKEN:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      users:
+        condition: service_started
+      listings:
+        condition: service_started
+
   gateway:
     build:
       context: .
@@ -138,6 +168,7 @@ services:
       LISTINGS_URL: http://listings:8083
       USERS_URL: http://users:8084
       TRAILS_URL: http://trails:8085
+      PAYMENTS_URL: http://payments:8086
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:3000}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3002}
     ports:
@@ -148,6 +179,7 @@ services:
       - listings
       - users
       - trails
+      - payments
 
   bot:
     build:

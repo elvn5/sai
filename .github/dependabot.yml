@@ -17,6 +17,7 @@ updates:
       - "/services/proto"
       - "/services/gateway"
       - "/services/media"
+      - "/services/payments"
       - "/services/content"
       - "/services/listings"
       - "/services/trails"
@@ -33,6 +34,7 @@ updates:
     directories:
       - "/services/gateway"
       - "/services/media"
+      - "/services/payments"
       - "/services/content"
       - "/services/listings"
       - "/services/trails"

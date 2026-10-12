@@ -8,6 +8,16 @@ import type { PendingVerification } from '~/shared/lib/auth';
 
 const { t } = useI18n();
 const localePath = useLocalePath();
+
+// Where to go once signed in: back to ?redirect (a path on this site only,
+// so the parameter can't send people elsewhere), or home.
+const loginRoute = useRoute();
+function afterLogin(): string {
+  const target = loginRoute.query.redirect;
+  return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')
+    ? target
+    : localePath('/');
+}
 const { isTma, getInitData } = useTelegramWebApp();
 const auth = useAuth();
 const config = useRuntimeConfig();
@@ -108,7 +118,7 @@ async function completeTelegramLogin(): Promise<void> {
       password: pendingPassword.value,
     });
     if (!result) {
-      await navigateTo(localePath('/'));
+      await navigateTo(afterLogin());
     }
   } catch {
     errorMessage.value = t('login.networkError');
@@ -155,7 +165,7 @@ const onLogin = handleLoginSubmit(async (values) => {
       enterVerifyMode(verification);
       return;
     }
-    await navigateTo(localePath('/'));
+    await navigateTo(afterLogin());
   } catch (error) {
     errorMessage.value =
       error instanceof ApiError ? t('login.invalidCredentials') : t('login.networkError');
@@ -192,7 +202,7 @@ const onVerify = handleVerifySubmit(async (values) => {
   submitting.value = true;
   try {
     await auth.verifyCode({ identifier: pendingVerification.value.identifier, code: values.code });
-    await navigateTo(localePath('/'));
+    await navigateTo(afterLogin());
   } catch (error) {
     errorMessage.value =
       error instanceof ApiError ? t('login.verify.invalidCode') : t('login.networkError');
@@ -259,7 +269,7 @@ onMounted(async () => {
     try {
       if (!initData) throw new Error('No initData');
       await auth.loginWithTelegramMiniApp(initData);
-      await navigateTo(localePath('/'));
+      await navigateTo(afterLogin());
     } catch {
       errorMessage.value = t('login.error');
     } finally {
@@ -273,7 +283,7 @@ onMounted(async () => {
   ).onTelegramAuth = async (payload: TelegramWidgetPayload) => {
     try {
       await auth.loginWithTelegramWidget(payload);
-      await navigateTo(localePath('/'));
+      await navigateTo(afterLogin());
     } catch {
       errorMessage.value = t('login.error');
     }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import TourBookingCard from '~/components/features/tour-booking/TourBookingCard.vue';
 import ListingContactCard from '~/components/widgets/listing-contact/ListingContactCard.vue';
 import ListingPostsFeed from '~/components/widgets/listing-posts/ListingPostsFeed.vue';
 import ReviewsSection from '~/components/widgets/reviews/ReviewsSection.vue';
@@ -132,7 +133,8 @@ function handleDelete(): void {
       </div>
 
       <aside class="order-first lg:order-none lg:w-80 lg:shrink-0">
-        <div class="lg:sticky lg:top-20">
+        <div class="flex flex-col gap-4 lg:sticky lg:top-20">
+          <TourBookingCard :tour="tour" />
           <ListingContactCard
             :listing-name="tour.title"
             :price-label="priceLabel"

@@ -1,0 +1,70 @@
+// Package models defines the payments service's entities and their JSON.
+package models
+
+import "github.com/elvn5/sai/services/pkg/jsontime"
+
+// Order statuses.
+const (
+	StatusPending  = "pending"
+	StatusPaid     = "paid"
+	StatusFailed   = "failed"
+	StatusExpired  = "expired"
+	StatusRefunded = "refunded"
+)
+
+var Statuses = []string{StatusPending, StatusPaid, StatusFailed, StatusExpired, StatusRefunded}
+
+// Person is the public part of a profile (from the users service).
+type Person struct {
+	ID        string  `json:"id"`
+	FirstName *string `json:"firstName"`
+	Username  *string `json:"username"`
+}
+
+type Order struct {
+	ID            string         `json:"id"`
+	Kind          string         `json:"kind"`
+	ItemID        string         `json:"itemId"`
+	ItemTitle     string         `json:"itemTitle"`
+	ItemSlug      *string        `json:"itemSlug"`
+	ItemLocale    *string        `json:"itemLocale"`
+	ItemDate      *string        `json:"itemDate"`
+	Quantity      int            `json:"quantity"`
+	UnitPrice     int            `json:"unitPrice"`
+	Amount        int            `json:"amount"`
+	Fee           int            `json:"fee"`
+	PayeeAmount   int            `json:"payeeAmount"`
+	UserID        string         `json:"userId"`
+	PayeeID       string         `json:"payeeId"`
+	ContactName   string         `json:"contactName"`
+	ContactPhone  string         `json:"contactPhone"`
+	Comment       *string        `json:"comment"`
+	Status        string         `json:"status"`
+	Provider      string         `json:"-"`
+	PaymentURL    *string        `json:"paymentUrl"`
+	ProviderError *string        `json:"providerError,omitempty"`
+	ExpiresAt     jsontime.Time  `json:"expiresAt"`
+	PaidAt        *jsontime.Time `json:"paidAt"`
+	RefundNote    *string        `json:"refundNote"`
+	PayoutID      *string        `json:"payoutId"`
+	CreatedAt     jsontime.Time  `json:"createdAt"`
+	// Resolved for partner and admin views.
+	Payer *Person `json:"payer,omitempty"`
+	Payee *Person `json:"payee,omitempty"`
+}
+
+// Balance is what's owed to one partner: paid orders not yet paid out.
+type Balance struct {
+	Payee  Person `json:"payee"`
+	Amount int    `json:"amount"`
+	Orders int    `json:"orders"`
+}
+
+type Payout struct {
+	ID        string        `json:"id"`
+	Payee     Person        `json:"payee"`
+	Amount    int           `json:"amount"`
+	Orders    int           `json:"orders"`
+	Note      *string       `json:"note"`
+	CreatedAt jsontime.Time `json:"createdAt"`
+}

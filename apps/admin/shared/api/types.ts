@@ -144,3 +144,40 @@ export interface ConditionReportSummary {
   text: string | null;
   createdAt: string;
 }
+
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
+
+export interface AdminOrder {
+  id: string;
+  kind: string;
+  itemTitle: string;
+  itemDate: string | null;
+  quantity: number;
+  amount: number;
+  fee: number;
+  payeeAmount: number;
+  contactName: string;
+  contactPhone: string;
+  status: OrderStatus;
+  paidAt: string | null;
+  refundNote: string | null;
+  payoutId: string | null;
+  createdAt: string;
+  payer?: Person;
+  payee?: Person;
+}
+
+export interface PayeeBalance {
+  payee: Person;
+  amount: number;
+  orders: number;
+}
+
+export interface PayoutRecord {
+  id: string;
+  payee: Person;
+  amount: number;
+  orders: number;
+  note: string | null;
+  createdAt: string;
+}

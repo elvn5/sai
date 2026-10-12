@@ -5,6 +5,8 @@ import "github.com/elvn5/sai/services/pkg/database"
 
 type Config struct {
 	Port string `env:"PORT" envDefault:"8083"`
+	// Internal gRPC API for other services (e.g. payments).
+	GRPCPort string `env:"GRPC_PORT" envDefault:"9082"`
 
 	// Shared with the NestJS API so existing session cookies stay valid.
 	JWTSecret string `env:"JWT_SECRET,required"`

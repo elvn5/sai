@@ -460,7 +460,8 @@
       "history": "Tourenverlauf",
       "partner": "Partnerschaft",
       "listings": "Meine Einträge",
-      "achievements": "Erfolge"
+      "achievements": "Erfolge",
+      "bookings": "Buchungen"
     },
     "listings": {
       "guideHeading": "Guide-Profil",
@@ -869,5 +870,55 @@
     "onlySignIn": "Telegram ist Ihre einzige Anmeldemöglichkeit und kann nicht getrennt werden.",
     "expired": "Der Link ist abgelaufen. Tippen Sie erneut auf „Telegram verknüpfen“.",
     "error": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
+  },
+  "booking": {
+    "title": "Online buchen",
+    "places": "Personen",
+    "less": "Weniger",
+    "more": "Mehr",
+    "name": "Ihr Name",
+    "phone": "Telefon für Rückfragen",
+    "comment": "Nachricht an den Veranstalter (optional)",
+    "total": "Gesamt",
+    "pay": "Buchen und bezahlen",
+    "secure": "Zahlung über Bakai Bank — per Karte oder QR. Kartendaten erreichen uns nicht.",
+    "signIn": "Melden Sie sich an, um einen Platz zu buchen und online zu bezahlen.",
+    "signInCta": "Anmelden",
+    "checkFields": "Bitte Name und Telefon angeben.",
+    "gatewayDown": "Der Zahlungsdienst ist vorübergehend nicht erreichbar. Bitte später versuchen.",
+    "unavailable": "Diese Tour kann gerade nicht online gebucht werden.",
+    "error": "Die Buchung ist fehlgeschlagen. Bitte erneut versuchen.",
+    "placesCount": "Personen: {count}",
+    "continuePayment": "Weiter zur Zahlung",
+    "checkStatus": "Zahlung prüfen",
+    "myBookings": "Meine Buchungen",
+    "noBookings": "Sie haben noch nichts gebucht",
+    "browseTours": "Touren ansehen",
+    "received": "Buchungen meiner Touren",
+    "noReceived": "Noch keine bezahlten Buchungen.",
+    "status": {
+      "pending": "Wartet auf Zahlung",
+      "paid": "Bezahlt",
+      "failed": "Nicht bezahlt",
+      "expired": "Abgelaufen",
+      "refunded": "Erstattet"
+    },
+    "result": {
+      "title": "Zahlung",
+      "paid": "Zahlung erhalten!",
+      "paidText": "Der Veranstalter hat Ihre Buchung und meldet sich unter der angegebenen Nummer.",
+      "failed": "Die Zahlung ist nicht durchgegangen",
+      "failedText": "Es wurde kein Geld abgebucht. Sie können es auf der Tourseite erneut versuchen.",
+      "expired": "Die Zahlungsfrist ist abgelaufen",
+      "pending": "Zahlung wird geprüft…",
+      "pendingText": "Das dauert meist nur ein paar Sekunden. Bitte lassen Sie die Seite geöffnet.",
+      "notFound": "Buchung nicht gefunden"
+    },
+    "test": {
+      "title": "Testzahlung",
+      "banner": "Testmodus: es wird kein Geld abgebucht",
+      "pay": "Bezahlen (Test)",
+      "decline": "Ablehnen"
+    }
   }
 }

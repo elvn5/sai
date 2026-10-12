@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
+import OrderCard from '~/components/entities/order/OrderCard.vue';
 import OutingCard from '~/components/entities/outing/OutingCard.vue';
 import AwardCodeCard from '~/components/features/award-code/AwardCodeCard.vue';
 import TelegramLink from '~/components/features/telegram-link/TelegramLink.vue';
@@ -11,6 +12,7 @@ import type {
   Hotel,
   LocalGuide,
   MyAchievements,
+  Order,
   Outing,
 } from '~/shared/api/types';
 
@@ -27,6 +29,7 @@ const route = useRoute();
 const tabs = computed(() => [
   { key: 'info', label: t('profile.tabs.info'), icon: 'i-heroicons-user-circle' },
   { key: 'achievements', label: t('profile.tabs.achievements'), icon: 'i-mdi-trophy-outline' },
+  { key: 'bookings', label: t('profile.tabs.bookings'), icon: 'i-mdi-ticket-confirmation-outline' },
   ...(auth.isPartner.value
     ? [
         {
@@ -67,6 +70,19 @@ const myPostsQuery = useQuery({
   queryFn: () => api.get<BlogPost[]>('/blog/mine'),
   enabled: auth.isPartner,
 });
+const myOrdersQuery = useQuery({
+  queryKey: ['orders', 'mine'],
+  queryFn: () => api.get<Order[]>('/orders/mine'),
+  enabled: isSignedIn,
+});
+const receivedOrdersQuery = useQuery({
+  queryKey: ['orders', 'received'],
+  queryFn: () => api.get<Order[]>('/orders/received'),
+  enabled: auth.isPartner,
+});
+const myOrders = computed(() => myOrdersQuery.data.value ?? []);
+const receivedOrders = computed(() => receivedOrdersQuery.data.value ?? []);
+
 const myOutingsQuery = useQuery({
   queryKey: ['outings', 'mine'],
   queryFn: () => api.get<Outing[]>('/outings/mine'),
@@ -191,7 +207,29 @@ onMounted(async () => {
           </UButton>
         </div>
 
+        <div v-else-if="item.key === 'bookings'" class="mt-6 flex flex-col gap-2">
+          <OrderCard v-for="order in myOrders" :key="order.id" :order="order" />
+          <div
+            v-if="myOrders.length === 0"
+            class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border bg-surface px-6 py-14 text-center"
+          >
+            <UIcon name="i-mdi-ticket-confirmation-outline" class="h-10 w-10 text-text-muted" />
+            <p class="font-medium text-text">{{ $t('booking.noBookings') }}</p>
+            <UButton color="primary" class="mt-2" :to="localePath('/tours')">{{ $t('booking.browseTours') }}</UButton>
+          </div>
+        </div>
+
         <div v-else-if="item.key === 'listings'" class="mt-6 flex flex-col gap-8">
+          <div>
+            <h2 class="mb-3 font-semibold text-text">{{ $t('booking.received') }}</h2>
+            <div v-if="receivedOrders.length > 0" class="flex flex-col gap-2">
+              <OrderCard v-for="order in receivedOrders" :key="order.id" :order="order" for-partner />
+            </div>
+            <p v-else class="rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center text-sm text-text-muted">
+              {{ $t('booking.noReceived') }}
+            </p>
+          </div>
+
           <div>
             <div class="mb-3 flex items-center justify-between">
               <h2 class="font-semibold text-text">{{ $t('profile.listings.guideHeading') }}</h2>

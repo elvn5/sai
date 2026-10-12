@@ -854,7 +854,20 @@
     "telegram": {
       "linked": "Benachrichtigungen zur Tour kommen per Telegram: wer mitmacht, Änderungen, eine Erinnerung am Vortag.",
       "startBot": "Öffnen Sie {bot} und tippen Sie auf „Start“, falls noch nicht geschehen.",
-      "notLinked": "Benachrichtigungen zu Gruppentouren kommen per Telegram. Melden Sie sich mit Telegram an, um sie zu erhalten."
+      "notLinked": "Benachrichtigungen zu Gruppentouren kommen per Telegram — verknüpfen Sie es mit Ihrem Konto."
     }
+  },
+  "telegramLink": {
+    "why": "Verknüpfen Sie Telegram, um Benachrichtigungen zu Gruppentouren zu erhalten und sich mit Telegram anzumelden.",
+    "link": "Telegram verknüpfen",
+    "open": "{bot} öffnen",
+    "waiting": "Tippen Sie im Bot auf „Start“ — wir warten auf die Bestätigung…",
+    "linked": "Telegram verknüpft",
+    "justLinked": "Fertig, Telegram ist verknüpft!",
+    "unlink": "Trennen",
+    "unlinkConfirm": "Telegram trennen? Benachrichtigungen zu Gruppentouren kommen dann nicht mehr.",
+    "onlySignIn": "Telegram ist Ihre einzige Anmeldemöglichkeit und kann nicht getrennt werden.",
+    "expired": "Der Link ist abgelaufen. Tippen Sie erneut auf „Telegram verknüpfen“.",
+    "error": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
   }
 }

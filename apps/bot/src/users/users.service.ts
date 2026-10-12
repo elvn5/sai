@@ -1,4 +1,8 @@
-import { type TelegramAccount, UsersGrpcClient } from '@/users-grpc/users-grpc.client';
+import {
+  type LinkTelegramResult,
+  type TelegramAccount,
+  UsersGrpcClient,
+} from '@/users-grpc/users-grpc.client';
 import { Injectable } from '@nestjs/common';
 
 export interface TelegramProfile {
@@ -22,6 +26,21 @@ export class UsersService {
   // Returns null for an unknown, already-verified, or expired token.
   verifyPendingByToken(token: string): Promise<TelegramAccount | null> {
     return this.users.confirmTelegramVerification(token);
+  }
+
+  // Links this Telegram user to the site account that issued the token
+  // (the site's "Link Telegram" deep link).
+  linkTelegram(
+    token: string,
+    from: { id: number; username?: string },
+    moveFromOtherAccount = false,
+  ): Promise<LinkTelegramResult> {
+    return this.users.linkTelegram({
+      token,
+      telegramId: String(from.id),
+      username: from.username,
+      moveFromOtherAccount,
+    });
   }
 
   // Throws PhoneTakenError if another account already uses the number.

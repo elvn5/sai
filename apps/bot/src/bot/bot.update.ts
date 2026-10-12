@@ -4,7 +4,7 @@ import { UsersService } from '@/users/users.service';
 import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Action, Ctx, Hears, InjectBot, On, Start, Update } from 'nestjs-telegraf';
-import type { Context, Telegraf } from 'telegraf';
+import { type Context, Markup, type Telegraf } from 'telegraf';
 import type { Message } from 'telegraf/typings/core/types/typegram';
 import { EditSessionService } from './edit-session.service';
 import {
@@ -52,6 +52,12 @@ export class BotUpdate implements OnModuleInit {
       await this.handleVerificationDeepLink(ctx, payload.slice('verify_'.length));
       return;
     }
+    // Before findOrCreate: that would give this Telegram user an account
+    // of its own, which is exactly what linking avoids.
+    if (payload?.startsWith('link_')) {
+      await this.handleLink(ctx, payload.slice('link_'.length), false);
+      return;
+    }
 
     await this.usersService.findOrCreate({
       telegramId: String(from.id),
@@ -78,6 +84,55 @@ export class BotUpdate implements OnModuleInit {
     await ctx.reply(
       `✅ Аккаунт Ermekten подтверждён${user.firstName ? `, ${user.firstName}` : ''}! Возвращайтесь на сайт — вход выполнится автоматически.`,
     );
+  }
+
+  @Action(/^link_move:(.+)$/)
+  async onLinkMove(@Ctx() ctx: Context): Promise<void> {
+    const token = (ctx as Context & { match: RegExpExecArray }).match[1] ?? '';
+    await ctx.answerCbQuery();
+    await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
+    await this.handleLink(ctx, token, true);
+  }
+
+  @Action('link_cancel')
+  async onLinkCancel(@Ctx() ctx: Context): Promise<void> {
+    await ctx.answerCbQuery('Отменено');
+    await ctx.editMessageReplyMarkup(undefined).catch(() => undefined);
+    await ctx.reply('Хорошо, Telegram не привязан. Ссылка на сайте действует 15 минут.');
+  }
+
+  // Links this Telegram user to the site account behind the deep link.
+  private async handleLink(ctx: Context, token: string, move: boolean): Promise<void> {
+    const from = ctx.from;
+    if (!from) return;
+    const result = await this.usersService.linkTelegram(token, from, move);
+    switch (result.status) {
+      case 'linked':
+        await ctx.reply(
+          `✅ Telegram привязан к вашему аккаунту Ermekten${result.account.firstName ? `, ${result.account.firstName}` : ''}! Теперь сюда будут приходить уведомления о выходах, а войти на сайт можно через Telegram.`,
+          mainMenuKeyboard(this.miniAppUrl),
+        );
+        return;
+      case 'invalid':
+        await ctx.reply(
+          '❌ Ссылка недействительна или истекла. Нажмите «Привязать Telegram» в профиле на сайте ещё раз.',
+        );
+        return;
+      case 'taken':
+        await ctx.reply(
+          'Этот Telegram уже привязан к другому аккаунту Ermekten (с почтой или телефоном). Войдите на сайт через Telegram, чтобы пользоваться тем аккаунтом, или отвяжите Telegram в его профиле.',
+        );
+        return;
+      case 'needsMove':
+        await ctx.reply(
+          'У этого Telegram уже есть свой аккаунт Ermekten, созданный через бота. Привязать Telegram к аккаунту с сайта? Войти в старый Telegram-аккаунт после этого будет нельзя.',
+          Markup.inlineKeyboard([
+            Markup.button.callback('Привязать', `link_move:${token}`),
+            Markup.button.callback('Отмена', 'link_cancel'),
+          ]),
+        );
+        return;
+    }
   }
 
   @Hears(MENU_BUTTONS.PROFILE)

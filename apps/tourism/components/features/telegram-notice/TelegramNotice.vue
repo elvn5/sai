@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import TelegramLink from '~/components/features/telegram-link/TelegramLink.vue';
+
 // Tells a participant whether outing notifications will reach them in
 // Telegram, and how to make sure they do: notifications go to accounts
 // linked to Telegram, from the site's bot, which the user must have
@@ -29,7 +31,10 @@ const linked = computed(() => Boolean(auth.user.value?.telegramId));
           {{ $t('outings.telegram.startBot', { bot: `@${botUsername}` }) }}
         </a>
       </template>
-      <template v-else>{{ $t('outings.telegram.notLinked') }}</template>
+      <template v-else>
+        <p class="mb-2">{{ $t('outings.telegram.notLinked') }}</p>
+        <TelegramLink compact />
+      </template>
     </div>
   </div>
 </template>

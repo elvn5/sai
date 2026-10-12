@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import OutingCard from '~/components/entities/outing/OutingCard.vue';
 import AwardCodeCard from '~/components/features/award-code/AwardCodeCard.vue';
+import TelegramLink from '~/components/features/telegram-link/TelegramLink.vue';
 import { useApiClient } from '~/shared/api/client';
 import { PartnerStatus } from '~/shared/api/types';
 import type {
@@ -166,11 +167,9 @@ onMounted(async () => {
             <span class="text-sm text-text-muted">{{ $t('profile.fields.phone') }}</span>
             <span class="text-sm font-medium text-text">{{ auth.user.value.phone ?? '—' }}</span>
           </div>
-          <div class="flex items-center justify-between rounded-card border border-border bg-surface px-4 py-3">
+          <div class="flex flex-col gap-2 rounded-card border border-border bg-surface px-4 py-3">
             <span class="text-sm text-text-muted">{{ $t('profile.fields.telegram') }}</span>
-            <span class="text-sm font-medium text-text">
-              {{ auth.user.value.telegramId ? '✓' : '—' }}
-            </span>
+            <TelegramLink />
           </div>
 
           <UButton color="gray" variant="soft" class="mt-2 self-start" @click="handleLogout">

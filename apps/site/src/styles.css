@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@pkg/tokens/tokens.css";
+/* Icons as CSS (icon-[heroicons--home], icon-[mdi--trophy]): no JS, render on the server. */
+@plugin '@iconify/tailwind4';

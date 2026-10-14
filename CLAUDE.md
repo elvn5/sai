@@ -26,8 +26,9 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work on either 
 - `trails`/`payments` keep sending notifications through `services/pkg/telegram`.
 
 ## Angular Apps
-- **Stack:** Angular 22 standalone components, zoneless, `OnPush`, signals (`signal`/`computed`/`input`/`output`/`model`), `inject()`, built-in control flow (`@if`/`@for`/`@defer`), `HttpClient` (fetch) with `httpResource`/`resource`, Signal Forms, Transloco (the existing `ru/ky/en/de.json` files), Tailwind CSS 4 + Iconify, Angular CDK/Aria under the in-house `shared/ui` kit, Vitest.
+- **Stack:** Angular 22 standalone components, zoneless, `OnPush`, signals (`signal`/`computed`/`input`/`output`/`model`), `inject()`, built-in control flow (`@if`/`@for`/`@defer`), `HttpClient` (fetch) with `httpResource`/`resource`, Signal Forms with `zod/mini` schemas (`validateStandardSchema`; the full `zod` build adds ~70 kB gzipped to the browser), Transloco (the Nuxt site's `apps/tourism/i18n/locales/*.json` via the `@locales/*` path until it's gone; `{param}` interpolation), Tailwind CSS 4 + Iconify (`icon-[heroicons--map]`), design tokens from `packages/tokens`, Angular CDK/Aria under the in-house `shared/ui` kit, Vitest. Node from `.nvmrc` (`nvm use`; Angular CLI 22 needs ≥ 24.15).
 - **Layout:** `src/app` (config, `app.routes.ts`, `app.routes.server.ts`), `src/pages`, `src/widgets`, `src/features`, `src/entities`, `src/shared` (`api`, `ui`, `lib`, `seo`).
+- **Runtime config, not build-time:** one image serves every environment. `apps/site` reads `API_BASE_URL`, `SITE_URL`, `TELEGRAM_BOT_USERNAME` in `src/server.ts` and hands them to the app via the request context + TransferState (`APP_CONFIG`); `apps/panel` loads `/config.json`, written from `API_BASE_URL` when its nginx container starts.
 - **Rendering (`apps/site`):** set every route's mode in `app.routes.server.ts` — `RenderMode.Server` for public catalog and detail pages (anonymous render, cacheable HTML), `RenderMode.Prerender` for static pages, `RenderMode.Client` + `noindex` for account, cabinet, payment and edit pages. `sitemap.xml` and `robots.txt` are served by the SSR server.
 - **SSR safety:** no `window`/`document`/`localStorage`/Telegram WebApp access outside `afterNextRender`, `@defer` or an `isPlatformBrowser` check. Server-rendered data reaches the client through the HTTP transfer cache — never fetch it twice.
 - **SEO on every public page** (through `shared/seo`): title and description (admin `/page-seo` overrides win), absolute canonical, `hreflang` for all locales + `x-default`, Open Graph/Twitter, JSON-LD for the page type plus `BreadcrumbList`, correct HTTP status (404 for unknown slugs), `NgOptimizedImage` with dimensions and an LCP `priority` image, heavy widgets (maps, reviews, booking, charts, editor) behind `@defer` with incremental hydration.
@@ -48,9 +49,10 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work on either 
 - **Linter/Formatter:** Biome (+ angular-eslint for Angular templates)
 
 ## Commands
-- **Dev:** `pnpm dev:<app>` (admin, tourism; site and panel once scaffolded in migration phase 0) / `pnpm dev:<service>` (gateway, media, content, listings, users, trails, payments, bot)
+- **Dev:** `pnpm dev:<app>` (admin, tourism, site on :3012, panel on :3013) / `pnpm dev:<service>` (gateway, media, content, listings, users, trails, payments, bot)
 - **Build:** `pnpm build`
 - **Lint/Format:** `pnpm exec biome check --write .`
 - **Type Check:** `pnpm typecheck`
-- **Docker:** `docker compose up -d --build`
+- **Angular apps:** `pnpm --filter @app/site --filter @app/panel lint` (templates), `… test` (Vitest); Lighthouse budgets in `apps/site/lighthouserc.json` (CI job `lighthouse`)
+- **Docker:** `docker compose up -d --build` (`--profile next` adds the Angular apps)
 - **Go:** `pnpm dev:gateway`, `pnpm test:go`

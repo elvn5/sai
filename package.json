@@ -4,13 +4,15 @@
   "version": "1.0.0",
   "packageManager": "pnpm@9.15.9",
   "engines": {
-    "node": ">=24"
+    "node": ">=24.15"
   },
   "scripts": {
     "dev:bot": "cd services/bot && go run ./cmd/bot",
     "dev:admin": "pnpm --filter @app/admin dev",
     "dev:tourism": "pnpm --filter @app/tourism dev",
-    "dev:gateway": "cd services/gateway && MEDIA_URL=${MEDIA_URL:-http://localhost:8081} CONTENT_URL=${CONTENT_URL:-http://localhost:8082} LISTINGS_URL=${LISTINGS_URL:-http://localhost:8083} USERS_URL=${USERS_URL:-http://localhost:8084} TRAILS_URL=${TRAILS_URL:-http://localhost:8085} PAYMENTS_URL=${PAYMENTS_URL:-http://localhost:8086} go run ./cmd/gateway",
+    "dev:site": "pnpm --filter @app/site dev",
+    "dev:panel": "pnpm --filter @app/panel dev",
+    "dev:gateway": "cd services/gateway && MEDIA_URL=${MEDIA_URL:-http://localhost:8081} CONTENT_URL=${CONTENT_URL:-http://localhost:8082} LISTINGS_URL=${LISTINGS_URL:-http://localhost:8083} USERS_URL=${USERS_URL:-http://localhost:8084} TRAILS_URL=${TRAILS_URL:-http://localhost:8085} PAYMENTS_URL=${PAYMENTS_URL:-http://localhost:8086} EXTRA_ORIGINS=${EXTRA_ORIGINS:-http://localhost:3012,http://localhost:3013} go run ./cmd/gateway",
     "dev:media": "cd services/media && go run ./cmd/media",
     "dev:content": "cd services/content && go run ./cmd/content",
     "dev:listings": "cd services/listings && go run ./cmd/listings",

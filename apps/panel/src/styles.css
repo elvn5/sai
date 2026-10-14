@@ -1,4 +1,80 @@
 @import "tailwindcss";
 @import "@pkg/tokens/tokens.css";
-/* Icons as CSS (icon-[heroicons--home], icon-[mdi--trophy]): no JS, render on the server. */
+/* Dialogs (Angular CDK) need its overlay styles. */
+@import "@angular/cdk/overlay-prebuilt.css";
+/* Icons as CSS (icon-[heroicons--home], icon-[mdi--trophy]): no JS. */
 @plugin '@iconify/tailwind4';
+/* .prose for the blog editor and preview. */
+@plugin '@tailwindcss/typography';
+
+/* The panel's UI kit (shared/ui): plain elements with these classes.
+   Tailwind 4 can't @apply one component class inside another, so shared
+   bases are selector lists. */
+@layer components {
+  .ui-btn-primary,
+  .ui-btn-soft,
+  .ui-btn-ghost,
+  .ui-btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .ui-btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .ui-btn-soft {
+    @apply bg-text/5 text-text hover:bg-text/10;
+  }
+  .ui-btn-ghost {
+    @apply text-text hover:bg-text/5;
+  }
+  .ui-btn-danger {
+    @apply text-red-600 hover:bg-red-500/10;
+  }
+  .ui-btn-xs {
+    @apply px-2 py-1 text-xs;
+  }
+
+  .ui-field {
+    @apply flex flex-col gap-1 text-sm text-text;
+  }
+  .ui-hint {
+    @apply text-xs text-text-muted;
+  }
+  .ui-error {
+    @apply text-sm text-red-600;
+  }
+  .ui-input {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .ui-card,
+  .ui-table-wrap,
+  .ui-dialog {
+    @apply rounded-card border border-border bg-surface;
+  }
+  .ui-table-wrap {
+    @apply overflow-x-auto;
+  }
+  .ui-dialog {
+    @apply max-h-[90vh] w-[min(42rem,calc(100vw-2rem))] overflow-y-auto p-6 shadow-xl;
+  }
+  .ui-table {
+    @apply w-full text-left text-sm;
+  }
+  .ui-table thead {
+    @apply bg-text/5 text-text-muted;
+  }
+  .ui-table th,
+  .ui-table td {
+    @apply px-4 py-2;
+  }
+  .ui-table tbody tr {
+    @apply border-t border-border;
+  }
+  .ui-empty {
+    @apply px-4 py-6 text-center text-text-muted;
+  }
+
+  .ui-badge {
+    @apply inline-block rounded px-2 py-0.5 text-xs font-medium;
+  }
+}

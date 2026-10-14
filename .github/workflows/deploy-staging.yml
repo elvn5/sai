@@ -22,10 +22,10 @@ jobs:
         include:
           - service: bot
             dockerfile: services/bot/Dockerfile
-          - service: admin
-            dockerfile: apps/admin/Dockerfile
-          - service: tourism
-            dockerfile: apps/tourism/Dockerfile
+          - service: site
+            dockerfile: apps/site/Dockerfile
+          - service: panel
+            dockerfile: apps/panel/Dockerfile
           - service: gateway
             dockerfile: services/gateway/Dockerfile
           - service: media
@@ -169,8 +169,13 @@ jobs:
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env pull
-            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
+            # Staging runs the Angular frontends (profile "angular") in place of
+            # the Nuxt ones, on the same ports and domains.
+            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env --profile angular pull
+            # The Nuxt containers from earlier deploys are out of the profile,
+            # so --remove-orphans wouldn't stop them: they hold the ports.
+            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env rm --stop --force tourism admin
+            docker compose -p ermekten-staging -f docker-compose.deploy.yml --env-file .env --profile angular up -d --remove-orphans
             # Once every service has copied its data out of the former NestJS
             # database, back it up to ./backups and drop it (no-op after that).
             POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" bash scripts/drop-legacy-db.sh ermekten-staging

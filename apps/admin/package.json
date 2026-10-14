@@ -26,6 +26,7 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.20",
     "nuxt": "^3.15.1",
+    "tailwindcss": "3.4.19",
     "typescript": "^5.7.2",
     "vue-tsc": "^3.3.11"
   }

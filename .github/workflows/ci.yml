@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies
@@ -27,8 +27,42 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Angular apps of the frontend migration: templates (Biome lints the TS
+      # above) and unit tests (Vitest).
+      - name: Lint Angular templates
+        run: pnpm --filter @app/site --filter @app/panel lint
+
+      - name: Test Angular apps
+        run: pnpm --filter @app/site --filter @app/panel test
+
       - name: Build
         run: pnpm build
+
+  # SEO and performance budgets of the Angular site (apps/site/lighthouserc.json),
+  # measured on its SSR server as production would serve it.
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build site
+        run: pnpm --filter @app/site build
+
+      - name: Lighthouse CI
+        working-directory: apps/site
+        env:
+          SITE_URL: https://ermekten.com
+        run: pnpm dlx @lhci/cli@0.15.1 autorun
 
   go:
     runs-on: ubuntu-latest

@@ -1,0 +1,9 @@
+{
+  "name": "@pkg/tokens",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ermekten design tokens (CSS custom properties + Tailwind 4 theme) shared by the Angular apps.",
+  "exports": {
+    "./tokens.css": "./tokens.css"
+  }
+}

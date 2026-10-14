@@ -1,0 +1,117 @@
+/*
+ * Ermekten design tokens for the Angular apps (Tailwind CSS 4), ported from
+ * apps/tourism/assets/css/tokens.css. Import after `tailwindcss`:
+ *
+ *   @import 'tailwindcss';
+ *   @import '@pkg/tokens/tokens.css';
+ *
+ * Colors live in CSS custom properties so the color theme (default red vs.
+ * [data-color-theme='azure']) and dark mode (.dark) swap at runtime; the
+ * `inline` theme makes Tailwind utilities (bg-brand-500, text-text-muted,
+ * bg-brand-500/10, …) read them instead of baking values in.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-bg: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-border: var(--app-border);
+  --color-text: var(--app-text);
+  --color-text-muted: var(--app-text-muted);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+  --color-secondary-50: var(--secondary-50);
+  --color-secondary-100: var(--secondary-100);
+  --color-secondary-200: var(--secondary-200);
+  --color-secondary-300: var(--secondary-300);
+  --color-secondary-400: var(--secondary-400);
+  --color-secondary-500: var(--secondary-500);
+  --color-secondary-600: var(--secondary-600);
+  --color-secondary-700: var(--secondary-700);
+  --color-secondary-800: var(--secondary-800);
+  --color-secondary-900: var(--secondary-900);
+  --color-secondary-950: var(--secondary-950);
+  --radius-card: 1rem;
+}
+
+:root {
+  --app-bg: #f8f9fa;
+  --app-surface: #ffffff;
+  --app-border: #e9ecef;
+  --app-text: #0f172a;
+  --app-text-muted: #475569;
+
+  --brand-50: rgb(254 242 242);
+  --brand-100: rgb(253 226 226);
+  --brand-200: rgb(251 197 197);
+  --brand-300: rgb(245 157 157);
+  --brand-400: rgb(230 57 70);
+  --brand-500: rgb(214 40 40);
+  --brand-600: rgb(185 31 31);
+  --brand-700: rgb(153 27 27);
+  --brand-800: rgb(127 29 29);
+  --brand-900: rgb(100 20 20);
+  --brand-950: rgb(61 10 10);
+  --secondary-50: rgb(255 250 235);
+  --secondary-100: rgb(255 243 196);
+  --secondary-200: rgb(255 229 138);
+  --secondary-300: rgb(255 211 80);
+  --secondary-400: rgb(255 183 3);
+  --secondary-500: rgb(244 162 97);
+  --secondary-600: rgb(224 140 70);
+  --secondary-700: rgb(194 111 46);
+  --secondary-800: rgb(156 87 32);
+  --secondary-900: rgb(122 68 25);
+  --secondary-950: rgb(69 37 9);
+}
+
+.dark {
+  --app-bg: #0f172a;
+  --app-surface: #1e293b;
+  --app-border: #334155;
+  --app-text: #f8fafc;
+  --app-text-muted: #94a3b8;
+}
+
+/* "azure" color theme: swaps the brand/secondary scales only, independent
+   of light/dark mode. */
+[data-color-theme="azure"] {
+  --brand-50: rgb(240 249 255);
+  --brand-100: rgb(224 242 254);
+  --brand-200: rgb(186 230 253);
+  --brand-300: rgb(125 211 252);
+  --brand-400: rgb(56 189 248);
+  --brand-500: rgb(14 165 233);
+  --brand-600: rgb(2 132 199);
+  --brand-700: rgb(3 105 161);
+  --brand-800: rgb(7 89 133);
+  --brand-900: rgb(12 74 110);
+  --brand-950: rgb(8 47 73);
+  --secondary-50: rgb(250 250 250);
+  --secondary-100: rgb(244 244 245);
+  --secondary-200: rgb(228 228 231);
+  --secondary-300: rgb(212 212 216);
+  --secondary-400: rgb(161 161 170);
+  --secondary-500: rgb(113 113 122);
+  --secondary-600: rgb(82 82 91);
+  --secondary-700: rgb(63 63 70);
+  --secondary-800: rgb(39 39 42);
+  --secondary-900: rgb(24 24 27);
+  --secondary-950: rgb(9 9 11);
+}
+
+body {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}

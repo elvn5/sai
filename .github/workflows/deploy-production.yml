@@ -177,8 +177,8 @@ jobs:
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env pull
-            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
+            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env --profile nuxt pull
+            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env --profile nuxt up -d --remove-orphans
             # Once every service has copied its data out of the former NestJS
             # database, back it up to ./backups and drop it (no-op after that).
             POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" bash scripts/drop-legacy-db.sh ermekten-prod

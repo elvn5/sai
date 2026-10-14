@@ -7,6 +7,7 @@
       "**/node_modules/**",
       "**/.nuxt/**",
       "**/.output/**",
+      "**/.angular/**",
       "**/migrations/**",
       ".claude/settings.local.json"
     ]
@@ -27,5 +28,17 @@
   "javascript": {
     "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "all" },
     "parser": { "unsafeParameterDecoratorsEnabled": true }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["apps/site/**", "apps/panel/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "useLiteralKeys": "off"
+          }
+        }
+      }
+    }
+  ]
 }

@@ -171,6 +171,7 @@ services:
       PAYMENTS_URL: http://payments:8086
       ADMIN_ORIGIN: ${ADMIN_ORIGIN:-http://localhost:3000}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:3002}
+      EXTRA_ORIGINS: ${EXTRA_ORIGINS:-http://localhost:3012,http://localhost:3013}
     ports:
       - "${API_PORT:-3001}:8080"
     depends_on:
@@ -220,6 +221,37 @@ services:
     env_file: .env
     ports:
       - "${CLIENT_PORT:-3002}:3000"
+    depends_on:
+      - gateway
+
+
+  # Angular apps of the frontend migration (docs/angular-migration-plan.md),
+  # next to the Nuxt ones: docker compose --profile angular up -d
+  site:
+    build:
+      context: .
+      dockerfile: apps/site/Dockerfile
+    restart: unless-stopped
+    profiles: [angular]
+    environment:
+      API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL:-http://localhost:3001}
+      SITE_URL: ${ANGULAR_SITE_URL:-http://localhost:3012}
+      TELEGRAM_BOT_USERNAME: ${NUXT_PUBLIC_TELEGRAM_BOT_USERNAME:-}
+    ports:
+      - "${ANGULAR_SITE_PORT:-3012}:3000"
+    depends_on:
+      - gateway
+
+  panel:
+    build:
+      context: .
+      dockerfile: apps/panel/Dockerfile
+    restart: unless-stopped
+    profiles: [angular]
+    environment:
+      API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL:-http://localhost:3001}
+    ports:
+      - "${ANGULAR_PANEL_PORT:-3013}:3000"
     depends_on:
       - gateway
 

@@ -8,13 +8,13 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideAppInitializer(() => inject(ConfigStore).load()),
     provideHttpClient(withFetch(), withInterceptors([apiInterceptor])),
-    provideRouter(routes),
+    provideRouter(routes, withComponentInputBinding()),
   ],
 };

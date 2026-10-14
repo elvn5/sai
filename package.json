@@ -7,7 +7,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev:bot": "pnpm --filter @app/bot dev",
+    "dev:bot": "cd services/bot && go run ./cmd/bot",
     "dev:admin": "pnpm --filter @app/admin dev",
     "dev:tourism": "pnpm --filter @app/tourism dev",
     "dev:gateway": "cd services/gateway && MEDIA_URL=${MEDIA_URL:-http://localhost:8081} CONTENT_URL=${CONTENT_URL:-http://localhost:8082} LISTINGS_URL=${LISTINGS_URL:-http://localhost:8083} USERS_URL=${USERS_URL:-http://localhost:8084} TRAILS_URL=${TRAILS_URL:-http://localhost:8085} PAYMENTS_URL=${PAYMENTS_URL:-http://localhost:8086} go run ./cmd/gateway",
@@ -18,7 +18,7 @@
     "dev:payments": "cd services/payments && go run ./cmd/payments",
     "dev:users": "cd services/users && go run ./cmd/users",
     "proto:generate": "cd services/proto && go run github.com/bufbuild/buf/cmd/buf@v1.57.2 generate",
-    "test:go": "cd services && go test ./pkg/... ./proto/... ./gateway/... ./media/... ./content/... ./listings/... ./users/... ./trails/... ./payments/...",
+    "test:go": "cd services && go test ./pkg/... ./proto/... ./gateway/... ./media/... ./content/... ./listings/... ./users/... ./trails/... ./payments/... ./bot/...",
     "build": "pnpm -r build",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

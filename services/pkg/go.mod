@@ -1,6 +1,6 @@
 module github.com/elvn5/sai/services/pkg
 
-go 1.26.2
+go 1.26.7
 
 require (
 	github.com/caarlos0/env/v11 v11.4.1

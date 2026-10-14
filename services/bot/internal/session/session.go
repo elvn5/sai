@@ -1,0 +1,66 @@
+// Package session remembers which profile field a chat is about to edit:
+// the bot asks for a new value, and the next text message is that value.
+package session
+
+import (
+	"sync"
+	"time"
+)
+
+type Field string
+
+const (
+	FieldName  Field = "name"
+	FieldPhone Field = "phone"
+)
+
+// ttl drops edits a user walked away from.
+const ttl = 10 * time.Minute
+
+type pending struct {
+	field   Field
+	expires time.Time
+}
+
+// Store is safe for concurrent use: updates are handled in parallel. It
+// lives in memory, enough for a single bot instance.
+type Store struct {
+	mu    sync.Mutex
+	edits map[int64]pending
+	// Now is overridable in tests.
+	Now func() time.Time
+}
+
+func New() *Store {
+	return &Store{edits: map[int64]pending{}, Now: time.Now}
+}
+
+func (s *Store) Start(chatID int64, field Field) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := s.Now()
+	for id, p := range s.edits {
+		if now.After(p.expires) {
+			delete(s.edits, id)
+		}
+	}
+	s.edits[chatID] = pending{field: field, expires: now.Add(ttl)}
+}
+
+// Consume returns and forgets the chat's pending edit, if any.
+func (s *Store) Consume(chatID int64) (Field, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.edits[chatID]
+	delete(s.edits, chatID)
+	if !ok || s.Now().After(p.expires) {
+		return "", false
+	}
+	return p.field, true
+}
+
+func (s *Store) Cancel(chatID int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.edits, chatID)
+}

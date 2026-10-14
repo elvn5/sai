@@ -1,6 +1,6 @@
 module github.com/elvn5/sai/services/media
 
-go 1.26.2
+go 1.26.7
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1

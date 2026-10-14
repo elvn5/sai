@@ -25,7 +25,7 @@ jobs:
       matrix:
         include:
           - service: bot
-            dockerfile: apps/bot/Dockerfile
+            dockerfile: services/bot/Dockerfile
           - service: admin
             dockerfile: apps/admin/Dockerfile
           - service: tourism

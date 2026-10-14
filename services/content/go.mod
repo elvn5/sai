@@ -1,6 +1,6 @@
 module github.com/elvn5/sai/services/content
 
-go 1.26.2
+go 1.26.7
 
 require (
 	github.com/elvn5/sai/services/pkg v0.0.0

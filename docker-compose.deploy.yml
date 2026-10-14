@@ -172,8 +172,8 @@ services:
   bot:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-bot:${IMAGE_TAG}
     restart: unless-stopped
-    env_file: .env
     environment:
+      BOT_TOKEN: ${BOT_TOKEN}
       MINI_APP_URL: ${MINI_APP_URL}
       # Accounts and support contacts come from the users service; the bot
       # has no database of its own.

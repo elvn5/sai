@@ -6,8 +6,8 @@
   - **Go services (`services/`):** Follow standard Gin conventions, not Clean Architecture — `cmd/<service>/main.go`, and under `internal/`: `config`, `routes` (router + middleware wiring), `handlers`, `middleware`, plus domain packages as needed. Shared code lives in `services/pkg`.
   - **Frontend:** Feature-Sliced Design (FSD) (`app/`, `pages/`, `widgets/`, `features/`, `entities/`, `shared/`). Respect strict cross-layer import rules.
 - **Formatting & Linting:** Use **Biome** for formatting and linting (`pnpm exec biome check --write`); Angular templates are linted with `angular-eslint` (`ng lint`).
-- **Validation:** go-playground/validator in the Go services (via `services/pkg/validation`), **Zod** in the Node bot until it moves to Go, **Signal Forms** (+ Zod schemas via Standard Schema) in the Angular apps, **VeeValidate** in the remaining Nuxt apps.
-- **Logging:** `log/slog` in Go, **Pino** in the Node bot until it moves to Go. Avoid `console.log`.
+- **Validation:** go-playground/validator in the Go services (via `services/pkg/validation`), **Signal Forms** (+ Zod schemas via Standard Schema) in the Angular apps, **VeeValidate** in the remaining Nuxt apps.
+- **Logging:** `log/slog` in Go. Avoid `console.log`.
 - **Environment:** Manage environment variables via `dotenv` (`.env`).
 - **TypeScript:** Strict mode enabled. Always specify return types for public functions/methods.
 
@@ -19,10 +19,10 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work on either 
 - **New features:** in migrated areas only in Angular; in areas not yet migrated only small fixes in Nuxt. Don't add new Nuxt modules or dependencies.
 - **URLs are a contract:** keep every public path and the locale scheme (Russian unprefixed, `/ky`, `/en`, `/de`) exactly as they are.
 
-**Track B — Telegram bot, NestJS + Telegraf (`apps/bot`) → Go + [Telego](https://github.com/mymmrac/telego) (`services/bot`):**
-- Its own Docker service (`services/bot/Dockerfile`, image `ermekten-bot`); same Go conventions as the other services, but Telego (`telego`, `telegohandler`, `telegoutil`) instead of Gin — the bot has no HTTP API. Layout: `cmd/bot/main.go`, `internal/{config,handlers,keyboards,session}`.
+**Track B — Telegram bot, NestJS + Telegraf (`apps/bot`) → Go + [Telego](https://github.com/mymmrac/telego) (`services/bot`):** the Go bot is in place and deployed instead of `apps/bot`; `apps/bot` stays only until the switch is verified in production (step B5 removes it).
+- Its own Docker service (`services/bot/Dockerfile`, image `ermekten-bot`); same Go conventions as the other services, but Telego (`telego`, `telegohandler`, `telegoutil`) instead of Gin — the bot has no HTTP API. Layout: `cmd/bot/main.go`, `internal/{config,handlers,keyboards,session,users}`.
 - Long polling, as today; users data over the existing `users` gRPC API; same env (`BOT_TOKEN`, `USERS_GRPC_ADDR`, `MINI_APP_URL`).
-- Behavior parity: same commands, deep links (`verify_`, `link_`), callback data, message texts and keyboards. No new bot features in `apps/bot`.
+- Behavior parity: same commands, deep links (`verify_`, `link_`), callback data, message texts and keyboards. Bot changes go to `services/bot` only.
 - `trails`/`payments` keep sending notifications through `services/pkg/telegram`.
 
 ## Angular Apps
@@ -42,13 +42,13 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work on either 
 
 ## Tech Stack
 - **Backend:** Go + Gin (`services/`), gRPC (buf), PostgreSQL (pgx, goose), Docker
-- **Bot:** Node.js v24, NestJS + Telegraf (`apps/bot`), gRPC client to the users service — moving to Go + Telego (`services/bot`), see Migrations in Progress
+- **Bot:** Go + Telego (`services/bot`), long polling, gRPC client to the users service (the NestJS `apps/bot` is legacy, see Migrations in Progress)
 - **Frontend (target):** Angular 22 + `@angular/ssr` (`apps/site`, `apps/panel`) — see Angular Apps above
 - **Frontend (legacy, until each app is migrated):** Nuxt 3, Pinia (+ persistedstate), @nuxt/ui, Tailwind CSS, Nuxt Icon, @nuxtjs/seo, @nuxtjs/i18n, @vueuse/nuxt, @tanstack/vue-query (`apps/tourism`, `apps/admin`)
 - **Linter/Formatter:** Biome (+ angular-eslint for Angular templates)
 
 ## Commands
-- **Dev:** `pnpm dev:<app>` (bot, admin, tourism; site and panel once scaffolded in migration phase 0) / `pnpm dev:<service>` (gateway, media, content, listings, users, trails, payments)
+- **Dev:** `pnpm dev:<app>` (admin, tourism; site and panel once scaffolded in migration phase 0) / `pnpm dev:<service>` (gateway, media, content, listings, users, trails, payments, bot)
 - **Build:** `pnpm build`
 - **Lint/Format:** `pnpm exec biome check --write .`
 - **Type Check:** `pnpm typecheck`

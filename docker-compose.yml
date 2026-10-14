@@ -184,10 +184,10 @@ services:
   bot:
     build:
       context: .
-      dockerfile: apps/bot/Dockerfile
+      dockerfile: services/bot/Dockerfile
     restart: unless-stopped
-    env_file: .env
     environment:
+      BOT_TOKEN: ${BOT_TOKEN}
       MINI_APP_URL: ${MINI_APP_URL:-http://localhost:3002}
       # Accounts and support contacts come from the users service; the bot
       # has no database of its own.

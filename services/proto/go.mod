@@ -1,6 +1,6 @@
 module github.com/elvn5/sai/services/proto
 
-go 1.26.2
+go 1.26.7
 
 require (
 	google.golang.org/grpc v1.84.0

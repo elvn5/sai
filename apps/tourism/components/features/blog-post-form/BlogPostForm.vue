@@ -91,11 +91,7 @@ const saveMutation = useMutation({
   onSuccess: (post) => {
     queryClient.invalidateQueries({ queryKey: ['blog'] });
     queryClient.invalidateQueries({ queryKey: ['my-blog-posts'] });
-    navigateTo(
-      localePath(
-        post.isPublished ? `/blog/${post.slug}` : { path: '/profile', query: { tab: 'listings' } },
-      ),
-    );
+    navigateTo(localePath(post.isPublished ? `/blog/${post.slug}` : '/partner/listings'));
   },
   onError: () => {
     submitError.value = t('blog.form.saveError');

@@ -98,7 +98,20 @@ type Review struct {
 	Photos    []string           `json:"photos"`
 	CreatedAt jsontime.Time      `json:"createdAt"`
 	Author    usersclient.Author `json:"author"`
-	UserID    string             `json:"-"`
+	// The listing owner's answer, if any.
+	Reply  *ReviewReply `json:"reply"`
+	UserID string       `json:"-"`
+}
+
+type ReviewReply struct {
+	Text      string        `json:"text"`
+	RepliedAt jsontime.Time `json:"repliedAt"`
+}
+
+// PartnerReview is a review of one of the signed-in partner's listings.
+type PartnerReview struct {
+	Review
+	Listing ListingRef `json:"listing"`
 }
 
 type ReviewSummary struct {
@@ -126,4 +139,57 @@ type ListingPost struct {
 type Page[T any] struct {
 	Items []T `json:"items"`
 	Total int `json:"total"`
+}
+
+// ListingRef names one of a partner's listings.
+type ListingRef struct {
+	TargetType  string  `json:"targetType"`
+	ID          string  `json:"id"`
+	Title       string  `json:"title"`
+	Slug        string  `json:"slug"`
+	Locale      *string `json:"locale"` // tours only
+	IsPublished bool    `json:"isPublished"`
+}
+
+// Listing stats events: a page view or a click on a contact button.
+const (
+	EventView     = "view"
+	EventPhone    = "phone"
+	EventWhatsapp = "whatsapp"
+	EventTelegram = "telegram"
+	EventWebsite  = "website"
+)
+
+var StatEvents = []string{EventView, EventPhone, EventWhatsapp, EventTelegram, EventWebsite}
+
+type StatCounts struct {
+	Views    int `json:"views"`
+	Phone    int `json:"phone"`
+	Whatsapp int `json:"whatsapp"`
+	Telegram int `json:"telegram"`
+	Website  int `json:"website"`
+	// All contact clicks together.
+	Contacts int `json:"contacts"`
+}
+
+type ListingStats struct {
+	Listing ListingRef `json:"listing"`
+	StatCounts
+}
+
+type DailyStats struct {
+	Day      string `json:"day"` // YYYY-MM-DD
+	Views    int    `json:"views"`
+	Contacts int    `json:"contacts"`
+}
+
+// StatsReport is a partner's listings stats over [From, To], with the
+// same-length period before it for comparison.
+type StatsReport struct {
+	From     string         `json:"from"`
+	To       string         `json:"to"`
+	Totals   StatCounts     `json:"totals"`
+	Previous StatCounts     `json:"previous"`
+	Daily    []DailyStats   `json:"daily"`
+	Listings []ListingStats `json:"listings"`
 }

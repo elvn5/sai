@@ -184,9 +184,37 @@ func (s *Store) CreatePayout(ctx context.Context, payeeID string, note *string) 
 	return p, tx.Commit(ctx)
 }
 
+// Finances sums a partner's paid bookings: owed, paid out and since
+// monthStart. Payouts are left for PayoutsOf.
+func (s *Store) Finances(ctx context.Context, payeeID string, monthStart time.Time) (models.Finances, error) {
+	var f models.Finances
+	m := &f.Month
+	err := s.db.QueryRow(ctx, `SELECT
+		COALESCE(sum(payee_amount) FILTER (WHERE payout_id IS NULL), 0)::int,
+		count(*) FILTER (WHERE payout_id IS NULL)::int,
+		COALESCE(sum(payee_amount) FILTER (WHERE payout_id IS NOT NULL), 0)::int,
+		count(*) FILTER (WHERE paid_at >= $2)::int,
+		COALESCE(sum(quantity) FILTER (WHERE paid_at >= $2), 0)::int,
+		COALESCE(sum(amount) FILTER (WHERE paid_at >= $2), 0)::int,
+		COALESCE(sum(fee) FILTER (WHERE paid_at >= $2), 0)::int,
+		COALESCE(sum(payee_amount) FILTER (WHERE paid_at >= $2), 0)::int
+		FROM orders WHERE payee_id::text = $1 AND status = 'paid'`, payeeID, monthStart).
+		Scan(&f.Owed, &f.OwedOrders, &f.PaidOut, &m.Orders, &m.Guests, &m.Revenue, &m.Fee, &m.Earned)
+	return f, err
+}
+
+// PayoutsOf lists a partner's payouts, newest first.
+func (s *Store) PayoutsOf(ctx context.Context, payeeID string, limit int) ([]models.Payout, error) {
+	return s.payouts(ctx, `WHERE payee_id::text = $2`, limit, payeeID)
+}
+
 func (s *Store) Payouts(ctx context.Context, limit int) ([]models.Payout, error) {
+	return s.payouts(ctx, "", limit)
+}
+
+func (s *Store) payouts(ctx context.Context, where string, limit int, args ...any) ([]models.Payout, error) {
 	rows, err := s.db.Query(ctx, `SELECT id::text, payee_id::text, amount, orders, note, created_at FROM payouts
-		ORDER BY created_at DESC LIMIT $1`, limit)
+		`+where+` ORDER BY created_at DESC LIMIT $1`, append([]any{limit}, args...)...)
 	if err != nil {
 		return nil, err
 	}

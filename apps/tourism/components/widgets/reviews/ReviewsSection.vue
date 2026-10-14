@@ -202,6 +202,12 @@ function barWidth(star: number): string {
         </div>
         <p class="whitespace-pre-line text-text">{{ review.text }}</p>
         <PhotoGrid v-if="review.photos.length > 0" :photos="review.photos" class="max-w-md" />
+        <div v-if="review.reply" class="ml-4 rounded-lg border-l-4 border-brand-500 bg-brand-500/5 px-4 py-3">
+          <p class="text-xs font-semibold text-brand-700 dark:text-brand-300">
+            {{ $t('reviews.ownerReply') }} · {{ formatDate(review.reply.repliedAt) }}
+          </p>
+          <p class="mt-1 whitespace-pre-line text-sm text-text">{{ review.reply.text }}</p>
+        </div>
         <UButton
           v-if="review.author.id === currentUserId"
           color="gray"

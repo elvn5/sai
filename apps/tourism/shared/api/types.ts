@@ -245,6 +245,13 @@ export interface Review {
   photos: string[];
   createdAt: string;
   author: PublicAuthor;
+  // The listing owner's public answer.
+  reply: ReviewReply | null;
+}
+
+export interface ReviewReply {
+  text: string;
+  repliedAt: string;
 }
 
 export interface ReviewSummary {
@@ -455,6 +462,80 @@ export interface Order {
   paymentUrl: string | null;
   expiresAt: string;
   paidAt: string | null;
+  refundNote: string | null;
+  payoutId: string | null;
   createdAt: string;
   payer?: Person;
+}
+
+// Partner cabinet
+
+// One of the signed-in partner's listings (services/listings).
+export interface ListingRef {
+  targetType: ReviewTargetType;
+  id: string;
+  title: string;
+  slug: string;
+  // Tours only.
+  locale: string | null;
+  isPublished: boolean;
+}
+
+export interface PartnerReview extends Review {
+  listing: ListingRef;
+}
+
+export type ListingStatEvent = 'view' | 'phone' | 'whatsapp' | 'telegram' | 'website';
+
+export interface StatCounts {
+  views: number;
+  phone: number;
+  whatsapp: number;
+  telegram: number;
+  website: number;
+  // All contact clicks together.
+  contacts: number;
+}
+
+export interface DailyStats {
+  day: string;
+  views: number;
+  contacts: number;
+}
+
+export interface ListingStats extends StatCounts {
+  listing: ListingRef;
+}
+
+export interface StatsReport {
+  from: string;
+  to: string;
+  totals: StatCounts;
+  // The same-length period before, for comparison.
+  previous: StatCounts;
+  daily: DailyStats[];
+  listings: ListingStats[];
+}
+
+export interface Payout {
+  id: string;
+  amount: number;
+  orders: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface PartnerFinances {
+  // Paid bookings not yet paid out.
+  owed: number;
+  owedOrders: number;
+  paidOut: number;
+  month: {
+    orders: number;
+    guests: number;
+    revenue: number;
+    fee: number;
+    earned: number;
+  };
+  payouts: Payout[];
 }

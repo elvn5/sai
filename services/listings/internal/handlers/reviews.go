@@ -23,6 +23,10 @@ type createReviewRequest struct {
 	Photos     []string            `json:"photos" binding:"omitempty,max=6,dive,max=2000,mediaurl"`
 }
 
+type replyRequest struct {
+	Text *validation.Trimmed `json:"text" binding:"required,min=1,max=2000"`
+}
+
 type Reviews struct{ Deps }
 
 // targetQuery reads the targetType/targetId/limit/offset query shared by
@@ -142,4 +146,77 @@ func (h *Reviews) attachReviewAuthors(c *gin.Context, reviews []models.Review) e
 		reviews[i].Author = authorFor(authors, reviews[i].UserID)
 	}
 	return nil
+}
+
+// Mine lists reviews of the signed-in partner's listings, newest first
+// (?unanswered=true: only those without a reply yet).
+func (h *Reviews) Mine(c *gin.Context) {
+	q := validation.NewQuery(c)
+	limit := q.IntDefault("limit", 20, validation.Bound(1), validation.Bound(50))
+	offset := q.IntDefault("offset", 0, validation.Bound(0), nil)
+	unanswered := q.Bool("unanswered")
+	if !q.OK() {
+		return
+	}
+	items, total, err := h.Store.ReviewsOfOwner(c.Request.Context(), currentUserID(c), unanswered != nil && *unanswered, limit, offset)
+	if err != nil {
+		h.fail(c, err, reviewNotFound, "")
+		return
+	}
+	reviews := make([]models.Review, len(items))
+	for i := range items {
+		reviews[i] = items[i].Review
+	}
+	if err := h.attachReviewAuthors(c, reviews); err != nil {
+		h.fail(c, err, reviewNotFound, "")
+		return
+	}
+	for i := range items {
+		items[i].Review = reviews[i]
+	}
+	respond.JSON(c, http.StatusOK, models.Page[models.PartnerReview]{Items: items, Total: total})
+}
+
+// Reply sets the listing owner's public answer to a review.
+func (h *Reviews) Reply(c *gin.Context) {
+	var req replyRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	text := string(*req.Text)
+	h.setReply(c, &text)
+}
+
+// DeleteReply removes the owner's answer.
+func (h *Reviews) DeleteReply(c *gin.Context) {
+	h.setReply(c, nil)
+}
+
+func (h *Reviews) setReply(c *gin.Context, text *string) {
+	id := c.Param("id")
+	if !validID(id) {
+		h.fail(c, store.ErrNotFound, reviewNotFound, "")
+		return
+	}
+	ctx := c.Request.Context()
+	owner, err := h.Store.ReviewTargetOwner(ctx, id)
+	if err != nil {
+		h.fail(c, err, reviewNotFound, "")
+		return
+	}
+	if !ownedBy(owner, currentUserID(c)) {
+		httperr.Abort(c, http.StatusForbidden, "Only the listing owner can reply to its reviews")
+		return
+	}
+	review, err := h.Store.SetReviewReply(ctx, id, text)
+	if err != nil {
+		h.fail(c, err, reviewNotFound, "")
+		return
+	}
+	reviews := []models.Review{review}
+	if err := h.attachReviewAuthors(c, reviews); err != nil {
+		h.fail(c, err, reviewNotFound, "")
+		return
+	}
+	respond.JSON(c, http.StatusOK, reviews[0])
 }

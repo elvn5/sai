@@ -239,6 +239,7 @@ func TestServiceRouting(t *testing.T) {
 		"POST /reviews":              "listings",
 		"GET /tours/ru/x":            "listings",
 		"DELETE /listing-posts/x":    "listings",
+		"POST /listing-stats/events": "listings",
 		"GET /partners/requests":     "users",
 		"GET /auth/user/me":          "users",
 		"POST /auth/login":           "users",

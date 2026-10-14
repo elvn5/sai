@@ -397,7 +397,8 @@
     "loginToReview": ", um eine Bewertung abzugeben.",
     "anonymous": "Reisende(r)",
     "delete": "Löschen",
-    "deleteConfirm": "Ihre Bewertung löschen?"
+    "deleteConfirm": "Ihre Bewertung löschen?",
+    "ownerReply": "Antwort des Anbieters"
   },
   "posts": {
     "heading": "Neuigkeiten & Fotos",
@@ -919,6 +920,127 @@
       "banner": "Testmodus: es wird kein Geld abgebucht",
       "pay": "Bezahlen (Test)",
       "decline": "Ablehnen"
+    }
+  },
+  "cabinet": {
+    "title": "Partnerbereich",
+    "short": "Partnerbereich",
+    "open": "Partnerbereich öffnen",
+    "nav": {
+      "dashboard": "Übersicht",
+      "stats": "Statistik",
+      "bookings": "Buchungen",
+      "finances": "Finanzen",
+      "listings": "Angebote",
+      "reviews": "Bewertungen"
+    },
+    "kinds": {
+      "hotel": "Unterkunft",
+      "local_guide": "Guide-Profil",
+      "tour": "Tour"
+    },
+    "onboarding": {
+      "title": "Gewinnen Sie Ihre ersten Kunden",
+      "listing": "Fügen Sie Ihr erstes Angebot hinzu: eine Tour, eine Unterkunft oder ein Guide-Profil",
+      "telegram": "Verknüpfen Sie Telegram, um sofort von neuen Buchungen zu erfahren"
+    },
+    "dashboard": {
+      "subtitle": "Ihre Angebote auf Ermekten in den letzten {days} Tagen",
+      "vsPrevious": "ggü. Vorperiode",
+      "monthBookings": "Buchungen diesen Monat",
+      "guests": "Gäste: {count}",
+      "departures": "Nächste Abfahrten",
+      "allBookings": "Alle Buchungen",
+      "noDepartures": "Keine anstehenden Abfahrten mit Buchungen.",
+      "bookingsCount": "Buchungen: {count}",
+      "newReviews": "Unbeantwortete Bewertungen",
+      "answer": "Antworten",
+      "topListings": "Meistgesehene Angebote",
+      "allStats": "Gesamte Statistik"
+    },
+    "stats": {
+      "subtitle": "Wie viele Menschen Ihre Angebote gesehen und Sie kontaktiert haben",
+      "views": "Aufrufe",
+      "contacts": "Kontakte",
+      "conversion": "Konversion",
+      "conversionHint": "Konversion {value}",
+      "conversionExplained": "Anteil der Aufrufe, die zu einem Kontakt führten",
+      "viewsPerDay": "Aufrufe pro Tag",
+      "contactsPerDay": "Kontakte pro Tag",
+      "howCounted": "Kontakte sind Klicks auf die WhatsApp-, Telegram-, Telefon- und Website-Buttons Ihrer Angebote. Jeder Besucher zählt einmal pro Tag, Ihre eigenen Besuche zählen nicht.",
+      "days": "{count} Tage",
+      "phone": "Telefon",
+      "website": "Website",
+      "listing": "Angebot",
+      "channels": "Wie man Sie kontaktiert",
+      "byListing": "Nach Angebot",
+      "noListings": "Fügen Sie ein Angebot hinzu, dann erscheint hier seine Statistik."
+    },
+    "finances": {
+      "subtitle": "Online-Zahlungen für Ihre Touren und Auszahlungen von Ermekten",
+      "owed": "Auszuzahlen",
+      "owedOrders": "Buchungen: {count}",
+      "paidOut": "Insgesamt ausgezahlt",
+      "payoutsCount": "Auszahlungen: {count}",
+      "monthEarned": "Diesen Monat verdient",
+      "monthHeading": "Dieser Monat",
+      "revenue": "Von Kunden bezahlt",
+      "fee": "Ermekten-Provision",
+      "earned": "Ihr Einkommen",
+      "howPaid": "Ermekten überweist Ihnen den offenen Betrag und vermerkt die Auszahlung hier. Erstattungen an Kunden zählen nicht zum Einkommen.",
+      "awaiting": "Warten auf Auszahlung",
+      "nothingOwed": "Alle bezahlten Buchungen wurden ausgezahlt.",
+      "history": "Auszahlungsverlauf",
+      "noPayouts": "Noch keine Auszahlungen."
+    },
+    "bookings": {
+      "subtitle": "Online bezahlte Buchungen Ihrer Touren",
+      "upcoming": "Anstehend",
+      "past": "Vergangen",
+      "all": "Alle",
+      "search": "Name, Telefon oder Tour",
+      "showRefunded": "Erstattungen anzeigen",
+      "summary": "Buchungen: {bookings} · Gäste: {guests}",
+      "emptyHint": "Sobald ein Kunde eine Tour online bezahlt, erscheint die Buchung hier und Sie erhalten eine Telegram-Nachricht.",
+      "tour": "Tour",
+      "date": "Datum",
+      "guests": "Gäste",
+      "name": "Name",
+      "phone": "Telefon",
+      "comment": "Kommentar",
+      "paid": "Bezahlt",
+      "earned": "Ihr Einkommen",
+      "status": "Status"
+    },
+    "listings": {
+      "subtitle": "Touren, Unterkünfte, Guide-Profil, Routen und Blogbeiträge",
+      "tours": "Touren",
+      "pastTours": "Vergangene Touren",
+      "views30": "Aufrufe in 30 Tagen: {count}",
+      "duplicate": "Wiederholen",
+      "duplicateTitle": "Neue Tourtermine",
+      "duplicateHint": "Beschreibung, Preis und Kontakte wurden übernommen. Geben Sie die neuen Termine an und veröffentlichen Sie.",
+      "slugTaken": "Eine Tour mit diesem Titel und Datum gibt es bereits.",
+      "deleteTourConfirm": "Tour „{title}“ löschen?",
+      "noTours": "Sie haben noch keine Touren hinzugefügt.",
+      "trails": "Routen",
+      "addTrail": "Route hinzufügen",
+      "noTrails": "Sie haben noch keine Routen hinzugefügt.",
+      "editTour": "Tour bearbeiten"
+    },
+    "reviews": {
+      "subtitle": "Antworten Sie auf Bewertungen: Reisende vertrauen Anbietern, die reagieren",
+      "all": "Alle",
+      "unanswered": "Unbeantwortet",
+      "empty": "Noch keine Bewertungen",
+      "allAnswered": "Alle Bewertungen sind beantwortet",
+      "why": "Ihre Antwort erscheint unter der Bewertung auf der Angebotsseite.",
+      "replyPlaceholder": "Danken Sie dem Gast oder erzählen Sie, was Sie verbessert haben",
+      "publishReply": "Antwort veröffentlichen",
+      "cancel": "Abbrechen",
+      "emptyReply": "Schreiben Sie eine Antwort.",
+      "saveError": "Die Antwort konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "deleteConfirm": "Ihre Antwort löschen?"
     }
   }
 }

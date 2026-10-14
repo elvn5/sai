@@ -9,6 +9,7 @@ import { useApiClient } from '~/shared/api/client';
 import { type LocalGuide, ReviewTargetType } from '~/shared/api/types';
 import { formatAmount } from '~/shared/lib/format-price';
 import { GUIDE_SPECIALIZATION_OPTIONS, findOption } from '~/shared/lib/listing-options';
+import { useTrackListingView } from '~/shared/lib/listing-stats';
 import { resolveMediaUrl } from '~/shared/lib/resolve-media-url';
 
 const route = useRoute();
@@ -38,6 +39,8 @@ const guide = guideQuery.data;
 if (!guide.value) {
   throw createError({ statusCode: 404, statusMessage: 'Guide not found' });
 }
+
+useTrackListingView(ReviewTargetType.LOCAL_GUIDE, () => guide.value?.id);
 
 const isOwner = computed(() =>
   Boolean(auth.user.value && guide.value?.userId === auth.user.value.id),
@@ -187,6 +190,8 @@ function refreshGuide(): void {
       <aside class="order-first lg:order-none lg:w-80 lg:shrink-0">
         <div class="lg:sticky lg:top-20">
           <ListingContactCard
+            :target-type="ReviewTargetType.LOCAL_GUIDE"
+            :target-id="guide.id"
             :listing-name="guide.name"
             :price-label="priceLabel"
             :rating-average="guide.ratingAverage"

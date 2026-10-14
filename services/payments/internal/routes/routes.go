@@ -37,6 +37,8 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string, fake 
 	r.POST("/orders/:id/check", requireUser, orders.Check)
 	r.POST("/orders/:id/refund", requireAdmin, admin.Refund)
 
+	partner := &handlers.Partner{Deps: d}
+	r.GET("/payouts/mine", requireUser, middleware.RequirePartner(), partner.Finances)
 	r.GET("/payouts", requireAdmin, admin.Payouts)
 	r.GET("/payouts/balances", requireAdmin, admin.Balances)
 	r.POST("/payouts", requireAdmin, admin.CreatePayout)

@@ -21,7 +21,8 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.NoRoute(httperr.RouteNotFound)
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
-	requireUser := middleware.RequireUser(auth.NewVerifier(jwtSecret), users)
+	verifier := auth.NewVerifier(jwtSecret)
+	requireUser := middleware.RequireUser(verifier, users)
 	requirePartner := middleware.RequirePartner()
 
 	hotels := &handlers.Hotels{Deps: d}
@@ -50,13 +51,21 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 
 	reviews := &handlers.Reviews{Deps: d}
 	r.GET("/reviews", reviews.List)
+	r.GET("/reviews/mine", requireUser, requirePartner, reviews.Mine)
 	r.POST("/reviews", requireUser, reviews.Create)
 	r.DELETE("/reviews/:id", requireUser, reviews.Delete)
+	r.PUT("/reviews/:id/reply", requireUser, reviews.Reply)
+	r.DELETE("/reviews/:id/reply", requireUser, reviews.DeleteReply)
 
 	posts := &handlers.Posts{Deps: d}
 	r.GET("/listing-posts", posts.List)
 	r.POST("/listing-posts", requireUser, posts.Create)
 	r.DELETE("/listing-posts/:id", requireUser, posts.Delete)
+
+	// Partner cabinet: visits and contact clicks of listings.
+	stats := &handlers.Stats{Deps: d}
+	r.POST("/listing-stats/events", middleware.OptionalUser(verifier), stats.Record)
+	r.GET("/listing-stats/mine", requireUser, requirePartner, stats.Mine)
 
 	return r
 }

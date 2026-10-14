@@ -150,7 +150,7 @@ func (w *Worker) notify(ctx context.Context) error {
 	}
 	for _, o := range orders {
 		if chat, ok := chats[o.PayeeID]; ok {
-			w.send(ctx, chat, partnerText(o), &telegram.Button{Text: "Мои бронирования", URL: w.SiteURL + "/profile?tab=listings"})
+			w.send(ctx, chat, partnerText(o), &telegram.Button{Text: "Брони в кабинете", URL: w.SiteURL + "/partner/bookings"})
 		}
 		if chat, ok := chats[o.UserID]; ok {
 			w.send(ctx, chat, customerText(o), &telegram.Button{Text: "Мои бронирования", URL: w.SiteURL + "/profile?tab=bookings"})

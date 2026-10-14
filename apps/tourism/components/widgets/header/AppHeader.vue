@@ -74,6 +74,15 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
           <ColorThemeToggle />
           <ThemeToggle />
           <template v-if="auth.user.value">
+            <UButton
+              v-if="auth.isPartner.value"
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-squares-2x2"
+              :to="localePath('/partner')"
+              :aria-label="$t('cabinet.title')"
+              :title="$t('cabinet.title')"
+            />
             <NuxtLink :to="localePath('/profile')" class="flex items-center gap-2">
               <img
                 v-if="auth.user.value.avatarUrl"
@@ -147,6 +156,14 @@ const displayName = computed(() => auth.user.value?.firstName ?? auth.user.value
                 class="h-8 w-8 rounded-full object-cover ring-2 ring-white/30"
               />
               <span class="text-sm font-medium">{{ displayName }}</span>
+            </NuxtLink>
+            <NuxtLink
+              v-if="auth.isPartner.value"
+              :to="localePath('/partner')"
+              class="mt-1 flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium text-white hover:bg-white/10"
+            >
+              <UIcon name="i-heroicons-squares-2x2" class="h-5 w-5" />
+              {{ $t('cabinet.title') }}
             </NuxtLink>
             <UButton color="gray" variant="ghost" block class="mt-1 !text-white" @click="handleLogout">
               {{ $t('profile.logout') }}

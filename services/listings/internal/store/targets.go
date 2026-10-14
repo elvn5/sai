@@ -52,6 +52,7 @@ func (s *Store) DeleteListing(ctx context.Context, targetType, id string) error 
 	for _, q := range []string{
 		`DELETE FROM reviews WHERE target_type = $1 AND target_id = $2`,
 		`DELETE FROM listing_posts WHERE target_type = $1 AND target_id = $2`,
+		`DELETE FROM listing_stats_daily WHERE target_type = $1 AND target_id = $2`,
 	} {
 		if _, err := tx.Exec(ctx, q, targetType, id); err != nil {
 			return err

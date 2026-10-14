@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import RatingStars from '~/components/shared/ui/RatingStars.vue';
-import type { CancellationPolicy } from '~/shared/api/types';
+import type { CancellationPolicy, ListingStatEvent, ReviewTargetType } from '~/shared/api/types';
 import { phoneLink, telegramLink, whatsappLink } from '~/shared/lib/contact-links';
+import { useListingStats } from '~/shared/lib/listing-stats';
 
 // The "booking" box on a listing page. Locally most bookings happen over
 // WhatsApp/Telegram rather than a checkout, so contact is the primary CTA.
+// Clicks are counted for the owner's partner cabinet.
 const props = defineProps<{
+  targetType: ReviewTargetType;
+  targetId: string;
   listingName: string;
   priceLabel: string | null;
   ratingAverage: number;
@@ -18,6 +22,11 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const { track } = useListingStats();
+
+function trackContact(event: ListingStatEvent): void {
+  track(props.targetType, props.targetId, event);
+}
 
 const whatsappHref = computed(() =>
   props.whatsapp
@@ -71,6 +80,7 @@ const hasContacts = computed(() =>
           size="lg"
           icon="i-heroicons-chat-bubble-left-right"
           class="!bg-[#25D366] !text-white hover:!bg-[#1ebe5b]"
+          @click="trackContact('whatsapp')"
         >
           {{ $t('listing.contact.whatsapp') }}
         </UButton>
@@ -82,10 +92,11 @@ const hasContacts = computed(() =>
           size="lg"
           icon="i-heroicons-paper-airplane"
           class="!bg-[#229ED9] !text-white hover:!bg-[#1c8cc2]"
+          @click="trackContact('telegram')"
         >
           {{ $t('listing.contact.telegram') }}
         </UButton>
-        <UButton v-if="phone" :to="phoneLink(phone)" block color="gray" icon="i-heroicons-phone">
+        <UButton v-if="phone" :to="phoneLink(phone)" block color="gray" icon="i-heroicons-phone" @click="trackContact('phone')">
           {{ phone }}
         </UButton>
         <UButton
@@ -96,6 +107,7 @@ const hasContacts = computed(() =>
           color="gray"
           variant="ghost"
           icon="i-heroicons-globe-alt"
+          @click="trackContact('website')"
         >
           {{ $t('listing.contact.website') }}
         </UButton>

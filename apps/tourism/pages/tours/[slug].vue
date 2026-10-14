@@ -7,6 +7,7 @@ import ReviewsSection from '~/components/widgets/reviews/ReviewsSection.vue';
 import { useApiClient } from '~/shared/api/client';
 import { ReviewTargetType, type Tour } from '~/shared/api/types';
 import { formatAmount } from '~/shared/lib/format-price';
+import { useTrackListingView } from '~/shared/lib/listing-stats';
 import { resolveMediaUrl } from '~/shared/lib/resolve-media-url';
 
 const route = useRoute();
@@ -37,6 +38,8 @@ const tour = tourQuery.data;
 if (!tour.value) {
   throw createError({ statusCode: 404, statusMessage: 'Tour not found' });
 }
+
+useTrackListingView(ReviewTargetType.TOUR, () => tour.value?.id);
 
 useSeoMeta({
   title: tour.value.title,
@@ -110,16 +113,19 @@ function handleDelete(): void {
 
           <div class="prose prose-neutral dark:prose-invert mt-8 max-w-none" v-html="tour.content" />
 
-          <UButton
-            v-if="auth.user.value && tour.userId === auth.user.value.id"
-            color="gray"
-            variant="soft"
-            class="mt-8"
-            :loading="deleteMutation.isPending.value"
-            @click="handleDelete"
-          >
-            {{ $t('tours.deleteButton') }}
-          </UButton>
+          <div v-if="auth.user.value && tour.userId === auth.user.value.id" class="mt-8 flex flex-wrap gap-2">
+            <UButton color="gray" icon="i-heroicons-pencil-square" :to="localePath(`/partner/tours/${tour.id}`)">
+              {{ $t('listing.edit') }}
+            </UButton>
+            <UButton
+              color="gray"
+              variant="soft"
+              :loading="deleteMutation.isPending.value"
+              @click="handleDelete"
+            >
+              {{ $t('tours.deleteButton') }}
+            </UButton>
+          </div>
         </div>
 
         <ListingPostsFeed :target-type="ReviewTargetType.TOUR" :target-id="tour.id" :owner-id="tour.userId" />
@@ -136,6 +142,8 @@ function handleDelete(): void {
         <div class="flex flex-col gap-4 lg:sticky lg:top-20">
           <TourBookingCard :tour="tour" />
           <ListingContactCard
+            :target-type="ReviewTargetType.TOUR"
+            :target-id="tour.id"
             :listing-name="tour.title"
             :price-label="priceLabel"
             :rating-average="tour.ratingAverage"

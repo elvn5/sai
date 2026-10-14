@@ -397,7 +397,8 @@
     "loginToReview": " to leave a review.",
     "anonymous": "Traveler",
     "delete": "Delete",
-    "deleteConfirm": "Delete your review?"
+    "deleteConfirm": "Delete your review?",
+    "ownerReply": "Owner's reply"
   },
   "posts": {
     "heading": "News & photos",
@@ -919,6 +920,127 @@
       "banner": "Test mode: no money is charged",
       "pay": "Pay (test)",
       "decline": "Decline"
+    }
+  },
+  "cabinet": {
+    "title": "Partner dashboard",
+    "short": "Dashboard",
+    "open": "Open dashboard",
+    "nav": {
+      "dashboard": "Overview",
+      "stats": "Statistics",
+      "bookings": "Bookings",
+      "finances": "Finances",
+      "listings": "Listings",
+      "reviews": "Reviews"
+    },
+    "kinds": {
+      "hotel": "Stay",
+      "local_guide": "Guide profile",
+      "tour": "Tour"
+    },
+    "onboarding": {
+      "title": "Start getting customers",
+      "listing": "Add your first listing: a tour, a stay or a guide profile",
+      "telegram": "Link Telegram to hear about new bookings right away"
+    },
+    "dashboard": {
+      "subtitle": "Your Ermekten listings over the last {days} days",
+      "vsPrevious": "vs previous period",
+      "monthBookings": "Bookings this month",
+      "guests": "Guests: {count}",
+      "departures": "Upcoming departures",
+      "allBookings": "All bookings",
+      "noDepartures": "No upcoming departures with bookings.",
+      "bookingsCount": "Bookings: {count}",
+      "newReviews": "Reviews awaiting a reply",
+      "answer": "Reply",
+      "topListings": "Most viewed listings",
+      "allStats": "All statistics"
+    },
+    "stats": {
+      "subtitle": "How many people saw your listings and messaged or called you",
+      "views": "Views",
+      "contacts": "Contacts",
+      "conversion": "Conversion",
+      "conversionHint": "{value} conversion",
+      "conversionExplained": "share of views that led to a contact",
+      "viewsPerDay": "Views per day",
+      "contactsPerDay": "Contacts per day",
+      "howCounted": "Contacts are taps on the WhatsApp, Telegram, phone and website buttons of your listings. Each visitor counts once a day; your own visits do not count.",
+      "days": "{count} days",
+      "phone": "Phone",
+      "website": "Website",
+      "listing": "Listing",
+      "channels": "How people reach you",
+      "byListing": "By listing",
+      "noListings": "Add a listing and its statistics will show up here."
+    },
+    "finances": {
+      "subtitle": "Online payments for your tours and payouts from Ermekten",
+      "owed": "To be paid out",
+      "owedOrders": "Bookings: {count}",
+      "paidOut": "Paid out in total",
+      "payoutsCount": "Payouts: {count}",
+      "monthEarned": "Earned this month",
+      "monthHeading": "This month",
+      "revenue": "Paid by customers",
+      "fee": "Ermekten commission",
+      "earned": "Your income",
+      "howPaid": "Ermekten transfers the amount owed to you and records the payout here. Refunds to customers are not part of your income.",
+      "awaiting": "Awaiting payout",
+      "nothingOwed": "All paid bookings have been paid out.",
+      "history": "Payout history",
+      "noPayouts": "No payouts yet."
+    },
+    "bookings": {
+      "subtitle": "Bookings of your tours paid online",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "all": "All",
+      "search": "Name, phone or tour",
+      "showRefunded": "Show refunds",
+      "summary": "Bookings: {bookings} · guests: {guests}",
+      "emptyHint": "When a customer pays for a tour online, the booking shows up here and you get a Telegram message.",
+      "tour": "Tour",
+      "date": "Date",
+      "guests": "Guests",
+      "name": "Name",
+      "phone": "Phone",
+      "comment": "Comment",
+      "paid": "Paid",
+      "earned": "Your income",
+      "status": "Status"
+    },
+    "listings": {
+      "subtitle": "Tours, stays, guide profile, trails and blog posts",
+      "tours": "Tours",
+      "pastTours": "Past tours",
+      "views30": "views in 30 days: {count}",
+      "duplicate": "Repeat",
+      "duplicateTitle": "New tour dates",
+      "duplicateHint": "We copied the description, price and contacts. Set the new dates and publish.",
+      "slugTaken": "A tour with this title and date already exists.",
+      "deleteTourConfirm": "Delete the tour “{title}”?",
+      "noTours": "You haven't added any tours yet.",
+      "trails": "Trails",
+      "addTrail": "Add a trail",
+      "noTrails": "You haven't added any trails yet.",
+      "editTour": "Edit tour"
+    },
+    "reviews": {
+      "subtitle": "Reply to reviews: travellers trust hosts who respond",
+      "all": "All",
+      "unanswered": "Unanswered",
+      "empty": "No reviews yet",
+      "allAnswered": "Every review has a reply",
+      "why": "Your reply is published under the review on the listing page.",
+      "replyPlaceholder": "Thank the guest or tell them what you improved",
+      "publishReply": "Publish reply",
+      "cancel": "Cancel",
+      "emptyReply": "Write a reply.",
+      "saveError": "Could not save the reply. Please try again.",
+      "deleteConfirm": "Delete your reply?"
     }
   }
 }

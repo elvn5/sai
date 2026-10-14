@@ -6,15 +6,7 @@ import AwardCodeCard from '~/components/features/award-code/AwardCodeCard.vue';
 import TelegramLink from '~/components/features/telegram-link/TelegramLink.vue';
 import { useApiClient } from '~/shared/api/client';
 import { PartnerStatus } from '~/shared/api/types';
-import type {
-  AppUser,
-  BlogPost,
-  Hotel,
-  LocalGuide,
-  MyAchievements,
-  Order,
-  Outing,
-} from '~/shared/api/types';
+import type { AppUser, MyAchievements, Order, Outing } from '~/shared/api/types';
 
 const { t } = useI18n();
 const localePath = useLocalePath();
@@ -25,20 +17,11 @@ const { isTma, getInitData } = useTelegramWebApp();
 
 const route = useRoute();
 
-// Listings are for partners only (they alone publish).
+// Partners manage their listings and bookings in the cabinet (/partner).
 const tabs = computed(() => [
   { key: 'info', label: t('profile.tabs.info'), icon: 'i-heroicons-user-circle' },
   { key: 'achievements', label: t('profile.tabs.achievements'), icon: 'i-mdi-trophy-outline' },
   { key: 'bookings', label: t('profile.tabs.bookings'), icon: 'i-mdi-ticket-confirmation-outline' },
-  ...(auth.isPartner.value
-    ? [
-        {
-          key: 'listings',
-          label: t('profile.tabs.listings'),
-          icon: 'i-heroicons-building-storefront',
-        },
-      ]
-    : []),
   { key: 'history', label: t('profile.tabs.history'), icon: 'i-heroicons-map' },
   { key: 'partner', label: t('profile.tabs.partner'), icon: 'i-heroicons-briefcase' },
 ]);
@@ -55,33 +38,12 @@ const selectedTab = computed({
 });
 
 const isSignedIn = computed(() => Boolean(auth.user.value));
-const myHotelsQuery = useQuery({
-  queryKey: ['my-hotels'],
-  queryFn: () => api.get<Hotel[]>('/hotels/mine'),
-  enabled: auth.isPartner,
-});
-const myGuideQuery = useQuery({
-  queryKey: ['my-local-guide'],
-  queryFn: () => api.get<{ guide: LocalGuide | null }>('/local-guides/mine'),
-  enabled: auth.isPartner,
-});
-const myPostsQuery = useQuery({
-  queryKey: ['my-blog-posts'],
-  queryFn: () => api.get<BlogPost[]>('/blog/mine'),
-  enabled: auth.isPartner,
-});
 const myOrdersQuery = useQuery({
   queryKey: ['orders', 'mine'],
   queryFn: () => api.get<Order[]>('/orders/mine'),
   enabled: isSignedIn,
 });
-const receivedOrdersQuery = useQuery({
-  queryKey: ['orders', 'received'],
-  queryFn: () => api.get<Order[]>('/orders/received'),
-  enabled: auth.isPartner,
-});
 const myOrders = computed(() => myOrdersQuery.data.value ?? []);
-const receivedOrders = computed(() => receivedOrdersQuery.data.value ?? []);
 
 const myOutingsQuery = useQuery({
   queryKey: ['outings', 'mine'],
@@ -101,24 +63,7 @@ const myAchievementsQuery = useQuery({
   queryFn: () => api.get<MyAchievements>('/achievements/me'),
   enabled: isSignedIn,
 });
-const myHotels = computed(() => myHotelsQuery.data.value ?? []);
-const myGuide = computed(() => myGuideQuery.data.value?.guide ?? null);
-const myPosts = computed(() => myPostsQuery.data.value ?? []);
 const myAchievements = computed(() => myAchievementsQuery.data.value ?? null);
-
-const deletePostMutation = useMutation({
-  mutationFn: (id: string) => api.delete(`/blog/${id}`),
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ['my-blog-posts'] });
-    queryClient.invalidateQueries({ queryKey: ['blog'] });
-  },
-});
-
-function deletePost(post: BlogPost): void {
-  if (window.confirm(t('profile.listings.deletePostConfirm', { title: post.title }))) {
-    deletePostMutation.mutate(post.id);
-  }
-}
 
 const applyMutation = useMutation({
   mutationFn: () => api.post<{ user: AppUser }>('/partners/apply'),
@@ -219,117 +164,6 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div v-else-if="item.key === 'listings'" class="mt-6 flex flex-col gap-8">
-          <div>
-            <h2 class="mb-3 font-semibold text-text">{{ $t('booking.received') }}</h2>
-            <div v-if="receivedOrders.length > 0" class="flex flex-col gap-2">
-              <OrderCard v-for="order in receivedOrders" :key="order.id" :order="order" for-partner />
-            </div>
-            <p v-else class="rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center text-sm text-text-muted">
-              {{ $t('booking.noReceived') }}
-            </p>
-          </div>
-
-          <div>
-            <div class="mb-3 flex items-center justify-between">
-              <h2 class="font-semibold text-text">{{ $t('profile.listings.guideHeading') }}</h2>
-            </div>
-            <div
-              v-if="myGuide"
-              class="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3"
-            >
-              <NuxtLink :to="localePath(`/local-guides/${myGuide.slug}`)" class="font-medium text-text hover:underline">
-                {{ myGuide.name }}
-              </NuxtLink>
-              <UButton size="sm" color="gray" icon="i-heroicons-pencil-square" :to="localePath(`/local-guides/${myGuide.slug}/edit`)">
-                {{ $t('listing.edit') }}
-              </UButton>
-            </div>
-            <div
-              v-else
-              class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center"
-            >
-              <p class="max-w-sm text-sm text-text-muted">{{ $t('profile.listings.guidePitch') }}</p>
-              <UButton color="primary" :to="localePath('/local-guides/new')">{{ $t('localGuides.addButton') }}</UButton>
-            </div>
-          </div>
-
-          <div>
-            <div class="mb-3 flex items-center justify-between">
-              <h2 class="font-semibold text-text">{{ $t('profile.listings.hotelsHeading') }}</h2>
-              <UButton size="sm" color="primary" icon="i-heroicons-plus" :to="localePath('/hotels/new')">
-                {{ $t('hotels.addButton') }}
-              </UButton>
-            </div>
-            <div v-if="myHotels.length > 0" class="flex flex-col gap-2">
-              <div
-                v-for="hotel in myHotels"
-                :key="hotel.id"
-                class="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3"
-              >
-                <NuxtLink :to="localePath(`/hotels/${hotel.slug}`)" class="min-w-0">
-                  <span class="block truncate font-medium text-text hover:underline">{{ hotel.name }}</span>
-                  <span class="block text-xs text-text-muted">
-                    {{ $t(`destinations.${hotel.destination}`) }} · {{ $t('reviews.count', { count: hotel.reviewCount }) }}
-                  </span>
-                </NuxtLink>
-                <UButton size="sm" color="gray" icon="i-heroicons-pencil-square" :to="localePath(`/hotels/${hotel.slug}/edit`)">
-                  {{ $t('listing.edit') }}
-                </UButton>
-              </div>
-            </div>
-            <p v-else class="rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center text-sm text-text-muted">
-              {{ $t('profile.listings.noHotels') }}
-            </p>
-          </div>
-
-          <div>
-            <div class="mb-3 flex items-center justify-between">
-              <h2 class="font-semibold text-text">{{ $t('profile.listings.postsHeading') }}</h2>
-              <UButton size="sm" color="primary" icon="i-heroicons-plus" :to="localePath('/blog/new')">
-                {{ $t('blog.form.newTitle') }}
-              </UButton>
-            </div>
-            <div v-if="myPosts.length > 0" class="flex flex-col gap-2">
-              <div
-                v-for="post in myPosts"
-                :key="post.id"
-                class="flex items-center justify-between gap-4 rounded-card border border-border bg-surface px-4 py-3"
-              >
-                <div class="min-w-0">
-                  <NuxtLink
-                    v-if="post.isPublished"
-                    :to="localePath(`/blog/${post.slug}`)"
-                    class="block truncate font-medium text-text hover:underline"
-                  >
-                    {{ post.title }}
-                  </NuxtLink>
-                  <span v-else class="block truncate font-medium text-text">{{ post.title }}</span>
-                  <span class="block text-xs text-text-muted">
-                    {{ post.isPublished ? $t('profile.listings.published') : $t('profile.listings.draft') }}
-                  </span>
-                </div>
-                <div class="flex shrink-0 gap-2">
-                  <UButton size="sm" color="gray" icon="i-heroicons-pencil-square" :to="localePath(`/blog/edit/${post.id}`)">
-                    {{ $t('listing.edit') }}
-                  </UButton>
-                  <UButton
-                    size="sm"
-                    color="gray"
-                    variant="ghost"
-                    icon="i-heroicons-trash"
-                    :aria-label="$t('profile.listings.deletePost')"
-                    @click="deletePost(post)"
-                  />
-                </div>
-              </div>
-            </div>
-            <p v-else class="rounded-card border border-dashed border-border bg-surface px-6 py-8 text-center text-sm text-text-muted">
-              {{ $t('profile.listings.noPosts') }}
-            </p>
-          </div>
-        </div>
-
         <div v-else-if="item.key === 'history'" class="mt-6 flex flex-col gap-8">
           <div v-if="upcomingOutings.length > 0">
             <h2 class="mb-3 font-semibold text-text">{{ $t('profile.history.upcoming') }}</h2>
@@ -364,7 +198,10 @@ onMounted(async () => {
             <UIcon name="i-heroicons-check-badge" class="h-10 w-10 text-brand-600 dark:text-brand-400" />
             <p class="font-medium text-text">{{ $t('profile.partner.approved') }}</p>
             <div class="mt-2 flex flex-wrap justify-center gap-2">
-              <UButton color="primary" icon="i-mdi-medal" :to="localePath('/achievements/award')">
+              <UButton color="primary" icon="i-heroicons-squares-2x2" :to="localePath('/partner')">
+                {{ $t('cabinet.open') }}
+              </UButton>
+              <UButton color="gray" icon="i-mdi-medal" :to="localePath('/achievements/award')">
                 {{ $t('profile.partner.awardCta') }}
               </UButton>
               <UButton color="gray" icon="i-heroicons-map" :to="localePath('/tours/new')">

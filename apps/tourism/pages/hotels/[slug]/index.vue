@@ -10,6 +10,7 @@ import { useApiClient } from '~/shared/api/client';
 import { type Hotel, ReviewTargetType } from '~/shared/api/types';
 import { formatAmount } from '~/shared/lib/format-price';
 import { HOTEL_AMENITY_OPTIONS, findOption } from '~/shared/lib/listing-options';
+import { useTrackListingView } from '~/shared/lib/listing-stats';
 import { resolveMediaUrl } from '~/shared/lib/resolve-media-url';
 
 const route = useRoute();
@@ -39,6 +40,8 @@ const hotel = hotelQuery.data;
 if (!hotel.value) {
   throw createError({ statusCode: 404, statusMessage: 'Hotel not found' });
 }
+
+useTrackListingView(ReviewTargetType.HOTEL, () => hotel.value?.id);
 
 const isOwner = computed(() =>
   Boolean(auth.user.value && hotel.value?.userId === auth.user.value.id),
@@ -200,6 +203,8 @@ function refreshHotel(): void {
       <aside class="order-first lg:order-none lg:w-80 lg:shrink-0">
         <div class="lg:sticky lg:top-20">
           <ListingContactCard
+            :target-type="ReviewTargetType.HOTEL"
+            :target-id="hotel.id"
             :listing-name="hotel.name"
             :price-label="priceLabel"
             :rating-average="hotel.ratingAverage"

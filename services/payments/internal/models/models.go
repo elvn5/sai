@@ -68,3 +68,24 @@ type Payout struct {
 	Note      *string       `json:"note"`
 	CreatedAt jsontime.Time `json:"createdAt"`
 }
+
+// Finances is the partner cabinet's money summary for one partner.
+type Finances struct {
+	// Paid bookings not yet paid out, and how many.
+	Owed       int `json:"owed"`
+	OwedOrders int `json:"owedOrders"`
+	// Everything paid out so far.
+	PaidOut int `json:"paidOut"`
+	// Paid bookings since the start of this month (Bishkek time).
+	Month   MonthSummary `json:"month"`
+	Payouts []Payout     `json:"payouts"`
+}
+
+type MonthSummary struct {
+	Orders int `json:"orders"`
+	Guests int `json:"guests"`
+	// What customers paid, the platform's commission and the partner's share.
+	Revenue int `json:"revenue"`
+	Fee     int `json:"fee"`
+	Earned  int `json:"earned"`
+}

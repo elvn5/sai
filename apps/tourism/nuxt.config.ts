@@ -22,6 +22,8 @@ export default defineNuxtConfig({
       ? [
           '/login',
           '/profile',
+          '/partner',
+          '/partner/*',
           '/guides/new',
           '/tours/new',
           '/hotels/new',

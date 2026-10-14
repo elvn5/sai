@@ -11,11 +11,11 @@ func TestAllowedOrigins(t *testing.T) {
 	cfg := config.Config{
 		AdminOrigin:  "https://admin.ermekten.com",
 		ClientOrigin: "https://ermekten.com",
-		ExtraOrigins: []string{" https://next.test.ermekten.com", "", "https://next.admin.test.ermekten.com"},
+		ExtraOrigins: []string{" http://localhost:3012", "", "http://localhost:3013"},
 	}
 	want := []string{
 		"https://admin.ermekten.com", "https://ermekten.com",
-		"https://next.test.ermekten.com", "https://next.admin.test.ermekten.com",
+		"http://localhost:3012", "http://localhost:3013",
 	}
 	if got := cfg.AllowedOrigins(); !slices.Equal(got, want) {
 		t.Errorf("origins: %v", got)

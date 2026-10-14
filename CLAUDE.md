@@ -15,7 +15,7 @@
 Plan, phases and requirements: `docs/angular-migration-plan.md`. Work on either track starts only on an explicit request.
 
 **Track A — frontend, Nuxt 3 → Angular 22:**
-- **Apps:** `apps/site` (public site + Telegram Mini App, Angular SSR) replaces `apps/tourism`; `apps/panel` (admin, client-only) replaces `apps/admin`. nginx routes already-migrated paths to the Angular app and the rest to Nuxt until each wave is switched.
+- **Apps:** `apps/site` (public site + Telegram Mini App, Angular SSR) replaces `apps/tourism`; `apps/panel` (admin, client-only) replaces `apps/admin`. Staging (test.ermekten.com, test.admin.ermekten.com) runs the Angular apps instead of Nuxt; production runs Nuxt, and nginx routes already-migrated paths to the Angular app as each wave is switched.
 - **New features:** in migrated areas only in Angular; in areas not yet migrated only small fixes in Nuxt. Don't add new Nuxt modules or dependencies.
 - **URLs are a contract:** keep every public path and the locale scheme (Russian unprefixed, `/ky`, `/en`, `/de`) exactly as they are.
 
@@ -54,5 +54,5 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work on either 
 - **Lint/Format:** `pnpm exec biome check --write .`
 - **Type Check:** `pnpm typecheck`
 - **Angular apps:** `pnpm --filter @app/site --filter @app/panel lint` (templates), `… test` (Vitest); Lighthouse budgets in `apps/site/lighthouserc.json` (CI job `lighthouse`)
-- **Docker:** `docker compose up -d --build` (`--profile next` adds the Angular apps)
+- **Docker:** `docker compose up -d --build` (`--profile angular` adds the Angular apps locally on :3012/:3013; deploys pick `nuxt` in production, `angular` on staging)
 - **Go:** `pnpm dev:gateway`, `pnpm test:go`

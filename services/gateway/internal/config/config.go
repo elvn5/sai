@@ -20,8 +20,8 @@ type Config struct {
 	// Browser origins allowed by CORS.
 	AdminOrigin  string `env:"ADMIN_ORIGIN" envDefault:"http://localhost:3000"`
 	ClientOrigin string `env:"CLIENT_ORIGIN" envDefault:"http://localhost:3002"`
-	// More allowed origins, comma-separated: the Angular apps while they run
-	// next to the Nuxt ones during the migration (e.g. next.test.ermekten.com).
+	// More allowed origins, comma-separated: the Angular apps when they run
+	// locally next to the Nuxt ones during the migration (localhost:3012/3013).
 	ExtraOrigins []string `env:"EXTRA_ORIGINS" envSeparator:","`
 
 	// How long to wait for an upstream to start responding. Generous because

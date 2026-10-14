@@ -157,7 +157,6 @@ services:
       PAYMENTS_URL: http://payments:8086
       ADMIN_ORIGIN: ${ADMIN_ORIGIN}
       CLIENT_ORIGIN: ${CLIENT_ORIGIN}
-      EXTRA_ORIGINS: ${EXTRA_ORIGINS:-}
       # nginx on the host reaches the gateway through the Docker bridge.
       TRUSTED_PROXIES: 172.16.0.0/12
     ports:
@@ -182,9 +181,14 @@ services:
     depends_on:
       - users
 
+  # Frontends: one profile per environment (see the deploy workflows).
+  # "nuxt" (production): the Nuxt apps. "angular" (staging): their Angular
+  # successors (docs/angular-migration-plan.md) on the same ports, so the
+  # same nginx sites (test.ermekten.com, test.admin.ermekten.com) serve them.
   admin:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-admin:${IMAGE_TAG}
     restart: unless-stopped
+    profiles: [nuxt]
     env_file: .env
     ports:
       - "${ADMIN_PORT}:3000"
@@ -194,36 +198,34 @@ services:
   tourism:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-tourism:${IMAGE_TAG}
     restart: unless-stopped
+    profiles: [nuxt]
     env_file: .env
     ports:
       - "${CLIENT_PORT}:3000"
     depends_on:
       - gateway
 
-
-  # Angular apps of the frontend migration (docs/angular-migration-plan.md).
-  # Only staging starts them (--profile next), on next.test.ermekten.com.
   site:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-site:${IMAGE_TAG}
     restart: unless-stopped
-    profiles: [next]
+    profiles: [angular]
     environment:
       API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
-      SITE_URL: ${NEXT_SITE_URL:-}
+      SITE_URL: ${NUXT_PUBLIC_SITE_URL}
       TELEGRAM_BOT_USERNAME: ${NUXT_PUBLIC_TELEGRAM_BOT_USERNAME}
     ports:
-      - "127.0.0.1:${NEXT_SITE_PORT:-5010}:3000"
+      - "${CLIENT_PORT}:3000"
     depends_on:
       - gateway
 
   panel:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-panel:${IMAGE_TAG}
     restart: unless-stopped
-    profiles: [next]
+    profiles: [angular]
     environment:
       API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
     ports:
-      - "127.0.0.1:${NEXT_PANEL_PORT:-5011}:3000"
+      - "${ADMIN_PORT}:3000"
     depends_on:
       - gateway
 

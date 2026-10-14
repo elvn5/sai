@@ -28,12 +28,7 @@
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {
-              "allowedHosts": [
-                "ermekten.com",
-                "test.ermekten.com",
-                "next.test.ermekten.com",
-                "localhost"
-              ]
+              "allowedHosts": ["ermekten.com", "test.ermekten.com", "localhost", "127.0.0.1"]
             },
             "ssr": {
               "entry": "src/server.ts"

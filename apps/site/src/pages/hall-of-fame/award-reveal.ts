@@ -1,7 +1,7 @@
 import type { Award } from '@/core/api/types';
 import { injectLang } from '@/core/i18n/current-lang';
 import { localizedText, personName } from '@/core/lib/format';
-import { AchievementMedal } from '@/pages/hall-of-fame/achievement-medal';
+import { AchievementMedal } from '@/ui/achievements/achievement-medal';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';

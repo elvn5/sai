@@ -6,6 +6,10 @@ import { RenderMode, type ServerRoute } from '@angular/ssr';
 // it stale for 10 more while fetching a fresh copy.
 export const PUBLIC_CACHE = 'public, max-age=0, s-maxage=300, stale-while-revalidate=600';
 
+// The page's own noindex arrives with its script; crawlers that don't run
+// it still read this header (the shell they get is the same everywhere).
+const PRIVATE_HEADERS = { 'X-Robots-Tag': 'noindex', 'Cache-Control': 'no-store' };
+
 // Account, cabinet, payment and edit pages: rendered in the browser only
 // (never cached, nothing personal on the server). Unprefixed paths.
 const CLIENT_PATHS = [
@@ -21,6 +25,13 @@ const CLIENT_PATHS = [
   'trails/:slug/edit',
   'outings/new',
   'outings/:id/edit',
+  'login',
+  'profile',
+  'payments/return',
+  'payments/test',
+  'achievements/award',
+  'partner',
+  'partner/**',
 ];
 
 // The same route under every language prefix ("blog/new", "en/blog/new"…).
@@ -34,7 +45,7 @@ function inEveryLanguage(path: string): string[] {
 // account, cabinet, payment and edit pages.
 export const serverRoutes: ServerRoute[] = [
   ...CLIENT_PATHS.flatMap(inEveryLanguage).map(
-    (path): ServerRoute => ({ path, renderMode: RenderMode.Client }),
+    (path): ServerRoute => ({ path, renderMode: RenderMode.Client, headers: PRIVATE_HEADERS }),
   ),
   { path: '**', renderMode: RenderMode.Server, headers: { 'Cache-Control': PUBLIC_CACHE } },
 ];

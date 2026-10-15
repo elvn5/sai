@@ -18,6 +18,12 @@ export const MIGRATED_SECTIONS: readonly string[] = [
   '/trails',
   '/outings',
   '/',
+  // Wave 4: account, payments and the partner cabinet.
+  '/login',
+  '/profile',
+  '/payments',
+  '/partner',
+  '/achievements',
 ];
 
 export function isMigrated(path: string, sections: readonly string[] = MIGRATED_SECTIONS): boolean {

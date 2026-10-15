@@ -79,16 +79,25 @@ location ~ ^/((ky|en|de)/?)?$ {
     add_header X-Cache-Status $upstream_cache_status always;
 }
 
+# Волна 4: вход, профиль, оплата, кабинет партнёра, выдача достижений.
+# Эти страницы для вошедшего и рендерятся в браузере: без кеша.
+location ~ ^/(ky/|en/|de/)?(login|profile|payments|partner|achievements)(/|$) {
+    proxy_pass http://ermekten_site;
+}
+
 # Всё остальное — по-прежнему Nuxt.
 location / { proxy_pass http://ermekten_nuxt; }
 ```
+
+**После волны 4** у Nuxt не остаётся страниц: все пути сайта отдаёт Angular. Когда волна 4 проверена, `location /` можно направить на `ermekten_site` — тогда и неизвестные адреса (404), `robots.txt` и `logo.svg` отвечает Angular, а Nuxt не получает трафика. Блоки разделов при этом можно оставить как есть (ради кеша) или удалить. Nuxt и его контейнер убираются в фазе 7.
 
 Применить: `sudo nginx -t && sudo systemctl reload nginx`.
 
 Проверить:
 - `curl -sI https://ermekten.com/blog` — ответ от Angular (в HTML нет `/_nuxt/`), `X-Cache-Status: MISS`, а при повторе `HIT`;
 - `curl -s https://ermekten.com/sitemap.xml | head` — индекс `sitemapindex`;
-- `/profile`, `/login`, `/partner` по-прежнему отдаёт Nuxt (до волны 4); `/`, `/trails`, `/outings` — Angular, если волна 3 включена;
+- `/`, `/trails`, `/outings` — Angular, если включена волна 3; `/login`, `/profile`, `/partner` — Angular, если включена волна 4 (до этого — Nuxt);
+- после волны 4: вход по паролю и через Telegram, возврат из банка на `/payments/return?order=…` (адрес возврата — `SITE_URL` сервиса платежей), кабинет партнёра;
 - на странице маршрута грузится карта (`/media/leaflet/leaflet.css` отвечает 200 от Angular) и прогноз погоды;
 - вход сохраняется при переходах между частями (cookie общие), страница `/blog/new` открывается у партнёра.
 

@@ -13,6 +13,11 @@ const MIGRATED_SECTIONS = [
   '/trails',
   '/outings',
   '/',
+  '/login',
+  '/profile',
+  '/payments',
+  '/partner',
+  '/achievements',
 ];
 
 function isMigrated(path: string): boolean {

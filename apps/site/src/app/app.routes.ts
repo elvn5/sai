@@ -145,6 +145,74 @@ const pages: Routes = [
   },
 
   {
+    path: 'login',
+    loadComponent: () => import('@/pages/login/login.page').then((m) => m.LoginPage),
+  },
+  {
+    path: 'profile',
+    canActivate: [requireAuth],
+    loadComponent: () => import('@/pages/profile/profile.page').then((m) => m.ProfilePage),
+  },
+  {
+    path: 'payments/return',
+    canActivate: [requireAuth],
+    loadComponent: () =>
+      import('@/pages/payments/payment-return.page').then((m) => m.PaymentReturnPage),
+  },
+  {
+    path: 'payments/test',
+    canActivate: [requireAuth],
+    loadComponent: () =>
+      import('@/pages/payments/payment-test.page').then((m) => m.PaymentTestPage),
+  },
+  {
+    path: 'achievements/award',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/achievements/award.page').then((m) => m.AwardPage),
+  },
+  {
+    path: 'partner',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/partner/partner-layout').then((m) => m.PartnerLayout),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('@/pages/partner/dashboard.page').then((m) => m.PartnerDashboardPage),
+      },
+      {
+        path: 'stats',
+        loadComponent: () => import('@/pages/partner/stats.page').then((m) => m.PartnerStatsPage),
+      },
+      {
+        path: 'bookings',
+        loadComponent: () =>
+          import('@/pages/partner/bookings.page').then((m) => m.PartnerBookingsPage),
+      },
+      {
+        path: 'finances',
+        loadComponent: () =>
+          import('@/pages/partner/finances.page').then((m) => m.PartnerFinancesPage),
+      },
+      {
+        path: 'listings',
+        loadComponent: () =>
+          import('@/pages/partner/listings.page').then((m) => m.PartnerListingsPage),
+      },
+      {
+        path: 'reviews',
+        loadComponent: () =>
+          import('@/pages/partner/reviews.page').then((m) => m.PartnerReviewsPage),
+      },
+      {
+        path: 'tours/:id',
+        loadComponent: () =>
+          import('@/pages/partner/tour-edit.page').then((m) => m.PartnerTourEditPage),
+      },
+    ],
+  },
+
+  {
     path: '**',
     loadComponent: () => import('@/pages/not-found/not-found.page').then((m) => m.NotFoundPage),
   },

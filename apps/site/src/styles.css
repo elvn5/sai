@@ -3,6 +3,92 @@
 @import "@angular/cdk/overlay-prebuilt.css";
 /* Icons as CSS (icon-[heroicons--home], icon-[mdi--trophy]): no JS, render on the server. */
 @plugin "@iconify/tailwind4";
+/* .prose for blog posts, guides and the editor. */
+@plugin "@tailwindcss/typography";
+
+/* The UI kit shared with apps/panel: plain elements with these classes.
+   Tailwind 4 can't @apply one component class inside another, so shared
+   bases are selector lists. */
+@layer components {
+  .ui-btn-primary,
+  .ui-btn-soft,
+  .ui-btn-ghost,
+  .ui-btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .ui-btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .ui-btn-soft {
+    @apply bg-text/5 text-text hover:bg-text/10;
+  }
+  .ui-btn-ghost {
+    @apply text-text hover:bg-text/5;
+  }
+  .ui-btn-danger {
+    @apply text-red-600 hover:bg-red-500/10;
+  }
+  .ui-btn-xs {
+    @apply px-2 py-1 text-xs;
+  }
+
+  .ui-field {
+    @apply flex flex-col gap-1 text-sm text-text;
+  }
+  .ui-hint {
+    @apply text-xs text-text-muted;
+  }
+  .ui-error {
+    @apply text-sm text-red-600;
+  }
+  .ui-input {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .ui-card,
+  .ui-table-wrap,
+  .ui-dialog {
+    @apply rounded-card border border-border bg-surface;
+  }
+  .ui-table-wrap {
+    @apply overflow-x-auto;
+  }
+  .ui-dialog {
+    @apply max-h-[90vh] w-[min(42rem,calc(100vw-2rem))] overflow-y-auto p-6 shadow-xl;
+  }
+  .ui-table {
+    @apply w-full text-left text-sm;
+  }
+  .ui-table thead {
+    @apply bg-text/5 text-text-muted;
+  }
+  .ui-table th,
+  .ui-table td {
+    @apply px-4 py-2;
+  }
+  .ui-table tbody tr {
+    @apply border-t border-border;
+  }
+  .ui-empty {
+    @apply px-4 py-6 text-center text-text-muted;
+  }
+
+  .ui-badge {
+    @apply inline-block rounded px-2 py-0.5 text-xs font-medium;
+  }
+
+  /* A big icon chip (IconPicker): pressed = chosen. */
+  .ui-chip-card {
+    @apply flex w-20 flex-col items-center gap-1.5 rounded-card border border-border px-3 py-3 text-xs font-medium text-text-muted transition-colors hover:border-brand-500/50 hover:text-text aria-pressed:border-brand-500 aria-pressed:bg-brand-500/10 aria-pressed:text-brand-700 dark:aria-pressed:text-brand-300;
+  }
+  /* A filter pill. */
+  .ui-pill {
+    @apply rounded-full border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:border-brand-500/50 hover:text-text aria-[current=page]:border-brand-500 aria-[current=page]:bg-brand-500/10 aria-[current=page]:text-brand-700 dark:aria-[current=page]:text-brand-300;
+  }
+  .ui-file {
+    @apply block w-full text-sm text-text file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white;
+  }
+}
 
 /* The flowing brand-colored line under the header and above the footer. */
 @keyframes brand-gradient-flow {

@@ -208,7 +208,10 @@ services:
   site:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-site:${IMAGE_TAG}
     restart: unless-stopped
-    profiles: [angular]
+    # Staging runs it in place of Nuxt ("angular"); production next to Nuxt
+    # ("site"), with nginx sending the migrated sections to it
+    # (docs/strangler-nginx.md).
+    profiles: [angular, site]
     environment:
       API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
       # Server-side rendering calls the gateway over the Docker network.
@@ -216,7 +219,7 @@ services:
       SITE_URL: ${NUXT_PUBLIC_SITE_URL}
       TELEGRAM_BOT_USERNAME: ${NUXT_PUBLIC_TELEGRAM_BOT_USERNAME}
     ports:
-      - "${CLIENT_PORT}:3000"
+      - "${SITE_PORT}:3000"
     depends_on:
       - gateway
 

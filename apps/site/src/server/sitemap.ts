@@ -1,4 +1,4 @@
-import { DEFAULT_LANG, LANGS, LANG_TAGS, type Lang, localizedPath } from '@/core/i18n/langs';
+import { DEFAULT_LANG, LANGS, type Lang, localizedPath } from '@/core/i18n/langs';
 
 // sitemap.xml for the SSR server: an index (/sitemap.xml) of one sitemap per
 // content type (/sitemaps/<type>.xml), with lastmod and hreflang alternates
@@ -147,7 +147,7 @@ export function renderUrlset(siteUrl: string, entries: SitemapEntry[]): string {
     }
     // Every language links to all of them (and itself), as Google asks.
     const alternates = [
-      ...LANGS.map((lang) => link(LANG_TAGS[lang], `${siteUrl}${localizedPath(lang, entry.path)}`)),
+      ...LANGS.map((lang) => link(lang, `${siteUrl}${localizedPath(lang, entry.path)}`)),
       link('x-default', `${siteUrl}${localizedPath(DEFAULT_LANG, entry.path)}`),
     ].join('');
     return LANGS.map((lang) => {

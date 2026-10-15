@@ -1050,5 +1050,42 @@
   },
   "a11y": {
     "skipToContent": "Zum Inhalt springen"
+  },
+  "editor": {
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "strike": "Durchgestrichen",
+    "heading2": "Überschrift 2",
+    "heading3": "Überschrift 3",
+    "bulletList": "Aufzählung",
+    "orderedList": "Nummerierte Liste",
+    "quote": "Zitat",
+    "link": "Link",
+    "image": "Bild",
+    "undo": "Rückgängig",
+    "redo": "Wiederholen",
+    "write": "Schreiben",
+    "preview": "Vorschau",
+    "uploadingImage": "Bild wird hochgeladen…"
+  },
+  "pagination": {
+    "more": "Mehr anzeigen",
+    "page": "Seite {page}",
+    "previous": "Vorherige Seite",
+    "next": "Nächste Seite"
+  },
+  "breadcrumbs": {
+    "home": "Startseite"
+  },
+  "errors": {
+    "loadFailed": "Die Daten konnten nicht geladen werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+    "retry": "Erneut versuchen"
+  },
+  "upload": {
+    "choose": "Bild auswählen",
+    "replace": "Ersetzen",
+    "remove": "Entfernen",
+    "uploading": "Wird hochgeladen…",
+    "failed": "Die Datei konnte nicht hochgeladen werden. Bitte erneut versuchen."
   }
 }

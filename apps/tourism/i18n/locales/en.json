@@ -1050,5 +1050,42 @@
   },
   "a11y": {
     "skipToContent": "Skip to content"
+  },
+  "editor": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "strike": "Strikethrough",
+    "heading2": "Heading 2",
+    "heading3": "Heading 3",
+    "bulletList": "Bulleted list",
+    "orderedList": "Numbered list",
+    "quote": "Quote",
+    "link": "Link",
+    "image": "Image",
+    "undo": "Undo",
+    "redo": "Redo",
+    "write": "Write",
+    "preview": "Preview",
+    "uploadingImage": "Uploading image…"
+  },
+  "pagination": {
+    "more": "Show more",
+    "page": "Page {page}",
+    "previous": "Previous page",
+    "next": "Next page"
+  },
+  "breadcrumbs": {
+    "home": "Home"
+  },
+  "errors": {
+    "loadFailed": "Could not load the data. Check your connection and try again.",
+    "retry": "Try again"
+  },
+  "upload": {
+    "choose": "Choose image",
+    "replace": "Replace",
+    "remove": "Remove",
+    "uploading": "Uploading…",
+    "failed": "Could not upload the file. Please try again."
   }
 }

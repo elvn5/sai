@@ -1,16 +1,15 @@
 import type { PageSeo, SeoPage } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
-import {
-  LANGS,
-  LANG_TAGS,
-  type Lang,
-  OG_LOCALES,
-  localizedPath,
-  splitLang,
-} from '@/core/i18n/langs';
+import { LANGS, type Lang, OG_LOCALES, localizedPath, splitLang } from '@/core/i18n/langs';
 import { resolveMediaUrl } from '@/core/lib/media-url';
-import { type JsonLd, organization, serializeJsonLd, webSite } from '@/core/seo/json-ld';
+import {
+  type JsonLd,
+  breadcrumbList,
+  organization,
+  serializeJsonLd,
+  webSite,
+} from '@/core/seo/json-ld';
 import { type HttpResourceRef, httpResource } from '@angular/common/http';
 import { DOCUMENT, Injectable, effect, inject, untracked } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
@@ -74,7 +73,7 @@ export class SeoService {
     for (const [alternateLang, alternatePath] of alternates) {
       this.addLink({
         rel: 'alternate',
-        hreflang: LANG_TAGS[alternateLang],
+        hreflang: alternateLang,
         href: this.absolute(localizedPath(alternateLang, alternatePath), page.query),
       });
     }
@@ -114,8 +113,28 @@ export class SeoService {
   setSiteJsonLd(lang: Lang): void {
     this.setJsonLd('site', [
       organization(this.config.siteUrl, BRAND),
-      webSite(this.config.siteUrl, BRAND, LANG_TAGS[lang]),
+      webSite(this.config.siteUrl, BRAND, lang),
     ]);
+  }
+
+  // The absolute URL of an unprefixed path ("/blog/hello") in the current
+  // language.
+  pageUrl(path: string): string {
+    return this.absolute(localizedPath(splitLang(this.currentUrl()).lang, path));
+  }
+
+  // The current language's code (inLanguage).
+  langTag(): string {
+    return splitLang(this.currentUrl()).lang;
+  }
+
+  // BreadcrumbList from the home page through `crumbs` (unprefixed paths;
+  // the last one is the page itself).
+  breadcrumbs(crumbs: { name: string; path: string }[]): JsonLd {
+    const home = { name: this.transloco.translate('breadcrumbs.home'), path: '/' };
+    return breadcrumbList(
+      [home, ...crumbs].map(({ name, path }) => ({ name, url: this.pageUrl(path) })),
+    );
   }
 
   // The absolute URL of a path that already carries its language prefix.

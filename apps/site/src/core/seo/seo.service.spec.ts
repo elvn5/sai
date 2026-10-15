@@ -46,9 +46,7 @@ describe('SeoService', () => {
 
     expect(document.title).toBe('Hotels — brand.name');
     expect(attr(head, 'link[rel=canonical]', 'href')).toBe('https://ermekten.com/en/hotels?page=2');
-    expect(attr(head, 'link[hreflang="ky-KG"]', 'href')).toBe(
-      'https://ermekten.com/ky/hotels?page=2',
-    );
+    expect(attr(head, 'link[hreflang="ky"]', 'href')).toBe('https://ermekten.com/ky/hotels?page=2');
     expect(attr(head, 'link[hreflang="x-default"]', 'href')).toBe(
       'https://ermekten.com/hotels?page=2',
     );
@@ -97,6 +95,6 @@ describe('SeoService', () => {
       'Organization',
       'WebSite',
     ]);
-    expect(JSON.parse(scripts[1]?.textContent ?? '').inLanguage).toBe('de-DE');
+    expect(JSON.parse(scripts[1]?.textContent ?? '').inLanguage).toBe('de');
   });
 });

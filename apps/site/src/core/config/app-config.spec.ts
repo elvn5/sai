@@ -30,3 +30,21 @@ describe('configFromEnv', () => {
     expect(contextFromEnv({}).apiInternalUrl).toBeUndefined();
   });
 });
+
+describe('loadClientConfig', () => {
+  it('fetches the config only when the page came without server state', async () => {
+    const { TransferState, makeStateKey } = await import('@angular/core');
+    const { loadClientConfig } = await import('@/core/config/app-config');
+    const state = new TransferState();
+    const fetchJson = vi.fn(async () => ({ apiBaseUrl: 'https://api.ermekten.com' }));
+
+    await loadClientConfig(state, fetchJson);
+    expect(fetchJson).toHaveBeenCalledWith('/app-config.json');
+    expect(state.get(makeStateKey<{ apiBaseUrl: string }>('app-config'), null)?.apiBaseUrl).toBe(
+      'https://api.ermekten.com',
+    );
+
+    await loadClientConfig(state, fetchJson);
+    expect(fetchJson).toHaveBeenCalledTimes(1);
+  });
+});

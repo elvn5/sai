@@ -13,13 +13,9 @@ export const LANG_NAMES: Record<Lang, string> = {
   de: 'Deutsch',
 };
 
-// BCP 47 tags (hreflang) and Open Graph locales.
-export const LANG_TAGS: Record<Lang, string> = {
-  ru: 'ru-RU',
-  ky: 'ky-KG',
-  en: 'en-US',
-  de: 'de-DE',
-};
+// Open Graph locales (og:locale needs a region). hreflang and inLanguage
+// use the plain language codes: the content isn't meant for one country,
+// and "en-US" would leave English readers elsewhere on x-default.
 export const OG_LOCALES: Record<Lang, string> = {
   ru: 'ru_RU',
   ky: 'ky_KG',

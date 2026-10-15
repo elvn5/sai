@@ -52,6 +52,25 @@ export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG', {
   },
 });
 
+// Where the SSR server publishes the config for pages it doesn't render
+// (RenderMode.Client: the browser gets an empty shell, without TransferState).
+export const CONFIG_PATH = '/app-config.json';
+
+// Before bootstrap in the browser: when the page came without server-rendered
+// state (a Client-mode route), fetch the config from the SSR server. Plain
+// fetch: HttpClient's interceptor would send the path to the API.
+export async function loadClientConfig(
+  state: TransferState,
+  fetchJson: (path: string) => Promise<unknown> = async (path) => (await fetch(path)).json(),
+): Promise<void> {
+  if (state.hasKey(CONFIG_KEY)) return;
+  try {
+    state.set(CONFIG_KEY, (await fetchJson(CONFIG_PATH)) as AppConfig);
+  } catch {
+    // Stays on the fallback; the page still renders.
+  }
+}
+
 // The API base URL for requests made on the server: the internal one when
 // set (no round trip through the public internet), else the public one.
 export const SERVER_API_URL = new InjectionToken<string>('SERVER_API_URL', {

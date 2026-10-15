@@ -20,7 +20,7 @@ describe('sitemap', () => {
     expect(xml.match(/<url>/g)).toHaveLength(4);
     expect(xml).toContain('<loc>https://ermekten.com/en/hotels/ak-say</loc>');
     expect(xml).toContain('<lastmod>2026-10-01T10:00:00.000Z</lastmod>');
-    expect(xml).toContain('hreflang="ky-KG" href="https://ermekten.com/ky/hotels/ak-say"');
+    expect(xml).toContain('hreflang="ky" href="https://ermekten.com/ky/hotels/ak-say"');
     expect(xml).toContain('hreflang="x-default" href="https://ermekten.com/hotels/ak-say"');
   });
 

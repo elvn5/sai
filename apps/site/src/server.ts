@@ -95,6 +95,13 @@ if (!config.indexable) {
   });
 }
 
+// The runtime config for pages rendered in the browser only (no server
+// state to carry it): the same public values the HTML would hold.
+app.get('/app-config.json', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json(config);
+});
+
 // Hashed build assets: cache forever.
 app.use(express.static(browserDistFolder, { maxAge: '1y', index: false, redirect: false }));
 

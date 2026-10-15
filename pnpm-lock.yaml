@@ -275,18 +275,39 @@ importers:
       '@pkg/tokens':
         specifier: workspace:^
         version: link:../../packages/tokens
+      '@tiptap/core':
+        specifier: ^3.31.4
+        version: 3.31.4(@tiptap/pm@3.31.4)
+      '@tiptap/extension-image':
+        specifier: ^3.31.4
+        version: 3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))
+      '@tiptap/extension-placeholder':
+        specifier: ^3.31.4
+        version: 3.31.4(@tiptap/extensions@3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))(@tiptap/pm@3.31.4))
+      '@tiptap/pm':
+        specifier: ^3.31.4
+        version: 3.31.4
+      '@tiptap/starter-kit':
+        specifier: ^3.31.4
+        version: 3.31.4
       compression:
         specifier: ^1.8.1
         version: 1.8.2
       express:
         specifier: ^5.1.0
         version: 5.2.1
+      iconify-icon:
+        specifier: ^3.0.3
+        version: 3.0.3
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
+      uqr:
+        specifier: ^0.1.2
+        version: 0.1.3
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -312,6 +333,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.1.12
         version: 4.3.3
+      '@tailwindcss/typography':
+        specifier: ^0.5.20
+        version: 0.5.20(tailwindcss@4.3.3)
       '@types/compression':
         specifier: ^1.8.1
         version: 1.8.1

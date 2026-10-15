@@ -4,7 +4,9 @@ import { DOCUMENT, Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   type ActivatedRouteSnapshot,
+  Router,
   type RouterStateSnapshot,
+  UrlTree,
   provideRouter,
 } from '@angular/router';
 
@@ -23,9 +25,10 @@ function setup(session: boolean, partner: boolean) {
   const route = { data: { lang: 'en' } } as unknown as ActivatedRouteSnapshot;
   const run = () =>
     runInInjectionContext(TestBed.inject(Injector), () =>
-      requirePartner(route, {} as RouterStateSnapshot),
+      requirePartner(route, { url: '/en/partner/stats' } as RouterStateSnapshot),
     );
-  return { run, assign };
+  const serialize = (tree: unknown): string => TestBed.inject(Router).serializeUrl(tree as UrlTree);
+  return { run, assign, serialize };
 }
 
 describe('requirePartner', () => {
@@ -35,15 +38,16 @@ describe('requirePartner', () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
-  it('sends anonymous visitors to the login page, still on the Nuxt site', async () => {
-    const { run, assign } = setup(false, false);
-    expect(await run()).toBe(false);
-    expect(assign).toHaveBeenCalledWith('/en/login');
+  it('sends anonymous visitors to the login page, which brings them back', async () => {
+    const { run, assign, serialize } = setup(false, false);
+    const result = await run();
+    expect(result).toBeInstanceOf(UrlTree);
+    expect(serialize(result)).toBe('/en/login?redirect=%2Fen%2Fpartner%2Fstats');
+    expect(assign).not.toHaveBeenCalled();
   });
 
   it('sends other users to the partner tab of their profile', async () => {
-    const { run, assign } = setup(true, false);
-    expect(await run()).toBe(false);
-    expect(assign).toHaveBeenCalledWith('/en/profile?tab=partner');
+    const { run, serialize } = setup(true, false);
+    expect(serialize(await run())).toBe('/en/profile?tab=partner');
   });
 });

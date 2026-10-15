@@ -166,6 +166,12 @@ export interface HallOfFame {
   recent: Award[];
 }
 
+// Whom a partner is about to award, found by their award code.
+export interface AwardRecipient {
+  user: Person;
+  earnedAchievementIds: string[];
+}
+
 // The signed-in visitor's achievements and personal award code.
 export interface MyAchievements {
   code: string;
@@ -340,12 +346,97 @@ export interface ListingPost {
 
 export type ListingStatEvent = 'view' | 'phone' | 'whatsapp' | 'telegram' | 'website';
 
-// A tour booking, paid on the payment provider's page.
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
+
+// A tour booking, paid on the payment provider's page (services/payments).
 export interface Order {
   id: string;
-  status: 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
+  kind: 'tour';
+  itemId: string;
+  itemTitle: string;
+  itemSlug: string | null;
+  itemLocale: string | null;
+  itemDate: string | null;
+  quantity: number;
+  unitPrice: number;
   amount: number;
+  fee: number;
+  // What the partner gets.
+  payeeAmount: number;
+  contactName: string;
+  contactPhone: string;
+  comment: string | null;
+  status: OrderStatus;
   paymentUrl: string | null;
+  expiresAt: string;
+  paidAt: string | null;
+  refundNote: string | null;
+  payoutId: string | null;
+  createdAt: string;
+}
+
+// Partner cabinet
+
+// One of the signed-in partner's listings (services/listings).
+export interface ListingRef {
+  targetType: ReviewTargetType;
+  id: string;
+  title: string;
+  slug: string;
+  // Tours only.
+  locale: string | null;
+  isPublished: boolean;
+}
+
+export interface PartnerReview extends Review {
+  listing: ListingRef;
+}
+
+export interface StatCounts {
+  views: number;
+  phone: number;
+  whatsapp: number;
+  telegram: number;
+  website: number;
+  // All contact clicks together.
+  contacts: number;
+}
+
+export interface DailyStats {
+  day: string;
+  views: number;
+  contacts: number;
+}
+
+export interface ListingStatsRow extends StatCounts {
+  listing: ListingRef;
+}
+
+export interface StatsReport {
+  from: string;
+  to: string;
+  totals: StatCounts;
+  // The same-length period before, for comparison.
+  previous: StatCounts;
+  daily: DailyStats[];
+  listings: ListingStatsRow[];
+}
+
+export interface Payout {
+  id: string;
+  amount: number;
+  orders: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface PartnerFinances {
+  // Paid bookings not yet paid out.
+  owed: number;
+  owedOrders: number;
+  paidOut: number;
+  month: { orders: number; guests: number; revenue: number; fee: number; earned: number };
+  payouts: Payout[];
 }
 
 // services/trails

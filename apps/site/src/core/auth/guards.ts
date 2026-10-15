@@ -35,20 +35,21 @@ function injectRedirect(route: ActivatedRouteSnapshot): Redirect {
 }
 
 // Pages for a signed-in visitor (forms, profile): anonymous visitors go to
-// /login. These routes render in the browser only (RenderMode.Client).
-export const requireAuth: CanActivateFn = async (route): Promise<boolean | UrlTree> => {
+// /login, which brings them back here. These routes render in the browser
+// only (RenderMode.Client).
+export const requireAuth: CanActivateFn = async (route, state): Promise<boolean | UrlTree> => {
   if (isPlatformServer(inject(PLATFORM_ID))) return true;
   const auth = inject(AuthStore);
   const redirect = injectRedirect(route);
-  return (await auth.ensureSession()) || redirect('/login');
+  return (await auth.ensureSession()) || redirect('/login', { redirect: state.url });
 };
 
 // Pages for approved partners: everyone else lands on the profile's
 // partner tab, where they can apply.
-export const requirePartner: CanActivateFn = async (route): Promise<boolean | UrlTree> => {
+export const requirePartner: CanActivateFn = async (route, state): Promise<boolean | UrlTree> => {
   if (isPlatformServer(inject(PLATFORM_ID))) return true;
   const auth = inject(AuthStore);
   const redirect = injectRedirect(route);
-  if (!(await auth.ensureSession())) return redirect('/login');
+  if (!(await auth.ensureSession())) return redirect('/login', { redirect: state.url });
   return auth.isPartner() || redirect('/profile', { tab: 'partner' });
 };

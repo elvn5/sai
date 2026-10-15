@@ -58,6 +58,21 @@ describe('AuthStore', () => {
     expect(auth.user()).toBeNull();
   });
 
+  it('reports a sign-in made after the first check', async () => {
+    const { auth, http } = setup();
+    const first = auth.ensureSession();
+    await tick();
+    http.expectOne('/auth/user/me').flush(null, { status: 401, statusText: 'Unauthorized' });
+    expect(await first).toBe(false);
+
+    const login = auth.login({ identifier: 'a@b.kg', password: 'secret-123' });
+    http.expectOne('/auth/user/login').flush({ user: USER });
+    await login;
+    // No second /auth/user/me: the store already knows.
+    expect(await auth.ensureSession()).toBe(true);
+    http.verify();
+  });
+
   it('signs in with Telegram initData inside the Mini App', async () => {
     const { auth, http } = setup('query_id=1&hash=abc');
     const result = auth.ensureSession();

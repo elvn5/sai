@@ -39,7 +39,7 @@ export class AuthStore {
   private readonly telegram = inject(TelegramWebAppStore);
   private readonly userSignal = signal<AppUser | null>(null);
   private readonly checkedSignal = signal(false);
-  private pending: Promise<boolean> | null = null;
+  private pending: Promise<void> | null = null;
 
   readonly user = this.userSignal.asReadonly();
   // Whether the session check has finished (user() is then final).
@@ -54,9 +54,12 @@ export class AuthStore {
   // The one entry point for establishing the session, checked once per page
   // load: inside a Telegram Mini App, Telegram's initData signs the visitor
   // in (there is no login form there); otherwise the cookie decides.
-  ensureSession(): Promise<boolean> {
+  // Resolves to whether someone is signed in now: a later sign-in or
+  // sign-out counts, not just the first check.
+  async ensureSession(): Promise<boolean> {
     this.pending ??= this.establish();
-    return this.pending;
+    await this.pending;
+    return this.userSignal() !== null;
   }
 
   async register(payload: RegisterPayload): Promise<PendingVerification> {
@@ -129,25 +132,28 @@ export class AuthStore {
     );
   }
 
+  // Asks the admin to make this account a partner (status becomes pending).
+  async applyAsPartner(): Promise<void> {
+    this.setUser((await this.post<{ user: AppUser }>('/partners/apply', {})).user);
+  }
+
   async logout(): Promise<void> {
     await this.post('/auth/user/logout', {});
     this.setUser(null);
   }
 
-  private async establish(): Promise<boolean> {
+  private async establish(): Promise<void> {
     await this.telegram.ready;
     const initData = this.telegram.initData();
     if (initData) {
       try {
         await this.loginWithTelegramMiniApp(initData);
-        return true;
+        return;
       } catch {
         // Fall back to the cookie.
       }
     }
-    const user = await this.fetchUser();
-    this.setUser(user);
-    return user !== null;
+    this.setUser(await this.fetchUser());
   }
 
   private async fetchUser(): Promise<AppUser | null> {

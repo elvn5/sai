@@ -14,6 +14,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 
 const WIDGET_URL = 'https://telegram.org/js/telegram-widget.js?22';
 const CALLBACK = 'onTelegramAuth';
@@ -33,6 +34,8 @@ export class TelegramLoginWidget {
   private readonly frame = viewChild.required<ElementRef<HTMLElement>>('frame');
   private readonly botUsername = inject(APP_CONFIG).telegramBotUsername;
   private readonly colorMode = inject(ColorModeStore);
+  private readonly transloco = inject(TranslocoService);
+  private observer: MutationObserver | undefined;
 
   constructor() {
     if (!isPlatformBrowser(inject(PLATFORM_ID))) return;
@@ -40,7 +43,10 @@ export class TelegramLoginWidget {
     afterNextRender(() => {
       const view = this.frame().nativeElement.ownerDocument.defaultView as CallbackWindow;
       view[CALLBACK] = (payload) => this.authorized.emit(payload);
-      destroyRef.onDestroy(() => delete view[CALLBACK]);
+      destroyRef.onDestroy(() => {
+        delete view[CALLBACK];
+        this.observer?.disconnect();
+      });
     });
     // Re-created when the mode changes: Telegram's "logged in as" chip has
     // a dark backdrop that only suits dark mode.
@@ -60,5 +66,18 @@ export class TelegramLoginWidget {
     script.dataset['requestAccess'] = 'write';
     script.dataset['userpic'] = String(userpic);
     frame.replaceChildren(script);
+    this.titleIframe(frame);
+  }
+
+  // Telegram's script adds an iframe without a title; screen readers need one.
+  private titleIframe(frame: HTMLElement): void {
+    this.observer?.disconnect();
+    this.observer = new MutationObserver(() => {
+      const iframe = frame.querySelector('iframe');
+      if (!iframe) return;
+      iframe.title = this.transloco.translate('login.orTelegram');
+      this.observer?.disconnect();
+    });
+    this.observer.observe(frame, { childList: true });
   }
 }

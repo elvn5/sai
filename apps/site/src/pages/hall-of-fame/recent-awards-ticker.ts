@@ -1,7 +1,7 @@
 import type { Award } from '@/core/api/types';
 import { injectLang } from '@/core/i18n/current-lang';
 import { localizedText, personName } from '@/core/lib/format';
-import { AchievementMedal } from '@/pages/hall-of-fame/achievement-medal';
+import { AchievementMedal } from '@/ui/achievements/achievement-medal';
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 // The latest awards scrolling past, like a stadium ticker. The list runs

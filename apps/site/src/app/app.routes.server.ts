@@ -17,6 +17,10 @@ const CLIENT_PATHS = [
   'local-guides/new',
   'local-guides/:slug/edit',
   'tours/new',
+  'trails/new',
+  'trails/:slug/edit',
+  'outings/new',
+  'outings/:id/edit',
 ];
 
 // The same route under every language prefix ("blog/new", "en/blog/new"…).

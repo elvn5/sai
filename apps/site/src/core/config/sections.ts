@@ -14,6 +14,10 @@ export const MIGRATED_SECTIONS: readonly string[] = [
   '/hotels',
   '/local-guides',
   '/tours',
+  // Wave 3: routes, outings and the home page.
+  '/trails',
+  '/outings',
+  '/',
 ];
 
 export function isMigrated(path: string, sections: readonly string[] = MIGRATED_SECTIONS): boolean {

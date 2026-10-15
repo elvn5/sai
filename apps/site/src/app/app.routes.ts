@@ -107,6 +107,44 @@ const pages: Routes = [
   },
 
   {
+    path: 'trails',
+    loadComponent: () => import('@/pages/trails/trails-list.page').then((m) => m.TrailsListPage),
+  },
+  {
+    path: 'trails/new',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/trails/trail-new.page').then((m) => m.TrailNewPage),
+  },
+  {
+    path: 'trails/:slug/edit',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/trails/trail-edit.page').then((m) => m.TrailEditPage),
+  },
+  {
+    path: 'trails/:slug',
+    loadComponent: () => import('@/pages/trails/trail.page').then((m) => m.TrailPage),
+  },
+
+  {
+    path: 'outings',
+    loadComponent: () => import('@/pages/outings/outings-list.page').then((m) => m.OutingsListPage),
+  },
+  {
+    path: 'outings/new',
+    canActivate: [requireAuth],
+    loadComponent: () => import('@/pages/outings/outing-new.page').then((m) => m.OutingNewPage),
+  },
+  {
+    path: 'outings/:id/edit',
+    canActivate: [requireAuth],
+    loadComponent: () => import('@/pages/outings/outing-edit.page').then((m) => m.OutingEditPage),
+  },
+  {
+    path: 'outings/:id',
+    loadComponent: () => import('@/pages/outings/outing.page').then((m) => m.OutingPage),
+  },
+
+  {
     path: '**',
     loadComponent: () => import('@/pages/not-found/not-found.page').then((m) => m.NotFoundPage),
   },

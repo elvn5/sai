@@ -13,10 +13,10 @@
 С сервера (или любой машины, откуда доступен порт), после выкладки на staging и ручной проверки:
 
 ```bash
-node scripts/compare-crawl.mjs --old https://ermekten.com --new http://127.0.0.1:3005 --host ermekten.com --sections /blog,/guides,/gallery,/hall-of-fame,/hotels,/local-guides,/tours
+node scripts/compare-crawl.mjs --old https://ermekten.com --new http://127.0.0.1:3005 --host ermekten.com --sections /blog,/guides,/gallery,/hall-of-fame,/hotels,/local-guides,/tours,/trails,/outings,/
 ```
 
-Скрипт берёт адреса из sitemap нового сайта и для каждой страницы сравнивает статус, title, description, canonical, robots, h1, hreflang и JSON-LD. Код выхода 0 — можно переключать. Добавления на новой стороне (JSON-LD, hreflang) — это ожидаемые улучшения.
+Скрипт берёт адреса из sitemap нового сайта и для каждой страницы сравнивает статус, title, description, canonical, robots, h1, hreflang и JSON-LD (`/` в списке — только главная). Код выхода 0 — можно переключать. Добавления на новой стороне (JSON-LD, hreflang) — это ожидаемые улучшения. Страниц отдельных выходов в sitemap нет (они `noindex`, как и в Nuxt), поэтому одну-две стоит открыть и сравнить вручную.
 
 Также перед переключением: Lighthouse по разделам и ручная проверка в Telegram Mini App.
 
@@ -38,8 +38,9 @@ upstream ermekten_site { server 127.0.0.1:3005; keepalive 16; }
 ```nginx
 # В server {} для ermekten.com, перед location /.
 
-# Файлы сборки Angular (имена с хешем) и его служебные адреса.
-location ~ ^/(main|chunk|styles|polyfills)-[A-Za-z0-9]+\.(js|css)$ { proxy_pass http://ermekten_site; }
+# Файлы сборки Angular (имена с хешем: буквы, цифры, «_» и «-») и его
+# служебные адреса.
+location ~ ^/(main|chunk|styles|polyfills)-[A-Za-z0-9_-]+\.(js|css)$ { proxy_pass http://ermekten_site; }
 location ^~ /media/ { proxy_pass http://ermekten_site; }
 location = /app-config.json { proxy_pass http://ermekten_site; }
 
@@ -47,12 +48,26 @@ location = /app-config.json { proxy_pass http://ermekten_site; }
 location = /sitemap.xml { proxy_pass http://ermekten_site; }
 location ^~ /sitemaps/ { proxy_pass http://ermekten_site; }
 
-# Перенесённые разделы: волна 1 (контент) и волна 2 (каталоги). Каждая
-# следующая волна дописывает свои разделы сюда и в MIGRATED_SECTIONS
-# (apps/site/src/core/config/sections.ts,
+# Перенесённые разделы: волна 1 (контент), волна 2 (каталоги) и волна 3
+# (маршруты, выходы). Каждая следующая волна дописывает свои разделы сюда и
+# в MIGRATED_SECTIONS (apps/site/src/core/config/sections.ts,
 # apps/tourism/plugins/migrated-sections.client.ts). Переключать можно и
 # по одной волне: тогда в списке оставьте только её разделы.
-location ~ ^/(ky/|en/|de/)?(blog|guides|gallery|hall-of-fame|hotels|local-guides|tours)(/|$) {
+location ~ ^/(ky/|en/|de/)?(blog|guides|gallery|hall-of-fame|hotels|local-guides|tours|trails|outings)(/|$) {
+    proxy_pass http://ermekten_site;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_cache ermekten_site;
+    proxy_cache_key $scheme$host$request_uri;
+    proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+    proxy_cache_background_update on;
+    proxy_cache_lock on;
+    add_header X-Cache-Status $upstream_cache_status always;
+}
+
+# Волна 3: главная — только сам адрес «/» и «/ky», «/en», «/de»
+# (адрес со слэшем на конце Angular перенаправит 301).
+location ~ ^/((ky|en|de)/?)?$ {
     proxy_pass http://ermekten_site;
     proxy_http_version 1.1;
     proxy_set_header Connection "";
@@ -73,7 +88,8 @@ location / { proxy_pass http://ermekten_nuxt; }
 Проверить:
 - `curl -sI https://ermekten.com/blog` — ответ от Angular (в HTML нет `/_nuxt/`), `X-Cache-Status: MISS`, а при повторе `HIT`;
 - `curl -s https://ermekten.com/sitemap.xml | head` — индекс `sitemapindex`;
-- `/`, `/tours`, `/profile` по-прежнему отдаёт Nuxt;
+- `/profile`, `/login`, `/partner` по-прежнему отдаёт Nuxt (до волны 4); `/`, `/trails`, `/outings` — Angular, если волна 3 включена;
+- на странице маршрута грузится карта (`/media/leaflet/leaflet.css` отвечает 200 от Angular) и прогноз погоды;
 - вход сохраняется при переходах между частями (cookie общие), страница `/blog/new` открывается у партнёра.
 
 ## 4. Откат

@@ -172,3 +172,178 @@ export interface MyAchievements {
   points: number;
   awards: Award[];
 }
+
+// Catalog listings (services/listings).
+
+export enum Destination {
+  ISSYK_KUL = 'issyk_kul',
+  KARAKOL = 'karakol',
+  BISHKEK = 'bishkek',
+  ALA_ARCHA = 'ala_archa',
+  SONG_KOL = 'song_kol',
+  NARYN = 'naryn',
+  TASH_RABAT = 'tash_rabat',
+  KEL_SUU = 'kel_suu',
+  OSH = 'osh',
+  ARSLANBOB = 'arslanbob',
+  SARY_CHELEK = 'sary_chelek',
+  TALAS = 'talas',
+  BATKEN = 'batken',
+  CHUY = 'chuy',
+}
+
+export enum HotelType {
+  HOTEL = 'hotel',
+  GUESTHOUSE = 'guesthouse',
+  HOSTEL = 'hostel',
+  YURT_CAMP = 'yurt_camp',
+  RESORT = 'resort',
+  APARTMENT = 'apartment',
+}
+
+export enum CancellationPolicy {
+  FREE = 'free',
+  FLEXIBLE = 'flexible',
+  STRICT = 'strict',
+  NON_REFUNDABLE = 'non_refundable',
+}
+
+export enum ReviewTargetType {
+  HOTEL = 'hotel',
+  LOCAL_GUIDE = 'local_guide',
+  TOUR = 'tour',
+}
+
+export interface ListingContacts {
+  phone: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+}
+
+export interface Hotel extends ListingContacts {
+  id: string;
+  slug: string;
+  name: string;
+  type: HotelType;
+  description: string;
+  destination: Destination;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  priceFrom: number | null;
+  stars: number | null;
+  amenities: string[];
+  cancellationPolicy: CancellationPolicy;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  coverImageUrl: string | null;
+  photos: string[];
+  website: string | null;
+  ratingAverage: number;
+  reviewCount: number;
+  userId: string | null;
+  createdAt: string;
+}
+
+export interface LocalGuide extends ListingContacts {
+  id: string;
+  slug: string;
+  name: string;
+  headline: string | null;
+  bio: string;
+  avatarUrl: string | null;
+  coverImageUrl: string | null;
+  photos: string[];
+  languages: string[];
+  specializations: string[];
+  destinations: Destination[];
+  pricePerDay: number | null;
+  experienceYears: number | null;
+  hasVehicle: boolean;
+  ratingAverage: number;
+  reviewCount: number;
+  userId: string | null;
+  createdAt: string;
+}
+
+export interface Tour extends ListingContacts {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  content: string;
+  price: number | null;
+  durationDays: number | null;
+  location: string | null;
+  // Calendar dates (YYYY-MM-DD).
+  startDate: string;
+  endDate: string;
+  destination: Destination | null;
+  cancellationPolicy: CancellationPolicy | null;
+  coverImageUrl: string | null;
+  ratingAverage: number;
+  reviewCount: number;
+  isPublished: boolean;
+  publishedAt: string | null;
+  updatedAt: string;
+  userId: string | null;
+}
+
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+}
+
+export interface PublicAuthor {
+  id: string;
+  firstName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
+export interface ReviewReply {
+  text: string;
+  repliedAt: string;
+}
+
+export interface Review {
+  id: string;
+  rating: number;
+  text: string;
+  photos: string[];
+  createdAt: string;
+  author: PublicAuthor;
+  // The listing owner's public answer.
+  reply: ReviewReply | null;
+}
+
+export interface ReviewSummary {
+  average: number;
+  count: number;
+  // Reviews per star, keyed "1"…"5".
+  distribution: Record<string, number>;
+}
+
+export interface ReviewsPage extends Paginated<Review> {
+  summary: ReviewSummary;
+}
+
+// News and photos a listing's owner posts on its page.
+export interface ListingPost {
+  id: string;
+  text: string;
+  photos: string[];
+  createdAt: string;
+  author: PublicAuthor;
+}
+
+export type ListingStatEvent = 'view' | 'phone' | 'whatsapp' | 'telegram' | 'website';
+
+// A tour booking, paid on the payment provider's page.
+export interface Order {
+  id: string;
+  status: 'pending' | 'paid' | 'failed' | 'expired' | 'refunded';
+  amount: number;
+  paymentUrl: string | null;
+}

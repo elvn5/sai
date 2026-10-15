@@ -5,10 +5,15 @@
 // covers /blog and /blog/…; "/" is the home page only). Keep in step with
 // the nginx locations in docs/strangler-nginx.md.
 export const MIGRATED_SECTIONS: readonly string[] = [
+  // Wave 1: content.
   '/blog',
   '/guides',
   '/gallery',
   '/hall-of-fame',
+  // Wave 2: catalogs.
+  '/hotels',
+  '/local-guides',
+  '/tours',
 ];
 
 export function isMigrated(path: string, sections: readonly string[] = MIGRATED_SECTIONS): boolean {

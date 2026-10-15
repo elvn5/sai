@@ -119,3 +119,206 @@ function dropEmpty(data: JsonLd): JsonLd {
     ),
   );
 }
+
+// Plain text from listing HTML, shortened for a description.
+export function plainText(html: string, maxLength = 300): string {
+  const text = html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
+}
+
+export interface RatedReview {
+  author: string;
+  rating: number;
+  text: string;
+  date: string;
+}
+
+function aggregateRating(average: number, count: number): JsonLd | null {
+  return count > 0
+    ? {
+        '@type': 'AggregateRating',
+        ratingValue: Number(average.toFixed(1)),
+        reviewCount: count,
+        bestRating: 5,
+        worstRating: 1,
+      }
+    : null;
+}
+
+function reviewItems(reviews: RatedReview[]): JsonLd[] | null {
+  return reviews.length > 0
+    ? reviews.map((review) => ({
+        '@type': 'Review',
+        author: { '@type': 'Person', name: review.author },
+        datePublished: review.date.slice(0, 10),
+        reviewBody: review.text,
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: review.rating,
+          bestRating: 5,
+          worstRating: 1,
+        },
+      }))
+    : null;
+}
+
+export interface LodgingData {
+  url: string;
+  name: string;
+  description: string;
+  images: string[];
+  // Street address and the destination's name.
+  address: string | null;
+  locality: string;
+  latitude: number | null;
+  longitude: number | null;
+  priceFrom: number | null;
+  stars: number | null;
+  amenities: string[];
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  telephone: string | null;
+  ratingAverage: number;
+  reviewCount: number;
+  reviews: RatedReview[];
+}
+
+// A hotel, guesthouse or yurt camp.
+export function lodgingBusiness(data: LodgingData): JsonLd {
+  return dropEmpty({
+    '@context': CONTEXT,
+    '@type': 'LodgingBusiness',
+    '@id': `${data.url}#lodging`,
+    url: data.url,
+    name: data.name,
+    description: data.description,
+    image: data.images.length > 0 ? data.images : null,
+    address: dropEmpty({
+      '@type': 'PostalAddress',
+      streetAddress: data.address,
+      addressLocality: data.locality,
+      addressCountry: 'KG',
+    }),
+    geo:
+      data.latitude !== null && data.longitude !== null
+        ? { '@type': 'GeoCoordinates', latitude: data.latitude, longitude: data.longitude }
+        : null,
+    priceRange: data.priceFrom !== null ? `${data.priceFrom}+ KGS` : null,
+    currenciesAccepted: 'KGS',
+    starRating: data.stars ? { '@type': 'Rating', ratingValue: data.stars } : null,
+    amenityFeature:
+      data.amenities.length > 0
+        ? data.amenities.map((name) => ({
+            '@type': 'LocationFeatureSpecification',
+            name,
+            value: true,
+          }))
+        : null,
+    checkinTime: data.checkInTime,
+    checkoutTime: data.checkOutTime,
+    telephone: data.telephone,
+    aggregateRating: aggregateRating(data.ratingAverage, data.reviewCount),
+    review: reviewItems(data.reviews),
+  });
+}
+
+export interface GuideData {
+  url: string;
+  name: string;
+  description: string;
+  image: string | null;
+  areas: string[];
+  pricePerDay: number | null;
+  telephone: string | null;
+  ratingAverage: number;
+  reviewCount: number;
+  reviews: RatedReview[];
+}
+
+// A local guide, as the business they run (ratings are allowed there, not
+// on a Person).
+export function guideBusiness(data: GuideData): JsonLd {
+  return dropEmpty({
+    '@context': CONTEXT,
+    '@type': 'LocalBusiness',
+    '@id': `${data.url}#guide`,
+    url: data.url,
+    name: data.name,
+    description: data.description,
+    image: data.image,
+    areaServed:
+      data.areas.length > 0 ? data.areas.map((name) => ({ '@type': 'Place', name })) : null,
+    address: { '@type': 'PostalAddress', addressCountry: 'KG' },
+    priceRange: data.pricePerDay !== null ? `${data.pricePerDay}+ KGS` : null,
+    telephone: data.telephone,
+    aggregateRating: aggregateRating(data.ratingAverage, data.reviewCount),
+    review: reviewItems(data.reviews),
+  });
+}
+
+export interface TripData {
+  url: string;
+  name: string;
+  description: string;
+  image: string | null;
+  startDate: string;
+  endDate: string;
+  place: string | null;
+  price: number | null;
+  // Still bookable (it hasn't started).
+  available: boolean;
+  siteUrl: string;
+}
+
+// A tour with dates and its price.
+export function touristTrip(data: TripData): JsonLd {
+  return dropEmpty({
+    '@context': CONTEXT,
+    '@type': 'TouristTrip',
+    '@id': `${data.url}#trip`,
+    url: data.url,
+    name: data.name,
+    description: data.description,
+    image: data.image,
+    departureTime: data.startDate,
+    arrivalTime: data.endDate,
+    itinerary: data.place ? { '@type': 'Place', name: data.place } : null,
+    provider: { '@id': `${data.siteUrl}/#organization` },
+    offers:
+      data.price !== null && data.price > 0
+        ? {
+            '@type': 'Offer',
+            url: data.url,
+            price: data.price,
+            priceCurrency: 'KGS',
+            availability: data.available
+              ? 'https://schema.org/InStock'
+              : 'https://schema.org/SoldOut',
+            validThrough: data.startDate,
+          }
+        : null,
+  });
+}
+
+// The items a catalog page shows, in order.
+export function itemList(items: { url: string; name: string }[]): JsonLd {
+  return {
+    '@context': CONTEXT,
+    '@type': 'ItemList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: item.url,
+      name: item.name,
+    })),
+  };
+}

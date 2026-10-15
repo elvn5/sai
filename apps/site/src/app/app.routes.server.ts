@@ -8,7 +8,16 @@ export const PUBLIC_CACHE = 'public, max-age=0, s-maxage=300, stale-while-revali
 
 // Account, cabinet, payment and edit pages: rendered in the browser only
 // (never cached, nothing personal on the server). Unprefixed paths.
-const CLIENT_PATHS = ['blog/new', 'blog/edit/:id', 'guides/new'];
+const CLIENT_PATHS = [
+  'blog/new',
+  'blog/edit/:id',
+  'guides/new',
+  'hotels/new',
+  'hotels/:slug/edit',
+  'local-guides/new',
+  'local-guides/:slug/edit',
+  'tours/new',
+];
 
 // The same route under every language prefix ("blog/new", "en/blog/new"…).
 function inEveryLanguage(path: string): string[] {

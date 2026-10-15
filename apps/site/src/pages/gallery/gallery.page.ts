@@ -5,6 +5,7 @@ import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { localizedPath } from '@/core/i18n/langs';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { loaded } from '@/core/lib/resource';
 import { imageGallery } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { FieldErrors } from '@/ui/field-errors';
@@ -90,7 +91,7 @@ export function galleryQuery(page: number, filters: Filters): string {
         />
       </div>
 
-      @if (locations.value(); as list) {
+      @if (locationList(); as list) {
         @if (list.length > 0) {
           <nav class="mb-8 flex flex-wrap gap-2" [attr.aria-label]="'gallery.locationLabel' | transloco">
             <a class="ui-pill" [appSiteLink]="filterLink(null)" [attr.aria-current]="location() ? null : 'page'">
@@ -251,6 +252,7 @@ export class GalleryPage {
   }));
 
   protected readonly locations = httpResource<string[]>(() => '/gallery/locations');
+  protected readonly locationList = computed(() => loaded(this.locations));
   protected readonly firstPage = httpResource<GalleryItem[]>(() => {
     const { location, search } = this.filters();
     return {
@@ -274,9 +276,9 @@ export class GalleryPage {
     computation: () => false,
   });
   protected readonly loadingMore = signal(false);
-  protected readonly items = computed(() => [...(this.firstPage.value() ?? []), ...this.more()]);
+  protected readonly items = computed(() => [...(loaded(this.firstPage) ?? []), ...this.more()]);
   protected readonly hasMore = computed(
-    () => !this.exhausted() && (this.firstPage.value()?.length ?? 0) === GALLERY_PAGE_SIZE,
+    () => !this.exhausted() && (loaded(this.firstPage)?.length ?? 0) === GALLERY_PAGE_SIZE,
   );
   protected readonly nextPage = computed(
     () => this.pageNumber() + 1 + Math.floor(this.more().length / GALLERY_PAGE_SIZE),
@@ -315,14 +317,14 @@ export class GalleryPage {
         title:
           page > 1 ? `${title} — ${this.transloco.translate('pagination.page', { page })}` : title,
         description: custom?.description || this.transloco.translate('gallery.metaDescription'),
-        image: custom?.ogImageUrl ?? this.firstPage.value()?.[0]?.imageUrl,
+        image: custom?.ogImageUrl ?? loaded(this.firstPage)?.[0]?.imageUrl,
         query: page > 1 && !filtered ? { page } : undefined,
         robots: filtered ? 'noindex, follow' : undefined,
         jsonLd: [
           imageGallery(
             title,
             seo.pageUrl('/gallery'),
-            (this.firstPage.value() ?? []).map((item) => ({
+            (loaded(this.firstPage) ?? []).map((item) => ({
               url: this.media(item.imageUrl),
               caption: item.caption,
               location: item.location,

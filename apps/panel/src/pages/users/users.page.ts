@@ -1,5 +1,5 @@
-import type { AppUser } from '@/shared/api/types';
-import { formatDate, fullName } from '@/shared/lib/format';
+import type { AppUser } from '@/core/api/types';
+import { formatDate, fullName } from '@/core/lib/format';
 import { httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 

@@ -1,5 +1,5 @@
+import type { AdminOrder, PayeeBalance } from '@/core/api/types';
 import { PaymentsPage } from '@/pages/payments/payments.page';
-import type { AdminOrder, PayeeBalance } from '@/shared/api/types';
 import { pageTestProviders } from '@/testing/providers';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';

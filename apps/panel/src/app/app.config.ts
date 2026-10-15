@@ -1,6 +1,6 @@
 import { routes } from '@/app/app.routes';
-import { apiInterceptor } from '@/shared/api/api.interceptor';
-import { ConfigStore } from '@/shared/config/app-config';
+import { apiInterceptor } from '@/core/api/api.interceptor';
+import { ConfigStore } from '@/core/config/app-config';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import {
   type ApplicationConfig,

@@ -1,6 +1,6 @@
-import { apiErrorMessage, hasStatus } from '@/shared/api/errors';
-import type { AdminOrder, OrderStatus, PayeeBalance, PayoutRecord } from '@/shared/api/types';
-import { formatDateTime, personName, som } from '@/shared/lib/format';
+import { apiErrorMessage, hasStatus } from '@/core/api/errors';
+import type { AdminOrder, OrderStatus, PayeeBalance, PayoutRecord } from '@/core/api/types';
+import { formatDateTime, personName, som } from '@/core/lib/format';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';

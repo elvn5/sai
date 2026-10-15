@@ -211,6 +211,8 @@ services:
     profiles: [angular]
     environment:
       API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
+      # Server-side rendering calls the gateway over the Docker network.
+      API_INTERNAL_URL: http://gateway:8080
       SITE_URL: ${NUXT_PUBLIC_SITE_URL}
       TELEGRAM_BOT_USERNAME: ${NUXT_PUBLIC_TELEGRAM_BOT_USERNAME}
     ports:

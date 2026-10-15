@@ -1042,5 +1042,13 @@
       "saveError": "Die Antwort konnte nicht gespeichert werden. Bitte erneut versuchen.",
       "deleteConfirm": "Ihre Antwort löschen?"
     }
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "text": "Diese Seite gibt es nicht oder sie ist umgezogen. Beginnen Sie auf der Startseite.",
+    "home": "Zur Startseite"
+  },
+  "a11y": {
+    "skipToContent": "Zum Inhalt springen"
   }
 }

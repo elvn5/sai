@@ -1,4 +1,60 @@
 @import "tailwindcss";
 @import "@pkg/tokens/tokens.css";
+@import "@angular/cdk/overlay-prebuilt.css";
 /* Icons as CSS (icon-[heroicons--home], icon-[mdi--trophy]): no JS, render on the server. */
-@plugin '@iconify/tailwind4';
+@plugin "@iconify/tailwind4";
+
+/* The flowing brand-colored line under the header and above the footer. */
+@keyframes brand-gradient-flow {
+  to {
+    background-position: 300% center;
+  }
+}
+
+@layer components {
+  .animated-gradient-border,
+  .animated-gradient-border-top {
+    position: relative;
+  }
+
+  .animated-gradient-border::after,
+  .animated-gradient-border-top::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background-image: linear-gradient(
+      90deg,
+      var(--brand-400),
+      var(--secondary-400),
+      var(--brand-600),
+      var(--secondary-500),
+      var(--brand-400)
+    );
+    background-size: 300% 100%;
+    animation: brand-gradient-flow 6s linear infinite;
+  }
+
+  .animated-gradient-border::after {
+    bottom: 0;
+  }
+
+  .animated-gradient-border-top::before {
+    top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-gradient-border::after,
+  .animated-gradient-border-top::before {
+    animation: none;
+  }
+}
+
+/* The dark/light switch reveals the new mode itself (color-mode.ts). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

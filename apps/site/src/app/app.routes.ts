@@ -1,4 +1,4 @@
-import { localizedRoutes } from '@/shared/i18n/i18n';
+import { localizedRoutes } from '@/core/i18n/i18n';
 import type { Routes } from '@angular/router';
 
 // Pages, served under every language prefix (see localizedRoutes).

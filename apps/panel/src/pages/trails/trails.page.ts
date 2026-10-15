@@ -1,4 +1,4 @@
-import type { ConditionReportSummary, TrailSummary } from '@/shared/api/types';
+import type { ConditionReportSummary, TrailSummary } from '@/core/api/types';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';

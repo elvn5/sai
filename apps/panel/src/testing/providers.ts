@@ -1,4 +1,4 @@
-import { ConfigStore } from '@/shared/config/app-config';
+import { ConfigStore } from '@/core/config/app-config';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import type { EnvironmentProviders, Provider } from '@angular/core';

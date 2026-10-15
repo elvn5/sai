@@ -1,4 +1,4 @@
-import { type BlogPost, LOCALE_OPTIONS, type Locale } from '@/shared/api/types';
+import { type BlogPost, LOCALE_OPTIONS, type Locale } from '@/core/api/types';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';

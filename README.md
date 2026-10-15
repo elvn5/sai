@@ -104,7 +104,7 @@ apps/
   admin/    Nuxt 3 admin panel
 ```
 
-The Go services follow standard Gin project layout; the frontends follow Feature-Sliced Design. See [CLAUDE.md](CLAUDE.md) for full
+The Go services follow standard Gin project layout; the Angular frontends group code by role and area (`app`, `core`, `layout`, `ui`, `pages`). See [CLAUDE.md](CLAUDE.md) for full
 conventions.
 
 ## Using this as a template

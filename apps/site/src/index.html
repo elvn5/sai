@@ -5,7 +5,24 @@
   <title>Ermekten</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <meta name="theme-color" content="#991b1b">
+  <meta property="og:site_name" content="Ermekten">
+  <link id="favicon" rel="icon" type="image/svg+xml" href="/logo.svg">
+  <!-- Dark mode and color theme before the first paint (no flash); same
+       storage keys as the Nuxt site. See shared/lib/color-mode.ts. -->
+  <script>
+    try {
+      var root = document.documentElement;
+      var mode = localStorage.getItem('nuxt-color-mode');
+      if (mode === 'dark' || (mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        root.classList.add('dark');
+      }
+      if (localStorage.getItem('color-theme') === 'azure') {
+        root.setAttribute('data-color-theme', 'azure');
+        document.getElementById('favicon').href = '/logo-azure.svg';
+      }
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <app-root></app-root>

@@ -1,4 +1,4 @@
-import { AdminAuth } from '@/features/auth/auth';
+import { AdminAuth } from '@/core/auth/auth';
 import { LoginPage } from '@/pages/login/login.page';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';

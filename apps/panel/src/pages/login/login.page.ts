@@ -1,4 +1,4 @@
-import { AdminAuth } from '@/features/auth/auth';
+import { AdminAuth } from '@/core/auth/auth';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, submit, validateStandardSchema } from '@angular/forms/signals';

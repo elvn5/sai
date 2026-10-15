@@ -1,12 +1,12 @@
-import { apiErrorMessage, hasStatus } from '@/shared/api/errors';
+import { apiErrorMessage, hasStatus } from '@/core/api/errors';
 import {
   type Achievement,
   AchievementRarity,
   type Award,
   type LocalizedText,
-} from '@/shared/api/types';
-import { formatDateTime, personName } from '@/shared/lib/format';
-import { Icon } from '@/shared/ui/icon';
+} from '@/core/api/types';
+import { formatDateTime, personName } from '@/core/lib/format';
+import { Icon } from '@/ui/icon';
 import { Dialog, type DialogRef } from '@angular/cdk/dialog';
 import { HttpClient, httpResource } from '@angular/common/http';
 import {

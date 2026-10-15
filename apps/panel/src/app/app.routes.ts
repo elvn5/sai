@@ -1,4 +1,4 @@
-import { requireAdmin } from '@/features/auth/auth';
+import { requireAdmin } from '@/core/auth/auth';
 import type { Routes } from '@angular/router';
 
 // The sections of the Nuxt admin (apps/admin), same paths.
@@ -9,7 +9,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    loadComponent: () => import('@/widgets/admin-layout/admin-layout').then((m) => m.AdminLayout),
+    loadComponent: () => import('@/layout/admin-layout').then((m) => m.AdminLayout),
     canActivate: [requireAdmin],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'users' },

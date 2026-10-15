@@ -1,5 +1,6 @@
 import { join } from 'node:path';
-import { type RequestContext, configFromEnv } from '@/shared/config/app-config';
+import { contextFromEnv } from '@/core/config/app-config';
+import { SitemapCache, isSitemapType, renderIndex } from '@/server/sitemap';
 import {
   AngularNodeAppEngine,
   createNodeRequestHandler,
@@ -11,8 +12,15 @@ import express from 'express';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 // Read once: the environment doesn't change while the server runs.
-const config = configFromEnv(process.env);
-const context: RequestContext = { config };
+const context = contextFromEnv(process.env);
+const { config } = context;
+const apiUrl = context.apiInternalUrl ?? config.apiBaseUrl;
+const sitemaps = new SitemapCache(config.siteUrl, async (path) => {
+  const response = await fetch(`${apiUrl}${path}`, { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error(`GET ${path}: ${response.status}`);
+  return response.json();
+});
+const SITEMAP_CACHE = 'public, max-age=600';
 
 const app = express();
 app.disable('x-powered-by');
@@ -22,6 +30,15 @@ const angularApp = new AngularNodeAppEngine();
 
 app.get('/healthz', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// One host: www.ermekten.com → ermekten.com (301).
+app.use((req, res, next) => {
+  if (req.hostname.startsWith('www.')) {
+    res.redirect(301, `${config.siteUrl}${req.originalUrl}`);
+    return;
+  }
+  next();
 });
 
 // One URL per page: /tours/ → /tours (301), keeping the query string.
@@ -41,6 +58,33 @@ app.get('/robots.txt', (_req, res) => {
     config.indexable
       ? `User-agent: *\nAllow: /\n\nSitemap: ${config.siteUrl}/sitemap.xml\n`
       : 'User-agent: *\nDisallow: /\n',
+  );
+});
+
+app.get('/sitemap.xml', (_req, res) => {
+  res
+    .type('application/xml')
+    .setHeader('Cache-Control', SITEMAP_CACHE)
+    .send(renderIndex(config.siteUrl));
+});
+
+app.get('/sitemaps/:file', (req, res, next) => {
+  const type = req.params.file.replace(/\.xml$/, '');
+  if (!req.params.file.endsWith('.xml') || !isSitemapType(type)) {
+    next();
+    return;
+  }
+  sitemaps.get(type).then(
+    (xml) => res.type('application/xml').setHeader('Cache-Control', SITEMAP_CACHE).send(xml),
+    (error: unknown) => {
+      // Crawlers retry a 503 later instead of dropping the URLs.
+      log('error', 'sitemap failed', { type, error: String(error) });
+      res
+        .status(503)
+        .setHeader('Retry-After', '300')
+        .type('text/plain')
+        .send('Sitemap unavailable');
+    },
   );
 });
 
@@ -66,10 +110,13 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
   const port = process.env['PORT'] || 4000;
   app.listen(port, (error) => {
     if (error) throw error;
-    process.stdout.write(
-      `${JSON.stringify({ level: 'info', msg: 'site listening', port: Number(port) })}\n`,
-    );
+    log('info', 'site listening', { port: Number(port) });
   });
+}
+
+// JSON lines on stdout, like the Go services' slog.
+function log(level: 'info' | 'error', msg: string, fields: Record<string, unknown> = {}): void {
+  process.stdout.write(`${JSON.stringify({ level, msg, ...fields })}\n`);
 }
 
 // Used by the Angular CLI dev server and at build time.

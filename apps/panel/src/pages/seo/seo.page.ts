@@ -1,11 +1,5 @@
-import {
-  LOCALE_OPTIONS,
-  Locale,
-  type PageSeo,
-  SEO_PAGE_OPTIONS,
-  SeoPage,
-} from '@/shared/api/types';
-import { ImageUploadField } from '@/shared/ui/image-upload-field';
+import { LOCALE_OPTIONS, Locale, type PageSeo, SEO_PAGE_OPTIONS, SeoPage } from '@/core/api/types';
+import { ImageUploadField } from '@/ui/image-upload-field';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { FormField, form, submit } from '@angular/forms/signals';

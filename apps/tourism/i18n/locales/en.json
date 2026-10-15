@@ -1042,5 +1042,13 @@
       "saveError": "Could not save the reply. Please try again.",
       "deleteConfirm": "Delete your reply?"
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "This page does not exist or has moved. Start from the home page.",
+    "home": "Go to the home page"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content"
   }
 }

@@ -1,9 +1,9 @@
-import { type BlogPost, LOCALE_OPTIONS, Locale } from '@/shared/api/types';
-import { ConfigStore } from '@/shared/config/app-config';
-import { resolveMediaUrl } from '@/shared/lib/media-url';
-import { slugify } from '@/shared/lib/slugify';
-import { ImageUploadField } from '@/shared/ui/image-upload-field';
-import { RichTextEditor } from '@/shared/ui/rich-text-editor';
+import { type BlogPost, LOCALE_OPTIONS, Locale } from '@/core/api/types';
+import { ConfigStore } from '@/core/config/app-config';
+import { resolveMediaUrl } from '@/core/lib/media-url';
+import { slugify } from '@/core/lib/slugify';
+import { ImageUploadField } from '@/ui/image-upload-field';
+import { RichTextEditor } from '@/ui/rich-text-editor';
 import { Dialog, type DialogRef } from '@angular/cdk/dialog';
 import { HttpClient } from '@angular/common/http';
 import {

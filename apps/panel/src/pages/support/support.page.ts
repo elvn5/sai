@@ -1,4 +1,4 @@
-import type { SupportInfo } from '@/shared/api/types';
+import type { SupportInfo } from '@/core/api/types';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, submit } from '@angular/forms/signals';

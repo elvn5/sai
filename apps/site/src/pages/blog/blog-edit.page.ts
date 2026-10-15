@@ -1,4 +1,5 @@
 import type { BlogPost } from '@/core/api/types';
+import { loaded } from '@/core/lib/resource';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { BlogForm } from '@/pages/blog/blog-form';
 import { LoadError } from '@/ui/load-error';
@@ -28,7 +29,7 @@ export class BlogEditPage {
   readonly id = input.required<string>();
   protected readonly mine = httpResource<BlogPost[]>(() => '/blog/mine');
   protected readonly post = computed(() =>
-    this.mine.value()?.find((post) => post.id === this.id()),
+    loaded(this.mine)?.find((post) => post.id === this.id()),
   );
 
   constructor() {

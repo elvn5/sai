@@ -83,7 +83,7 @@
   }
   /* A filter pill. */
   .ui-pill {
-    @apply rounded-full border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:border-brand-500/50 hover:text-text aria-[current=page]:border-brand-500 aria-[current=page]:bg-brand-500/10 aria-[current=page]:text-brand-700 dark:aria-[current=page]:text-brand-300;
+    @apply rounded-full border border-border px-4 py-1.5 text-sm font-medium text-text-muted transition-colors hover:border-brand-500/50 hover:text-text aria-[current=page]:border-brand-500 aria-[current=page]:bg-brand-500/10 aria-[current=page]:text-brand-700 dark:aria-[current=page]:text-brand-300 aria-pressed:border-brand-500 aria-pressed:bg-brand-500/10 aria-pressed:text-brand-700 dark:aria-pressed:text-brand-300;
   }
   .ui-file {
     @apply block w-full text-sm text-text file:mr-3 file:rounded-md file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white;

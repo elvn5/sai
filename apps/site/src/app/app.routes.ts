@@ -1,4 +1,4 @@
-import { requirePartner } from '@/core/auth/guards';
+import { requireAuth, requirePartner } from '@/core/auth/guards';
 import { localizedRoutes } from '@/core/i18n/i18n';
 import type { Routes } from '@angular/router';
 
@@ -48,6 +48,62 @@ const pages: Routes = [
     path: 'hall-of-fame',
     loadComponent: () =>
       import('@/pages/hall-of-fame/hall-of-fame.page').then((m) => m.HallOfFamePage),
+  },
+
+  {
+    path: 'hotels',
+    loadComponent: () => import('@/pages/hotels/hotels-list.page').then((m) => m.HotelsListPage),
+  },
+  {
+    path: 'hotels/new',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/hotels/hotel-new.page').then((m) => m.HotelNewPage),
+  },
+  {
+    path: 'hotels/:slug/edit',
+    canActivate: [requireAuth],
+    loadComponent: () => import('@/pages/hotels/hotel-edit.page').then((m) => m.HotelEditPage),
+  },
+  {
+    path: 'hotels/:slug',
+    loadComponent: () => import('@/pages/hotels/hotel.page').then((m) => m.HotelPage),
+  },
+
+  {
+    path: 'local-guides',
+    loadComponent: () =>
+      import('@/pages/local-guides/local-guides-list.page').then((m) => m.LocalGuidesListPage),
+  },
+  {
+    path: 'local-guides/new',
+    canActivate: [requirePartner],
+    loadComponent: () =>
+      import('@/pages/local-guides/local-guide-new.page').then((m) => m.LocalGuideNewPage),
+  },
+  {
+    path: 'local-guides/:slug/edit',
+    canActivate: [requireAuth],
+    loadComponent: () =>
+      import('@/pages/local-guides/local-guide-edit.page').then((m) => m.LocalGuideEditPage),
+  },
+  {
+    path: 'local-guides/:slug',
+    loadComponent: () =>
+      import('@/pages/local-guides/local-guide.page').then((m) => m.LocalGuidePage),
+  },
+
+  {
+    path: 'tours',
+    loadComponent: () => import('@/pages/tours/tours-list.page').then((m) => m.ToursListPage),
+  },
+  {
+    path: 'tours/new',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/tours/tour-new.page').then((m) => m.TourNewPage),
+  },
+  {
+    path: 'tours/:slug',
+    loadComponent: () => import('@/pages/tours/tour.page').then((m) => m.TourPage),
   },
 
   {

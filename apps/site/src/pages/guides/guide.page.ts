@@ -4,6 +4,7 @@ import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { fileSize } from '@/core/lib/format';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { article } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
@@ -120,7 +121,7 @@ export class GuidePage {
   });
   protected readonly isAuthor = computed(() => {
     const user = this.auth.user();
-    return Boolean(user && this.guide.value()?.userId === user.id);
+    return Boolean(user && loaded(this.guide)?.userId === user.id);
   });
   protected readonly deleting = signal(false);
   protected readonly icon = equipmentIcon;

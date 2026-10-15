@@ -13,7 +13,7 @@
 С сервера (или любой машины, откуда доступен порт), после выкладки на staging и ручной проверки:
 
 ```bash
-node scripts/compare-crawl.mjs --old https://ermekten.com --new http://127.0.0.1:3005 --host ermekten.com --sections /blog,/guides,/gallery,/hall-of-fame
+node scripts/compare-crawl.mjs --old https://ermekten.com --new http://127.0.0.1:3005 --host ermekten.com --sections /blog,/guides,/gallery,/hall-of-fame,/hotels,/local-guides,/tours
 ```
 
 Скрипт берёт адреса из sitemap нового сайта и для каждой страницы сравнивает статус, title, description, canonical, robots, h1, hreflang и JSON-LD. Код выхода 0 — можно переключать. Добавления на новой стороне (JSON-LD, hreflang) — это ожидаемые улучшения.
@@ -47,10 +47,12 @@ location = /app-config.json { proxy_pass http://ermekten_site; }
 location = /sitemap.xml { proxy_pass http://ermekten_site; }
 location ^~ /sitemaps/ { proxy_pass http://ermekten_site; }
 
-# Волна 1: контент. Каждая следующая волна дописывает свои разделы сюда
-# и в MIGRATED_SECTIONS (apps/site/src/core/config/sections.ts,
-# apps/tourism/plugins/migrated-sections.client.ts).
-location ~ ^/(ky/|en/|de/)?(blog|guides|gallery|hall-of-fame)(/|$) {
+# Перенесённые разделы: волна 1 (контент) и волна 2 (каталоги). Каждая
+# следующая волна дописывает свои разделы сюда и в MIGRATED_SECTIONS
+# (apps/site/src/core/config/sections.ts,
+# apps/tourism/plugins/migrated-sections.client.ts). Переключать можно и
+# по одной волне: тогда в списке оставьте только её разделы.
+location ~ ^/(ky/|en/|de/)?(blog|guides|gallery|hall-of-fame|hotels|local-guides|tours)(/|$) {
     proxy_pass http://ermekten_site;
     proxy_http_version 1.1;
     proxy_set_header Connection "";

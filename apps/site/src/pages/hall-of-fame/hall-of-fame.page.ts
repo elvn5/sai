@@ -8,6 +8,7 @@ import type {
 import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
 import { localizedText, personName } from '@/core/lib/format';
+import { loaded } from '@/core/lib/resource';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { AchievementMedal } from '@/pages/hall-of-fame/achievement-medal';
 import { AwardCodeCard } from '@/pages/hall-of-fame/award-code-card';
@@ -93,7 +94,7 @@ import { firstValueFrom } from 'rxjs';
         </div>
       }
 
-      @if (mine.value(); as me) {
+      @if (myAchievements(); as me) {
         <section class="mx-auto max-w-5xl px-4 pt-12" aria-labelledby="mine-heading">
           <div class="flex flex-wrap items-end justify-between gap-4">
             <h2 id="mine-heading" class="text-2xl font-extrabold text-text">{{ 'hallOfFame.mine.heading' | transloco }}</h2>
@@ -217,20 +218,21 @@ export class HallOfFamePage {
     this.auth.user() ? '/achievements/me' : undefined,
   );
 
-  protected readonly leaders = computed(() => this.hall.value()?.leaders ?? []);
-  protected readonly recent = computed(() => this.hall.value()?.recent ?? []);
-  protected readonly catalogPreview = computed(() => (this.catalog.value() ?? []).slice(0, 5));
+  protected readonly myAchievements = computed(() => loaded(this.mine));
+  protected readonly leaders = computed(() => loaded(this.hall)?.leaders ?? []);
+  protected readonly recent = computed(() => loaded(this.hall)?.recent ?? []);
+  protected readonly catalogPreview = computed(() => (loaded(this.catalog) ?? []).slice(0, 5));
   protected readonly myRank = computed(
     () =>
       this.leaders().find((entry: HallEntry) => entry.user.id === this.auth.user()?.id)?.rank ??
       null,
   );
   protected readonly locked = computed(() => {
-    const earned = new Set(this.mine.value()?.awards.map((award) => award.achievement.id) ?? []);
-    return (this.catalog.value() ?? []).filter((achievement) => !earned.has(achievement.id));
+    const earned = new Set(loaded(this.mine)?.awards.map((award) => award.achievement.id) ?? []);
+    return (loaded(this.catalog) ?? []).filter((achievement) => !earned.has(achievement.id));
   });
   protected readonly freshAwards = computed(
-    () => this.mine.value()?.awards.filter((award) => award.isNew) ?? [],
+    () => loaded(this.mine)?.awards.filter((award) => award.isNew) ?? [],
   );
   protected readonly revealDismissed = signal(false);
 

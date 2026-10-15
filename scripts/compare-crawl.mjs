@@ -43,7 +43,13 @@ const OLD = args.old.replace(/\/$/, '');
 const NEW = args.new.replace(/\/$/, '');
 const SECTIONS = args.sections.split(',').map((section) => section.trim());
 const LIMIT = Number(args.limit || 500);
-const SITEMAP_TYPES = { '/blog': ['blog', 'pages'], '/guides': ['guides', 'pages'] };
+const SITEMAP_TYPES = {
+  '/blog': ['blog', 'pages'],
+  '/guides': ['guides', 'pages'],
+  '/hotels': ['hotels', 'pages'],
+  '/local-guides': ['local-guides', 'pages'],
+  '/tours': ['tours', 'pages'],
+};
 
 async function get(base, path, host) {
   const response = await fetch(`${base}${path}`, {

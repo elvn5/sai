@@ -2,6 +2,7 @@ import { type BlogPost } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { loaded } from '@/core/lib/resource';
 import { article } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
@@ -57,7 +58,7 @@ export class BlogPostPage {
     return error instanceof HttpErrorResponse && error.status === 404;
   });
   protected readonly published = computed(() => {
-    const date = this.post.value()?.publishedAt;
+    const date = loaded(this.post)?.publishedAt;
     return date ? new Date(date).toLocaleDateString(this.lang(), { dateStyle: 'long' }) : '';
   });
 

@@ -2,7 +2,15 @@
 // their paths there (docs/strangler-nginx.md). Navigating to one loads the
 // page from the server instead of rendering this app's old copy in place.
 // Keep in step with MIGRATED_SECTIONS in apps/site/src/core/config/sections.ts.
-const MIGRATED_SECTIONS = ['/blog', '/guides', '/gallery', '/hall-of-fame'];
+const MIGRATED_SECTIONS = [
+  '/blog',
+  '/guides',
+  '/gallery',
+  '/hall-of-fame',
+  '/hotels',
+  '/local-guides',
+  '/tours',
+];
 
 function isMigrated(path: string): boolean {
   const unprefixed = path.replace(/^\/(ky|en|de)(?=\/|$)/, '') || '/';

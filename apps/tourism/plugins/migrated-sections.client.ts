@@ -10,12 +10,18 @@ const MIGRATED_SECTIONS = [
   '/hotels',
   '/local-guides',
   '/tours',
+  '/trails',
+  '/outings',
+  '/',
 ];
 
 function isMigrated(path: string): boolean {
   const unprefixed = path.replace(/^\/(ky|en|de)(?=\/|$)/, '') || '/';
-  return MIGRATED_SECTIONS.some(
-    (section) => unprefixed === section || unprefixed.startsWith(`${section}/`),
+  // "/" is the home page only.
+  return MIGRATED_SECTIONS.some((section) =>
+    section === '/'
+      ? unprefixed === '/'
+      : unprefixed === section || unprefixed.startsWith(`${section}/`),
   );
 }
 

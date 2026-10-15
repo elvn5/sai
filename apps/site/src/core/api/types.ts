@@ -347,3 +347,110 @@ export interface Order {
   amount: number;
   paymentUrl: string | null;
 }
+
+// services/trails
+
+export interface TrailSegment {
+  from: string;
+  to: string;
+  hours: number;
+}
+
+// [latitude, longitude, elevation | null]
+export type TrackPoint = [number, number, number | null];
+
+export interface TrackStats {
+  distanceKm: number;
+  elevationGain: number;
+  minElevation: number | null;
+  maxElevation: number | null;
+}
+
+export interface ConditionSummary {
+  observedOn: string;
+  trailState: string;
+  traction: string;
+}
+
+export interface Trail {
+  id: string;
+  slug: string;
+  name: string;
+  summary: string | null;
+  description: string;
+  area: string;
+  kind: string;
+  grade: string;
+  seasons: string[];
+  gear: string[];
+  summitElevation: number | null;
+  startElevation: number | null;
+  elevationGain: number | null;
+  distanceKm: number | null;
+  durationHours: number | null;
+  days: number;
+  segments: TrailSegment[];
+  gettingThere: string | null;
+  startLatitude: number | null;
+  startLongitude: number | null;
+  // Only on the detail endpoint.
+  track?: TrackPoint[];
+  trackStats: TrackStats | null;
+  gpxUrl: string | null;
+  coverImageUrl: string | null;
+  photos: string[];
+  isPublished: boolean;
+  userId: string | null;
+  latestCondition: ConditionSummary | null;
+  upcomingOutings: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TrailRef {
+  id: string;
+  slug: string;
+  name: string;
+  area: string;
+}
+
+// "What did the route look like?" — filed by anyone signed in after a trip.
+export interface ConditionReport {
+  id: string;
+  trail: TrailRef;
+  author: Person;
+  observedOn: string;
+  trailState: string;
+  traction: string;
+  avalancheRisk: string | null;
+  snowLine: number | null;
+  reached: string | null;
+  text: string | null;
+  photos: string[];
+  createdAt: string;
+}
+
+// A group outing: anyone signed in organizes one, others join while seats
+// last. `contact` and `participants` reach participants only, and
+// isJoined/isOrganizer depend on the visitor: re-read in the browser.
+export interface Outing {
+  id: string;
+  trail: TrailRef | null;
+  title: string;
+  startsAt: string;
+  returnsAt: string | null;
+  meetingPoint: string;
+  transport: string;
+  seats: number;
+  taken: number;
+  costPerPerson: number | null;
+  level: string;
+  description: string | null;
+  contact: string | null;
+  status: 'open' | 'cancelled';
+  organizer: Person;
+  participants?: Person[];
+  isJoined: boolean;
+  isOrganizer: boolean;
+  createdAt: string;
+}

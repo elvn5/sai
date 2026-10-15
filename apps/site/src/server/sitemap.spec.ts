@@ -12,7 +12,9 @@ describe('sitemap', () => {
   it('indexes one sitemap per content type', () => {
     const xml = renderIndex(SITE);
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/pages.xml</loc>');
-    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/outings.xml</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/trails.xml</loc>');
+    // Outing pages aren't indexed: they're gone in days.
+    expect(xml).not.toContain('outings.xml');
   });
 
   it('lists language-independent pages in every language with hreflang', () => {

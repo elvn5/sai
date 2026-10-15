@@ -45,3 +45,28 @@ export function formatDateRange(lang: string, start: string, end: string): strin
 export function todayInBishkek(now: Date = new Date()): string {
   return now.toLocaleDateString('sv-SE', { timeZone: 'Asia/Bishkek' });
 }
+
+// An instant shown in Kyrgyzstan's time, whatever the reader's zone (and
+// the same on the server and in the browser).
+export function formatInBishkek(
+  lang: string,
+  iso: string | number,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  return new Intl.DateTimeFormat(NUMBER_LOCALES[lang] ?? lang, {
+    ...options,
+    timeZone: 'Asia/Bishkek',
+  }).format(new Date(iso));
+}
+
+// A calendar date (YYYY-MM-DD) read as a date, not an instant.
+export function formatDate(
+  lang: string,
+  date: string,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  return new Intl.DateTimeFormat(NUMBER_LOCALES[lang] ?? lang, {
+    ...options,
+    timeZone: 'UTC',
+  }).format(new Date(`${date.slice(0, 10)}T00:00:00Z`));
+}

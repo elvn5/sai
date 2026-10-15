@@ -16,6 +16,17 @@ export const DESTINATION_OPTIONS: ListingOption[] = Object.values(Destination).m
   labelKey: `destinations.${value}`,
 }));
 
+// The places most visitors come for, shown on the home page. Issyk-Kul alone
+// draws about half of all of Kyrgyzstan's tourist traffic.
+export const FEATURED_DESTINATIONS: Destination[] = [
+  Destination.ISSYK_KUL,
+  Destination.KARAKOL,
+  Destination.SONG_KOL,
+  Destination.ALA_ARCHA,
+  Destination.BISHKEK,
+  Destination.OSH,
+];
+
 export const HOTEL_TYPE_OPTIONS: ListingOption[] = [
   {
     value: HotelType.HOTEL,

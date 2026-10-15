@@ -299,6 +299,9 @@ importers:
       iconify-icon:
         specifier: ^3.0.3
         version: 3.0.3
+      leaflet:
+        specifier: ^1.9.4
+        version: 1.9.4
       rxjs:
         specifier: ~7.8.0
         version: 7.8.2
@@ -342,6 +345,9 @@ importers:
       '@types/express':
         specifier: ^5.0.1
         version: 5.0.6
+      '@types/leaflet':
+        specifier: ^1.9.12
+        version: 1.9.22
       '@types/node':
         specifier: ^22.12.0
         version: 22.20.1

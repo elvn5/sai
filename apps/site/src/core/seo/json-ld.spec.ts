@@ -66,6 +66,37 @@ describe('catalog JSON-LD', () => {
     expect(trip).not.toHaveProperty('description');
   });
 
+  it('places a route by its start, with the summit height', async () => {
+    const { touristAttraction } = await import('@/core/seo/json-ld');
+    const place = touristAttraction({
+      url: 'https://ermekten.com/trails/komsomolets',
+      name: 'Пик Комсомолец',
+      description: 'Классика Ала-Арчи',
+      image: null,
+      latitude: 42.5641,
+      longitude: 74.4822,
+      elevation: 4150,
+      area: 'Ала-Арча',
+    });
+    expect(place).toMatchObject({
+      '@type': 'TouristAttraction',
+      geo: { '@type': 'GeoCoordinates', latitude: 42.5641, longitude: 74.4822, elevation: 4150 },
+      containedInPlace: { name: 'Ала-Арча' },
+    });
+    expect(place).not.toHaveProperty('image');
+    const noStart = touristAttraction({
+      url: 'https://ermekten.com/trails/x',
+      name: 'X',
+      description: 'x',
+      image: null,
+      latitude: null,
+      longitude: null,
+      elevation: null,
+      area: 'Другое',
+    });
+    expect(noStart).not.toHaveProperty('geo');
+  });
+
   it('reads plain text out of HTML', async () => {
     const { plainText } = await import('@/core/seo/json-ld');
     expect(plainText('<p>Юрты&nbsp;у <b>озера</b></p><p>и баня</p>')).toBe('Юрты у озера и баня');

@@ -10,7 +10,6 @@ export const SITEMAP_TYPES = [
   'hotels',
   'local-guides',
   'trails',
-  'outings',
   'blog',
   'guides',
 ] as const;
@@ -57,11 +56,6 @@ interface Updated {
   updatedAt: string;
 }
 
-interface OutingItem {
-  id: string;
-  createdAt: string;
-}
-
 // Hotels and local guides come in pages of { items, total }.
 async function allPages<T>(getJson: GetJson, path: string): Promise<T[]> {
   const items: T[] = [];
@@ -102,12 +96,6 @@ export async function collectEntries(type: SitemapType, getJson: GetJson): Promi
       return ((await getJson('/trails')) as Updated[]).map((item) => ({
         path: `/trails/${item.slug}`,
         lastmod: item.updatedAt,
-      }));
-    case 'outings':
-      // Upcoming outings only: past ones drop out of the list.
-      return ((await getJson('/outings?limit=100')) as OutingItem[]).map((item) => ({
-        path: `/outings/${item.id}`,
-        lastmod: item.createdAt,
       }));
     case 'tours':
     case 'blog':

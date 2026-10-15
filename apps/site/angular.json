@@ -22,9 +22,15 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "{leaflet.css,images/*}",
+                "input": "node_modules/leaflet/dist",
+                "output": "media/leaflet"
               }
             ],
             "styles": ["src/styles.css"],
+            "allowedCommonJsDependencies": ["leaflet"],
             "server": "src/main.server.ts",
             "outputMode": "server",
             "security": {

@@ -322,3 +322,43 @@ export function itemList(items: { url: string; name: string }[]): JsonLd {
     })),
   };
 }
+
+export interface AttractionData {
+  url: string;
+  name: string;
+  description: string;
+  image: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  // Height of the summit (or start), in meters.
+  elevation: number | null;
+  area: string;
+}
+
+// A mountain route: where it starts, and the area it's in.
+export function touristAttraction(data: AttractionData): JsonLd {
+  return dropEmpty({
+    '@context': CONTEXT,
+    '@type': 'TouristAttraction',
+    '@id': `${data.url}#place`,
+    url: data.url,
+    name: data.name,
+    description: data.description,
+    image: data.image,
+    isAccessibleForFree: true,
+    geo:
+      data.latitude !== null && data.longitude !== null
+        ? dropEmpty({
+            '@type': 'GeoCoordinates',
+            latitude: data.latitude,
+            longitude: data.longitude,
+            elevation: data.elevation,
+          })
+        : null,
+    containedInPlace: {
+      '@type': 'Place',
+      name: data.area,
+      address: { '@type': 'PostalAddress', addressCountry: 'KG' },
+    },
+  });
+}

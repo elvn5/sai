@@ -7,6 +7,8 @@
 //     --new http://127.0.0.1:3005 --host ermekten.com \
 //     --sections /blog,/guides,/gallery,/hall-of-fame
 //
+// "/" stands for the home page only.
+//
 // URLs come from the Angular site's sitemap, filtered to the sections (both
 // sites read the same API). For every page it fetches both sides and
 // compares the HTTP status, title, description, canonical, robots, h1,
@@ -49,6 +51,7 @@ const SITEMAP_TYPES = {
   '/hotels': ['hotels', 'pages'],
   '/local-guides': ['local-guides', 'pages'],
   '/tours': ['tours', 'pages'],
+  '/trails': ['trails', 'pages'],
 };
 
 async function get(base, path, host) {
@@ -92,7 +95,7 @@ export function extract(html) {
   const hreflang = Object.fromEntries(
     links
       .filter((tag) => attr(tag, 'rel') === 'alternate' && attr(tag, 'hreflang'))
-      .map((tag) => [baseLanguage(attr(tag, 'hreflang')), attr(tag, 'href')]),
+      .map((tag) => [baseLanguage(attr(tag, 'hreflang')), normalizeUrl(attr(tag, 'href'))]),
   );
   const jsonLd = [
     ...html.matchAll(/<script[^>]*application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi),
@@ -109,11 +112,21 @@ export function extract(html) {
     title: decode(head.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? ''),
     description: meta('name', 'description'),
     robots: meta('name', 'robots'),
-    canonical: canonical ? attr(canonical, 'href') : null,
+    canonical: canonical ? normalizeUrl(attr(canonical, 'href')) : null,
     hreflang,
     jsonLd: [...new Set(jsonLd)].sort(),
     h1: h1 ? decode(h1[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')) : null,
   };
+}
+
+// The URL as search engines read it: "https://ermekten.com" and
+// "https://ermekten.com/" are the same page.
+function normalizeUrl(href) {
+  try {
+    return new URL(href).href;
+  } catch {
+    return href;
+  }
 }
 
 // "ru-RU" → "ru"; "x-default" stays whole.

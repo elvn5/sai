@@ -29,6 +29,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string, fake 
 
 	orders := &handlers.Orders{Deps: d}
 	admin := &handlers.Admin{Deps: d}
+	r.GET("/payments/config", orders.Config)
 	r.POST("/orders", requireUser, orders.Create)
 	r.GET("/orders/mine", requireUser, orders.Mine)
 	r.GET("/orders/received", requireUser, middleware.RequirePartner(), orders.Received)

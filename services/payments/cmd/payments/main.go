@@ -56,6 +56,9 @@ func run(log *slog.Logger) error {
 			return errors.New("PAYMENTS_PROVIDER=bakai needs BAKAI_LOGIN, BAKAI_PASSWORD and BAKAI_QR_TYPE")
 		}
 		gateway = &provider.Bakai{BaseURL: cfg.BakaiAPIURL, Login: cfg.BakaiLogin, Password: cfg.BakaiPassword, QRType: cfg.BakaiQRType}
+	case "off":
+		gateway = provider.Disabled{}
+		log.Warn("PAYMENTS_PROVIDER=off: online payment is disabled, the site hides booking")
 	case "fake":
 		fake = &provider.Fake{SiteURL: siteURL}
 		gateway = fake

@@ -42,6 +42,10 @@ type Orders struct{ Deps }
 // Create prices the booking from the item itself (never from the client),
 // creates the gateway payment and returns where to pay.
 func (h *Orders) Create(c *gin.Context) {
+	if !provider.Online(h.Provider) {
+		httperr.Abort(c, http.StatusServiceUnavailable, "Online payment is not available")
+		return
+	}
 	var req createOrderRequest
 	if !validation.BindJSON(c, &req) {
 		return
@@ -109,6 +113,16 @@ func (h *Orders) Create(c *gin.Context) {
 		return
 	}
 	respond.JSON(c, http.StatusCreated, order)
+}
+
+type paymentsConfig struct {
+	Online bool `json:"online"`
+}
+
+// Config handles GET /payments/config: whether the site offers online
+// booking (false with PAYMENTS_PROVIDER=off).
+func (h *Orders) Config(c *gin.Context) {
+	c.JSON(http.StatusOK, paymentsConfig{Online: provider.Online(h.Provider)})
 }
 
 // Mine lists the signed-in customer's orders.

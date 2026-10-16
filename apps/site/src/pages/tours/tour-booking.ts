@@ -3,10 +3,11 @@ import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
 import { injectCurrentUrl } from '@/core/lib/current-url';
 import { formatAmount, todayInBishkek } from '@/core/lib/format';
+import { loaded } from '@/core/lib/resource';
 import { FieldErrors } from '@/ui/field-errors';
 import { SiteLink } from '@/ui/site-link';
 import { DOCUMENT } from '@angular/common';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -31,8 +32,9 @@ interface BookingForm {
 }
 
 // Books places on a tour and pays online: the server prices the order and
-// the visitor goes on to the payment page. Shown while the tour is ahead,
-// has a price and an owner, and to anyone but that owner.
+// the visitor goes on to the payment page. Shown while online payment is on
+// (/payments/config), the tour is ahead, has a price and an owner, and to
+// anyone but that owner.
 @Component({
   selector: 'app-tour-booking',
   // A box of its own: deferred blocks observe their root element.
@@ -116,9 +118,13 @@ export class TourBooking {
   protected readonly quantity = signal(1);
   protected readonly error = signal<string | null>(null);
 
+  // Off until the payments service says otherwise (PAYMENTS_PROVIDER=off).
+  private readonly payments = httpResource<{ online: boolean }>(() => '/payments/config');
+
   protected readonly bookable = computed(() => {
     const tour = this.tour();
     return (
+      loaded(this.payments)?.online === true &&
       Boolean(tour.price && tour.price > 0 && tour.userId) &&
       tour.startDate >= todayInBishkek() &&
       tour.userId !== this.auth.user()?.id

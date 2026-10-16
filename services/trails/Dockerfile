@@ -1,5 +1,5 @@
 # Built from the repository root: docker build -f services/trails/Dockerfile .
-FROM golang:1.26-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src/services
 ENV CGO_ENABLED=0 GOWORK=off
 

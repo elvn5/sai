@@ -4,6 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    ignore:
+      # Match the Node.js the apps run on (.nvmrc, 24.x): newer type
+      # majors describe APIs the runtime doesn't have.
+      - dependency-name: "@types/node"
+        versions: [">=25"]
     groups:
       dev-dependencies:
         dependency-type: development

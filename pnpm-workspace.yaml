@@ -4,4 +4,3 @@ packages:
 
 onlyBuiltDependencies:
   - "@biomejs/biome"
-  - "@nestjs/core"

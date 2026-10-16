@@ -11,12 +11,12 @@
 - **Environment:** Manage environment variables via `dotenv` (`.env`).
 - **TypeScript:** Strict mode enabled. Always specify return types for public functions/methods.
 
-## Migrations in Progress
+## Migrations (done)
 Plan, phases and requirements: `docs/angular-migration-plan.md`. Work starts only on an explicit request.
 
 **Track A — frontend, Nuxt 3 → Angular 22: done.** `apps/site` and `apps/panel` serve staging and production (nginx: `docs/nginx.md`). **URLs are a contract:** keep every public path and the locale scheme (Russian unprefixed, `/ky`, `/en`, `/de`) exactly as they are. Storage keys and the language cookie keep their Nuxt-era names (`nuxt-color-mode`, `i18n_redirected`) so visitors' settings survive.
 
-**Track B — Telegram bot, NestJS + Telegraf (`apps/bot`) → Go + [Telego](https://github.com/mymmrac/telego) (`services/bot`):** the Go bot is in place and deployed instead of `apps/bot`; `apps/bot` stays only until the switch is verified in production (step B5 removes it).
+**Track B — Telegram bot, NestJS + Telegraf → Go + [Telego](https://github.com/mymmrac/telego) (`services/bot`): done** (the NestJS `apps/bot` is removed).
 - Its own Docker service (`services/bot/Dockerfile`, image `ermekten-bot`); same Go conventions as the other services, but Telego (`telego`, `telegohandler`, `telegoutil`) instead of Gin — the bot has no HTTP API. Layout: `cmd/bot/main.go`, `internal/{config,handlers,keyboards,session,users}`.
 - Long polling, as today; users data over the existing `users` gRPC API; same env (`BOT_TOKEN`, `USERS_GRPC_ADDR`, `MINI_APP_URL`).
 - Behavior parity: same commands, deep links (`verify_`, `link_`), callback data, message texts and keyboards. Bot changes go to `services/bot` only.
@@ -44,7 +44,7 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work starts onl
 
 ## Tech Stack
 - **Backend:** Go + Gin (`services/`), gRPC (buf), PostgreSQL (pgx, goose), Docker
-- **Bot:** Go + Telego (`services/bot`), long polling, gRPC client to the users service (the NestJS `apps/bot` is legacy, see Migrations in Progress)
+- **Bot:** Go + Telego (`services/bot`), long polling, gRPC client to the users service
 - **Frontend:** Angular 22 + `@angular/ssr` (`apps/site`, `apps/panel`) — see Angular Apps above
 - **Linter/Formatter:** Biome (+ angular-eslint for Angular templates)
 

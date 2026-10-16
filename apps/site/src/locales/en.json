@@ -2,6 +2,7 @@
   "brand": { "name": "Ermekten" },
   "nav": {
     "feed": "Feed",
+    "hikes": "Hikes",
     "gallery": "Gallery",
     "guides": "Guides",
     "tours": "Tours",
@@ -50,7 +51,10 @@
     "viewAllHotels": "All stays",
     "outingsHeading": "Upcoming outings",
     "outingsSubheading": "Join a group or grab a seat in a car",
-    "viewAllOutings": "All outings"
+    "viewAllOutings": "All outings",
+    "toursHeading": "Upcoming tours",
+    "toursSubheading": "The nearest dates from organizers",
+    "viewAllTours": "All tours"
   },
   "blog": {
     "heading": "Blog",
@@ -461,7 +465,7 @@
       "history": "Trip history",
       "partner": "Partnership",
       "listings": "My listings",
-      "achievements": "Achievements",
+      "achievements": "Hall of fame",
       "bookings": "Bookings"
     },
     "listings": {
@@ -1110,6 +1114,19 @@
       "privacy": "privacy policy",
       "refunds": "refund policy",
       "and": "and the"
+    }
+  },
+  "hikes": {
+    "title": "Hikes",
+    "subtitle": "Everything for a trip to the mountains: routes, group outings, tours, places to stay, guides and useful articles.",
+    "open": "Open",
+    "sections": {
+      "trails": "Tracks with a map, an elevation profile and fresh trail condition reports.",
+      "outings": "Group outings: find a group or a free seat in a car.",
+      "tours": "Ready-made tours from organizers, with dates and prices.",
+      "hotels": "Guesthouses and hotels near the trailheads: prices and reviews.",
+      "localGuides": "Local guides: languages, specialties and a price per day.",
+      "guides": "Articles and tips: gear, seasons and safety in the mountains."
     }
   }
 }

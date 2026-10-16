@@ -9,6 +9,11 @@ const pages: Routes = [
   { path: '', loadComponent: () => import('@/pages/home/home.page').then((m) => m.HomePage) },
 
   {
+    path: 'hikes',
+    loadComponent: () => import('@/pages/hikes/hikes.page').then((m) => m.HikesPage),
+  },
+
+  {
     path: 'blog',
     loadComponent: () => import('@/pages/blog/blog-list.page').then((m) => m.BlogListPage),
   },

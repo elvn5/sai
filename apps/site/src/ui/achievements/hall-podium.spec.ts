@@ -1,6 +1,6 @@
 import type { HallEntry } from '@/core/api/types';
-import { HallPodium } from '@/pages/hall-of-fame/hall-podium';
 import { pageTestProviders } from '@/testing/providers';
+import { HallPodium } from '@/ui/achievements/hall-podium';
 import { TestBed } from '@angular/core/testing';
 
 function entry(rank: number): HallEntry {

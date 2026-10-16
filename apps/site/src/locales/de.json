@@ -505,14 +505,20 @@
     }
   },
   "footer": {
-    "sections": { "nav": "Bereiche", "account": "Konto", "contacts": "Kontakt" },
+    "sections": {
+      "nav": "Bereiche",
+      "account": "Konto",
+      "contacts": "Kontakt",
+      "legal": "Rechtliches"
+    },
     "profile": "Profil",
     "startTrip": "Route wählen",
     "telegram": "Telegram",
     "account": "Konto",
     "location": "Kirgisistan",
     "bottomTagline": "Guides und Routen in Kirgisistan",
-    "rights": "Alle Rechte vorbehalten."
+    "rights": "Alle Rechte vorbehalten.",
+    "taxId": "Steuernummer"
   },
   "cookieConsent": {
     "title": "Cookie-Hinweis",
@@ -1087,5 +1093,23 @@
     "remove": "Entfernen",
     "uploading": "Wird hochgeladen…",
     "failed": "Die Datei konnte nicht hochgeladen werden. Bitte erneut versuchen."
+  },
+  "legal": {
+    "offer": { "title": "Öffentliches Angebot" },
+    "privacy": { "title": "Datenschutzerklärung" },
+    "refunds": { "title": "Storno- und Erstattungsbedingungen" },
+    "draft": "Entwurf: Dieses Dokument wird vorbereitet und ist noch nicht in Kraft. Markierte Stellen werden ergänzt.",
+    "russianOnly": "Dieses Dokument ist nur auf Russisch verfügbar.",
+    "contents": "Inhalt",
+    "otherDocuments": "Weitere Dokumente",
+    "effectiveFrom": "Gültig seit {date}",
+    "consent": {
+      "register": "Mit der Registrierung akzeptieren Sie die",
+      "booking": "Mit der Buchung akzeptieren Sie die",
+      "offer": "Angebotsbedingungen",
+      "privacy": "Datenschutzerklärung",
+      "refunds": "Erstattungsbedingungen",
+      "and": "und die"
+    }
   }
 }

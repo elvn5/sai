@@ -6,6 +6,7 @@ import { localizedPath } from '@/core/i18n/langs';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { TelegramWebAppStore } from '@/core/telegram/telegram-web-app';
 import { FieldErrors } from '@/ui/field-errors';
+import { SiteLink } from '@/ui/site-link';
 import { TelegramLoginWidget } from '@/ui/telegram-login-widget';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
@@ -38,7 +39,7 @@ export function safeRedirect(target: string | undefined): string | null {
 // visitor is signed in by Telegram and sent on. ?redirect brings them back.
 @Component({
   selector: 'app-login-page',
-  imports: [FieldErrors, FormField, TelegramLoginWidget, TranslocoPipe],
+  imports: [FieldErrors, FormField, SiteLink, TelegramLoginWidget, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto flex max-w-sm flex-col px-4 py-16">
@@ -117,6 +118,12 @@ export function safeRedirect(target: string | undefined): string | null {
                 <input class="ui-input" type="password" autocomplete="new-password" [formField]="registerForm.password" />
                 <app-field-errors [state]="registerForm.password()" />
               </label>
+              <p class="text-xs text-text-muted">
+                {{ 'legal.consent.register' | transloco }}
+                <a appSiteLink="/offer" class="underline hover:text-text">{{ 'legal.consent.offer' | transloco }}</a>
+                {{ 'legal.consent.and' | transloco }}
+                <a appSiteLink="/privacy" class="underline hover:text-text">{{ 'legal.consent.privacy' | transloco }}</a>.
+              </p>
               <button type="submit" class="ui-btn-primary py-2.5" [disabled]="registerForm().submitting()">{{ 'login.submitRegister' | transloco }}</button>
             </form>
           }

@@ -1,5 +1,6 @@
 import { requireAuth, requirePartner } from '@/core/auth/guards';
 import { localizedRoutes } from '@/core/i18n/i18n';
+import { LEGAL, LEGAL_DOCUMENTS } from '@/core/legal/documents';
 import type { Routes } from '@angular/router';
 
 // Pages, served under every language prefix (see localizedRoutes). Forms
@@ -143,6 +144,12 @@ const pages: Routes = [
     path: 'outings/:id',
     loadComponent: () => import('@/pages/outings/outing.page').then((m) => m.OutingPage),
   },
+
+  ...LEGAL_DOCUMENTS.map((doc) => ({
+    path: LEGAL[doc].path.slice(1),
+    data: { doc },
+    loadComponent: () => import('@/pages/legal/legal.page').then((m) => m.LegalPage),
+  })),
 
   {
     path: 'login',

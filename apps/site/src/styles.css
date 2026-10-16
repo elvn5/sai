@@ -144,3 +144,14 @@
   animation: none;
   mix-blend-mode: normal;
 }
+
+/* Text still to be written in a legal document draft (pages/legal). */
+.legal-todo {
+  border-radius: 0.25rem;
+  background-color: color-mix(in oklab, var(--color-amber-400) 22%, transparent);
+  color: var(--color-text);
+  font-style: italic;
+}
+p.legal-todo {
+  padding: 0.25rem 0.5rem;
+}

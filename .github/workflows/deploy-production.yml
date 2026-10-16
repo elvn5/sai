@@ -138,6 +138,13 @@ jobs:
             mkdir -p "${{ vars.DEPLOY_PATH }}"
             cd "${{ vars.DEPLOY_PATH }}"
 
+            # Defaults for unset variables. They're exported by this step (empty
+            # when unset), and compose prefers the environment over .env, so
+            # set them here rather than only in .env.
+            export PAYMENTS_PROVIDER="${PAYMENTS_PROVIDER:-off}"
+            export PLATFORM_FEE_PERCENT="${PLATFORM_FEE_PERCENT:-0}"
+            export BIND_ADDRESS="${BIND_ADDRESS:-127.0.0.1}"
+
             umask 077
             cat > .env <<EOF
             IMAGE_OWNER=$IMAGE_OWNER
@@ -149,7 +156,7 @@ jobs:
             API_PORT=$API_PORT
             ADMIN_PORT=$ADMIN_PORT
             CLIENT_PORT=$CLIENT_PORT
-            BIND_ADDRESS=${BIND_ADDRESS:-127.0.0.1}
+            BIND_ADDRESS=$BIND_ADDRESS
             JWT_SECRET=$JWT_SECRET
             JWT_EXPIRES_IN=$JWT_EXPIRES_IN
             ADMIN_PASSWORD=$ADMIN_PASSWORD
@@ -167,11 +174,11 @@ jobs:
             PUBLIC_SITE_URL=$PUBLIC_SITE_URL
             PUBLIC_TELEGRAM_BOT_USERNAME=$PUBLIC_TELEGRAM_BOT_USERNAME
             MINI_APP_URL=$MINI_APP_URL
-            PAYMENTS_PROVIDER=${PAYMENTS_PROVIDER:-off}
+            PAYMENTS_PROVIDER=$PAYMENTS_PROVIDER
             BAKAI_LOGIN=$BAKAI_LOGIN
             BAKAI_PASSWORD=$BAKAI_PASSWORD
             BAKAI_QR_TYPE=$BAKAI_QR_TYPE
-            PLATFORM_FEE_PERCENT=${PLATFORM_FEE_PERCENT:-0}
+            PLATFORM_FEE_PERCENT=$PLATFORM_FEE_PERCENT
             EOF
             chmod 600 .env
 

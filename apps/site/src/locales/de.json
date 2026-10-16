@@ -892,6 +892,11 @@
     "comment": "Nachricht an den Veranstalter (optional)",
     "total": "Gesamt",
     "pay": "Buchen und bezahlen",
+    "open": "Buchen",
+    "close": "Schließen",
+    "perPerson": "{price} {currency} pro Person",
+    "preparing": "Zahlung wird vorbereitet…",
+    "redirecting": "Weiter zur Zahlung…",
     "secure": "Zahlung über Bakai Bank — per Karte oder QR. Kartendaten erreichen uns nicht.",
     "signIn": "Melden Sie sich an, um einen Platz zu buchen und online zu bezahlen.",
     "signInCta": "Anmelden",
@@ -1059,7 +1064,8 @@
     "home": "Zur Startseite"
   },
   "a11y": {
-    "skipToContent": "Zum Inhalt springen"
+    "skipToContent": "Zum Inhalt springen",
+    "loading": "Wird geladen…"
   },
   "editor": {
     "bold": "Fett",

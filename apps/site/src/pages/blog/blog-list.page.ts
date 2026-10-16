@@ -4,6 +4,7 @@ import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
@@ -14,7 +15,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 // The blog in the current language: newest posts first (the API's order).
 @Component({
   selector: 'app-blog-list-page',
-  imports: [LoadError, NgOptimizedImage, SiteLink, TranslocoPipe],
+  imports: [ListSkeleton, LoadError, NgOptimizedImage, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-4xl px-4 py-12">
@@ -32,9 +33,9 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         <app-load-error (retry)="posts.reload()" />
       } @else if (posts.value(); as list) {
         @if (list.length > 0) {
-          <ul class="flex flex-col gap-4">
+          <ul class="motion-reveal flex flex-col gap-4">
             @for (post of list; track post.id; let first = $first) {
-              <li class="ui-card overflow-hidden transition-shadow hover:shadow-md">
+              <li class="ui-card overflow-hidden motion-lift">
                 <a [appSiteLink]="'/blog/' + post.slug" class="flex flex-col gap-4 p-4 sm:flex-row">
                   @if (post.coverImageUrl) {
                     <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-56">
@@ -61,6 +62,8 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         } @else {
           <p class="text-text-muted">{{ 'blog.empty' | transloco }}</p>
         }
+      } @else {
+        <app-list-skeleton variant="rows" />
       }
     </section>
   `,

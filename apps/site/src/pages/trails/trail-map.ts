@@ -18,6 +18,7 @@ const MARKER: CircleMarkerOptions = { color: '#fff', weight: 2, fillOpacity: 1 }
 const START = '#16a34a';
 const FINISH = '#dc2626';
 const HIGHLIGHT = '#2563eb';
+const TRACK_DRAW_MS = 1200;
 // Leaflet's stylesheet, copied from the package at build time (angular.json
 // assets) under /media/, which production nginx sends to this app: loaded
 // with the map, it stays out of every other page.
@@ -66,12 +67,14 @@ export class TrailMap {
   private destroyed = false;
   private map: LeafletMap | null = null;
   private marker: CircleMarker | null = null;
+  private observer: IntersectionObserver | null = null;
 
   constructor() {
     afterNextRender(() => void this.create());
     effect(() => this.mark(this.highlight()));
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
+      this.observer?.disconnect();
       this.map?.remove();
       this.map = null;
     });
@@ -105,12 +108,42 @@ export class TrailMap {
         fillColor: FINISH,
       }).addTo(map);
       map.fitBounds(line.getBounds(), { padding: [24, 24] });
+      this.drawWhenSeen(line.getElement());
     } else if (lat !== null && lng !== null) {
       L.circleMarker([lat, lng], { ...MARKER, radius: 8, fillColor: START }).addTo(map);
       map.setView([lat, lng], 13);
     }
     this.marker = L.circleMarker([0, 0], { ...MARKER, radius: 6, fillColor: HIGHLIGHT });
     this.map = map;
+  }
+
+  // The track draws itself from start to finish the first time the map
+  // scrolls into view.
+  private drawWhenSeen(element: Element | undefined): void {
+    if (!(element instanceof SVGPathElement)) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const length = element.getTotalLength();
+    element.style.strokeDasharray = `${length}`;
+    element.style.strokeDashoffset = `${length}`;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        observer.disconnect();
+        element
+          .animate([{ strokeDashoffset: length }, { strokeDashoffset: 0 }], {
+            duration: TRACK_DRAW_MS,
+            easing: 'cubic-bezier(0.2, 0, 0, 1)',
+          })
+          .finished.finally(() => {
+            // Zooming redraws the path: no dashes left behind.
+            element.style.strokeDasharray = '';
+            element.style.strokeDashoffset = '';
+          });
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(this.container().nativeElement);
+    this.observer = observer;
   }
 
   private mark(index: number | null): void {

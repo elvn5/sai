@@ -892,6 +892,11 @@
     "comment": "A note for the organizer (optional)",
     "total": "Total",
     "pay": "Book and pay",
+    "open": "Book",
+    "close": "Close",
+    "perPerson": "{price} {currency} per person",
+    "preparing": "Preparing the payment…",
+    "redirecting": "Going to the payment…",
     "secure": "Paid via Bakai Bank — by card or QR. Card details never reach us.",
     "signIn": "Sign in to book a place and pay online.",
     "signInCta": "Sign in",
@@ -1059,7 +1064,8 @@
     "home": "Go to the home page"
   },
   "a11y": {
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "loading": "Loading…"
   },
   "editor": {
     "bold": "Bold",

@@ -19,7 +19,20 @@ import {
   withHttpTransferCacheOptions,
   withIncrementalHydration,
 } from '@angular/platform-browser';
-import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from '@angular/router';
+import {
+  Router,
+  type UrlTree,
+  provideRouter,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+  withViewTransitions,
+} from '@angular/router';
+
+// Whether two URLs differ only in the query string or fragment.
+function samePath(from: UrlTree, to: UrlTree | undefined): boolean {
+  const path = (url: UrlTree): string => url.toString().split(/[?#]/)[0] ?? '';
+  return to !== undefined && path(from) === path(to);
+}
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -28,6 +41,18 @@ export const appConfig: ApplicationConfig = {
       routes,
       withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' }),
+      // Pages cross-fade into each other (motion.css); a filter that only
+      // changes the query string swaps in place.
+      withViewTransitions({
+        skipInitialTransition: true,
+        onViewTransitionCreated: ({ transition }) => {
+          const navigation = inject(Router).currentNavigation();
+          const from = navigation?.previousNavigation?.finalUrl;
+          if (from && samePath(from, navigation?.finalUrl)) {
+            transition.skipTransition();
+          }
+        },
+      }),
     ),
     provideHttpClient(withFetch(), withInterceptors([apiInterceptor])),
     // Data fetched during SSR reaches the browser in the HTML (HTTP transfer

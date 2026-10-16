@@ -12,6 +12,7 @@ import { pageNumber, queryList, withQuery } from '@/core/lib/query-link';
 import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { ChipToggleGroup } from '@/ui/chip-toggle-group';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { HotelCard } from '@/ui/listing/hotel-card';
 import { LoadError } from '@/ui/load-error';
 import { Pager } from '@/ui/pager';
@@ -37,7 +38,7 @@ const FILTER_AMENITIES = HOTEL_AMENITY_OPTIONS.slice(0, 8);
 // views work; filtered views aren't indexed. Page N renders on the server.
 @Component({
   selector: 'app-hotels-list-page',
-  imports: [ChipToggleGroup, HotelCard, LoadError, Pager, SiteLink, TranslocoPipe],
+  imports: [ChipToggleGroup, HotelCard, ListSkeleton, LoadError, Pager, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-6xl px-4 py-12">
@@ -129,7 +130,7 @@ const FILTER_AMENITIES = HOTEL_AMENITY_OPTIONS.slice(0, 8);
           @if (list.first.error()) {
             <app-load-error (retry)="list.reload()" />
           } @else if (list.items().length > 0) {
-            <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul class="motion-reveal grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               @for (hotel of list.items(); track hotel.id; let index = $index) {
                 <li><app-hotel-card [hotel]="hotel" [priority]="index === 0" /></li>
               }
@@ -142,6 +143,8 @@ const FILTER_AMENITIES = HOTEL_AMENITY_OPTIONS.slice(0, 8);
                 <button type="button" class="ui-btn-soft" (click)="reset()">{{ 'listing.filters.reset' | transloco }}</button>
               }
             </div>
+          } @else {
+            <app-list-skeleton columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" />
           }
 
           <app-pager [previous]="previousLink()" [next]="nextLink()" [loading]="list.loadingMore()" (loadMore)="list.loadMore()" />

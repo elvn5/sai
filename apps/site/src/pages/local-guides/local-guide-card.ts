@@ -16,7 +16,7 @@ const CARD_DESTINATIONS = 3;
   imports: [NgOptimizedImage, RatingStars, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a [appSiteLink]="'/local-guides/' + guide().slug" class="flex h-full flex-col gap-3 rounded-card border border-border bg-surface p-4 transition hover:shadow-lg">
+    <a [appSiteLink]="'/local-guides/' + guide().slug" class="flex h-full flex-col gap-3 rounded-card border border-border bg-surface p-4 motion-lift">
       <div class="flex items-center gap-3">
         @if (avatar(); as url) {
           <img [ngSrc]="url" width="64" height="64" [priority]="priority()" alt="" class="size-16 shrink-0 rounded-full object-cover" />

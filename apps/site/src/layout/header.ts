@@ -6,7 +6,16 @@ import { ThemeToggle } from '@/layout/theme-toggle';
 import { AppLogo } from '@/ui/app-logo';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 // Routes, outings, hotels, tours, local guides and guides live under
@@ -17,6 +26,10 @@ const NAV_LINKS = [
   { path: '/gallery', label: 'nav.gallery' },
   { path: '/blog', label: 'nav.blog' },
 ] as const;
+
+// Scrolled further than this, the header slides away while scrolling down
+// and comes back on the way up.
+const TUCK_AFTER = 240;
 
 // The site header. Rendered on the server for an anonymous visitor (the
 // HTML is cached and shared); the account part fills in after the session
@@ -35,7 +48,9 @@ const NAV_LINKS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header
-      class="animated-gradient-border sticky top-0 z-40 bg-linear-to-r from-brand-900 via-brand-700 to-brand-500 text-white"
+      class="site-header animated-gradient-border sticky top-0 z-40 bg-linear-to-r from-brand-900 via-brand-700 to-brand-500 text-white transition-[translate,box-shadow] duration-(--dur-base) ease-standard"
+      [class.-translate-y-full]="tucked()"
+      [class.shadow-lg]="scrolled()"
     >
       <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <a appSiteLink="/" class="flex items-center gap-2 text-lg font-bold">
@@ -97,16 +112,20 @@ const NAV_LINKS = [
           aria-controls="mobile-menu"
           (click)="menuOpen.set(!menuOpen())"
         >
-          @if (menuOpen()) {
-            <span class="icon-[heroicons--x-mark] size-6" aria-hidden="true"></span>
-          } @else {
-            <span class="icon-[heroicons--bars-3] size-6" aria-hidden="true"></span>
-          }
+          <span class="icon-swap" aria-hidden="true">
+            <span class="icon-[heroicons--bars-3] size-6" [attr.data-off]="menuOpen() ? '' : null"></span>
+            <span class="icon-[heroicons--x-mark] size-6" [attr.data-off]="menuOpen() ? null : ''"></span>
+          </span>
         </button>
       </div>
 
       @if (menuOpen()) {
-        <div id="mobile-menu" class="border-t border-white/15 bg-brand-900/95 px-4 py-4 lg:hidden">
+        <div
+          id="mobile-menu"
+          class="border-t border-white/15 bg-brand-900/95 px-4 py-4 lg:hidden"
+          animate.enter="motion-drop-in"
+          animate.leave="motion-drop-out"
+        >
           <nav class="flex flex-col gap-1" [attr.aria-label]="'footer.sections.nav' | transloco">
             @for (link of links; track link.path) {
               <a
@@ -166,9 +185,30 @@ export class Header {
   protected readonly auth = inject(AuthStore);
   protected readonly links = NAV_LINKS;
   protected readonly menuOpen = signal(false);
+  protected readonly scrolled = signal(false);
+  private readonly scrollingDown = signal(false);
+  protected readonly tucked = computed(() => this.scrollingDown() && !this.menuOpen());
   private readonly url = injectCurrentUrl();
 
   constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      let last = scrollY;
+      let frame = 0;
+      const onScroll = (): void => {
+        if (frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          const y = scrollY;
+          this.scrolled.set(y > 8);
+          if (Math.abs(y - last) > 4) this.scrollingDown.set(y > last && y > TUCK_AFTER);
+          last = y;
+        });
+      };
+      addEventListener('scroll', onScroll, { passive: true });
+      destroyRef.onDestroy(() => removeEventListener('scroll', onScroll));
+    });
+
     // Close the mobile menu after navigating.
     effect(() => {
       this.url();

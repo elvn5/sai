@@ -3,7 +3,8 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 // Light / dark mode. The server can't know the visitor's mode, so the
-// button shows both icons and CSS picks one (.dark on <html>): no flash.
+// button holds both icons and CSS shows one (.dark on <html>): no flash.
+// Switching, the sun turns away as the moon turns in.
 @Component({
   selector: 'app-theme-toggle',
   imports: [TranslocoPipe],
@@ -16,8 +17,10 @@ import { TranslocoPipe } from '@jsverse/transloco';
       [title]="'theme.toggle' | transloco"
       (click)="toggle($event)"
     >
-      <span class="icon-[heroicons--sun-20-solid] size-5 dark:hidden" aria-hidden="true"></span>
-      <span class="icon-[heroicons--moon-20-solid] hidden size-5 dark:block" aria-hidden="true"></span>
+      <span class="icon-swap" aria-hidden="true">
+        <span class="icon-[heroicons--sun-20-solid] size-5" data-dark-off></span>
+        <span class="icon-[heroicons--moon-20-solid] size-5" data-light-off></span>
+      </span>
     </button>
   `,
 })

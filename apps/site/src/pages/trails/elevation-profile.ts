@@ -30,6 +30,38 @@ interface ProfilePoint {
   imports: [TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
+  // The line draws itself, left to right, as the chart scrolls into view
+  // (a scroll-driven animation: drawn at once where unsupported).
+  styles: `
+    @supports (animation-timeline: view()) {
+      @media (prefers-reduced-motion: no-preference) {
+        .profile-line {
+          stroke-dasharray: 1;
+          animation: profile-draw linear both;
+          animation-timeline: view();
+          animation-range: entry 20% cover 45%;
+        }
+        .profile-area {
+          animation: profile-fill linear both;
+          animation-timeline: view();
+          animation-range: entry 40% cover 50%;
+        }
+      }
+    }
+    @keyframes profile-draw {
+      from {
+        stroke-dashoffset: 1;
+      }
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+    @keyframes profile-fill {
+      from {
+        opacity: 0;
+      }
+    }
+  `,
   template: `
     @if (points().length > 1) {
       <figure class="rounded-card border border-border bg-surface p-3">
@@ -54,8 +86,8 @@ interface ProfilePoint {
             <line [attr.x1]="pad.left" [attr.x2]="width - pad.right" [attr.y1]="y(tick)" [attr.y2]="y(tick)" stroke="var(--color-border)" stroke-dasharray="3 4" />
             <text [attr.x]="pad.left - 6" [attr.y]="y(tick) + 4" text-anchor="end" class="fill-text-muted text-[11px]">{{ tick }}</text>
           }
-          <path [attr.d]="areaPath()" [attr.fill]="'url(#' + gradientId + ')'" />
-          <path [attr.d]="linePath()" fill="none" stroke="var(--color-brand-500)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+          <path class="profile-area" [attr.d]="areaPath()" [attr.fill]="'url(#' + gradientId + ')'" />
+          <path class="profile-line" pathLength="1" [attr.d]="linePath()" fill="none" stroke="var(--color-brand-500)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
           <text [attr.x]="width - pad.right" [attr.y]="height - 6" text-anchor="end" class="fill-text-muted text-[11px]">{{ totalKm().toFixed(1) }} {{ 'trails.units.km' | transloco }}</text>
           @if (hovered(); as point) {
             <line [attr.x1]="x(point.km)" [attr.x2]="x(point.km)" [attr.y1]="pad.top" [attr.y2]="height - pad.bottom" stroke="var(--color-text-muted)" />

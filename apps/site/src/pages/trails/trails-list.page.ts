@@ -17,6 +17,7 @@ import {
 import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { TrailCard } from '@/pages/trails/trail-card';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { SiteLink } from '@/ui/site-link';
 import { httpResource } from '@angular/common/http';
@@ -46,7 +47,7 @@ const GRADE_GROUPS = [
 // list is crawlable, but filtered views aren't indexed.
 @Component({
   selector: 'app-trails-list-page',
-  imports: [LoadError, SiteLink, TrailCard, TranslocoPipe],
+  imports: [ListSkeleton, LoadError, SiteLink, TrailCard, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-6xl px-4 py-12">
@@ -142,7 +143,7 @@ const GRADE_GROUPS = [
       @if (trails.error()) {
         <app-load-error (retry)="trails.reload()" />
       } @else if (list().length > 0) {
-        <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul class="motion-reveal grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           @for (trail of list(); track trail.id; let index = $index) {
             <li><app-trail-card [trail]="trail" [priority]="index === 0" /></li>
           }
@@ -152,6 +153,8 @@ const GRADE_GROUPS = [
           <span class="icon-[mdi--map-search-outline] size-10 text-text-muted" aria-hidden="true"></span>
           <p class="text-text-muted">{{ 'trails.empty' | transloco }}</p>
         </div>
+      } @else {
+        <app-list-skeleton />
       }
     </section>
   `,

@@ -13,10 +13,10 @@ import { TranslocoPipe } from '@jsverse/transloco';
   imports: [ConditionBadge, NgOptimizedImage, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a [appSiteLink]="'/trails/' + trail().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lg motion-reduce:hover:translate-y-0">
+    <a [appSiteLink]="'/trails/' + trail().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface motion-lift">
       <div class="relative aspect-video overflow-hidden bg-linear-to-br from-brand-700 to-secondary-700">
         @if (cover(); as url) {
-          <img [ngSrc]="url" fill [priority]="priority()" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" alt="" class="object-cover transition duration-500 group-hover:scale-105" />
+          <img [ngSrc]="url" fill [priority]="priority()" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" alt="" class="motion-zoom object-cover" />
         } @else {
           <span [class]="kindIcon() + ' absolute inset-0 m-auto size-14 text-white/40'" aria-hidden="true"></span>
         }

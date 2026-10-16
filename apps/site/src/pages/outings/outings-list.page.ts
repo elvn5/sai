@@ -4,6 +4,7 @@ import { injectLang } from '@/core/i18n/current-lang';
 import { formatDate, todayInBishkek } from '@/core/lib/format';
 import { loaded } from '@/core/lib/resource';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { OutingCard } from '@/ui/outing-card';
 import { SiteLink } from '@/ui/site-link';
@@ -23,7 +24,7 @@ interface DayGroup {
 // Upcoming group outings, by day (today, tomorrow, then dates).
 @Component({
   selector: 'app-outings-list-page',
-  imports: [LoadError, OutingCard, SiteLink, TranslocoPipe],
+  imports: [ListSkeleton, LoadError, OutingCard, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-3xl px-4 py-12">
@@ -50,7 +51,7 @@ interface DayGroup {
           @for (group of groups(); track group.day) {
             <section [attr.aria-labelledby]="'day-' + group.day">
               <h2 [id]="'day-' + group.day" class="mb-3 text-sm font-bold tracking-wide text-text-muted uppercase">{{ group.label }}</h2>
-              <ul class="flex flex-col gap-3">
+              <ul class="motion-reveal flex flex-col gap-3">
                 @for (outing of group.outings; track outing.id) {
                   <li><app-outing-card [outing]="outing" /></li>
                 }
@@ -64,6 +65,8 @@ interface DayGroup {
           <p class="font-medium text-text">{{ 'outings.empty' | transloco }}</p>
           <p class="max-w-sm text-sm text-text-muted">{{ 'outings.emptyHint' | transloco }}</p>
         </div>
+      } @else {
+        <app-list-skeleton variant="rows" />
       }
     </section>
   `,

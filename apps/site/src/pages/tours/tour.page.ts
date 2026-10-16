@@ -7,6 +7,7 @@ import { trackListingView } from '@/core/lib/listing-stats';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
+import { tourCoverTransition } from '@/core/lib/view-transitions';
 import { plainText, touristTrip } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
@@ -16,6 +17,7 @@ import { PostsFeed } from '@/ui/listing/posts-feed';
 import { reviewsResource } from '@/ui/listing/reviews';
 import { ReviewsSection } from '@/ui/listing/reviews-section';
 import { LoadError } from '@/ui/load-error';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
@@ -34,6 +36,7 @@ import { firstValueFrom } from 'rxjs';
     NotFoundPage,
     PostsFeed,
     ReviewsSection,
+    SharedTransition,
     SiteLink,
     TourBooking,
     TranslocoPipe,
@@ -44,7 +47,7 @@ import { firstValueFrom } from 'rxjs';
       <app-not-found-page />
     } @else if (tour.error()) {
       <div class="mx-auto max-w-6xl px-4 py-12"><app-load-error (retry)="tour.reload()" /></div>
-    } @else if (tour.value(); as item) {
+    } @else if (item(); as item) {
       <article class="mx-auto max-w-6xl px-4 py-12">
         <a appSiteLink="/tours" class="text-sm text-brand-700 hover:underline dark:text-brand-300">&larr; {{ 'tours.heading' | transloco }}</a>
         <div class="mt-4 flex flex-wrap gap-2">
@@ -69,7 +72,7 @@ import { firstValueFrom } from 'rxjs';
           <div class="flex min-w-0 flex-1 flex-col gap-10">
             <div>
               @if (item.coverImageUrl) {
-                <div class="relative aspect-video overflow-hidden rounded-lg">
+                <div class="relative aspect-video overflow-hidden rounded-lg" [appSharedTransition]="coverTransition(item.id)" [sharedAlways]="true">
                   <img [ngSrc]="media(item.coverImageUrl)" fill priority sizes="(min-width: 1024px) 60vw, 100vw" alt="" class="object-cover" />
                 </div>
               }
@@ -124,6 +127,8 @@ import { firstValueFrom } from 'rxjs';
 })
 export class TourPage {
   readonly slug = input.required<string>();
+  // Route data (tour-prefetch.ts).
+  readonly prefetched = input<Tour | null>(null);
   protected readonly targetType = ReviewTargetType.TOUR;
 
   private readonly auth = inject(AuthStore);
@@ -136,8 +141,15 @@ export class TourPage {
   protected readonly tour = httpResource<Tour>(
     () => `/tours/${this.lang()}/${encodeURIComponent(this.slug())}`,
   );
-  // The loaded tour, or undefined (value() throws while the resource is in error).
-  private readonly item = computed(() => (this.tour.hasValue() ? this.tour.value() : undefined));
+  // The loaded tour, or the one fetched before navigating here
+  // (tour-prefetch.ts) until then; undefined while the resource is in error
+  // (value() throws).
+  protected readonly item = computed(() => {
+    if (this.tour.hasValue()) return this.tour.value();
+    if (this.tour.error()) return undefined;
+    const prefetched = this.prefetched();
+    return prefetched?.slug === this.slug() ? prefetched : undefined;
+  });
   protected readonly reviews = reviewsResource(
     this.targetType,
     computed(() => this.item()?.id),
@@ -209,6 +221,11 @@ export class TourPage {
 
   protected media(url: string): string {
     return resolveMediaUrl(this.config.apiBaseUrl, url);
+  }
+
+  // The cover the tour's card flew in from (motion.css).
+  protected coverTransition(id: string): string {
+    return tourCoverTransition(id);
   }
 
   protected refresh(): void {

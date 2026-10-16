@@ -226,6 +226,7 @@ func TestServiceRouting(t *testing.T) {
 	want := map[string]string{
 		"POST /uploads/image":        "media",
 		"GET /uploads/a.webp":        "media",
+		"GET /images/640/r2/a.webp":  "media",
 		"POST /storage/upload-url":   "media",
 		"DELETE /storage/file":       "media",
 		"GET /blog":                  "content",

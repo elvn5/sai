@@ -12,6 +12,11 @@ type Config struct {
 	// Local disk for /uploads (legacy images and guide attachments). Shared
 	// with the NestJS API's volume during the migration.
 	UploadsDir string `env:"UPLOADS_DIR" envDefault:"./uploads"`
+	// Resized copies for /images (made on demand). Defaults to
+	// <UPLOADS_DIR>/.thumbs: on the same volume, hidden from /uploads.
+	ThumbsDir string `env:"THUMBS_DIR"`
+	// How many images may be resized at once.
+	ThumbConcurrency int `env:"THUMB_CONCURRENCY" envDefault:"2"`
 
 	// Cloudflare R2. All optional so the service boots without them; the
 	// storage endpoints then fail per request, as in the NestJS API.

@@ -6,16 +6,18 @@ describe('configFromEnv', () => {
     expect(configFromEnv({ SITE_URL: 'https://test.ermekten.com' }).indexable).toBe(false);
   });
 
-  it('reads the API and bot from the environment', () => {
+  it('reads the API, bot and media bucket from the environment', () => {
     const config = configFromEnv({
       SITE_URL: 'https://ermekten.com/',
       API_BASE_URL: 'https://api.ermekten.com',
       TELEGRAM_BOT_USERNAME: 'ermekten_bot',
+      R2_PUBLIC_URL: 'https://media.ermekten.com/',
     });
     expect(config).toEqual({
       siteUrl: 'https://ermekten.com',
       apiBaseUrl: 'https://api.ermekten.com',
       telegramBotUsername: 'ermekten_bot',
+      mediaPublicUrl: 'https://media.ermekten.com',
       indexable: true,
     });
   });

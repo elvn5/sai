@@ -192,6 +192,7 @@ services:
       API_INTERNAL_URL: http://gateway:8080
       SITE_URL: ${PUBLIC_SITE_URL}
       TELEGRAM_BOT_USERNAME: ${PUBLIC_TELEGRAM_BOT_USERNAME}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
     ports:
       - "${CLIENT_PORT}:3000"
     depends_on:

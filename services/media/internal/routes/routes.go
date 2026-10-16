@@ -4,6 +4,7 @@ package routes
 import (
 	"log/slog"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 
@@ -29,9 +30,23 @@ func Setup(cfg config.Config, r2 *storage.R2, users middleware.UserLookup, log *
 	uploads := &handlers.Uploads{Dir: cfg.UploadsDir, Log: log}
 	files := &handlers.Files{Dir: cfg.UploadsDir}
 	store := &handlers.Storage{R2: r2, Log: log}
+	thumbsDir := cfg.ThumbsDir
+	if thumbsDir == "" {
+		thumbsDir = filepath.Join(cfg.UploadsDir, ".thumbs")
+	}
+	images := &handlers.Images{
+		UploadsDir:  cfg.UploadsDir,
+		CacheDir:    thumbsDir,
+		R2PublicURL: cfg.R2PublicURL,
+		Client:      &http.Client{},
+		Log:         log,
+		Slots:       make(chan struct{}, max(1, cfg.ThumbConcurrency)),
+	}
 
 	r.GET("/uploads/*filepath", files.Serve)
 	r.HEAD("/uploads/*filepath", files.Serve)
+	r.GET("/images/:width/*source", images.Serve)
+	r.HEAD("/images/:width/*source", images.Serve)
 	r.POST("/uploads/image", requireSession, uploads.Image)
 	r.POST("/uploads/file", requireSession, uploads.File)
 

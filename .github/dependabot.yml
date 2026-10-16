@@ -22,6 +22,7 @@ updates:
       - "/services/listings"
       - "/services/trails"
       - "/services/users"
+      - "/services/bot"
     schedule:
       interval: weekly
     groups:
@@ -39,11 +40,7 @@ updates:
       - "/services/listings"
       - "/services/trails"
       - "/services/users"
-    schedule:
-      interval: weekly
-
-  - package-ecosystem: docker
-    directory: "/apps/bot"
+      - "/services/bot"
     schedule:
       interval: weekly
 

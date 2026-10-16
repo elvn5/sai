@@ -105,7 +105,6 @@ services/   Go workspace (go.work)
 apps/
   site/     Angular public site + Telegram Mini App (SSR)
   panel/    Angular admin panel
-  bot/      Legacy NestJS bot, removed once services/bot is verified in production
 packages/
   tokens/   Design tokens (Tailwind CSS 4) shared by the frontends
 ```

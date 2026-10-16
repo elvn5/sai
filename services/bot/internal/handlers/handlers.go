@@ -1,5 +1,5 @@
 // Package handlers holds the bot's update handlers. Texts, buttons and
-// callback data match the former NestJS bot (apps/bot) one to one: the
+// callback data match the former NestJS bot one to one: the
 // site links into the bot with t.me deep links.
 package handlers
 

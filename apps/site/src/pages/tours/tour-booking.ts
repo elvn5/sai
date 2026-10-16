@@ -80,6 +80,12 @@ interface BookingForm {
             @if (error(); as key) {
               <p class="ui-error" role="alert">{{ key | transloco }}</p>
             }
+            <p class="text-xs text-text-muted">
+              {{ 'legal.consent.booking' | transloco }}
+              <a appSiteLink="/offer" class="underline hover:text-text">{{ 'legal.consent.offer' | transloco }}</a>
+              {{ 'legal.consent.and' | transloco }}
+              <a appSiteLink="/refunds" class="underline hover:text-text">{{ 'legal.consent.refunds' | transloco }}</a>.
+            </p>
             <button type="submit" class="ui-btn-primary py-2.5 text-base" [disabled]="bookingForm().submitting()">
               <span class="icon-[mdi--credit-card-outline] size-5" aria-hidden="true"></span>{{ 'booking.pay' | transloco }}
             </button>

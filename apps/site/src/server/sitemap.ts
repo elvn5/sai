@@ -1,4 +1,5 @@
 import { DEFAULT_LANG, LANGS, type Lang, localizedPath } from '@/core/i18n/langs';
+import { publishedLegalPaths } from '@/core/legal/documents';
 
 // sitemap.xml for the SSR server: an index (/sitemap.xml) of one sitemap per
 // content type (/sitemaps/<type>.xml), with lastmod and hreflang alternates
@@ -19,7 +20,8 @@ export function isSitemapType(value: string): value is SitemapType {
   return (SITEMAP_TYPES as readonly string[]).includes(value);
 }
 
-// Section pages, the same in every language.
+// Section pages, the same in every language (plus the finished legal
+// documents).
 const SECTION_PATHS = [
   '/',
   '/tours',
@@ -31,6 +33,7 @@ const SECTION_PATHS = [
   '/guides',
   '/gallery',
   '/hall-of-fame',
+  ...publishedLegalPaths(),
 ];
 
 const PAGE_SIZE = 50;

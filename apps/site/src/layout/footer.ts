@@ -1,13 +1,15 @@
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
+import { COMPANY } from '@/core/legal/company';
 import { AppLogo } from '@/ui/app-logo';
+import { LegalLinks } from '@/ui/legal-links';
 import { SiteLink } from '@/ui/site-link';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-footer',
-  imports: [AppLogo, SiteLink, TranslocoPipe],
+  imports: [AppLogo, LegalLinks, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <footer class="animated-gradient-border-top bg-linear-to-br from-brand-900 via-brand-700 to-brand-600 text-white">
@@ -84,17 +86,35 @@ import { TranslocoPipe } from '@jsverse/transloco';
       </div>
 
       <div class="border-t border-white/15">
-        <p class="mx-auto max-w-6xl px-4 py-5 text-center text-xs text-white/75 sm:text-left">
-          {{ 'brand.name' | transloco }} — {{ 'footer.bottomTagline' | transloco }} © {{ year }}.
-          {{ 'footer.rights' | transloco }}
-        </p>
+        <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-center text-xs text-white/75 sm:flex-row sm:items-start sm:justify-between sm:text-left">
+          <div>
+            <p>
+              {{ 'brand.name' | transloco }} — {{ 'footer.bottomTagline' | transloco }} © {{ year }}.
+              {{ 'footer.rights' | transloco }}
+            </p>
+            @if (company.name) {
+              <p class="mt-1">{{ requisites() }}</p>
+            }
+          </div>
+          <nav [attr.aria-label]="'footer.sections.legal' | transloco">
+            <app-legal-links class="[&_ul]:justify-center sm:[&_ul]:justify-end" linkClass="text-white/85 hover:text-white hover:underline" />
+          </nav>
+        </div>
       </div>
     </footer>
   `,
 })
 export class Footer {
   protected readonly auth = inject(AuthStore);
+  private readonly transloco = inject(TranslocoService);
   protected readonly botUsername = inject(APP_CONFIG).telegramBotUsername;
   protected readonly telegramUrl = this.botUsername ? `https://t.me/${this.botUsername}` : null;
   protected readonly year = new Date().getFullYear();
+  protected readonly company = COMPANY;
+
+  // "ОсОО «…», ИНН 0123…, г. Бишкек, …" — the operator, as the bank asks.
+  protected requisites(): string {
+    const taxId = COMPANY.taxId && `${this.transloco.translate('footer.taxId')} ${COMPANY.taxId}`;
+    return [COMPANY.name, taxId, COMPANY.address].filter(Boolean).join(', ');
+  }
 }

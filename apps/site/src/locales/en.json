@@ -505,14 +505,20 @@
     }
   },
   "footer": {
-    "sections": { "nav": "Sections", "account": "Account", "contacts": "Contacts" },
+    "sections": {
+      "nav": "Sections",
+      "account": "Account",
+      "contacts": "Contacts",
+      "legal": "Legal"
+    },
     "profile": "Profile",
     "startTrip": "Pick a route",
     "telegram": "Telegram",
     "account": "Account",
     "location": "Kyrgyzstan",
     "bottomTagline": "guides and routes across Kyrgyzstan",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "taxId": "Tax ID"
   },
   "cookieConsent": {
     "title": "Cookie notice",
@@ -1087,5 +1093,23 @@
     "remove": "Remove",
     "uploading": "Uploading…",
     "failed": "Could not upload the file. Please try again."
+  },
+  "legal": {
+    "offer": { "title": "Public offer" },
+    "privacy": { "title": "Privacy policy" },
+    "refunds": { "title": "Cancellation and refund policy" },
+    "draft": "Draft: this document is being prepared and is not in force yet. Highlighted parts will be filled in.",
+    "russianOnly": "This document is available in Russian only.",
+    "contents": "Contents",
+    "otherDocuments": "Other documents",
+    "effectiveFrom": "In force since {date}",
+    "consent": {
+      "register": "By signing up, you accept the",
+      "booking": "By booking, you accept the",
+      "offer": "terms of the offer",
+      "privacy": "privacy policy",
+      "refunds": "refund policy",
+      "and": "and the"
+    }
   }
 }

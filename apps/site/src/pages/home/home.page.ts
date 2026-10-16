@@ -1,6 +1,14 @@
-import { type BlogPost, type Hotel, type Outing, type Paginated, SeoPage } from '@/core/api/types';
+import {
+  type BlogPost,
+  type Hotel,
+  type Outing,
+  type Paginated,
+  SeoPage,
+  type Tour,
+} from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
+import { todayInBishkek } from '@/core/lib/format';
 import { FEATURED_DESTINATIONS } from '@/core/lib/listing-options';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { loaded } from '@/core/lib/resource';
@@ -8,6 +16,7 @@ import { bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { HeroImage } from '@/pages/home/hero-image';
 import { AppLogo } from '@/ui/app-logo';
 import { HotelCard } from '@/ui/listing/hotel-card';
+import { TourCard } from '@/ui/listing/tour-card';
 import { OutingCard } from '@/ui/outing-card';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
@@ -18,6 +27,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 const NEWS_LIMIT = 3;
 const TOP_HOTELS_LIMIT = 3;
 const OUTINGS_LIMIT = 4;
+const TOURS_LIMIT = 6;
 
 const QUICK_LINKS = [
   { path: '/hotels', icon: 'icon-[heroicons--building-office-2]', key: 'hotels' },
@@ -25,12 +35,21 @@ const QUICK_LINKS = [
   { path: '/local-guides', icon: 'icon-[heroicons--user-group]', key: 'localGuides' },
 ] as const;
 
-// The home page: where to go, where to stay, who's heading out this
-// weekend and the latest news, all rendered on the server (the cached
+// The home page (the feed): the nearest tours, who's heading out this
+// weekend, where to go, where to stay and the latest news, all rendered on the server (the cached
 // page is at most minutes old, so the outings' seats stay close enough).
 @Component({
   selector: 'app-home-page',
-  imports: [AppLogo, HeroImage, HotelCard, NgOptimizedImage, OutingCard, SiteLink, TranslocoPipe],
+  imports: [
+    AppLogo,
+    HeroImage,
+    HotelCard,
+    NgOptimizedImage,
+    OutingCard,
+    SiteLink,
+    TourCard,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="relative isolate overflow-hidden px-4 py-24 text-center sm:py-32">
@@ -64,6 +83,23 @@ const QUICK_LINKS = [
         }
       </ul>
     </nav>
+
+    @if (upcomingTours().length > 0) {
+      <section class="mx-auto max-w-4xl px-4 pt-14" aria-labelledby="home-tours">
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <h2 id="home-tours" class="text-xl font-bold text-text">{{ 'home.toursHeading' | transloco }}</h2>
+            <p class="mt-1 text-sm text-text-muted">{{ 'home.toursSubheading' | transloco }}</p>
+          </div>
+          <a appSiteLink="/tours" class="shrink-0 text-sm text-brand-700 hover:underline dark:text-brand-300">{{ 'home.viewAllTours' | transloco }}</a>
+        </div>
+        <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @for (tour of upcomingTours(); track tour.id) {
+            <li><app-tour-card [tour]="tour" /></li>
+          }
+        </ul>
+      </section>
+    }
 
     @if (upcoming().length > 0) {
       <section class="mx-auto max-w-4xl px-4 pt-14" aria-labelledby="home-outings">
@@ -162,6 +198,10 @@ export class HomePage {
     url: '/hotels',
     params: { sort: 'rating', limit: TOP_HOTELS_LIMIT },
   }));
+  private readonly tours = httpResource<Tour[]>(() => ({
+    url: '/tours',
+    params: { locale: this.lang() },
+  }));
   private readonly outings = httpResource<Outing[]>(() => ({
     url: '/outings',
     params: { limit: OUTINGS_LIMIT },
@@ -171,6 +211,14 @@ export class HomePage {
   protected readonly latestPosts = computed(() => (loaded(this.posts) ?? []).slice(0, NEWS_LIMIT));
   protected readonly topHotels = computed(() => loaded(this.hotels)?.items ?? []);
   protected readonly upcoming = computed(() => loaded(this.outings) ?? []);
+  // Tours still ahead, soonest first.
+  protected readonly upcomingTours = computed(() => {
+    const today = todayInBishkek();
+    return (loaded(this.tours) ?? [])
+      .filter((tour) => tour.startDate >= today)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))
+      .slice(0, TOURS_LIMIT);
+  });
 
   constructor() {
     const transloco = inject(TranslocoService);

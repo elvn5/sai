@@ -2,6 +2,7 @@
   "brand": { "name": "Ermekten" },
   "nav": {
     "feed": "Feed",
+    "hikes": "Wandern",
     "gallery": "Galerie",
     "guides": "Guides",
     "tours": "Touren",
@@ -50,7 +51,10 @@
     "viewAllHotels": "Alle Unterkünfte",
     "outingsHeading": "Nächste Gruppentouren",
     "outingsSubheading": "Schließen Sie sich einer Gruppe an oder finden Sie einen Platz im Auto",
-    "viewAllOutings": "Alle Gruppentouren"
+    "viewAllOutings": "Alle Gruppentouren",
+    "toursHeading": "Nächste Touren",
+    "toursSubheading": "Die nächsten Termine der Veranstalter",
+    "viewAllTours": "Alle Touren"
   },
   "blog": {
     "heading": "Blog",
@@ -461,7 +465,7 @@
       "history": "Tourenverlauf",
       "partner": "Partnerschaft",
       "listings": "Meine Einträge",
-      "achievements": "Erfolge",
+      "achievements": "Ruhmeshalle",
       "bookings": "Buchungen"
     },
     "listings": {
@@ -1110,6 +1114,19 @@
       "privacy": "Datenschutzerklärung",
       "refunds": "Erstattungsbedingungen",
       "and": "und die"
+    }
+  },
+  "hikes": {
+    "title": "Wandern",
+    "subtitle": "Alles für eine Reise in die Berge: Routen, Gruppentouren, Touren, Unterkünfte, Guides und hilfreiche Artikel.",
+    "open": "Öffnen",
+    "sections": {
+      "trails": "Strecken mit Karte, Höhenprofil und aktuellen Berichten zum Wegzustand.",
+      "outings": "Gruppentouren: Finden Sie eine Gruppe oder einen freien Platz im Auto.",
+      "tours": "Fertige Touren von Veranstaltern mit Terminen und Preisen.",
+      "hotels": "Gästehäuser und Hotels nahe den Startpunkten: Preise und Bewertungen.",
+      "localGuides": "Lokale Guides: Sprachen, Spezialgebiete und Tagespreis.",
+      "guides": "Artikel und Tipps: Ausrüstung, Jahreszeiten und Sicherheit in den Bergen."
     }
   }
 }

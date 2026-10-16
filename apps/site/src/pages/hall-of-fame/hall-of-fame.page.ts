@@ -1,20 +1,14 @@
-import type {
-  Achievement,
-  HallEntry,
-  HallOfFame,
-  LocalizedText,
-  MyAchievements,
-} from '@/core/api/types';
+import type { Achievement, HallEntry, HallOfFame, MyAchievements } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
-import { injectLang } from '@/core/i18n/current-lang';
-import { localizedText, personName } from '@/core/lib/format';
+import { personName } from '@/core/lib/format';
 import { loaded } from '@/core/lib/resource';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { AwardReveal } from '@/pages/hall-of-fame/award-reveal';
-import { HallPodium } from '@/pages/hall-of-fame/hall-podium';
 import { RecentAwardsTicker } from '@/pages/hall-of-fame/recent-awards-ticker';
 import { AchievementMedal } from '@/ui/achievements/achievement-medal';
+import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
 import { AwardCodeCard } from '@/ui/achievements/award-code-card';
+import { HallPodium } from '@/ui/achievements/hall-podium';
 import { LoadError } from '@/ui/load-error';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
@@ -30,6 +24,7 @@ import { firstValueFrom } from 'rxjs';
   selector: 'app-hall-of-fame-page',
   imports: [
     AchievementMedal,
+    AchievementShelf,
     AwardCodeCard,
     AwardReveal,
     HallPodium,
@@ -118,28 +113,7 @@ import { firstValueFrom } from 'rxjs';
 
           <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_340px]">
             <div class="ui-card p-5">
-              @if (me.awards.length > 0 || locked().length > 0) {
-                <ul class="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
-                  @for (award of me.awards; track award.id; let i = $index) {
-                    <li class="enter flex flex-col items-center gap-2 text-center" [style.--i]="i">
-                      <app-achievement-medal [icon]="award.achievement.icon" [rarity]="award.achievement.rarity" [fresh]="award.isNew" />
-                      <p class="text-sm leading-tight font-semibold text-text">{{ text(award.achievement.title) }}</p>
-                      @if (award.awardedBy) {
-                        <p class="text-xs text-text-muted">{{ 'hallOfFame.awardedBy' | transloco: { name: name(award.awardedBy) } }}</p>
-                      }
-                    </li>
-                  }
-                  @for (achievement of locked(); track achievement.id; let i = $index) {
-                    <li class="enter flex flex-col items-center gap-2 text-center" [style.--i]="me.awards.length + i" [title]="text(achievement.description)">
-                      <app-achievement-medal [icon]="achievement.icon" [rarity]="achievement.rarity" [locked]="true" />
-                      <p class="text-sm leading-tight font-medium text-text-muted">{{ text(achievement.title) }}</p>
-                      <p class="text-xs text-text-muted">+{{ achievement.points }}</p>
-                    </li>
-                  }
-                </ul>
-              } @else {
-                <p class="py-8 text-center text-text-muted">{{ 'hallOfFame.mine.empty' | transloco }}</p>
-              }
+              <app-achievement-shelf [mine]="me" [catalog]="catalog.value() ?? []" />
             </div>
             <div class="flex flex-col gap-3">
               <app-award-code-card [code]="me.code" />
@@ -208,11 +182,10 @@ import { firstValueFrom } from 'rxjs';
 export class HallOfFamePage {
   protected readonly auth = inject(AuthStore);
   private readonly http = inject(HttpClient);
-  private readonly lang = injectLang();
   protected readonly particles = Array.from({ length: 14 }, (_, i) => i + 1);
 
   protected readonly hall = httpResource<HallOfFame>(() => '/hall-of-fame');
-  private readonly catalog = httpResource<Achievement[]>(() => '/achievements');
+  protected readonly catalog = httpResource<Achievement[]>(() => '/achievements');
   // The visitor's own achievements: only once signed in (never on the server).
   protected readonly mine = httpResource<MyAchievements>(() =>
     this.auth.user() ? '/achievements/me' : undefined,
@@ -227,10 +200,6 @@ export class HallOfFamePage {
       this.leaders().find((entry: HallEntry) => entry.user.id === this.auth.user()?.id)?.rank ??
       null,
   );
-  protected readonly locked = computed(() => {
-    const earned = new Set(loaded(this.mine)?.awards.map((award) => award.achievement.id) ?? []);
-    return (loaded(this.catalog) ?? []).filter((achievement) => !earned.has(achievement.id));
-  });
   protected readonly freshAwards = computed(
     () => loaded(this.mine)?.awards.filter((award) => award.isNew) ?? [],
   );
@@ -247,10 +216,6 @@ export class HallOfFamePage {
         jsonLd: [seo.breadcrumbs([{ name: title, path: '/hall-of-fame' }])],
       };
     });
-  }
-
-  protected text(value: LocalizedText): string {
-    return localizedText(value, this.lang());
   }
 
   protected name(person: Parameters<typeof personName>[0]): string {

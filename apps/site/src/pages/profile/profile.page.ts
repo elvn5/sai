@@ -1,9 +1,18 @@
-import { type MyAchievements, type Order, type Outing, PartnerStatus } from '@/core/api/types';
+import {
+  type Achievement,
+  type HallOfFame,
+  type MyAchievements,
+  type Order,
+  type Outing,
+  PartnerStatus,
+} from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { bindPageMeta } from '@/core/seo/seo.service';
+import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
 import { AwardCodeCard } from '@/ui/achievements/award-code-card';
+import { HallPodium } from '@/ui/achievements/hall-podium';
 import { OrderCard } from '@/ui/order-card';
 import { OutingCard } from '@/ui/outing-card';
 import { PersonAvatar } from '@/ui/person-avatar';
@@ -24,12 +33,14 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]['key'];
 
-// /profile: the account, its awards code, bookings, outings and the
-// partner application. ?tab=partner (etc.) opens a tab. Browser only.
+// /profile: the account, the hall of fame (own medals, award code, the
+// leaders), bookings, outings and the partner application. ?tab=partner (etc.) opens a tab. Browser only.
 @Component({
   selector: 'app-profile-page',
   imports: [
+    AchievementShelf,
     AwardCodeCard,
+    HallPodium,
     OrderCard,
     OutingCard,
     PersonAvatar,
@@ -92,16 +103,36 @@ type Tab = (typeof TABS)[number]['key'];
               <button type="button" class="ui-btn-soft mt-6" (click)="logout()">{{ 'profile.logout' | transloco }}</button>
             }
             @case ('achievements') {
-              <div class="flex flex-col gap-4">
+              <div class="flex flex-col gap-6">
                 @if (achievementsValue(); as mine) {
-                  <div class="ui-card flex items-center justify-between gap-4 px-4 py-3">
-                    <span class="text-sm text-text-muted">{{ 'profile.achievements.summary' | transloco: { count: mine.awards.length } }}</span>
-                    <span class="text-lg font-black text-amber-700 dark:text-amber-300">{{ 'hallOfFame.points' | transloco: { count: mine.points } }}</span>
-                  </div>
+                  <dl class="grid grid-cols-3 gap-3">
+                    <div class="ui-card flex flex-col-reverse px-3 py-2 text-center">
+                      <dt class="text-xs text-text-muted">{{ 'hallOfFame.mine.points' | transloco }}</dt>
+                      <dd class="text-2xl font-black text-amber-600 dark:text-amber-400">{{ mine.points }}</dd>
+                    </div>
+                    <div class="ui-card flex flex-col-reverse px-3 py-2 text-center">
+                      <dt class="text-xs text-text-muted">{{ 'hallOfFame.mine.earned' | transloco }}</dt>
+                      <dd class="text-2xl font-black text-text">{{ mine.awards.length }}</dd>
+                    </div>
+                    <div class="ui-card flex flex-col-reverse px-3 py-2 text-center">
+                      <dt class="text-xs text-text-muted">{{ 'hallOfFame.mine.rank' | transloco }}</dt>
+                      <dd class="text-2xl font-black text-brand-700 dark:text-brand-300">{{ myRank() ? '#' + myRank() : '—' }}</dd>
+                    </div>
+                  </dl>
+                  <section class="ui-card p-5" aria-labelledby="profile-medals">
+                    <h2 id="profile-medals" class="mb-4 font-semibold text-text">{{ 'hallOfFame.mine.heading' | transloco }}</h2>
+                    <app-achievement-shelf [mine]="mine" [catalog]="catalogList()" />
+                  </section>
                   <app-award-code-card [code]="mine.code" />
                   <p class="text-sm text-text-muted">{{ 'hallOfFame.mine.howTo' | transloco }}</p>
                 }
-                <a appSiteLink="/hall-of-fame" class="ui-btn-primary self-start">
+                @if (leaders().length > 0) {
+                  <section aria-labelledby="profile-leaders">
+                    <h2 id="profile-leaders" class="mb-8 font-semibold text-text">{{ 'hallOfFame.leaders.heading' | transloco }}</h2>
+                    <app-hall-podium [leaders]="leaders()" />
+                  </section>
+                }
+                <a appSiteLink="/hall-of-fame" class="ui-btn-soft self-start">
                   <span class="icon-[mdi--trophy] size-4" aria-hidden="true"></span>{{ 'profile.achievements.open' | transloco }}
                 </a>
               </div>
@@ -218,8 +249,19 @@ export class ProfilePage {
   private readonly achievements = httpResource<MyAchievements>(() =>
     this.active() === 'achievements' ? '/achievements/me' : undefined,
   );
+  private readonly hall = httpResource<HallOfFame>(() =>
+    this.active() === 'achievements' ? '/hall-of-fame' : undefined,
+  );
+  private readonly catalog = httpResource<Achievement[]>(() =>
+    this.active() === 'achievements' ? '/achievements' : undefined,
+  );
   protected readonly orderList = computed(() => loaded(this.orders) ?? []);
   protected readonly achievementsValue = computed(() => loaded(this.achievements));
+  protected readonly catalogList = computed(() => loaded(this.catalog) ?? []);
+  protected readonly leaders = computed(() => loaded(this.hall)?.leaders ?? []);
+  protected readonly myRank = computed(
+    () => this.leaders().find((entry) => entry.user.id === this.auth.user()?.id)?.rank ?? null,
+  );
   protected readonly upcoming = computed(() =>
     (loaded(this.outings) ?? [])
       .filter((outing) => new Date(outing.startsAt).getTime() > Date.now())

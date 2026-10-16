@@ -9,17 +9,13 @@ import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
+// Routes, outings, hotels, tours, local guides and guides live under
+// "Hikes" (/hikes); the hall of fame is a tab of the profile.
 const NAV_LINKS = [
   { path: '/', label: 'nav.feed' },
-  { path: '/trails', label: 'nav.trails' },
-  { path: '/outings', label: 'nav.outings' },
-  { path: '/hotels', label: 'nav.hotels' },
-  { path: '/tours', label: 'nav.tours' },
-  { path: '/local-guides', label: 'nav.localGuides' },
-  { path: '/guides', label: 'nav.guides' },
+  { path: '/hikes', label: 'nav.hikes' },
   { path: '/gallery', label: 'nav.gallery' },
   { path: '/blog', label: 'nav.blog' },
-  { path: '/hall-of-fame', label: 'nav.hallOfFame' },
 ] as const;
 
 // The site header. Rendered on the server for an anonymous visitor (the

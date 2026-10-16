@@ -18,7 +18,7 @@
     "@angular/platform-browser": "^22.2.0",
     "@angular/router": "^22.2.0",
     "@pkg/tokens": "workspace:^",
-    "@tiptap/core": "^3.31.4",
+    "@tiptap/core": "^3.32.0",
     "@tiptap/extension-image": "^3.31.4",
     "@tiptap/extension-placeholder": "^3.31.4",
     "@tiptap/pm": "^3.31.4",

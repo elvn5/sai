@@ -2,6 +2,7 @@ import { routes } from '@/app/app.routes';
 import { apiInterceptor } from '@/core/api/api.interceptor';
 import { loadClientConfig } from '@/core/config/app-config';
 import { provideI18n } from '@/core/i18n/i18n';
+import { provideImageThumbnails } from '@/core/lib/image-loader';
 import { isPlatformBrowser } from '@angular/common';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import {
@@ -40,6 +41,7 @@ export const appConfig: ApplicationConfig = {
       withHttpTransferCacheOptions({ includeRequestsWithCredentials: true }),
     ),
     provideI18n(),
+    provideImageThumbnails(),
     // Client-rendered pages have no server state: load the runtime config.
     provideAppInitializer(() =>
       isPlatformBrowser(inject(PLATFORM_ID)) ? loadClientConfig(inject(TransferState)) : undefined,

@@ -39,7 +39,7 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 		url      string
 		prefixes []string
 	}{
-		{"MEDIA_URL", cfg.MediaURL, []string{"/uploads", "/storage"}},
+		{"MEDIA_URL", cfg.MediaURL, []string{"/uploads", "/storage", "/images"}},
 		{"CONTENT_URL", cfg.ContentURL, []string{"/blog", "/guides", "/gallery", "/page-seo"}},
 		{"LISTINGS_URL", cfg.ListingsURL, []string{"/hotels", "/local-guides", "/tours", "/reviews", "/listing-posts", "/listing-stats"}},
 		{"USERS_URL", cfg.UsersURL, []string{"/auth", "/users", "/partners", "/support", "/achievements", "/hall-of-fame"}},

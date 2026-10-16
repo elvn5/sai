@@ -10,6 +10,7 @@ export const TEST_CONFIG: AppConfig = {
   apiBaseUrl: 'https://api.test',
   siteUrl: 'https://ermekten.com',
   telegramBotUsername: '',
+  mediaPublicUrl: '',
   indexable: true,
 };
 

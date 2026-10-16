@@ -10,7 +10,7 @@ Telego.
 | App | Framework | Purpose |
 | --- | --- | --- |
 | [`services/gateway`](services/gateway) | Go + Gin | Public API entry point; routes requests to backend services |
-| [`services/media`](services/media) | Go + Gin | Uploads: R2 presigned URLs, WebP image conversion, `/uploads` files |
+| [`services/media`](services/media) | Go + Gin | Uploads: R2 presigned URLs, WebP image conversion, `/uploads` files, resized thumbnails (`/images`) |
 | [`services/content`](services/content) | Go + Gin | Blog, written guides, gallery, page SEO; own `content` database |
 | [`services/listings`](services/listings) | Go + Gin | Hotels, local guides, tours, reviews, owner posts; own `listings` database |
 | [`services/trails`](services/trails) | Go + Gin | Route catalog with GPX tracks, trail condition reports, group outings; own `trails` database |

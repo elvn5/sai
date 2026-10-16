@@ -129,7 +129,7 @@ const QUICK_LINKS = [
               <a [appSiteLink]="'/blog/' + post.slug" class="flex flex-col gap-4 p-4 sm:flex-row">
                 @if (post.coverImageUrl) {
                   <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-56">
-                    <img [ngSrc]="media(post.coverImageUrl)" fill sizes="(min-width: 640px) 224px, 100vw" alt="" class="object-cover" />
+                    <img [ngSrc]="media(post.coverImageUrl)" fill sizes="(min-width: 1280px) 18vw, (min-width: 640px) 35vw, 100vw" alt="" class="object-cover" />
                   </div>
                 }
                 <div class="flex flex-col justify-center">

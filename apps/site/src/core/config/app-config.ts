@@ -17,6 +17,9 @@ export interface AppConfig {
   siteUrl: string;
   // Bot username (no @) for the Telegram Login Widget.
   telegramBotUsername: string;
+  // The R2 bucket's public URL, no trailing slash ('' when unset): images
+  // there get thumbnails from the API (core/lib/image-loader.ts).
+  mediaPublicUrl: string;
   // Only ermekten.com is indexable; staging and previews are noindex.
   indexable: boolean;
 }
@@ -36,6 +39,7 @@ const FALLBACK: AppConfig = {
   apiBaseUrl: 'http://localhost:3001',
   siteUrl: 'http://localhost:4000',
   telegramBotUsername: '',
+  mediaPublicUrl: '',
   indexable: false,
 };
 
@@ -93,6 +97,7 @@ export function configFromEnv(env: Record<string, string | undefined>): AppConfi
     apiBaseUrl: (env['API_BASE_URL'] ?? FALLBACK.apiBaseUrl).replace(/\/$/, ''),
     siteUrl,
     telegramBotUsername: env['TELEGRAM_BOT_USERNAME'] ?? '',
+    mediaPublicUrl: (env['R2_PUBLIC_URL'] ?? '').replace(/\/$/, ''),
     indexable: siteUrl === 'https://ermekten.com',
   };
 }

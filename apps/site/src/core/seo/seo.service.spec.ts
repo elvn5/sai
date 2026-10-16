@@ -10,6 +10,7 @@ const CONFIG: AppConfig = {
   apiBaseUrl: 'https://api.ermekten.com',
   siteUrl: 'https://ermekten.com',
   telegramBotUsername: '',
+  mediaPublicUrl: '',
   indexable: true,
 };
 

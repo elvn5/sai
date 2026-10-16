@@ -17,8 +17,9 @@ type Config struct {
 	UsersGRPCAddr    string `env:"USERS_GRPC_ADDR,required"`
 	ListingsGRPCAddr string `env:"LISTINGS_GRPC_ADDR,required"`
 
-	// "bakai" (Bakai Bank Open Banking) or "fake" (a test page instead of
-	// the bank, for development and staging without bank access).
+	// "bakai" (Bakai Bank Open Banking), "fake" (a test page instead of
+	// the bank, for development and staging without bank access) or "off"
+	// (no online payment: orders are refused and the site hides booking).
 	Provider string `env:"PAYMENTS_PROVIDER" envDefault:"fake"`
 	// Bakai Open Banking API (https://openbanking-api.bakai.kg/swagger).
 	BakaiAPIURL   string `env:"BAKAI_API_URL" envDefault:"https://openbanking-api.bakai.kg"`

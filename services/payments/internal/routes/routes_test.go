@@ -333,3 +333,23 @@ func TestGatewayEdgeCases(t *testing.T) {
 		t.Errorf("failed orders: %s", body)
 	}
 }
+
+func TestOnlinePaymentOff(t *testing.T) {
+	e := setup(t, provider.Disabled{})
+
+	if status, body := e.do("GET", "/payments/config", "", ""); status != 200 || body != `{"online":false}` {
+		t.Errorf("config: %d %s", status, body)
+	}
+	if status, body := e.do("POST", "/orders", order(tourID, 1), tourist); status != 503 ||
+		!strings.Contains(body, "Online payment is not available") {
+		t.Errorf("order: %d %s", status, body)
+	}
+	if status, body := e.do("GET", "/orders/mine", "", tourist); status != 200 || body != "[]" {
+		t.Errorf("no order was created: %d %s", status, body)
+	}
+
+	on := setup(t, &provider.Fake{SiteURL: "https://ermekten.kg"})
+	if status, body := on.do("GET", "/payments/config", "", ""); status != 200 || body != `{"online":true}` {
+		t.Errorf("config with a gateway: %d %s", status, body)
+	}
+}

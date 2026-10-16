@@ -10,6 +10,11 @@ updates:
       - dependency-name: "@types/node"
         versions: [">=25"]
     groups:
+      # The Tiptap packages must stay on one version (the rich text editors
+      # of the site and the panel).
+      tiptap:
+        patterns:
+          - "@tiptap/*"
       dev-dependencies:
         dependency-type: development
         update-types:

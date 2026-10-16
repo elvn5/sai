@@ -4,8 +4,6 @@ dist
 **/dist
 .output
 **/.output
-.nuxt
-**/.nuxt
 .git
 .env
 **/*.log

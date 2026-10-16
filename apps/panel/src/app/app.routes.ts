@@ -1,7 +1,7 @@
 import { requireAdmin } from '@/core/auth/auth';
 import type { Routes } from '@angular/router';
 
-// The sections of the Nuxt admin (apps/admin), same paths.
+// The sections of the admin.
 export const routes: Routes = [
   {
     path: 'login',

@@ -1,5 +1,4 @@
-// Shapes of the API (services/gateway) as the site uses them, from
-// apps/tourism/shared/api/types.ts; types move here as their pages do.
+// Shapes of the API (services/gateway) as the site uses them.
 
 export enum PartnerStatus {
   NONE = 'none',

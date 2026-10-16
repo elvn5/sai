@@ -1,6 +1,5 @@
 // Package httperr writes error responses in the same JSON shape NestJS
-// produces, so the Nuxt apps keep parsing errors identically while
-// endpoints move from the NestJS API to Go services.
+// produced, which the frontends parse.
 package httperr
 
 import (

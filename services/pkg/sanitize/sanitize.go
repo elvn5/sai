@@ -1,5 +1,5 @@
 // Package sanitize cleans rich text from the TipTap editor before it's
-// stored. The Nuxt apps render it with v-html, so anything not explicitly
+// stored. The frontends render it as HTML, so anything not explicitly
 // allowed (scripts, event handlers, javascript: URLs, other tags) must be
 // removed.
 //

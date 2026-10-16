@@ -6,7 +6,7 @@ export const envSchema = z.object({
   USERS_GRPC_ADDR: z.string().min(1, 'USERS_GRPC_ADDR is required'),
   // Overrides the location of services/proto/users/v1/users.proto.
   USERS_PROTO_PATH: z.string().optional(),
-  // URL of the Ermekten Telegram Mini App (the apps/tourism site). When set,
+  // URL of the Ermekten Telegram Mini App (apps/site). When set,
   // the bot exposes it via the chat menu button and a keyboard button.
   MINI_APP_URL: z.string().url().optional(),
 });

@@ -2,16 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "admin",
+      "name": "site",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@app/admin", "dev"],
-      "port": 3000
+      "runtimeArgs": ["--filter", "@app/site", "dev"],
+      "port": 3012
     },
     {
-      "name": "tourism",
+      "name": "panel",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@app/tourism", "dev"],
-      "port": 3011
+      "runtimeArgs": ["--filter", "@app/panel", "dev"],
+      "port": 3013
     }
   ]
 }

@@ -30,7 +30,7 @@ const (
 
 var achievementLocales = []string{"ru", "ky", "en", "de"}
 
-// Iconify names as the Nuxt apps use them, e.g. "i-mdi-trophy".
+// Iconify names in the Nuxt Icon form the frontends use, e.g. "i-mdi-trophy".
 var iconPattern = regexp.MustCompile(`^i-[a-z0-9]+(?:-[a-z0-9]+)+$`)
 
 func init() {

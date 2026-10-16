@@ -1,9 +1,8 @@
 import type { TelegramWidgetPayload } from '@/core/api/types';
 import { AuthStore, type PendingVerification } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
-import { isMigrated } from '@/core/config/sections';
 import { injectLang } from '@/core/i18n/current-lang';
-import { localizedPath, splitLang } from '@/core/i18n/langs';
+import { localizedPath } from '@/core/i18n/langs';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { TelegramWebAppStore } from '@/core/telegram/telegram-web-app';
 import { FieldErrors } from '@/ui/field-errors';
@@ -12,7 +11,6 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
-  DOCUMENT,
   DestroyRef,
   afterNextRender,
   computed,
@@ -149,7 +147,6 @@ export class LoginPage {
   protected readonly telegram = inject(TelegramWebAppStore);
   private readonly transloco = inject(TranslocoService);
   private readonly router = inject(Router);
-  private readonly location = inject(DOCUMENT).location;
   private readonly lang = injectLang();
   protected readonly botUsername = inject(APP_CONFIG).telegramBotUsername;
 
@@ -376,8 +373,6 @@ export class LoginPage {
   // Signed in: back to ?redirect (already in its language), else home.
   private async leave(): Promise<void> {
     const target = safeRedirect(this.redirect()) ?? localizedPath(this.lang(), '/');
-    if (isMigrated(splitLang(target.split(/[?#]/)[0] ?? target).path))
-      await this.router.navigateByUrl(target);
-    else this.location.assign(target);
+    await this.router.navigateByUrl(target);
   }
 }

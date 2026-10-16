@@ -26,12 +26,10 @@ jobs:
         include:
           - service: bot
             dockerfile: services/bot/Dockerfile
-          - service: admin
-            dockerfile: apps/admin/Dockerfile
-          - service: tourism
-            dockerfile: apps/tourism/Dockerfile
           - service: site
             dockerfile: apps/site/Dockerfile
+          - service: panel
+            dockerfile: apps/panel/Dockerfile
           - service: gateway
             dockerfile: services/gateway/Dockerfile
           - service: media
@@ -67,10 +65,6 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/ermekten-${{ matrix.service }}:${{ inputs.tag || github.ref_name }}
             ghcr.io/${{ github.repository_owner }}/ermekten-${{ matrix.service }}:latest
-          build-args: |
-            NUXT_PUBLIC_API_BASE_URL=${{ vars.NUXT_PUBLIC_API_BASE_URL }}
-            NUXT_PUBLIC_SITE_URL=${{ vars.NUXT_PUBLIC_SITE_URL }}
-            NUXT_PUBLIC_TELEGRAM_BOT_USERNAME=${{ vars.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
@@ -108,9 +102,6 @@ jobs:
           API_PORT: ${{ vars.API_PORT }}
           ADMIN_PORT: ${{ vars.ADMIN_PORT }}
           CLIENT_PORT: ${{ vars.CLIENT_PORT }}
-          # Set to run the Angular site next to Nuxt (migration track A);
-          # nginx then sends the migrated sections to this port.
-          SITE_PORT: ${{ vars.SITE_PORT }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{ vars.JWT_EXPIRES_IN }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
@@ -124,10 +115,10 @@ jobs:
           R2_PUBLIC_URL: ${{ vars.R2_PUBLIC_URL }}
           ADMIN_ORIGIN: ${{ vars.ADMIN_ORIGIN }}
           CLIENT_ORIGIN: ${{ vars.CLIENT_ORIGIN }}
-          NUXT_PUBLIC_API_BASE_URL: ${{ vars.NUXT_PUBLIC_API_BASE_URL }}
-          NUXT_PUBLIC_SITE_URL: ${{ vars.NUXT_PUBLIC_SITE_URL }}
-          NUXT_PUBLIC_TELEGRAM_BOT_USERNAME: ${{ vars.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME }}
-          MINI_APP_URL: ${{ vars.NUXT_PUBLIC_SITE_URL }}
+          PUBLIC_API_BASE_URL: ${{ vars.PUBLIC_API_BASE_URL || vars.NUXT_PUBLIC_API_BASE_URL }}
+          PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL || vars.NUXT_PUBLIC_SITE_URL }}
+          PUBLIC_TELEGRAM_BOT_USERNAME: ${{ vars.PUBLIC_TELEGRAM_BOT_USERNAME || vars.NUXT_PUBLIC_TELEGRAM_BOT_USERNAME }}
+          MINI_APP_URL: ${{ vars.PUBLIC_SITE_URL || vars.NUXT_PUBLIC_SITE_URL }}
           PAYMENTS_PROVIDER: ${{ vars.PAYMENTS_PROVIDER }}
           BAKAI_LOGIN: ${{ secrets.BAKAI_LOGIN }}
           BAKAI_PASSWORD: ${{ secrets.BAKAI_PASSWORD }}
@@ -138,7 +129,7 @@ jobs:
           port: ${{ vars.SSH_PORT || 22 }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: GHCR_USER,GHCR_TOKEN,IMAGE_OWNER,RELEASE_TAG,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_PORT,API_PORT,ADMIN_PORT,CLIENT_PORT,SITE_PORT,JWT_SECRET,JWT_EXPIRES_IN,ADMIN_PASSWORD,BOT_TOKEN,RESEND_API_KEY,EMAIL_FROM,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME,R2_PUBLIC_URL,ADMIN_ORIGIN,CLIENT_ORIGIN,NUXT_PUBLIC_API_BASE_URL,NUXT_PUBLIC_SITE_URL,NUXT_PUBLIC_TELEGRAM_BOT_USERNAME,MINI_APP_URL,PAYMENTS_PROVIDER,BAKAI_LOGIN,BAKAI_PASSWORD,BAKAI_QR_TYPE,PLATFORM_FEE_PERCENT
+          envs: GHCR_USER,GHCR_TOKEN,IMAGE_OWNER,RELEASE_TAG,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,POSTGRES_PORT,API_PORT,ADMIN_PORT,CLIENT_PORT,JWT_SECRET,JWT_EXPIRES_IN,ADMIN_PASSWORD,BOT_TOKEN,RESEND_API_KEY,EMAIL_FROM,R2_ACCOUNT_ID,R2_ACCESS_KEY_ID,R2_SECRET_ACCESS_KEY,R2_BUCKET_NAME,R2_PUBLIC_URL,ADMIN_ORIGIN,CLIENT_ORIGIN,PUBLIC_API_BASE_URL,PUBLIC_SITE_URL,PUBLIC_TELEGRAM_BOT_USERNAME,MINI_APP_URL,PAYMENTS_PROVIDER,BAKAI_LOGIN,BAKAI_PASSWORD,BAKAI_QR_TYPE,PLATFORM_FEE_PERCENT
           script: |
             set -euo pipefail
             mkdir -p "${{ vars.DEPLOY_PATH }}"
@@ -155,7 +146,6 @@ jobs:
             API_PORT=$API_PORT
             ADMIN_PORT=$ADMIN_PORT
             CLIENT_PORT=$CLIENT_PORT
-            SITE_PORT=${SITE_PORT:-}
             JWT_SECRET=$JWT_SECRET
             JWT_EXPIRES_IN=$JWT_EXPIRES_IN
             ADMIN_PASSWORD=$ADMIN_PASSWORD
@@ -169,9 +159,9 @@ jobs:
             R2_PUBLIC_URL=$R2_PUBLIC_URL
             ADMIN_ORIGIN=$ADMIN_ORIGIN
             CLIENT_ORIGIN=$CLIENT_ORIGIN
-            NUXT_PUBLIC_API_BASE_URL=$NUXT_PUBLIC_API_BASE_URL
-            NUXT_PUBLIC_SITE_URL=$NUXT_PUBLIC_SITE_URL
-            NUXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NUXT_PUBLIC_TELEGRAM_BOT_USERNAME
+            PUBLIC_API_BASE_URL=$PUBLIC_API_BASE_URL
+            PUBLIC_SITE_URL=$PUBLIC_SITE_URL
+            PUBLIC_TELEGRAM_BOT_USERNAME=$PUBLIC_TELEGRAM_BOT_USERNAME
             MINI_APP_URL=$MINI_APP_URL
             PAYMENTS_PROVIDER=${PAYMENTS_PROVIDER:-fake}
             BAKAI_LOGIN=$BAKAI_LOGIN
@@ -183,12 +173,12 @@ jobs:
 
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
-            # Nuxt serves the site; with SITE_PORT set, the Angular site runs
-            # next to it for the sections nginx already sends there.
-            PROFILES="--profile nuxt"
-            if [ -n "${SITE_PORT:-}" ]; then PROFILES="$PROFILES --profile site"; fi
-            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env $PROFILES pull
-            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env $PROFILES up -d --remove-orphans
+            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env pull
+            # The former Nuxt containers hold CLIENT_PORT and ADMIN_PORT, which
+            # site and panel take over (no-op once they're gone).
+            docker ps -aq --filter label=com.docker.compose.project=ermekten-prod --filter label=com.docker.compose.service=tourism | xargs -r docker rm -f
+            docker ps -aq --filter label=com.docker.compose.project=ermekten-prod --filter label=com.docker.compose.service=admin | xargs -r docker rm -f
+            docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
             # Once every service has copied its data out of the former NestJS
             # database, back it up to ./backups and drop it (no-op after that).
             POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" bash scripts/drop-legacy-db.sh ermekten-prod

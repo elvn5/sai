@@ -40,7 +40,7 @@ const CYRILLIC_TO_LATIN: Record<string, string> = {
 
 // A URL slug for a title (Cyrillic transliterated), matching the API's
 // ^[a-z0-9]+(?:-[a-z0-9]+)*$, plus a short random suffix so two people
-// picking the same title don't collide. Same scheme as the Nuxt site.
+// picking the same title don't collide.
 export function slugify(title: string, random: () => number = Math.random): string {
   const base = Array.from(title.toLowerCase(), (char) => CYRILLIC_TO_LATIN[char] ?? char)
     .join('')

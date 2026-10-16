@@ -15,7 +15,7 @@ Fill in `.env` before running any app — see [README.md](README.md) for details
 1. Create a branch off `main`.
 2. Make your changes, following the conventions in [CLAUDE.md](CLAUDE.md) (Gin layout
    in the Go services, the `app`/`core`/`layout`/`ui`/`pages` layout in the Angular apps,
-   absolute imports in TypeScript, Signal Forms on forms — VeeValidate in the legacy Nuxt apps).
+   absolute imports in TypeScript, Signal Forms on forms).
 3. Before opening a PR, run:
    ```bash
    pnpm lint

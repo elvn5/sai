@@ -1,8 +1,7 @@
 # apps/site
 
-The public Ermekten site and Telegram Mini App on Angular 22 with SSR —
-the successor of `apps/tourism` (Nuxt). Plan and SEO requirements:
-`docs/angular-migration-plan.md`.
+The public Ermekten site and Telegram Mini App on Angular 22 with SSR. SEO
+requirements: CLAUDE.md (Angular Apps) and `docs/angular-migration-plan.md`, section 4.
 
 - `pnpm dev:site` — dev server on http://localhost:3012 (`nvm use`: Node from `.nvmrc`)
 - `pnpm --filter @app/site test | lint | build`

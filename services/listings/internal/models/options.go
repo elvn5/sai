@@ -1,6 +1,6 @@
 package models
 
-// Allowed values for listing fields; apps/tourism/shared/lib/listing-options.ts
+// Allowed values for listing fields; apps/site/src/core/lib/listing-options.ts
 // mirrors them — keep the two in sync.
 
 var (

@@ -1,8 +1,7 @@
 import { AuthStore } from '@/core/auth/auth.store';
-import { isMigrated } from '@/core/config/sections';
 import { DEFAULT_LANG, type Lang, localizedPath } from '@/core/i18n/langs';
 import { isPlatformServer } from '@angular/common';
-import { DOCUMENT, PLATFORM_ID, inject } from '@angular/core';
+import { PLATFORM_ID, inject } from '@angular/core';
 import {
   type ActivatedRouteSnapshot,
   type CanActivateFn,
@@ -15,23 +14,14 @@ function routeLang(route: ActivatedRouteSnapshot): Lang {
   return (route.data['lang'] as Lang | undefined) ?? DEFAULT_LANG;
 }
 
-type Redirect = (path: string, query?: Record<string, string>) => boolean | UrlTree;
+type Redirect = (path: string, query?: Record<string, string>) => UrlTree;
 
-// Sends the visitor to an unprefixed path in the route's language: inside
-// the app when it serves that section, else a full page load (production
-// nginx still sends /login and /profile to the Nuxt site). Created before
-// the guard awaits, while inject() works.
+// Sends the visitor to an unprefixed path in the route's language. Created
+// before the guard awaits, while inject() works.
 function injectRedirect(route: ActivatedRouteSnapshot): Redirect {
   const router = inject(Router);
-  const location = inject(DOCUMENT).location;
   const lang = routeLang(route);
-  return (path, query) => {
-    if (isMigrated(path))
-      return router.createUrlTree([localizedPath(lang, path)], { queryParams: query });
-    const search = query ? `?${new URLSearchParams(query).toString()}` : '';
-    location.assign(`${localizedPath(lang, path)}${search}`);
-    return false;
-  };
+  return (path, query) => router.createUrlTree([localizedPath(lang, path)], { queryParams: query });
 }
 
 // Pages for a signed-in visitor (forms, profile): anonymous visitors go to

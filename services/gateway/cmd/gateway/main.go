@@ -1,5 +1,5 @@
 // Command gateway is the public entry point of the backend: it serves the
-// REST API the Nuxt apps call and routes each request to the service that
+// REST API the frontends call and routes each request to the service that
 // owns it.
 package main
 

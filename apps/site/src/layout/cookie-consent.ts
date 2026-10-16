@@ -2,7 +2,6 @@ import { readStorage, writeStorage } from '@/core/lib/storage';
 import { ChangeDetectionStrategy, Component, afterNextRender, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-// Same key as the Nuxt site: one answer covers both.
 const CONSENT_KEY = 'cookie-consent';
 
 // The notice about the cookies the site needs (session, settings). Shown in

@@ -1,6 +1,6 @@
 package models
 
-// Allowed values; apps/tourism/shared/lib/trail-options.ts mirrors them —
+// Allowed values; apps/site/src/core/lib/trail-options.ts mirrors them —
 // keep the two in sync.
 var (
 	Areas = []string{

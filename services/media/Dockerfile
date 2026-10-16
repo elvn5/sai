@@ -1,5 +1,5 @@
 # Built from the repository root: docker build -f services/media/Dockerfile .
-FROM golang:1.26-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src/services
 # nodynamic: gen2brain/webp must use its bundled pure-Go codec, not try to
 # dlopen a system libwebp (which also makes the binary need a dynamic loader).

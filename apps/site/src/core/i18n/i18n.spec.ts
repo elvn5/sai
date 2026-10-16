@@ -20,7 +20,7 @@ describe('i18n', () => {
     ]);
   });
 
-  it('loads the shared Nuxt translations with their {placeholders} and sets <html lang>', async () => {
+  it('loads the translations with their {placeholders} and sets <html lang>', async () => {
     const injector = TestBed.inject(Injector);
     const route = { data: { lang: 'en' } } as unknown as ActivatedRouteSnapshot;
     const result = runInInjectionContext(injector, () =>

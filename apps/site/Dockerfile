@@ -7,8 +7,6 @@ COPY apps/site/package.json apps/site/package.json
 COPY packages/tokens packages/tokens
 RUN pnpm install --frozen-lockfile --filter @app/site...
 COPY apps/site apps/site
-# The translations are still the Nuxt site's (tsconfig path @locales).
-COPY apps/tourism/i18n/locales apps/tourism/i18n/locales
 RUN pnpm --filter @app/site build
 
 # The server bundle includes its dependencies: no node_modules at runtime.

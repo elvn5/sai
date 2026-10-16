@@ -16,13 +16,12 @@ import {
 } from '@jsverse/transloco';
 import { type Observable, from, map } from 'rxjs';
 
-// The translations are the Nuxt site's JSON files, shared until it is gone
-// (tsconfig path @locales). Each language is its own lazy chunk.
+// The translations (src/locales). Each language is its own lazy chunk.
 const LOADERS: Record<Lang, () => Promise<{ default: Translation }>> = {
-  ru: () => import('@locales/ru.json'),
-  ky: () => import('@locales/ky.json'),
-  en: () => import('@locales/en.json'),
-  de: () => import('@locales/de.json'),
+  ru: () => import('@/locales/ru.json'),
+  ky: () => import('@/locales/ky.json'),
+  en: () => import('@/locales/en.json'),
+  de: () => import('@/locales/de.json'),
 };
 
 @Injectable({ providedIn: 'root' })

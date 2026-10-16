@@ -1,6 +1,6 @@
 // The site's languages. Russian is served without a prefix (/tours),
-// the others under their code (/en/tours) — the URL scheme of the Nuxt
-// site, kept as is for search engines.
+// the others under their code (/en/tours) — a URL scheme kept as is
+// for search engines.
 export const LANGS = ['ru', 'ky', 'en', 'de'] as const;
 export type Lang = (typeof LANGS)[number];
 export const DEFAULT_LANG: Lang = 'ru';

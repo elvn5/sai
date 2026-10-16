@@ -1,4 +1,4 @@
-// A URL slug from Latin text, as the Nuxt admin made them.
+// A URL slug from Latin text.
 export function slugify(value: string): string {
   return value
     .toLowerCase()

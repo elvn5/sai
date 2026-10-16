@@ -1,7 +1,6 @@
 # apps/panel
 
-The Ermekten admin panel on Angular 22 (client-only) — the successor of
-`apps/admin` (Nuxt). Plan: `docs/angular-migration-plan.md`.
+The Ermekten admin panel on Angular 22 (client-only), served by nginx.
 
 - `pnpm dev:panel` — dev server on http://localhost:3013 (`nvm use`: Node from `.nvmrc`);
   `public/config.json` points it at the local gateway

@@ -110,7 +110,7 @@ services:
       USERS_GRPC_ADDR: users:9083
       # Telegram notifications about outings, sent as the bot.
       BOT_TOKEN: ${BOT_TOKEN}
-      SITE_URL: ${NUXT_PUBLIC_SITE_URL}
+      SITE_URL: ${PUBLIC_SITE_URL}
     depends_on:
       postgres:
         condition: service_healthy
@@ -135,7 +135,7 @@ services:
       BAKAI_PASSWORD: ${BAKAI_PASSWORD:-}
       BAKAI_QR_TYPE: ${BAKAI_QR_TYPE:-}
       PLATFORM_FEE_PERCENT: ${PLATFORM_FEE_PERCENT:-0}
-      SITE_URL: ${NUXT_PUBLIC_SITE_URL}
+      SITE_URL: ${PUBLIC_SITE_URL}
       BOT_TOKEN: ${BOT_TOKEN}
     depends_on:
       postgres:
@@ -181,54 +181,27 @@ services:
     depends_on:
       - users
 
-  # Frontends: one profile per environment (see the deploy workflows).
-  # "nuxt" (production): the Nuxt apps. "angular" (staging): their Angular
-  # successors (docs/angular-migration-plan.md) on the same ports, so the
-  # same nginx sites (test.ermekten.com, test.admin.ermekten.com) serve them.
-  admin:
-    image: ghcr.io/${IMAGE_OWNER}/ermekten-admin:${IMAGE_TAG}
-    restart: unless-stopped
-    profiles: [nuxt]
-    env_file: .env
-    ports:
-      - "${ADMIN_PORT}:3000"
-    depends_on:
-      - gateway
-
-  tourism:
-    image: ghcr.io/${IMAGE_OWNER}/ermekten-tourism:${IMAGE_TAG}
-    restart: unless-stopped
-    profiles: [nuxt]
-    env_file: .env
-    ports:
-      - "${CLIENT_PORT}:3000"
-    depends_on:
-      - gateway
-
+  # The public site (SSR) and the admin panel, on the ports nginx proxies
+  # to (CLIENT_PORT, ADMIN_PORT).
   site:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-site:${IMAGE_TAG}
     restart: unless-stopped
-    # Staging runs it in place of Nuxt ("angular"); production next to Nuxt
-    # ("site"), with nginx sending the migrated sections to it
-    # (docs/strangler-nginx.md).
-    profiles: [angular, site]
     environment:
-      API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
+      API_BASE_URL: ${PUBLIC_API_BASE_URL}
       # Server-side rendering calls the gateway over the Docker network.
       API_INTERNAL_URL: http://gateway:8080
-      SITE_URL: ${NUXT_PUBLIC_SITE_URL}
-      TELEGRAM_BOT_USERNAME: ${NUXT_PUBLIC_TELEGRAM_BOT_USERNAME}
+      SITE_URL: ${PUBLIC_SITE_URL}
+      TELEGRAM_BOT_USERNAME: ${PUBLIC_TELEGRAM_BOT_USERNAME}
     ports:
-      - "${SITE_PORT}:3000"
+      - "${CLIENT_PORT}:3000"
     depends_on:
       - gateway
 
   panel:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-panel:${IMAGE_TAG}
     restart: unless-stopped
-    profiles: [angular]
     environment:
-      API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL}
+      API_BASE_URL: ${PUBLIC_API_BASE_URL}
     ports:
       - "${ADMIN_PORT}:3000"
     depends_on:

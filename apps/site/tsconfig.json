@@ -14,8 +14,7 @@
     "strict": true,
     "resolveJsonModule": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@locales/*": ["../tourism/i18n/locales/*"]
+      "@/*": ["./src/*"]
     }
   },
   "angularCompilerOptions": {

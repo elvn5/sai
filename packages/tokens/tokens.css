@@ -1,6 +1,6 @@
 /*
- * Ermekten design tokens for the Angular apps (Tailwind CSS 4), ported from
- * apps/tourism/assets/css/tokens.css. Import after `tailwindcss`:
+ * Ermekten design tokens for the Angular apps (Tailwind CSS 4). Import after
+ * `tailwindcss`:
  *
  *   @import 'tailwindcss';
  *   @import '@pkg/tokens/tokens.css';

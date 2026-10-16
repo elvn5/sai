@@ -6,8 +6,8 @@ import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ChangeDetectionStrategy, Component, DOCUMENT, computed, inject } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-// The Nuxt site's language cookie (@nuxtjs/i18n), kept in step so both
-// halves of the site agree while they share the domain.
+// The language cookie, under the name the former Nuxt site (@nuxtjs/i18n)
+// gave it, so visitors' saved choice keeps working.
 const LANG_COOKIE = 'i18n_redirected';
 
 // Opens the current page in another language. Search engines find the

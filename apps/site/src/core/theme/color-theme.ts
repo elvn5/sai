@@ -3,7 +3,6 @@ import { DOCUMENT, Injectable, inject, signal } from '@angular/core';
 
 export type ColorTheme = 'red' | 'azure';
 
-// Same key as the Nuxt site.
 export const COLOR_THEME_KEY = 'color-theme';
 
 const FAVICONS: Record<ColorTheme, string> = { red: '/logo.svg', azure: '/logo-azure.svg' };

@@ -2,7 +2,8 @@
 
 Ermekten: a travel site for Kyrgyzstan with an admin panel and a Telegram bot. The backend is
 a set of Go (Gin) services behind an API gateway, each with its own PostgreSQL database; the
-frontends are Nuxt 3 and the bot is NestJS + Telegraf.
+frontends are Angular (the site with SSR, the admin panel client-only) and the bot is Go +
+Telego.
 
 ## Stack
 
@@ -15,9 +16,9 @@ frontends are Nuxt 3 and the bot is NestJS + Telegraf.
 | [`services/trails`](services/trails) | Go + Gin | Route catalog with GPX tracks, trail condition reports, group outings; own `trails` database |
 | [`services/payments`](services/payments) | Go + Gin | Online payments for bookings via Bakai Bank Open Banking (or a test page), partner balances and payouts; own `payments` database |
 | [`services/users`](services/users) | Go + Gin | Accounts: sign-in (password, Telegram, admin), registration, partners, support; gRPC for the other services and the bot; own `users` database |
-| [`apps/bot`](apps/bot) | NestJS + Telegraf | Telegram bot (no database; accounts via the users service's gRPC API) |
-| [`apps/tourism`](apps/tourism) | Nuxt 3 + @nuxt/ui | Public site and Telegram Mini App |
-| [`apps/admin`](apps/admin) | Nuxt 3 + @nuxt/ui | Admin panel (Pinia, VeeValidate, Zod) |
+| [`services/bot`](services/bot) | Go + Telego | Telegram bot, long polling (no database; accounts via the users service's gRPC API) |
+| [`apps/site`](apps/site) | Angular 22 + SSR | Public site and Telegram Mini App |
+| [`apps/panel`](apps/panel) | Angular 22 | Admin panel (client-only, served by nginx) |
 
 Services talk to each other over gRPC (contracts in [`services/proto`](services/proto)).
 TypeScript is formatted/linted with [Biome](https://biomejs.dev), Go with golangci-lint.
@@ -64,24 +65,26 @@ pnpm dev:content  # http://localhost:8082
 pnpm dev:listings # http://localhost:8083
 pnpm dev:trails   # http://localhost:8085
 pnpm dev:payments # http://localhost:8086 (needs listings gRPC :9082)
-pnpm dev:gateway  # http://localhost:8080 — the API the Nuxt apps call
+pnpm dev:gateway  # http://localhost:8080 — the API the frontends call
 pnpm dev:bot      # needs USERS_GRPC_ADDR=localhost:9083
-pnpm dev:tourism  # http://localhost:3011
-pnpm dev:admin    # http://localhost:3000
+pnpm dev:site     # http://localhost:3012
+pnpm dev:panel    # http://localhost:3013
 ```
 
-Point the Nuxt apps at the gateway with `NUXT_PUBLIC_API_BASE_URL=http://localhost:8080`.
-The services read their settings from `.env` (see [.env.example](.env.example)).
+The frontends read their settings at runtime: the site from `API_BASE_URL`, `SITE_URL` and
+`TELEGRAM_BOT_USERNAME`, the panel from `public/config.json` (both default to the gateway on
+`http://localhost:3001`). The services read theirs from `.env` (see
+[.env.example](.env.example)).
 
 ## Scripts
 
 | Command | Description |
 | --- | --- |
-| `pnpm dev:bot` / `dev:admin` / `dev:tourism` | Run an app in watch mode |
+| `pnpm dev:site` / `dev:panel` | Run a frontend in watch mode |
 | `pnpm build` | Build all workspace packages |
 | `pnpm lint` / `pnpm lint:fix` | Biome check / check --write |
 | `pnpm typecheck` | Type-check all workspace packages |
-| `pnpm dev:<service>` (gateway, media, content, listings, users, trails, payments) | Run a Go service |
+| `pnpm dev:<service>` (gateway, media, content, listings, users, trails, payments, bot) | Run a Go service |
 | `pnpm proto:generate` | Regenerate gRPC code from `services/proto` |
 | `pnpm test:go` | Test all Go modules |
 
@@ -95,13 +98,16 @@ services/   Go workspace (go.work)
   listings/ Hotels, local guides, tours, reviews, posts (own database)
   trails/   Routes, condition reports, group outings (own database)
   payments/ Bookings paid online (Bakai), partner payouts (own database)
+  bot/      Telegram bot (Telego; accounts via users gRPC)
   users/    Accounts, sign-in, partners, support (own database; HTTP + gRPC)
   proto/    gRPC contracts between services (buf; `pnpm proto:generate`)
   pkg/      Shared Go code: config, logging, errors, validation, CORS, JWT, databases
 apps/
-  bot/      NestJS Telegram bot (Telegraf; accounts via users gRPC)
-  tourism/  Nuxt 3 public site
-  admin/    Nuxt 3 admin panel
+  site/     Angular public site + Telegram Mini App (SSR)
+  panel/    Angular admin panel
+  bot/      Legacy NestJS bot, removed once services/bot is verified in production
+packages/
+  tokens/   Design tokens (Tailwind CSS 4) shared by the frontends
 ```
 
 The Go services follow standard Gin project layout; the Angular frontends group code by role and area (`app`, `core`, `layout`, `ui`, `pages`). See [CLAUDE.md](CLAUDE.md) for full

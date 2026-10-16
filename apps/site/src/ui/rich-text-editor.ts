@@ -238,7 +238,7 @@ export class RichTextEditor implements FormValueControl<string> {
     return this.editor?.isActive(name, attributes) ?? false;
   }
 
-  // Empty input removes the link, as on the Nuxt site.
+  // Empty input removes the link.
   private editLink(): void {
     const current = (this.editor?.getAttributes('link')['href'] as string | undefined) ?? '';
     const url = window.prompt(this.transloco.translate('guides.editor.linkPrompt'), current);

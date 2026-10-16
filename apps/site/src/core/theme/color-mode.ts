@@ -3,8 +3,8 @@ import { DOCUMENT, Injectable, inject, signal } from '@angular/core';
 
 export type ColorMode = 'light' | 'dark';
 
-// The key and values of the Nuxt site's color mode, so both halves of the
-// site agree while they share the domain.
+// The storage key of the color mode, as the former Nuxt site named it:
+// visitors' saved choice keeps working.
 export const COLOR_MODE_KEY = 'nuxt-color-mode';
 
 // Light or dark mode: the `.dark` class on <html>. An inline script in

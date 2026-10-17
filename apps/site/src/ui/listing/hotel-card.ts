@@ -17,10 +17,10 @@ const CARD_AMENITIES = 4;
   imports: [NgOptimizedImage, RatingStars, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a [appSiteLink]="'/hotels/' + hotel().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface transition hover:shadow-lg">
+    <a [appSiteLink]="'/hotels/' + hotel().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface motion-lift">
       <div class="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
         @if (cover(); as url) {
-          <img [ngSrc]="url" fill [priority]="priority()" sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" alt="" class="object-cover transition group-hover:scale-105" />
+          <img [ngSrc]="url" fill [priority]="priority()" sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" alt="" class="motion-zoom object-cover" />
         } @else {
           <span class="icon-[heroicons--building-office-2] absolute inset-0 m-auto size-12 text-text-muted" aria-hidden="true"></span>
         }

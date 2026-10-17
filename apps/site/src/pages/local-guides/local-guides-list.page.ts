@@ -13,6 +13,7 @@ import { loaded } from '@/core/lib/resource';
 import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { LocalGuideCard } from '@/pages/local-guides/local-guide-card';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { Pager } from '@/ui/pager';
 import { SiteLink } from '@/ui/site-link';
@@ -37,7 +38,7 @@ const SORTS = ['rating', 'price_asc', 'price_desc', 'experience', 'newest'] as c
 // one, the button to create it.
 @Component({
   selector: 'app-local-guides-list-page',
-  imports: [LoadError, LocalGuideCard, Pager, SiteLink, TranslocoPipe],
+  imports: [ListSkeleton, LoadError, LocalGuideCard, Pager, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-6xl px-4 py-12">
@@ -135,7 +136,7 @@ const SORTS = ['rating', 'price_asc', 'price_desc', 'experience', 'newest'] as c
           @if (list.first.error()) {
             <app-load-error (retry)="list.reload()" />
           } @else if (list.items().length > 0) {
-            <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ul class="motion-reveal grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               @for (guide of list.items(); track guide.id; let index = $index) {
                 <li><app-local-guide-card [guide]="guide" [priority]="index === 0" /></li>
               }
@@ -148,6 +149,8 @@ const SORTS = ['rating', 'price_asc', 'price_desc', 'experience', 'newest'] as c
                 <button type="button" class="ui-btn-soft" (click)="reset()">{{ 'listing.filters.reset' | transloco }}</button>
               }
             </div>
+          } @else {
+            <app-list-skeleton columns="grid-cols-1 sm:grid-cols-2 xl:grid-cols-3" />
           }
 
           <app-pager [previous]="previousLink()" [next]="nextLink()" [loading]="list.loadingMore()" (loadMore)="list.loadMore()" />

@@ -1,0 +1,395 @@
+/*
+ * Motion: the site's animations, built on the tokens in @pkg/tokens
+ * (--dur-*, --ease-*). Only transform and opacity move, so they stay smooth
+ * on budget phones. With prefers-reduced-motion nothing slides, scales or
+ * loops: what's left is a short fade, or nothing at all.
+ */
+
+/* ── Entrances ─────────────────────────────────────────────────────────── */
+
+@keyframes motion-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@keyframes motion-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@layer components {
+  /* Plays once on load (the home page hero); .motion-enter-1…4 stagger it. */
+  .motion-enter {
+    animation: motion-fade-up var(--dur-slow) var(--ease-enter) both;
+  }
+  .motion-enter-1 {
+    animation-delay: 80ms;
+  }
+  .motion-enter-2 {
+    animation-delay: 160ms;
+  }
+  .motion-enter-3 {
+    animation-delay: 240ms;
+  }
+  .motion-enter-4 {
+    animation-delay: 320ms;
+  }
+}
+
+/* Cards rise as they scroll into view: a scroll-driven animation, so no
+   script and no hidden content where it isn't supported (or above the fold,
+   where the timeline is already past its end). Neighbors in a row start a
+   little apart. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-reveal > * {
+      animation: motion-fade-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+    .motion-reveal > :nth-child(3n + 2) {
+      animation-range: entry 8% entry 78%;
+    }
+    .motion-reveal > :nth-child(3n + 3) {
+      animation-range: entry 16% entry 86%;
+    }
+  }
+}
+
+/* The hero photo drifts at a third of the scroll speed. */
+@keyframes motion-parallax {
+  to {
+    transform: translateY(30vh);
+  }
+}
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .motion-parallax {
+      animation: motion-parallax linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+  }
+}
+
+/* ── Cards, chips, skeletons ───────────────────────────────────────────── */
+
+@layer components {
+  /* A card that lifts toward the pointer (or keyboard focus). */
+  .motion-lift {
+    transition: transform var(--dur-fast) var(--ease-standard), box-shadow var(--dur-fast)
+      var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+  }
+  .motion-lift:hover,
+  .motion-lift:focus-visible {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  }
+  .motion-lift:active {
+    transform: translateY(-1px);
+    transition-duration: var(--dur-instant);
+  }
+
+  /* A cover photo inside a lifting card zooms a little. */
+  .motion-zoom {
+    transition: transform var(--dur-base) var(--ease-standard);
+  }
+  .group:hover .motion-zoom {
+    transform: scale(1.05);
+  }
+
+  /* A placeholder while a list loads. */
+  .ui-skeleton {
+    border-radius: 0.5rem;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in oklab, var(--app-surface) 70%, transparent) 50%,
+        transparent 100%
+      )
+      color-mix(in oklab, var(--app-text) 8%, transparent);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: motion-shimmer 1.2s linear infinite;
+  }
+}
+
+@keyframes motion-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* ── Animated icons ────────────────────────────────────────────────────── */
+
+/* Each plays when its card (.group) is hovered or focused. */
+@keyframes icon-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(-5px);
+  }
+  60% {
+    transform: translateY(0);
+  }
+  80% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes icon-wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-14deg);
+  }
+  40% {
+    transform: rotate(12deg);
+  }
+  60% {
+    transform: rotate(-8deg);
+  }
+  80% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes icon-pop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  70% {
+    transform: scale(0.92);
+  }
+}
+@keyframes icon-step {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  30% {
+    transform: translate(2px, -3px);
+  }
+  60% {
+    transform: translate(4px, 0);
+  }
+  80% {
+    transform: translate(2px, -1px);
+  }
+}
+@keyframes icon-flip {
+  50% {
+    transform: rotateY(180deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .group:is(:hover, :focus-visible) .icon-anim-bounce {
+    animation: icon-bounce 700ms var(--ease-standard);
+  }
+  .group:is(:hover, :focus-visible) .icon-anim-wiggle {
+    transform-origin: 50% 10%;
+    animation: icon-wiggle 700ms var(--ease-standard);
+  }
+  .group:is(:hover, :focus-visible) .icon-anim-spin {
+    animation: icon-spin 800ms var(--ease-spring);
+  }
+  .group:is(:hover, :focus-visible) .icon-anim-pop {
+    animation: icon-pop 500ms var(--ease-spring);
+  }
+  .group:is(:hover, :focus-visible) .icon-anim-step {
+    animation: icon-step 700ms var(--ease-standard);
+  }
+  .group:is(:hover, :focus-visible) .icon-anim-flip {
+    animation: icon-flip 900ms var(--ease-standard);
+  }
+  .icon-anim-nudge {
+    transition: transform var(--dur-fast) var(--ease-standard);
+  }
+  .group:is(:hover, :focus-visible) .icon-anim-nudge {
+    transform: translateX(4px);
+  }
+}
+
+/* Two icons in one place, one swapping for the other (menu ↔ close,
+   sun ↔ moon): the leaving one turns away and shrinks. */
+@layer components {
+  .icon-swap {
+    display: grid;
+  }
+  .icon-swap > * {
+    grid-area: 1 / 1;
+    transition: transform var(--dur-base) var(--ease-spring), opacity var(--dur-fast)
+      var(--ease-standard);
+  }
+  .icon-swap > [data-off],
+  .dark .icon-swap > [data-dark-off],
+  :root:not(.dark) .icon-swap > [data-light-off] {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+}
+
+/* A check mark that draws itself (pathLength="1"). */
+@keyframes motion-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.motion-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: motion-draw var(--dur-slow) var(--ease-standard) both;
+}
+
+/* A field or button that refuses: a short shake. */
+@keyframes motion-shake {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+.motion-shake {
+  animation: motion-shake 400ms var(--ease-standard);
+}
+
+/* A changed number rolls up into place (animate.enter). */
+@keyframes motion-roll-in {
+  from {
+    opacity: 0;
+    transform: translateY(60%);
+  }
+}
+.motion-roll-in {
+  display: inline-block;
+  animation: motion-roll-in var(--dur-base) var(--ease-spring);
+}
+
+/* Panels appearing and leaving (animate.enter / animate.leave). */
+@keyframes motion-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@keyframes motion-slide-up-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.motion-drop-in {
+  animation: motion-slide-down var(--dur-base) var(--ease-enter);
+}
+.motion-drop-out {
+  animation: motion-slide-up-out var(--dur-fast) var(--ease-exit) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-enter,
+  .motion-drop-in,
+  .motion-roll-in {
+    animation: motion-fade 150ms linear both;
+  }
+  .motion-drop-out {
+    animation: motion-fade 150ms linear reverse both;
+  }
+  .motion-lift:hover,
+  .motion-lift:focus-visible,
+  .motion-lift:active,
+  .group:hover .motion-zoom {
+    transform: none;
+  }
+  .ui-skeleton,
+  .motion-shake,
+  .motion-draw {
+    animation: none;
+  }
+  .icon-swap > * {
+    transition: opacity 150ms linear;
+  }
+  .icon-swap > [data-off],
+  .dark .icon-swap > [data-dark-off],
+  :root:not(.dark) .icon-swap > [data-light-off] {
+    transform: none;
+  }
+}
+
+/* ── Page transitions (View Transitions, app.config.ts) ────────────────── */
+
+/* The old page fades out, the new one fades in rising slightly; the header
+   stays put, and a tour's cover flies from its card to the page
+   (view-transition-name on both). */
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+::view-transition-old(root) {
+  animation: vt-fade-out var(--dur-fast) var(--ease-exit) both;
+}
+::view-transition-new(root) {
+  animation: vt-fade-in-up var(--dur-base) var(--ease-enter) 90ms both;
+}
+::view-transition-group(*) {
+  animation-duration: var(--dur-slow);
+  animation-timing-function: var(--ease-standard);
+}
+
+.site-header {
+  view-transition-name: site-header;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root) {
+    animation: vt-fade-out 150ms linear both;
+  }
+  ::view-transition-new(root) {
+    animation: motion-fade 200ms linear both;
+  }
+  .vt-shared {
+    view-transition-name: none !important;
+  }
+}
+
+/* The dark/light switch reveals the new mode itself in a growing circle
+   (color-mode.ts): the whole page as one picture, no other animation. */
+html.theme-switching :is(.site-header, .vt-shared) {
+  view-transition-name: none !important;
+}
+html.theme-switching::view-transition-old(root),
+html.theme-switching::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

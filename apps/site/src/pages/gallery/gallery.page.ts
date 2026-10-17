@@ -9,6 +9,7 @@ import { loaded } from '@/core/lib/resource';
 import { imageGallery } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { FieldErrors } from '@/ui/field-errors';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { SiteLink } from '@/ui/site-link';
 import { Dialog, type DialogRef } from '@angular/cdk/dialog';
@@ -65,7 +66,15 @@ export function galleryQuery(page: number, filters: Filters): string {
 // delete their own from the lightbox.
 @Component({
   selector: 'app-gallery-page',
-  imports: [FieldErrors, FormField, LoadError, NgOptimizedImage, SiteLink, TranslocoPipe],
+  imports: [
+    FieldErrors,
+    FormField,
+    ListSkeleton,
+    LoadError,
+    NgOptimizedImage,
+    SiteLink,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-6xl px-4 py-12">
@@ -107,7 +116,7 @@ export function galleryQuery(page: number, filters: Filters): string {
       @if (firstPage.error()) {
         <app-load-error (retry)="firstPage.reload()" />
       } @else if (items().length > 0) {
-        <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <ul class="motion-reveal grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           @for (item of items(); track item.id; let index = $index) {
             <li>
               <button
@@ -122,7 +131,7 @@ export function galleryQuery(page: number, filters: Filters): string {
                   [priority]="index < 2"
                   sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                   [alt]="item.altText ?? ''"
-                  class="object-cover transition group-hover:scale-105"
+                  class="motion-zoom object-cover"
                 />
                 @if (item.location) {
                   <span class="absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/70 to-transparent px-2 py-1.5 text-left text-xs text-white">
@@ -135,6 +144,8 @@ export function galleryQuery(page: number, filters: Filters): string {
         </ul>
       } @else if (firstPage.hasValue()) {
         <p class="text-text-muted">{{ 'gallery.empty' | transloco }}</p>
+      } @else {
+        <app-list-skeleton [count]="8" columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" />
       }
 
       <nav class="mt-8 flex items-center justify-center gap-3" [attr.aria-label]="'pagination.more' | transloco">

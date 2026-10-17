@@ -17,7 +17,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
   template: `
     <a
       [appSiteLink]="'/outings/' + outing().id"
-      class="group flex rounded-card border border-border bg-surface transition hover:border-brand-400 hover:shadow-md"
+      class="group flex rounded-card border border-border bg-surface motion-lift hover:border-brand-400"
       [class]="compact() ? 'gap-3 p-3' : 'gap-4 p-4'"
       [class.opacity-60]="cancelled()"
     >

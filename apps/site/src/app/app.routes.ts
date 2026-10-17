@@ -1,6 +1,7 @@
 import { requireAuth, requirePartner } from '@/core/auth/guards';
 import { localizedRoutes } from '@/core/i18n/i18n';
 import { LEGAL, LEGAL_DOCUMENTS } from '@/core/legal/documents';
+import { prefetchTour } from '@/pages/tours/tour-prefetch';
 import type { Routes } from '@angular/router';
 
 // Pages, served under every language prefix (see localizedRoutes). Forms
@@ -109,6 +110,7 @@ const pages: Routes = [
   },
   {
     path: 'tours/:slug',
+    resolve: { prefetched: prefetchTour },
     loadComponent: () => import('@/pages/tours/tour.page').then((m) => m.TourPage),
   },
 

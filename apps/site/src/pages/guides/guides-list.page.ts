@@ -4,6 +4,7 @@ import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
@@ -14,7 +15,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 // Guides in the current language.
 @Component({
   selector: 'app-guides-list-page',
-  imports: [LoadError, NgOptimizedImage, SiteLink, TranslocoPipe],
+  imports: [ListSkeleton, LoadError, NgOptimizedImage, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-4xl px-4 py-12">
@@ -32,9 +33,9 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         <app-load-error (retry)="guides.reload()" />
       } @else if (guides.value(); as list) {
         @if (list.length > 0) {
-          <ul class="flex flex-col gap-4">
+          <ul class="motion-reveal flex flex-col gap-4">
             @for (guide of list; track guide.id; let first = $first) {
-              <li class="ui-card overflow-hidden transition-shadow hover:shadow-md">
+              <li class="ui-card overflow-hidden motion-lift">
                 <a [appSiteLink]="'/guides/' + guide.slug" class="flex flex-col gap-4 p-4 sm:flex-row">
                   @if (guide.coverImageUrl) {
                     <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-56">
@@ -69,6 +70,8 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         } @else {
           <p class="text-text-muted">{{ 'guides.empty' | transloco }}</p>
         }
+      } @else {
+        <app-list-skeleton variant="rows" />
       }
     </section>
   `,

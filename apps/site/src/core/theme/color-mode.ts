@@ -43,18 +43,20 @@ export class ColorModeStore {
     }
     const { x, y } = origin;
     const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-    document
-      .startViewTransition(() => this.apply(next))
-      .ready.then(() => {
-        this.root.animate(
-          { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-          {
-            duration: 500,
-            easing: 'cubic-bezier(0.47, 0, 0.745, 0.715)',
-            pseudoElement: '::view-transition-new(root)',
-          },
-        );
-      });
+    // Turns off the page-transition animations for this one (motion.css).
+    this.root.classList.add('theme-switching');
+    const transition = document.startViewTransition(() => this.apply(next));
+    void transition.finished.finally(() => this.root.classList.remove('theme-switching'));
+    transition.ready.then(() => {
+      this.root.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
+        {
+          duration: 500,
+          easing: 'cubic-bezier(0.47, 0, 0.745, 0.715)',
+          pseudoElement: '::view-transition-new(root)',
+        },
+      );
+    });
   }
 
   private apply(mode: ColorMode): void {

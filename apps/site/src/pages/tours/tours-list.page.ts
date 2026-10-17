@@ -7,10 +7,13 @@ import { DESTINATION_OPTIONS } from '@/core/lib/listing-options';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { withQuery } from '@/core/lib/query-link';
 import { loaded } from '@/core/lib/resource';
+import { tourCoverTransition } from '@/core/lib/view-transitions';
 import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
+import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { RatingStars } from '@/ui/rating-stars';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { httpResource } from '@angular/common/http';
@@ -22,7 +25,15 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 // indexed).
 @Component({
   selector: 'app-tours-list-page',
-  imports: [LoadError, NgOptimizedImage, RatingStars, SiteLink, TranslocoPipe],
+  imports: [
+    ListSkeleton,
+    LoadError,
+    NgOptimizedImage,
+    RatingStars,
+    SharedTransition,
+    SiteLink,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mx-auto max-w-4xl px-4 py-12">
@@ -46,12 +57,12 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         <app-load-error (retry)="tours.reload()" />
       } @else if (tours.value(); as list) {
         @if (list.length > 0) {
-          <ul class="flex flex-col gap-4">
+          <ul class="motion-reveal flex flex-col gap-4">
             @for (tour of list; track tour.id; let first = $first) {
-              <li class="ui-card overflow-hidden transition-shadow hover:shadow-md">
+              <li class="ui-card overflow-hidden motion-lift">
                 <a [appSiteLink]="'/tours/' + tour.slug" class="flex flex-col gap-4 p-4 sm:flex-row">
                   @if (tour.coverImageUrl) {
-                    <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-56">
+                    <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-56" [appSharedTransition]="coverTransition(tour)">
                       <img [ngSrc]="media(tour.coverImageUrl)" fill [priority]="first" sizes="(min-width: 640px) 25vw, 100vw" alt="" class="object-cover" />
                     </div>
                   }
@@ -96,6 +107,8 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         } @else {
           <p class="text-text-muted">{{ 'tours.empty' | transloco }}</p>
         }
+      } @else {
+        <app-list-skeleton variant="rows" />
       }
     </section>
   `,
@@ -148,6 +161,11 @@ export class ToursListPage {
 
   protected media(url: string): string {
     return resolveMediaUrl(this.apiBaseUrl, url);
+  }
+
+  // A clicked tour's cover flies to the tour page's (motion.css).
+  protected coverTransition(tour: Tour): string {
+    return tourCoverTransition(tour.id);
   }
 
   protected dates(tour: Tour): string {

@@ -3,6 +3,8 @@ import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount, formatDateRange } from '@/core/lib/format';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { tourCoverTransition } from '@/core/lib/view-transitions';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
@@ -11,13 +13,13 @@ import { TranslocoPipe } from '@jsverse/transloco';
 // A tour in a grid: cover, dates, where, title and price.
 @Component({
   selector: 'app-tour-card',
-  imports: [NgOptimizedImage, SiteLink, TranslocoPipe],
+  imports: [NgOptimizedImage, SharedTransition, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a [appSiteLink]="'/tours/' + tour().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface transition hover:shadow-lg">
-      <div class="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
+    <a [appSiteLink]="'/tours/' + tour().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface motion-lift">
+      <div class="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800" [appSharedTransition]="coverTransition()">
         @if (cover(); as url) {
-          <img [ngSrc]="url" fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" alt="" class="object-cover transition group-hover:scale-105" />
+          <img [ngSrc]="url" fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" alt="" class="motion-zoom object-cover" />
         } @else {
           <span class="icon-[mdi--compass-outline] absolute inset-0 m-auto size-12 text-text-muted" aria-hidden="true"></span>
         }
@@ -56,6 +58,8 @@ export class TourCard {
     const url = this.tour().coverImageUrl;
     return url ? resolveMediaUrl(this.apiBaseUrl, url) : null;
   });
+  // The cover flies to the tour page's once clicked (motion.css).
+  protected readonly coverTransition = computed(() => tourCoverTransition(this.tour().id));
   protected readonly dates = computed(() =>
     formatDateRange(this.lang(), this.tour().startDate, this.tour().endDate),
   );

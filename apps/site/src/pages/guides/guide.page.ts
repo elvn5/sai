@@ -10,6 +10,7 @@ import { article } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { equipmentIcon, equipmentLabelKey } from '@/pages/guides/guide-options';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { LoadError } from '@/ui/load-error';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
@@ -110,6 +111,7 @@ export class GuidePage {
   private readonly auth = inject(AuthStore);
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   private readonly navigate = injectSiteNavigate();
   private readonly lang = injectLang();
   protected readonly guide = httpResource<Guide>(
@@ -170,7 +172,7 @@ export class GuidePage {
   }
 
   protected async remove(item: Guide): Promise<void> {
-    if (!window.confirm(this.transloco.translate('guides.deleteConfirm'))) return;
+    if (!(await this.confirm({ title: 'guides.deleteConfirm', danger: true }))) return;
     this.deleting.set(true);
     try {
       await firstValueFrom(this.http.delete(`/guides/${item.id}`));

@@ -8,6 +8,7 @@ import { resolveMediaUrl } from '@/core/lib/media-url';
 import { loaded } from '@/core/lib/resource';
 import { imageGallery } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { FieldErrors } from '@/ui/field-errors';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
@@ -250,6 +251,7 @@ export class GalleryPage {
   private readonly dialog = inject(Dialog);
   private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   private readonly apiBaseUrl = inject(APP_CONFIG).apiBaseUrl;
   private readonly injector = inject(Injector);
   private readonly lang = injectLang();
@@ -460,7 +462,7 @@ export class GalleryPage {
   }
 
   protected async remove(item: GalleryItem): Promise<void> {
-    if (!window.confirm(this.transloco.translate('gallery.deleteConfirm'))) return;
+    if (!(await this.confirm({ title: 'gallery.deleteConfirm', danger: true }))) return;
     this.deleting.set(true);
     try {
       await firstValueFrom(this.http.delete(`/gallery/${item.id}`));

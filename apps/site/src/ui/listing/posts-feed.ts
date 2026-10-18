@@ -2,6 +2,7 @@ import type { ListingPost, Paginated, ReviewTargetType } from '@/core/api/types'
 import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
 import { loaded } from '@/core/lib/resource';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { PhotoGrid } from '@/ui/photo-grid';
 import { PhotoUploader } from '@/ui/photo-uploader';
 import { HttpClient, httpResource } from '@angular/common/http';
@@ -87,6 +88,7 @@ export class PostsFeed {
   private readonly auth = inject(AuthStore);
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   private readonly lang = injectLang();
   protected readonly maxPhotos = MAX_PHOTOS;
 
@@ -176,7 +178,7 @@ export class PostsFeed {
   }
 
   protected async remove(post: ListingPost): Promise<void> {
-    if (!window.confirm(this.transloco.translate('posts.deleteConfirm'))) return;
+    if (!(await this.confirm({ title: 'posts.deleteConfirm', danger: true }))) return;
     this.deleting.set(true);
     try {
       await firstValueFrom(this.http.delete(`/listing-posts/${post.id}`));

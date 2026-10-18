@@ -15,7 +15,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
       <img [ngSrc]="url" [width]="size()" [height]="size()" [alt]="name()" class="rounded-full object-cover" />
     } @else {
       <span
-        class="flex items-center justify-center rounded-full bg-linear-to-br from-brand-500 to-secondary-500 font-bold text-white"
+        class="flex items-center justify-center rounded-full bg-linear-to-br from-secondary-500 to-brand-500 font-bold text-white"
         [style.width.px]="size()"
         [style.height.px]="size()"
         [style.font-size.px]="size() * 0.4"

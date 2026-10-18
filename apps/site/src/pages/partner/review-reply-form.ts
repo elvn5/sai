@@ -1,4 +1,5 @@
 import type { Review } from '@/core/api/types';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { FieldErrors } from '@/ui/field-errors';
 import { HttpClient } from '@angular/common/http';
 import {
@@ -62,6 +63,7 @@ export class ReviewReplyForm {
 
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   protected readonly editing = linkedSignal(() => !this.review().reply);
   protected readonly removing = signal(false);
   protected readonly failed = signal(false);
@@ -97,7 +99,7 @@ export class ReviewReplyForm {
   }
 
   protected async remove(): Promise<void> {
-    if (!window.confirm(this.transloco.translate('cabinet.reviews.deleteConfirm'))) return;
+    if (!(await this.confirm({ title: 'cabinet.reviews.deleteConfirm', danger: true }))) return;
     this.removing.set(true);
     try {
       await firstValueFrom(this.http.delete(`/reviews/${this.review().id}/reply`));

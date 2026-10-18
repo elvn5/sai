@@ -11,6 +11,7 @@ import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { lodgingBusiness, plainText } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { ContactCard } from '@/ui/listing/contact-card';
 import { PostsFeed } from '@/ui/listing/posts-feed';
 import { reviewsResource } from '@/ui/listing/reviews';
@@ -175,6 +176,7 @@ export class HotelPage {
   private readonly auth = inject(AuthStore);
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   private readonly apiBaseUrl = inject(APP_CONFIG).apiBaseUrl;
   private readonly navigate = injectSiteNavigate();
   private readonly lang = injectLang();
@@ -281,7 +283,7 @@ export class HotelPage {
   }
 
   protected async remove(item: Hotel): Promise<void> {
-    if (!window.confirm(this.transloco.translate('hotels.deleteConfirm'))) return;
+    if (!(await this.confirm({ title: 'hotels.deleteConfirm', danger: true }))) return;
     this.deleting.set(true);
     try {
       await firstValueFrom(this.http.delete(`/hotels/${item.id}`));

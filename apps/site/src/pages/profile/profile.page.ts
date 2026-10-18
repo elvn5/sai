@@ -9,14 +9,19 @@ import {
 import { AuthStore } from '@/core/auth/auth.store';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
+import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
+import { HeroImage } from '@/pages/home/hero-image';
 import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
 import { AwardCodeCard } from '@/ui/achievements/award-code-card';
 import { HallPodium } from '@/ui/achievements/hall-podium';
+import { ListSkeleton } from '@/ui/list-skeleton';
+import { LoadError } from '@/ui/load-error';
 import { OrderCard } from '@/ui/order-card';
 import { OutingCard } from '@/ui/outing-card';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
+import { StateBlock } from '@/ui/state-block';
 import { TelegramLink } from '@/ui/telegram-link';
 import { httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
@@ -24,10 +29,10 @@ import { Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const TABS = [
-  { key: 'info', icon: 'icon-[heroicons--user-circle]' },
-  { key: 'achievements', icon: 'icon-[mdi--trophy-outline]' },
-  { key: 'bookings', icon: 'icon-[mdi--ticket-confirmation-outline]' },
-  { key: 'history', icon: 'icon-[heroicons--map]' },
+  { key: 'info', icon: 'icon-[heroicons--user]' },
+  { key: 'bookings', icon: 'icon-[heroicons--ticket]' },
+  { key: 'history', icon: 'icon-[heroicons--flag]' },
+  { key: 'achievements', icon: 'icon-[heroicons--trophy]' },
   { key: 'partner', icon: 'icon-[heroicons--briefcase]' },
 ] as const;
 
@@ -41,66 +46,156 @@ type Tab = (typeof TABS)[number]['key'];
     AchievementShelf,
     AwardCodeCard,
     HallPodium,
+    HeroImage,
+    ListSkeleton,
+    LoadError,
     OrderCard,
     OutingCard,
     PersonAvatar,
     SiteLink,
+    StateBlock,
     TelegramLink,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    /* Tabs: pills on phones, an underline on wider screens. */
+    .tab {
+      position: relative;
+      display: inline-flex;
+      flex-shrink: 0;
+      align-items: center;
+      gap: 0.375rem;
+      white-space: nowrap;
+      font-weight: 500;
+      color: var(--app-text-muted);
+      transition: color var(--dur-fast) var(--ease-standard), background-color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard);
+    }
+    .tab:hover {
+      color: var(--app-text);
+    }
+    @media (width < 40rem) {
+      .tab {
+        border: 1px solid var(--app-border);
+        border-radius: 9999px;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.75rem;
+        background: var(--app-surface);
+      }
+      .tab [class*="icon-["] {
+        display: none;
+      }
+      .tab[aria-selected="true"] {
+        border-color: var(--brand-500);
+        background: color-mix(in oklab, var(--brand-500) 10%, transparent);
+        color: var(--brand-700);
+      }
+      :host-context(.dark) .tab[aria-selected="true"] {
+        color: var(--brand-300);
+      }
+    }
+    @media (width >= 40rem) {
+      .tabs {
+        border-bottom: 1px solid var(--app-border);
+      }
+      .tab {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.875rem;
+      }
+      .tab::after {
+        content: "";
+        position: absolute;
+        inset: auto 0.5rem -1px;
+        height: 2px;
+        border-radius: 9999px;
+        background: var(--brand-500);
+        transform: scaleX(0);
+        transition: transform var(--dur-base) var(--ease-spring);
+      }
+      .tab[aria-selected="true"] {
+        color: var(--app-text);
+      }
+      .tab[aria-selected="true"]::after {
+        transform: scaleX(1);
+      }
+    }
+  `,
   template: `
     @if (auth.user(); as user) {
-      <section class="mx-auto max-w-3xl px-4 py-12">
-        <div class="flex items-center gap-4">
-          <app-person-avatar [person]="user" [size]="64" />
-          <div>
-            <h1 class="text-2xl font-extrabold text-text">{{ displayName() || ('profile.title' | transloco) }}</h1>
+      <div class="relative isolate h-24 overflow-hidden sm:h-28">
+        <app-hero-image />
+        <div class="absolute inset-0 -z-10 bg-linear-to-b from-black/20 to-black/45"></div>
+      </div>
+      <section class="ui-container pb-14">
+        <div class="relative -mt-10 flex flex-wrap items-start gap-4">
+          <app-person-avatar class="ring-4 ring-bg" [person]="user" [size]="80" />
+          <div class="min-w-0 flex-1 pt-11">
+            <h1 class="truncate text-xl font-extrabold tracking-tight text-text sm:text-[1.625rem]">{{ displayName() || ('profile.title' | transloco) }}</h1>
             @if (user.username) {
               <p class="text-sm text-text-muted">&#64;{{ user.username }}</p>
             }
           </div>
+          <button type="button" class="ui-btn-soft mt-12 max-sm:hidden" (click)="logout()">
+            <span class="icon-[heroicons--arrow-right-start-on-rectangle] size-4" aria-hidden="true"></span>{{ 'profile.logout' | transloco }}
+          </button>
         </div>
 
-        <div class="-mx-4 mt-8 overflow-x-auto px-4" >
-          <div class="flex min-w-max gap-1 rounded-lg border border-border bg-surface p-1" role="tablist" [attr.aria-label]="'profile.title' | transloco">
-            @for (item of tabs; track item.key) {
-              <button
-                type="button"
-                role="tab"
-                class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors"
-                [class]="active() === item.key ? 'bg-brand-600 text-white' : 'text-text-muted hover:text-text'"
-                [id]="'tab-' + item.key"
-                [attr.aria-selected]="active() === item.key"
-                [attr.aria-controls]="'panel-' + item.key"
-                [attr.tabindex]="active() === item.key ? 0 : -1"
-                (click)="open(item.key)"
-                (keydown)="onKeydown($event)"
-              >
-                <span [class]="item.icon + ' size-5'" aria-hidden="true"></span>{{ 'profile.tabs.' + item.key | transloco }}
-              </button>
-            }
-          </div>
+        <dl class="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          @for (stat of stats(); track stat.key) {
+            <div class="ui-card px-4 py-3">
+              <dt class="text-xs text-text-muted">{{ 'profile.stats.' + stat.key | transloco }}</dt>
+              <dd class="flex items-center gap-1.5 text-[1.375rem] font-extrabold text-text tabular-nums">
+                @if (stat.value === null) {
+                  <span class="ui-skeleton inline-block h-6 w-10"></span>
+                } @else {
+                  <span class="motion-roll-in">{{ stat.value }}</span>
+                }
+                @if (stat.key === 'awards') {
+                  <span class="icon-[heroicons--trophy-solid] size-5 text-secondary-400" aria-hidden="true"></span>
+                }
+              </dd>
+            </div>
+          }
+        </dl>
+
+        <div class="tabs -mx-4 mt-5 flex gap-1.5 overflow-x-auto px-4 [mask-image:linear-gradient(to_right,#000_85%,transparent)] sm:mx-0 sm:gap-1 sm:px-0 sm:[mask-image:none]" role="tablist" [attr.aria-label]="'profile.title' | transloco">
+          @for (item of tabs; track item.key) {
+            <button
+              type="button"
+              role="tab"
+              class="tab"
+              [id]="'tab-' + item.key"
+              [attr.aria-selected]="active() === item.key"
+              [attr.aria-controls]="'panel-' + item.key"
+              [attr.tabindex]="active() === item.key ? 0 : -1"
+              (click)="open(item.key)"
+              (keydown)="onKeydown($event)"
+            >
+              <span [class]="item.icon + ' size-[1.1rem]'" aria-hidden="true"></span>{{ 'profile.tabs.' + item.key | transloco }}
+            </button>
+          }
         </div>
 
-        <div class="mt-6" role="tabpanel" [id]="'panel-' + active()" [attr.aria-labelledby]="'tab-' + active()">
+        <div class="mt-5" role="tabpanel" [id]="'panel-' + active()" [attr.aria-labelledby]="'tab-' + active()">
           @switch (active()) {
             @case ('info') {
-              <dl class="flex flex-col gap-4">
-                <div class="ui-card flex items-center justify-between px-4 py-3">
+              <dl class="ui-card flex flex-col divide-y divide-border">
+                <div class="flex items-center justify-between px-4 py-3">
                   <dt class="text-sm text-text-muted">{{ 'profile.fields.email' | transloco }}</dt>
                   <dd class="text-sm font-medium text-text">{{ user.email ?? '—' }}</dd>
                 </div>
-                <div class="ui-card flex items-center justify-between px-4 py-3">
+                <div class="flex items-center justify-between px-4 py-3">
                   <dt class="text-sm text-text-muted">{{ 'profile.fields.phone' | transloco }}</dt>
                   <dd class="text-sm font-medium text-text">{{ user.phone ?? '—' }}</dd>
                 </div>
-                <div class="ui-card flex flex-col gap-2 px-4 py-3">
+                <div class="flex flex-col gap-2 px-4 py-3">
                   <dt class="text-sm text-text-muted">{{ 'profile.fields.telegram' | transloco }}</dt>
                   <dd><app-telegram-link /></dd>
                 </div>
               </dl>
-              <button type="button" class="ui-btn-soft mt-6" (click)="logout()">{{ 'profile.logout' | transloco }}</button>
+              <button type="button" class="ui-btn-soft mt-4 sm:hidden" (click)="logout()">
+                <span class="icon-[heroicons--arrow-right-start-on-rectangle] size-4" aria-hidden="true"></span>{{ 'profile.logout' | transloco }}
+              </button>
             }
             @case ('achievements') {
               <div class="flex flex-col gap-6">
@@ -133,23 +228,25 @@ type Tab = (typeof TABS)[number]['key'];
                   </section>
                 }
                 <a appSiteLink="/hall-of-fame" class="ui-btn-soft self-start">
-                  <span class="icon-[mdi--trophy] size-4" aria-hidden="true"></span>{{ 'profile.achievements.open' | transloco }}
+                  <span class="icon-[heroicons--trophy] size-4" aria-hidden="true"></span>{{ 'profile.achievements.open' | transloco }}
                 </a>
               </div>
             }
             @case ('bookings') {
               @if (orderList().length > 0) {
-                <ul class="flex flex-col gap-2">
+                <ul class="motion-reveal flex flex-col gap-3">
                   @for (order of orderList(); track order.id) {
                     <li><app-order-card [order]="order" /></li>
                   }
                 </ul>
               } @else if (orders.hasValue()) {
-                <div class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border px-6 py-14 text-center">
-                  <span class="icon-[mdi--ticket-confirmation-outline] size-10 text-text-muted" aria-hidden="true"></span>
-                  <p class="font-medium text-text">{{ 'booking.noBookings' | transloco }}</p>
-                  <a appSiteLink="/tours" class="ui-btn-primary mt-2">{{ 'booking.browseTours' | transloco }}</a>
-                </div>
+                <app-state-block icon="icon-[heroicons--ticket]" title="booking.noBookings" text="booking.noBookingsHint">
+                  <a appSiteLink="/tours" class="ui-btn-primary ui-btn-lg"><span class="icon-[heroicons--map] size-[1.1rem]" aria-hidden="true"></span>{{ 'booking.browseTours' | transloco }}</a>
+                </app-state-block>
+              } @else if (orders.error()) {
+                <app-load-error (retry)="orders.reload()" />
+              } @else {
+                <app-list-skeleton class="motion-delayed" variant="rows" [count]="2" />
               }
             }
             @case ('history') {
@@ -175,43 +272,49 @@ type Tab = (typeof TABS)[number]['key'];
                   </section>
                 }
                 @if (outings.hasValue() && upcoming().length + past().length === 0) {
-                  <div class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border px-6 py-14 text-center">
-                    <span class="icon-[heroicons--map] size-10 text-text-muted" aria-hidden="true"></span>
-                    <p class="font-medium text-text">{{ 'profile.history.empty' | transloco }}</p>
-                    <p class="max-w-sm text-sm text-text-muted">{{ 'profile.history.emptyHint' | transloco }}</p>
-                    <a appSiteLink="/outings" class="ui-btn-primary mt-2">{{ 'profile.history.cta' | transloco }}</a>
-                  </div>
+                  <app-state-block icon="icon-[heroicons--flag]" title="profile.history.empty" text="profile.history.emptyHint">
+                    <a appSiteLink="/outings" class="ui-btn-primary">{{ 'profile.history.cta' | transloco }}</a>
+                  </app-state-block>
                 }
               </div>
             }
             @case ('partner') {
-              <div class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border px-6 py-14 text-center">
+              <div class="flex flex-col gap-4">
                 @switch (user.partnerStatus) {
                   @case (statuses.APPROVED) {
-                    <span class="icon-[heroicons--check-badge] size-10 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>
-                    <p class="font-medium text-text">{{ 'profile.partner.approved' | transloco }}</p>
-                    <div class="mt-2 flex flex-wrap justify-center gap-2">
+                    <div class="ui-banner ui-banner-success">
+                      <span class="icon-[heroicons--check-badge]" aria-hidden="true"></span>
+                      <span>{{ 'profile.partner.approved' | transloco }}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
                       <a appSiteLink="/partner" class="ui-btn-primary"><span class="icon-[heroicons--squares-2x2] size-4" aria-hidden="true"></span>{{ 'cabinet.open' | transloco }}</a>
-                      <a appSiteLink="/achievements/award" class="ui-btn-soft"><span class="icon-[mdi--medal] size-4" aria-hidden="true"></span>{{ 'profile.partner.awardCta' | transloco }}</a>
+                      <a appSiteLink="/achievements/award" class="ui-btn-soft"><span class="icon-[heroicons--trophy] size-4" aria-hidden="true"></span>{{ 'profile.partner.awardCta' | transloco }}</a>
                       <a appSiteLink="/tours/new" class="ui-btn-soft"><span class="icon-[heroicons--map] size-4" aria-hidden="true"></span>{{ 'profile.partner.addTourCta' | transloco }}</a>
                       <a appSiteLink="/blog/new" class="ui-btn-soft"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>{{ 'blog.form.newTitle' | transloco }}</a>
                     </div>
                   }
                   @case (statuses.PENDING) {
-                    <span class="icon-[heroicons--clock] size-10 text-text-muted" aria-hidden="true"></span>
-                    <p class="font-medium text-text">{{ 'profile.partner.pending' | transloco }}</p>
+                    <div class="ui-banner ui-banner-info">
+                      <span class="icon-[heroicons--clock]" aria-hidden="true"></span>
+                      <span>{{ 'profile.partner.pending' | transloco }}</span>
+                    </div>
                   }
                   @default {
-                    <span class="icon-[heroicons--briefcase] size-10 text-text-muted" aria-hidden="true"></span>
                     @if (user.partnerStatus === statuses.REJECTED) {
-                      <p class="font-medium text-text">{{ 'profile.partner.rejected' | transloco }}</p>
+                      <div class="ui-banner ui-banner-danger">
+                        <span class="icon-[heroicons--no-symbol]" aria-hidden="true"></span>
+                        <span>{{ 'profile.partner.rejected' | transloco }}</span>
+                      </div>
                     }
-                    <p class="max-w-sm text-sm text-text-muted">{{ 'profile.partner.pitch' | transloco }}</p>
-                    <p class="max-w-sm text-sm text-text-muted">{{ 'profile.partner.publishOnly' | transloco }}</p>
-                    <button type="button" class="ui-btn-primary mt-2" [disabled]="applying()" (click)="apply()">{{ 'profile.partner.applyCta' | transloco }}</button>
-                    @if (applyFailed()) {
-                      <p class="ui-error" role="alert">{{ 'outings.errors.generic' | transloco }}</p>
-                    }
+                    <app-state-block icon="icon-[heroicons--briefcase]" title="profile.partner.pitchTitle" text="profile.partner.pitch">
+                      <button type="button" class="ui-btn-primary" [disabled]="applying()" [attr.aria-busy]="applying()" (click)="apply()">
+                        @if (applying()) {
+                          <span class="icon-[heroicons--arrow-path] size-4 animate-spin" aria-hidden="true"></span>
+                        }
+                        {{ 'profile.partner.applyCta' | transloco }}
+                      </button>
+                    </app-state-block>
+                    <p class="text-center text-xs text-text-muted">{{ 'profile.partner.publishOnly' | transloco }}</p>
                   }
                 }
               </div>
@@ -229,6 +332,7 @@ export class ProfilePage {
   private readonly router = inject(Router);
   private readonly navigate = injectSiteNavigate();
   protected readonly tabs = TABS;
+  private readonly notify = inject(Notify);
   protected readonly statuses = PartnerStatus;
 
   protected readonly active = computed(
@@ -239,16 +343,11 @@ export class ProfilePage {
     return user?.firstName ?? user?.username ?? user?.email ?? '';
   });
 
-  // Each tab's data loads when the tab opens.
-  protected readonly orders = httpResource<Order[]>(() =>
-    this.active() === 'bookings' ? '/orders/mine' : undefined,
-  );
-  protected readonly outings = httpResource<Outing[]>(() =>
-    this.active() === 'history' ? '/outings/mine' : undefined,
-  );
-  private readonly achievements = httpResource<MyAchievements>(() =>
-    this.active() === 'achievements' ? '/achievements/me' : undefined,
-  );
+  // Bookings, outings and medals feed the summary on top, so they load
+  // at once; the hall of fame loads when its tab opens.
+  protected readonly orders = httpResource<Order[]>(() => '/orders/mine');
+  protected readonly outings = httpResource<Outing[]>(() => '/outings/mine');
+  private readonly achievements = httpResource<MyAchievements>(() => '/achievements/me');
   private readonly hall = httpResource<HallOfFame>(() =>
     this.active() === 'achievements' ? '/hall-of-fame' : undefined,
   );
@@ -272,6 +371,21 @@ export class ProfilePage {
       (outing) => new Date(outing.startsAt).getTime() <= Date.now(),
     ),
   );
+  // The summary: null while its number is loading.
+  protected readonly stats = computed(() => {
+    const mine = loaded(this.achievements);
+    const orders = loaded(this.orders);
+    const outings = loaded(this.outings);
+    return [
+      { key: 'outings', value: outings ? outings.length : null },
+      {
+        key: 'bookings',
+        value: orders ? orders.filter((order) => order.status === 'paid').length : null,
+      },
+      { key: 'points', value: mine ? mine.points : null },
+      { key: 'awards', value: mine ? mine.awards.length : null },
+    ];
+  });
   protected readonly applying = signal(false);
   protected readonly applyFailed = signal(false);
 
@@ -309,8 +423,10 @@ export class ProfilePage {
     this.applyFailed.set(false);
     try {
       await this.auth.applyAsPartner();
+      this.notify.success({ title: 'profile.partner.applied' });
     } catch {
       this.applyFailed.set(true);
+      this.notify.error({ title: 'outings.errors.generic', text: 'notify.tryAgain' });
     } finally {
       this.applying.set(false);
     }
@@ -318,6 +434,7 @@ export class ProfilePage {
 
   protected async logout(): Promise<void> {
     await this.auth.logout();
+    this.notify.info({ title: 'notify.signedOut' });
     await this.navigate('/');
   }
 }

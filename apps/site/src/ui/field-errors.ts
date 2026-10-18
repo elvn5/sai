@@ -9,7 +9,7 @@ import type { FieldState } from '@angular/forms/signals';
   template: `
     @if (state().touched() && state().invalid()) {
       @for (error of state().errors(); track $index) {
-        <p class="ui-error" role="alert">{{ error.message }}</p>
+        <p class="ui-error motion-drop-in mt-1" role="alert"><span class="icon-[heroicons--exclamation-circle] size-4 shrink-0" aria-hidden="true"></span>{{ error.message }}</p>
       }
     }
   `,

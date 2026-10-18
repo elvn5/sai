@@ -12,14 +12,14 @@ import { TranslocoPipe } from '@jsverse/transloco';
   template: `
     <button
       type="button"
-      class="flex size-9 items-center justify-center rounded-md transition-colors hover:bg-white/10"
+      class="ui-icon-btn"
       [attr.aria-label]="'theme.toggle' | transloco"
       [title]="'theme.toggle' | transloco"
       (click)="toggle($event)"
     >
       <span class="icon-swap" aria-hidden="true">
-        <span class="icon-[heroicons--sun-20-solid] size-5" data-dark-off></span>
-        <span class="icon-[heroicons--moon-20-solid] size-5" data-light-off></span>
+        <span class="icon-[heroicons--sun] size-[1.2rem]" data-dark-off></span>
+        <span class="icon-[heroicons--moon] size-[1.2rem]" data-light-off></span>
       </span>
     </button>
   `,

@@ -10,13 +10,14 @@ import (
 	"github.com/elvn5/sai/services/trails/internal/models"
 )
 
-// trailColumns leaves out the track (large); detail queries add it.
+// trailColumns leaves out the track (large); detail queries add it. Run
+// queries that use it through atNow.
 const trailColumns = `t.id::text, t.slug, t.name, t.summary, t.description, t.area, t.kind, t.grade,
 	t.seasons, t.gear, t.summit_elevation, t.start_elevation, t.elevation_gain, t.distance_km::float8,
 	t.duration_hours::float8, t.days, t.segments, t.getting_there, t.start_latitude, t.start_longitude,
 	t.gpx_url, t.cover_image_url, t.photos, t.is_published, t.user_id::text, t.created_at, t.updated_at,
 	lc.observed_on::text, lc.trail_state, lc.traction,
-	(SELECT count(*) FROM outings o WHERE o.trail_id = t.id AND o.status = 'open' AND o.starts_at > now())::int`
+	(SELECT count(*) FROM outings o WHERE o.trail_id = t.id AND o.status = 'open' AND o.starts_at > @now)::int`
 
 // trailJoins adds the newest condition report.
 const trailJoins = ` FROM trails t
@@ -50,7 +51,8 @@ func scanTrail(row pgx.Row, withTrack bool) (models.Trail, error) {
 	return t, nil
 }
 
-func (s *Store) collectTrails(ctx context.Context, query string, args ...any) ([]models.Trail, error) {
+func (s *Store) collectTrails(ctx context.Context, now time.Time, query string, args ...any) ([]models.Trail, error) {
+	query, args = atNow(query, now, args)
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -65,7 +67,7 @@ type TrailFilter struct {
 }
 
 // PublishedTrails lists the catalog.
-func (s *Store) PublishedTrails(ctx context.Context, f TrailFilter) ([]models.Trail, error) {
+func (s *Store) PublishedTrails(ctx context.Context, f TrailFilter, now time.Time) ([]models.Trail, error) {
 	w := &where{}
 	w.add("t.is_published = ?", true)
 	if f.Area != nil {
@@ -91,10 +93,10 @@ func (s *Store) PublishedTrails(ctx context.Context, f TrailFilter) ([]models.Tr
 	}[f.Sort]
 	if order == "" {
 		// Most talked about: fresh reports and planned outings first.
-		order = `(SELECT count(*) FROM condition_reports c WHERE c.trail_id = t.id AND c.observed_on > now() - interval '60 days')
-			+ (SELECT count(*) FROM outings o WHERE o.trail_id = t.id AND o.starts_at > now() - interval '60 days') DESC, t.name`
+		order = `(SELECT count(*) FROM condition_reports c WHERE c.trail_id = t.id AND c.observed_on > @now - interval '60 days')
+			+ (SELECT count(*) FROM outings o WHERE o.trail_id = t.id AND o.starts_at > @now - interval '60 days') DESC, t.name`
 	}
-	return s.collectTrails(ctx, `SELECT `+trailColumns+trailJoins+` WHERE `+w.sql()+` ORDER BY `+order+` LIMIT 200`, w.args...)
+	return s.collectTrails(ctx, now, `SELECT `+trailColumns+trailJoins+` WHERE `+w.sql()+` ORDER BY `+order+` LIMIT 200`, w.args...)
 }
 
 // AreaCounts counts published routes per area.
@@ -118,20 +120,22 @@ func (s *Store) AreaCounts(ctx context.Context) (map[string]int, error) {
 
 // TrailBySlug loads a route with its track (published or not; callers
 // decide who may see drafts).
-func (s *Store) TrailBySlug(ctx context.Context, slug string) (models.Trail, error) {
-	return scanTrail(s.db.QueryRow(ctx, `SELECT `+trailColumns+`, t.track`+trailJoins+` WHERE t.slug = $1`, slug), true)
+func (s *Store) TrailBySlug(ctx context.Context, slug string, now time.Time) (models.Trail, error) {
+	query, args := atNow(`SELECT `+trailColumns+`, t.track`+trailJoins+` WHERE t.slug = $1`, now, []any{slug})
+	return scanTrail(s.db.QueryRow(ctx, query, args...), true)
 }
 
-func (s *Store) Trail(ctx context.Context, id string) (models.Trail, error) {
-	return scanTrail(s.db.QueryRow(ctx, `SELECT `+trailColumns+`, t.track`+trailJoins+` WHERE t.id::text = $1`, id), true)
+func (s *Store) Trail(ctx context.Context, id string, now time.Time) (models.Trail, error) {
+	query, args := atNow(`SELECT `+trailColumns+`, t.track`+trailJoins+` WHERE t.id::text = $1`, now, []any{id})
+	return scanTrail(s.db.QueryRow(ctx, query, args...), true)
 }
 
-func (s *Store) TrailsByUser(ctx context.Context, userID string) ([]models.Trail, error) {
-	return s.collectTrails(ctx, `SELECT `+trailColumns+trailJoins+` WHERE t.user_id::text = $1 ORDER BY t.created_at DESC`, userID)
+func (s *Store) TrailsByUser(ctx context.Context, userID string, now time.Time) ([]models.Trail, error) {
+	return s.collectTrails(ctx, now, `SELECT `+trailColumns+trailJoins+` WHERE t.user_id::text = $1 ORDER BY t.created_at DESC`, userID)
 }
 
-func (s *Store) AllTrails(ctx context.Context) ([]models.Trail, error) {
-	return s.collectTrails(ctx, `SELECT `+trailColumns+trailJoins+` ORDER BY t.created_at DESC`)
+func (s *Store) AllTrails(ctx context.Context, now time.Time) ([]models.Trail, error) {
+	return s.collectTrails(ctx, now, `SELECT `+trailColumns+trailJoins+` ORDER BY t.created_at DESC`)
 }
 
 func (s *Store) SlugTaken(ctx context.Context, slug, excludeID string) (bool, error) {
@@ -152,7 +156,7 @@ func trailWriteArgs(t models.Trail) []any {
 		t.CoverImageURL, t.Photos, t.IsPublished}
 }
 
-func (s *Store) InsertTrail(ctx context.Context, t models.Trail) (models.Trail, error) {
+func (s *Store) InsertTrail(ctx context.Context, t models.Trail, now time.Time) (models.Trail, error) {
 	var id string
 	err := s.db.QueryRow(ctx, `INSERT INTO trails (`+trailWriteColumns+`, user_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
@@ -160,10 +164,10 @@ func (s *Store) InsertTrail(ctx context.Context, t models.Trail) (models.Trail, 
 	if err != nil {
 		return models.Trail{}, duplicate(err)
 	}
-	return s.Trail(ctx, id)
+	return s.Trail(ctx, id, now)
 }
 
-func (s *Store) UpdateTrail(ctx context.Context, t models.Trail) (models.Trail, error) {
+func (s *Store) UpdateTrail(ctx context.Context, t models.Trail, now time.Time) (models.Trail, error) {
 	tag, err := s.db.Exec(ctx, `UPDATE trails SET (`+trailWriteColumns+`, updated_at) =
 		($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, now())
 		WHERE id::text = $1`, append([]any{t.ID}, trailWriteArgs(t)...)...)
@@ -173,7 +177,7 @@ func (s *Store) UpdateTrail(ctx context.Context, t models.Trail) (models.Trail, 
 	if tag.RowsAffected() == 0 {
 		return models.Trail{}, ErrNotFound
 	}
-	return s.Trail(ctx, t.ID)
+	return s.Trail(ctx, t.ID, now)
 }
 
 func (s *Store) DeleteTrail(ctx context.Context, id string) error {

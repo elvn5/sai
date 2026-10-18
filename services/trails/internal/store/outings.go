@@ -46,10 +46,10 @@ func (s *Store) collectOutings(ctx context.Context, query string, args ...any) (
 
 // UpcomingOutings lists open outings that haven't started (with a few
 // hours' grace), soonest first; trailID narrows it to one route.
-func (s *Store) UpcomingOutings(ctx context.Context, trailID *string, limit int) ([]models.Outing, error) {
+func (s *Store) UpcomingOutings(ctx context.Context, trailID *string, limit int, now time.Time) ([]models.Outing, error) {
 	return s.collectOutings(ctx, `SELECT `+outingColumns+` WHERE o.status = 'open'
-		AND o.starts_at > now() - interval '3 hours' AND ($1::text IS NULL OR o.trail_id::text = $1)
-		ORDER BY o.starts_at LIMIT $2`, trailID, limit)
+		AND o.starts_at > $3::timestamptz - interval '3 hours' AND ($1::text IS NULL OR o.trail_id::text = $1)
+		ORDER BY o.starts_at LIMIT $2`, trailID, limit, now)
 }
 
 // OutingsOf lists what userID organizes or joined, newest first.
@@ -104,7 +104,7 @@ func (s *Store) UpdateOuting(ctx context.Context, o models.Outing) (models.Outin
 
 // Join adds userID to an open, not-yet-started outing with a free seat.
 // The row lock keeps two last-seat joins from both succeeding.
-func (s *Store) Join(ctx context.Context, outingID, userID string) error {
+func (s *Store) Join(ctx context.Context, outingID, userID string, now time.Time) error {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -112,9 +112,9 @@ func (s *Store) Join(ctx context.Context, outingID, userID string) error {
 	defer func() { _ = tx.Rollback(ctx) }()
 	var seats, taken int
 	var open bool
-	err = tx.QueryRow(ctx, `SELECT seats, status = 'open' AND starts_at > now(),
+	err = tx.QueryRow(ctx, `SELECT seats, status = 'open' AND starts_at > $2,
 		(SELECT count(*) FROM outing_participants p WHERE p.outing_id = o.id)::int
-		FROM outings o WHERE id::text = $1 FOR UPDATE`, outingID).Scan(&seats, &open, &taken)
+		FROM outings o WHERE id::text = $1 FOR UPDATE`, outingID, now).Scan(&seats, &open, &taken)
 	if err != nil {
 		return notFound(err)
 	}

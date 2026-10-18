@@ -144,7 +144,7 @@ func (h *Trails) List(c *gin.Context) {
 	if !q.OK() {
 		return
 	}
-	trails, err := h.Store.PublishedTrails(c.Request.Context(), f)
+	trails, err := h.Store.PublishedTrails(c.Request.Context(), f, h.now())
 	if err != nil {
 		h.internalError(c, err)
 		return
@@ -164,7 +164,7 @@ func (h *Trails) Areas(c *gin.Context) {
 // Get shows a published route by slug (drafts to their author and the
 // admin).
 func (h *Trails) Get(c *gin.Context) {
-	trail, err := h.Store.TrailBySlug(c.Request.Context(), c.Param("key"))
+	trail, err := h.Store.TrailBySlug(c.Request.Context(), c.Param("key"), h.now())
 	if err == nil && !trail.IsPublished && !h.canEdit(c, trail) {
 		err = store.ErrNotFound
 	}
@@ -176,7 +176,7 @@ func (h *Trails) Get(c *gin.Context) {
 }
 
 func (h *Trails) Mine(c *gin.Context) {
-	trails, err := h.Store.TrailsByUser(c.Request.Context(), currentUserID(c))
+	trails, err := h.Store.TrailsByUser(c.Request.Context(), currentUserID(c), h.now())
 	if err != nil {
 		h.internalError(c, err)
 		return
@@ -185,7 +185,7 @@ func (h *Trails) Mine(c *gin.Context) {
 }
 
 func (h *Trails) AdminAll(c *gin.Context) {
-	trails, err := h.Store.AllTrails(c.Request.Context())
+	trails, err := h.Store.AllTrails(c.Request.Context(), h.now())
 	if err != nil {
 		h.internalError(c, err)
 		return
@@ -210,7 +210,7 @@ func (h *Trails) Create(c *gin.Context) {
 		trail.UserID = &userID
 	}
 	req.apply(&trail)
-	saved, err := h.Store.InsertTrail(ctx, trail)
+	saved, err := h.Store.InsertTrail(ctx, trail, h.now())
 	if err != nil {
 		h.slugConflict(c, err)
 		return
@@ -235,7 +235,7 @@ func (h *Trails) Update(c *gin.Context) {
 		}
 	}
 	req.apply(&trail)
-	saved, err := h.Store.UpdateTrail(ctx, trail)
+	saved, err := h.Store.UpdateTrail(ctx, trail, h.now())
 	if err != nil {
 		h.slugConflict(c, err)
 		return
@@ -262,7 +262,7 @@ func (h *Trails) editable(c *gin.Context) (models.Trail, bool) {
 		h.fail(c, store.ErrNotFound, trailNotFound)
 		return models.Trail{}, false
 	}
-	trail, err := h.Store.Trail(c.Request.Context(), id)
+	trail, err := h.Store.Trail(c.Request.Context(), id, h.now())
 	if err != nil {
 		h.fail(c, err, trailNotFound)
 		return models.Trail{}, false
@@ -289,7 +289,7 @@ func (h *Trails) slugConflict(c *gin.Context, err error) {
 // trailByKey finds a route by id or slug.
 func (d Deps) trailByKey(c *gin.Context, key string) (models.Trail, error) {
 	if validID(key) {
-		return d.Store.Trail(c.Request.Context(), key)
+		return d.Store.Trail(c.Request.Context(), key, d.now())
 	}
-	return d.Store.TrailBySlug(c.Request.Context(), strings.ToLower(key))
+	return d.Store.TrailBySlug(c.Request.Context(), strings.ToLower(key), d.now())
 }

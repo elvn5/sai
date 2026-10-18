@@ -6,7 +6,12 @@ import { HttpTestingController } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-const tour = { price: 12000, userId: 'partner', startDate: '2999-01-01' } as Tour;
+const tour = {
+  price: 12000,
+  userId: 'partner',
+  startDate: '2999-01-01',
+  endDate: '2999-01-03',
+} as Tour;
 
 async function render(online: boolean): Promise<HTMLElement> {
   TestBed.configureTestingModule({

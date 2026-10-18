@@ -1,6 +1,7 @@
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { COMPANY } from '@/core/legal/company';
+import { ColorThemeToggle } from '@/layout/color-theme-toggle';
 import { AppLogo } from '@/ui/app-logo';
 import { LegalLinks } from '@/ui/legal-links';
 import { SiteLink } from '@/ui/site-link';
@@ -9,24 +10,28 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-footer',
-  imports: [AppLogo, LegalLinks, SiteLink, TranslocoPipe],
+  host: { class: 'block' },
+  imports: [AppLogo, ColorThemeToggle, LegalLinks, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <footer class="animated-gradient-border-top bg-linear-to-br from-brand-900 via-brand-700 to-brand-600 text-white">
-      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
+    <footer class="border-t border-border bg-surface text-text">
+      <div class="ui-brandline"></div>
+      <div class="ui-container grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <a appSiteLink="/" class="flex items-center gap-2 text-lg font-bold">
-            <app-logo class="size-7" />
+          <a appSiteLink="/" class="flex items-center gap-2 text-[1.06rem] font-extrabold tracking-tight">
+            <span class="flex size-[1.875rem] items-center justify-center rounded-[0.5625rem] bg-brand-600 text-white">
+              <app-logo class="size-[1.15rem]" />
+            </span>
             {{ 'brand.name' | transloco }}
           </a>
-          <p class="mt-4 max-w-xs text-sm text-white/75">{{ 'home.tagline' | transloco }}</p>
+          <p class="mt-4 max-w-xs text-sm text-text-muted">{{ 'home.tagline' | transloco }}</p>
           <div class="mt-6 flex items-center gap-3">
             @if (telegramUrl) {
               <a
                 [href]="telegramUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex size-10 items-center justify-center rounded-full border border-white/25 transition-colors hover:border-white/60 hover:bg-white/10"
+                class="flex size-10 items-center justify-center rounded-full border border-border text-text-muted transition-colors hover:border-brand-500/50 hover:text-text"
                 [attr.aria-label]="'footer.telegram' | transloco"
               >
                 <span class="icon-[heroicons--paper-airplane] size-4" aria-hidden="true"></span>
@@ -34,49 +39,50 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
             }
             <a
               [appSiteLink]="auth.user() ? '/profile' : '/login'"
-              class="flex size-10 items-center justify-center rounded-full border border-white/25 transition-colors hover:border-white/60 hover:bg-white/10"
+              class="flex size-10 items-center justify-center rounded-full border border-border text-text-muted transition-colors hover:border-brand-500/50 hover:text-text"
               [attr.aria-label]="'footer.account' | transloco"
             >
               <span class="icon-[heroicons--user] size-4" aria-hidden="true"></span>
             </a>
+            <app-color-theme-toggle />
           </div>
         </div>
 
         <nav [attr.aria-label]="'footer.sections.nav' | transloco">
-          <h2 class="text-xs font-semibold tracking-wider text-white/70 uppercase">{{ 'footer.sections.nav' | transloco }}</h2>
-          <ul class="mt-4 space-y-3 text-sm text-white/85">
-            <li><a appSiteLink="/" class="hover:text-white">{{ 'nav.feed' | transloco }}</a></li>
-            <li><a appSiteLink="/hikes" class="hover:text-white">{{ 'nav.hikes' | transloco }}</a></li>
-            <li><a appSiteLink="/gallery" class="hover:text-white">{{ 'nav.gallery' | transloco }}</a></li>
-            <li><a appSiteLink="/blog" class="hover:text-white">{{ 'nav.blog' | transloco }}</a></li>
+          <h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">{{ 'footer.sections.nav' | transloco }}</h2>
+          <ul class="mt-4 space-y-3 text-sm text-text-muted">
+            <li><a appSiteLink="/" class="hover:text-text">{{ 'nav.feed' | transloco }}</a></li>
+            <li><a appSiteLink="/hikes" class="hover:text-text">{{ 'nav.hikes' | transloco }}</a></li>
+            <li><a appSiteLink="/gallery" class="hover:text-text">{{ 'nav.gallery' | transloco }}</a></li>
+            <li><a appSiteLink="/blog" class="hover:text-text">{{ 'nav.blog' | transloco }}</a></li>
           </ul>
         </nav>
 
         <div>
-          <h2 class="text-xs font-semibold tracking-wider text-white/70 uppercase">{{ 'footer.sections.account' | transloco }}</h2>
-          <ul class="mt-4 space-y-3 text-sm text-white/85">
+          <h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">{{ 'footer.sections.account' | transloco }}</h2>
+          <ul class="mt-4 space-y-3 text-sm text-text-muted">
             <li>
               @if (auth.user()) {
-                <a appSiteLink="/profile" class="hover:text-white">{{ 'footer.profile' | transloco }}</a>
+                <a appSiteLink="/profile" class="hover:text-text">{{ 'footer.profile' | transloco }}</a>
               } @else {
-                <a appSiteLink="/login" class="hover:text-white">{{ 'login.cta' | transloco }}</a>
+                <a appSiteLink="/login" class="hover:text-text">{{ 'login.cta' | transloco }}</a>
               }
             </li>
-            <li><a appSiteLink="/guides" class="hover:text-white">{{ 'footer.startTrip' | transloco }}</a></li>
+            <li><a appSiteLink="/guides" class="hover:text-text">{{ 'footer.startTrip' | transloco }}</a></li>
           </ul>
         </div>
 
         <div>
-          <h2 class="text-xs font-semibold tracking-wider text-white/70 uppercase">{{ 'footer.sections.contacts' | transloco }}</h2>
-          <ul class="mt-4 space-y-3 text-sm text-white/85">
+          <h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">{{ 'footer.sections.contacts' | transloco }}</h2>
+          <ul class="mt-4 space-y-3 text-sm text-text-muted">
             <li class="flex items-center gap-2">
-              <span class="icon-[heroicons--map-pin] size-4 shrink-0 text-white/60" aria-hidden="true"></span>
+              <span class="icon-[heroicons--map-pin] size-4 shrink-0 text-text-muted" aria-hidden="true"></span>
               {{ 'footer.location' | transloco }}
             </li>
             @if (telegramUrl) {
               <li class="flex items-center gap-2">
-                <span class="icon-[heroicons--paper-airplane] size-4 shrink-0 text-white/60" aria-hidden="true"></span>
-                <a [href]="telegramUrl" target="_blank" rel="noopener noreferrer" class="hover:text-white">
+                <span class="icon-[heroicons--paper-airplane] size-4 shrink-0 text-text-muted" aria-hidden="true"></span>
+                <a [href]="telegramUrl" target="_blank" rel="noopener noreferrer" class="hover:text-text">
                   &#64;{{ botUsername }}
                 </a>
               </li>
@@ -85,8 +91,8 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         </div>
       </div>
 
-      <div class="border-t border-white/15">
-        <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-5 text-center text-xs text-white/75 sm:flex-row sm:items-start sm:justify-between sm:text-left">
+      <div class="border-t border-border">
+        <div class="ui-container flex flex-col gap-3 py-5 text-center text-xs text-text-muted sm:flex-row sm:items-start sm:justify-between sm:text-left">
           <div>
             <p>
               {{ 'brand.name' | transloco }} — {{ 'footer.bottomTagline' | transloco }} © {{ year }}.
@@ -97,7 +103,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
             }
           </div>
           <nav [attr.aria-label]="'footer.sections.legal' | transloco">
-            <app-legal-links class="[&_ul]:justify-center sm:[&_ul]:justify-end" linkClass="text-white/85 hover:text-white hover:underline" />
+            <app-legal-links class="[&_ul]:justify-center sm:[&_ul]:justify-end" linkClass="text-text-muted hover:text-text hover:underline" />
           </nav>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import type { Review, ReviewTargetType, ReviewsPage } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { FieldErrors } from '@/ui/field-errors';
 import { REVIEWS_PAGE_SIZE } from '@/ui/listing/reviews';
 import { PersonAvatar } from '@/ui/person-avatar';
@@ -172,6 +173,7 @@ export class ReviewsSection {
   protected readonly auth = inject(AuthStore);
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   private readonly lang = injectLang();
   protected readonly maxPhotos = MAX_PHOTOS;
 
@@ -273,7 +275,7 @@ export class ReviewsSection {
   }
 
   protected async remove(review: Review): Promise<void> {
-    if (!window.confirm(this.transloco.translate('reviews.deleteConfirm'))) return;
+    if (!(await this.confirm({ title: 'reviews.deleteConfirm', danger: true }))) return;
     this.deleting.set(true);
     try {
       await firstValueFrom(this.http.delete(`/reviews/${review.id}`));

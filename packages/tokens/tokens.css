@@ -41,6 +41,12 @@
   --color-secondary-800: var(--secondary-800);
   --color-secondary-900: var(--secondary-900);
   --color-secondary-950: var(--secondary-950);
+  /* Status colors: badges, toasts, banners. Independent of the brand
+     palette, so the azure scheme doesn't touch them. */
+  --color-success: var(--status-success);
+  --color-warning: var(--status-warning);
+  --color-danger: var(--status-danger);
+  --color-info: var(--status-info);
   --radius-card: 1rem;
 }
 
@@ -88,6 +94,11 @@
   --dur-base: 300ms;
   --dur-slow: 450ms;
   --dur-story: 1200ms;
+
+  --status-success: #15803d;
+  --status-warning: #b45309;
+  --status-danger: #dc2626;
+  --status-info: #0369a1;
 }
 
 .dark {
@@ -96,6 +107,11 @@
   --app-border: #334155;
   --app-text: #f8fafc;
   --app-text-muted: #94a3b8;
+
+  --status-success: #4ade80;
+  --status-warning: #fbbf24;
+  --status-danger: #f87171;
+  --status-info: #7dd3fc;
 }
 
 /* "azure" color theme: swaps the brand/secondary scales only, independent

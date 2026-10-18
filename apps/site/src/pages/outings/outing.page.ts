@@ -8,6 +8,7 @@ import { LEVELS, TRANSPORTS, optionIcon } from '@/core/lib/trail-options';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
 import { TelegramNotice } from '@/pages/outings/telegram-notice';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { LoadError } from '@/ui/load-error';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
@@ -180,6 +181,7 @@ export class OutingPage {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   private readonly navigate = injectSiteNavigate();
   private readonly lang = injectLang();
 
@@ -272,7 +274,7 @@ export class OutingPage {
   }
 
   protected async cancel(): Promise<void> {
-    if (!window.confirm(this.transloco.translate('outings.cancelConfirm'))) return;
+    if (!(await this.confirm({ title: 'outings.cancelConfirm', danger: true }))) return;
     await this.act(this.http.post<Outing>(`/outings/${this.id()}/cancel`, {}));
   }
 

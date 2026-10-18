@@ -1,25 +1,17 @@
-import type { ConditionReport, Trail } from '@/core/api/types';
+import type { Trail } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
-import { injectLang } from '@/core/i18n/current-lang';
-import { formatDate } from '@/core/lib/format';
 import { injectQueryFilters } from '@/core/lib/query-filters';
-import { withQuery } from '@/core/lib/query-link';
 import { loaded } from '@/core/lib/resource';
-import {
-  AREAS,
-  GRADES,
-  KINDS,
-  SEASONS,
-  TRAIL_STATES,
-  formatGrade,
-  optionIcon,
-} from '@/core/lib/trail-options';
+import { AREAS, GRADES, SEASONS, formatGrade } from '@/core/lib/trail-options';
 import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { TrailCard } from '@/pages/trails/trail-card';
+import { BottomSheet } from '@/ui/bottom-sheet';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
 import { SiteLink } from '@/ui/site-link';
+import { StateBlock } from '@/ui/state-block';
+import { CdkMenu, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
 import { httpResource } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -28,11 +20,11 @@ import {
   computed,
   inject,
   input,
+  signal,
 } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const SEARCH_DEBOUNCE_MS = 300;
-const RECENT_REPORTS = 8;
 
 // Grade filter groups: the API takes a comma-separated list of grades.
 const GRADE_GROUPS = [
@@ -47,116 +39,202 @@ const GRADE_GROUPS = [
 // list is crawlable, but filtered views aren't indexed.
 @Component({
   selector: 'app-trails-list-page',
-  imports: [ListSkeleton, LoadError, SiteLink, TrailCard, TranslocoPipe],
+  imports: [
+    BottomSheet,
+    CdkMenu,
+    CdkMenuItemRadio,
+    CdkMenuTrigger,
+    ListSkeleton,
+    LoadError,
+    SiteLink,
+    StateBlock,
+    TrailCard,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    .menu-item {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      border-radius: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    .menu-item:hover,
+    .menu-item:focus {
+      background: color-mix(in oklab, var(--app-text) 5%, transparent);
+      outline: none;
+    }
+  `,
   template: `
-    <section class="mx-auto max-w-6xl px-4 py-12">
-      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <section class="ui-container pt-6 pb-14">
+      <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-extrabold text-text">{{ heading() }}</h1>
-          <p class="mt-1 max-w-2xl text-text-muted">{{ 'trails.subtitle' | transloco }}</p>
+          <h1 class="text-2xl leading-tight font-extrabold tracking-tight text-text sm:text-[1.875rem]">{{ heading() }}</h1>
+          <p class="mt-1 max-w-[38.75rem] text-text-muted max-sm:hidden">{{ 'trails.subtitle' | transloco }}</p>
         </div>
-        <div class="flex gap-2">
-          <a appSiteLink="/outings" class="ui-btn-soft">
-            <span class="icon-[mdi--account-group] size-4" aria-hidden="true"></span>{{ 'nav.outings' | transloco }}
-          </a>
-          @if (auth.isPartner()) {
-            <a appSiteLink="/trails/new" class="ui-btn-primary">
-              <span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'trails.add' | transloco }}
-            </a>
-          }
-        </div>
-      </div>
-
-      @if (recentReports().length > 0) {
-        <section class="mb-8" aria-labelledby="recent-reports">
-          <h2 id="recent-reports" class="mb-3 flex items-center gap-2 text-sm font-semibold tracking-wide text-text-muted uppercase">
-            <span class="relative flex size-2" aria-hidden="true">
-              <span class="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60 motion-reduce:hidden"></span>
-              <span class="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
-            </span>
-            {{ 'trails.conditions.recent' | transloco }}
-          </h2>
-          <ul class="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-            @for (report of recentReports(); track report.id) {
-              <li class="w-64 shrink-0 snap-start">
-                <a [appSiteLink]="'/trails/' + report.trail.slug" class="ui-card block h-full p-3 transition hover:border-brand-400">
-                  <span class="block truncate text-sm font-semibold text-text">{{ report.trail.name }}</span>
-                  <span class="mt-1 flex items-center gap-1 text-xs text-text-muted">
-                    <span [class]="stateIcon(report.trailState) + ' size-4'" aria-hidden="true"></span>
-                    {{ 'trails.state.' + report.trailState | transloco }} · {{ 'trails.traction.' + report.traction | transloco }}
-                  </span>
-                  @if (report.text) {
-                    <span class="mt-1 line-clamp-2 block text-xs text-text">{{ report.text }}</span>
-                  }
-                  <span class="mt-1 block text-xs text-text-muted">{{ observed(report.observedOn) }}</span>
-                </a>
-              </li>
-            }
-          </ul>
-        </section>
-      }
-
-      <nav class="mb-4 flex flex-wrap gap-2" [attr.aria-label]="'trails.form.area' | transloco">
-        <a class="ui-pill px-3 py-1 text-xs" [appSiteLink]="areaLink(null)" [attr.aria-current]="area() ? null : 'page'">{{ 'trails.filters.allAreas' | transloco }}</a>
-        @for (chip of areaChips(); track chip.value) {
-          <a class="ui-pill px-3 py-1 text-xs" [appSiteLink]="areaLink(chip.value)" [attr.aria-current]="area() === chip.value ? 'page' : null">
-            {{ 'trails.area.' + chip.value | transloco }} · {{ chip.count }}
+        @if (auth.isPartner()) {
+          <a appSiteLink="/trails/new" class="ui-btn-soft">
+            <span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'trails.add' | transloco }}
           </a>
         }
-      </nav>
+      </div>
 
-      <div class="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="relative">
-          <span class="icon-[heroicons--magnifying-glass] pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-text-muted" aria-hidden="true"></span>
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <label class="ui-input-icon min-w-0 flex-1 sm:w-72 sm:flex-none">
+          <span class="icon-[heroicons--magnifying-glass]" aria-hidden="true"></span>
           <input
             type="search"
-            class="ui-input pl-10"
+            class="ui-input"
             [value]="search() ?? ''"
             [placeholder]="'trails.filters.search' | transloco"
             [attr.aria-label]="'trails.filters.search' | transloco"
             (input)="onSearch($any($event.target).value)"
           />
+        </label>
+        <!-- Phones: one button, the filters in a bottom sheet. -->
+        <button type="button" class="ui-btn-soft h-[2.4rem] sm:hidden" [attr.aria-label]="'listing.filters.title' | transloco" (click)="openSheet()">
+          <span class="icon-[heroicons--adjustments-horizontal] size-[1.1rem]" aria-hidden="true"></span>
+          @if (activeFilters() > 0) {
+            <span class="ui-count">{{ activeFilters() }}</span>
+          }
+        </button>
+        <div class="hidden flex-wrap items-center gap-2 sm:flex">
+          <button type="button" class="ui-btn-soft" [cdkMenuTriggerFor]="areaMenu">
+            {{ area() ? ('trails.area.' + area() | transloco) : ('trails.filters.allAreas' | transloco) }}
+            <span class="icon-[heroicons--chevron-down] size-4" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="ui-btn-soft" [cdkMenuTriggerFor]="gradeMenu">
+            {{ gradeLabel(grade()) }}
+            <span class="icon-[heroicons--chevron-down] size-4" aria-hidden="true"></span>
+          </button>
+          <button type="button" class="ui-btn-soft" [cdkMenuTriggerFor]="seasonMenu">
+            {{ season() ? ('trails.season.' + season() | transloco) : ('trails.filters.anySeason' | transloco) }}
+            <span class="icon-[heroicons--chevron-down] size-4" aria-hidden="true"></span>
+          </button>
         </div>
-        <select class="ui-input" [attr.aria-label]="'trails.form.kind' | transloco" (change)="set({ kind: $any($event.target).value })">
-          <option value="" [selected]="!kind()">{{ 'trails.filters.anyKind' | transloco }}</option>
-          @for (option of kinds; track option.value) {
-            <option [value]="option.value" [selected]="kind() === option.value">{{ 'trails.kind.' + option.value | transloco }}</option>
+        <button type="button" class="ui-pill hidden sm:ml-auto sm:inline-flex" [attr.aria-pressed]="grade() === hardest" (click)="set({ grade: grade() === hardest ? null : hardest })">
+          @if (grade() === hardest) {
+            <span class="icon-[heroicons--check] size-4" aria-hidden="true"></span>
           }
-        </select>
-        <select class="ui-input" [attr.aria-label]="'trails.form.grade' | transloco" (change)="set({ grade: $any($event.target).value })">
-          <option value="" [selected]="!grade()">{{ 'trails.filters.anyGrade' | transloco }}</option>
-          @for (group of gradeGroups; track group.value; let i = $index) {
-            <option [value]="group.value" [selected]="grade() === group.value">
-              @if (group.label) { {{ group.label }} } @else if (i === 0) { {{ 'trails.grade.trail' | transloco }} } @else { {{ 'trails.filters.harder' | transloco }} }
-            </option>
-          }
-        </select>
-        <select class="ui-input" [attr.aria-label]="'trails.form.seasons' | transloco" (change)="set({ season: $any($event.target).value })">
-          <option value="" [selected]="!season()">{{ 'trails.filters.anySeason' | transloco }}</option>
-          @for (option of seasons; track option.value) {
-            <option [value]="option.value" [selected]="season() === option.value">{{ 'trails.season.' + option.value | transloco }}</option>
-          }
-        </select>
+          {{ 'trails.filters.harder' | transloco }}
+        </button>
       </div>
 
-      @if (trails.error()) {
-        <app-load-error (retry)="trails.reload()" />
-      } @else if (list().length > 0) {
-        <ul class="motion-reveal grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          @for (trail of list(); track trail.id; let index = $index) {
-            <li><app-trail-card [trail]="trail" [priority]="index === 0" /></li>
+      @if (activeFilters() > 0) {
+        <div class="mt-2.5 flex gap-1.5 overflow-x-auto sm:hidden">
+          @if (area(); as value) {
+            <button type="button" class="ui-pill shrink-0 px-2.5 py-1 text-xs" aria-pressed="true" (click)="set({ area: null })">{{ 'trails.area.' + value | transloco }}<span class="icon-[heroicons--x-mark] size-3.5" aria-hidden="true"></span></button>
           }
-        </ul>
-      } @else if (trails.hasValue()) {
-        <div class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border px-6 py-14 text-center">
-          <span class="icon-[mdi--map-search-outline] size-10 text-text-muted" aria-hidden="true"></span>
-          <p class="text-text-muted">{{ 'trails.empty' | transloco }}</p>
+          @if (grade(); as value) {
+            <button type="button" class="ui-pill shrink-0 px-2.5 py-1 text-xs" aria-pressed="true" (click)="set({ grade: null })">{{ gradeLabel(value) }}<span class="icon-[heroicons--x-mark] size-3.5" aria-hidden="true"></span></button>
+          }
+          @if (season(); as value) {
+            <button type="button" class="ui-pill shrink-0 px-2.5 py-1 text-xs" aria-pressed="true" (click)="set({ season: null })">{{ 'trails.season.' + value | transloco }}<span class="icon-[heroicons--x-mark] size-3.5" aria-hidden="true"></span></button>
+          }
         </div>
-      } @else {
-        <app-list-skeleton />
       }
+
+      <div class="mt-5">
+        @if (trails.error()) {
+          <app-load-error (retry)="trails.reload()" />
+        } @else if (list().length > 0) {
+          <ul class="motion-reveal grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @for (trail of list(); track trail.id; let index = $index) {
+              <li><app-trail-card [trail]="trail" [priority]="index === 0" /></li>
+            }
+          </ul>
+        } @else if (trails.hasValue()) {
+          @if (activeFilters() > 0 || search()) {
+            <app-state-block icon="icon-[heroicons--magnifying-glass]" title="trails.empty" text="trails.emptyHint">
+              <button type="button" class="ui-btn-primary" (click)="resetAll()">
+                <span class="icon-[heroicons--x-mark] size-4" aria-hidden="true"></span>{{ 'listing.filters.reset' | transloco }}
+              </button>
+            </app-state-block>
+          } @else {
+            <app-state-block icon="icon-[heroicons--flag]" title="trails.emptyAll" />
+          }
+        } @else {
+          <app-list-skeleton class="motion-delayed" />
+        }
+      </div>
     </section>
+
+    <app-bottom-sheet [(open)]="sheetOpen" title="listing.filters.title">
+      <button action type="button" class="ui-btn-ghost ml-auto px-2 text-[0.8rem]" (click)="draft.set({})">{{ 'listing.filters.resetShort' | transloco }}</button>
+      <p class="ui-label">{{ 'trails.form.area' | transloco }}</p>
+      <div class="flex flex-wrap gap-1.5">
+        @for (chip of areaChips(); track chip.value) {
+          <button type="button" class="ui-pill px-2.5 py-1 text-xs" [attr.aria-pressed]="draft().area === chip.value" (click)="toggleDraft('area', chip.value)">{{ 'trails.area.' + chip.value | transloco }}</button>
+        }
+      </div>
+      <p class="ui-label mt-4">{{ 'trails.form.grade' | transloco }}</p>
+      <div class="ui-segment text-xs" role="radiogroup" [attr.aria-label]="'trails.form.grade' | transloco">
+        @for (group of gradeGroups; track group.value) {
+          <button type="button" role="radio" [attr.aria-checked]="draft().grade === group.value" (click)="toggleDraft('grade', group.value)">{{ gradeLabel(group.value) }}</button>
+        }
+      </div>
+      <p class="ui-label mt-4">{{ 'trails.form.seasons' | transloco }}</p>
+      <div class="flex flex-wrap gap-1.5">
+        @for (option of seasons; track option.value) {
+          <button type="button" class="ui-pill px-2.5 py-1 text-xs" [attr.aria-pressed]="draft().season === option.value" (click)="toggleDraft('season', option.value)">{{ 'trails.season.' + option.value | transloco }}</button>
+        }
+      </div>
+      <button footer type="button" class="ui-btn-primary ui-btn-lg w-full" (click)="applyDraft()">
+        {{ 'trails.filters.show' | transloco }}
+        <span class="inline-block overflow-hidden tabular-nums opacity-85">
+          @for (count of [draftCount()]; track count) {
+            <span class="motion-roll-in">({{ count ?? '…' }})</span>
+          }
+        </span>
+      </button>
+    </app-bottom-sheet>
+
+    <ng-template #areaMenu>
+      <div cdkMenu class="motion-drop-in max-h-80 min-w-52 overflow-y-auto rounded-xl border border-border bg-surface p-1 text-sm text-text shadow-lg">
+        <button cdkMenuItemRadio type="button" class="menu-item" [cdkMenuItemChecked]="!area()" (cdkMenuItemTriggered)="set({ area: null })">
+          {{ 'trails.filters.allAreas' | transloco }}
+          @if (!area()) { <span class="icon-[heroicons--check] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span> }
+        </button>
+        @for (chip of areaChips(); track chip.value) {
+          <button cdkMenuItemRadio type="button" class="menu-item" [cdkMenuItemChecked]="area() === chip.value" (cdkMenuItemTriggered)="set({ area: chip.value })">
+            <span>{{ 'trails.area.' + chip.value | transloco }} <span class="text-text-muted">· {{ chip.count }}</span></span>
+            @if (area() === chip.value) { <span class="icon-[heroicons--check] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span> }
+          </button>
+        }
+      </div>
+    </ng-template>
+    <ng-template #gradeMenu>
+      <div cdkMenu class="motion-drop-in min-w-52 rounded-xl border border-border bg-surface p-1 text-sm text-text shadow-lg">
+        <button cdkMenuItemRadio type="button" class="menu-item" [cdkMenuItemChecked]="!grade()" (cdkMenuItemTriggered)="set({ grade: null })">
+          {{ 'trails.filters.anyGrade' | transloco }}
+          @if (!grade()) { <span class="icon-[heroicons--check] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span> }
+        </button>
+        @for (group of gradeGroups; track group.value) {
+          <button cdkMenuItemRadio type="button" class="menu-item" [cdkMenuItemChecked]="grade() === group.value" (cdkMenuItemTriggered)="set({ grade: group.value })">
+            {{ gradeLabel(group.value) }}
+            @if (grade() === group.value) { <span class="icon-[heroicons--check] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span> }
+          </button>
+        }
+      </div>
+    </ng-template>
+    <ng-template #seasonMenu>
+      <div cdkMenu class="motion-drop-in min-w-44 rounded-xl border border-border bg-surface p-1 text-sm text-text shadow-lg">
+        <button cdkMenuItemRadio type="button" class="menu-item" [cdkMenuItemChecked]="!season()" (cdkMenuItemTriggered)="set({ season: null })">
+          {{ 'trails.filters.anySeason' | transloco }}
+          @if (!season()) { <span class="icon-[heroicons--check] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span> }
+        </button>
+        @for (option of seasons; track option.value) {
+          <button cdkMenuItemRadio type="button" class="menu-item" [cdkMenuItemChecked]="season() === option.value" (cdkMenuItemTriggered)="set({ season: option.value })">
+            {{ 'trails.season.' + option.value | transloco }}
+            @if (season() === option.value) { <span class="icon-[heroicons--check] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span> }
+          </button>
+        }
+      </div>
+    </ng-template>
   `,
 })
 export class TrailsListPage {
@@ -168,11 +246,14 @@ export class TrailsListPage {
 
   protected readonly auth = inject(AuthStore);
   private readonly transloco = inject(TranslocoService);
-  private readonly lang = injectLang();
   protected readonly set = injectQueryFilters();
-  protected readonly kinds = KINDS;
   protected readonly seasons = SEASONS;
   protected readonly gradeGroups = GRADE_GROUPS;
+  // "3A and harder": the last grade group, also a pill of its own.
+  protected readonly hardest = GRADE_GROUPS[3].value;
+  protected readonly sheetOpen = signal(false);
+  // The bottom sheet's choices, applied with its button.
+  protected readonly draft = signal<Partial<Record<'area' | 'grade' | 'season', string>>>({});
 
   // The URL's filters, as the API takes them.
   private readonly filters = computed(() => {
@@ -192,13 +273,8 @@ export class TrailsListPage {
     params: this.filters(),
   }));
   private readonly areas = httpResource<Record<string, number>>(() => '/trails/areas');
-  private readonly recent = httpResource<ConditionReport[]>(() => ({
-    url: '/conditions',
-    params: { limit: RECENT_REPORTS },
-  }));
 
   protected readonly list = computed(() => loaded(this.trails) ?? []);
-  protected readonly recentReports = computed(() => loaded(this.recent) ?? []);
   protected readonly areaChips = computed(() => {
     const counts = loaded(this.areas) ?? {};
     return AREAS.filter((area) => (counts[area] ?? 0) > 0).map((area) => ({
@@ -213,13 +289,28 @@ export class TrailsListPage {
       : this.transloco.translate('trails.title');
   });
 
+  protected readonly activeFilters = computed(
+    () => [this.area(), this.grade(), this.season()].filter(Boolean).length,
+  );
+  // How many routes the sheet's choices would show ("Show 8 routes").
+  private readonly draftResult = httpResource<Trail[]>(() => {
+    if (!this.sheetOpen()) return undefined;
+    const params: Record<string, string> = {};
+    const search = this.search()?.trim();
+    if (search) params['search'] = search;
+    const kind = this.kind();
+    if (kind) params['kind'] = kind;
+    for (const [key, value] of Object.entries(this.draft())) if (value) params[key] = value;
+    return { url: '/trails', params };
+  });
+  protected readonly draftCount = computed(() => loaded(this.draftResult)?.length ?? null);
+
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
     const seo = inject(SeoService);
     bindPageMeta(() => {
-      if (this.trails.isLoading() || this.areas.isLoading() || this.recent.isLoading())
-        return undefined;
+      if (this.trails.isLoading() || this.areas.isLoading()) return undefined;
       const heading = this.transloco.translate('trails.title');
       return {
         title: this.heading(),
@@ -240,23 +331,32 @@ export class TrailsListPage {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.searchTimer));
   }
 
-  // The other filters stay: an area link narrows what's already chosen.
-  protected areaLink(area: string | null): string {
-    return withQuery('/trails', {
-      area,
-      kind: this.kind(),
-      season: this.season(),
-      grade: this.grade(),
-      search: this.search(),
-    });
+  protected gradeLabel(value: string | undefined): string {
+    const group = GRADE_GROUPS.find((item) => item.value === value);
+    if (!group) return this.transloco.translate('trails.filters.anyGrade');
+    if (group.label) return group.label;
+    return this.transloco.translate(
+      group.value === 'trail' ? 'trails.grade.trail' : 'trails.filters.harder',
+    );
   }
 
-  protected stateIcon(state: string): string {
-    return optionIcon(TRAIL_STATES, state);
+  protected openSheet(): void {
+    this.draft.set({ area: this.area(), grade: this.grade(), season: this.season() });
+    this.sheetOpen.set(true);
   }
 
-  protected observed(date: string): string {
-    return formatDate(this.lang(), date, { day: 'numeric', month: 'long' });
+  protected toggleDraft(key: 'area' | 'grade' | 'season', value: string): void {
+    this.draft.update((draft) => ({ ...draft, [key]: draft[key] === value ? undefined : value }));
+  }
+
+  protected applyDraft(): void {
+    const { area, grade, season } = this.draft();
+    this.set({ area: area ?? null, grade: grade ?? null, season: season ?? null });
+    this.sheetOpen.set(false);
+  }
+
+  protected resetAll(): void {
+    this.set({ area: null, grade: null, season: null, kind: null, search: null });
   }
 
   protected onSearch(value: string): void {

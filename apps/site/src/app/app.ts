@@ -2,13 +2,17 @@ import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
 import { splitLang } from '@/core/i18n/langs';
 import { injectCurrentUrl } from '@/core/lib/current-url';
+import { PageChrome } from '@/core/lib/page-chrome';
 import { SeoService } from '@/core/seo/seo.service';
 import { TelegramWebAppStore } from '@/core/telegram/telegram-web-app';
 import { ColorModeStore } from '@/core/theme/color-mode';
 import { ColorThemeStore } from '@/core/theme/color-theme';
+import { BottomNav } from '@/layout/bottom-nav';
 import { CookieConsent } from '@/layout/cookie-consent';
 import { Footer } from '@/layout/footer';
 import { Header } from '@/layout/header';
+import { NetworkBanner } from '@/layout/network-banner';
+import { ToastOutlet } from '@/layout/toast-outlet';
 import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, afterNextRender, effect, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
@@ -19,7 +23,16 @@ import { TranslocoPipe } from '@jsverse/transloco';
 // button on inner pages.
 @Component({
   selector: 'app-root',
-  imports: [CookieConsent, Footer, Header, RouterOutlet, TranslocoPipe],
+  imports: [
+    BottomNav,
+    CookieConsent,
+    Footer,
+    Header,
+    NetworkBanner,
+    RouterOutlet,
+    ToastOutlet,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a
@@ -30,20 +43,33 @@ import { TranslocoPipe } from '@jsverse/transloco';
     </a>
     <div class="flex min-h-screen flex-col bg-bg text-text">
       @if (!telegram.isTma()) {
-        <app-header />
+        <app-header [class.max-lg:hidden]="chrome.immersive()" />
+        @defer (on idle) {
+          <app-network-banner />
+        }
       }
       <main id="main" class="min-h-[70vh] flex-1">
         <router-outlet />
       </main>
       @if (!telegram.isTma()) {
-        <app-footer />
+        <app-footer [class.max-lg:pb-16]="!chrome.ownBottomBar()" />
+        <!-- Fixed overlays: nothing to lay out, so they load once the page is idle. -->
+        @if (!chrome.ownBottomBar()) {
+          @defer (on idle) {
+            <app-bottom-nav />
+          }
+        }
       }
     </div>
     <app-cookie-consent />
+    @defer (on idle) {
+      <app-toast-outlet />
+    }
   `,
 })
 export class App {
   protected readonly telegram = inject(TelegramWebAppStore);
+  protected readonly chrome = inject(PageChrome);
 
   constructor() {
     const seo = inject(SeoService);

@@ -3,7 +3,7 @@ import { apiInterceptor } from '@/core/api/api.interceptor';
 import { loadClientConfig } from '@/core/config/app-config';
 import { provideI18n } from '@/core/i18n/i18n';
 import { provideImageThumbnails } from '@/core/lib/image-loader';
-import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import {
   type ApplicationConfig,
@@ -50,6 +50,14 @@ export const appConfig: ApplicationConfig = {
           const from = navigation?.previousNavigation?.finalUrl;
           if (from && samePath(from, navigation?.finalUrl)) {
             transition.skipTransition();
+            return;
+          }
+          // Back (and forward) through history: the page comes in from the
+          // side instead of rising (motion.css, html.vt-back).
+          if (navigation?.trigger === 'popstate') {
+            const root = inject(DOCUMENT).documentElement;
+            root.classList.add('vt-back');
+            void transition.finished.finally(() => root.classList.remove('vt-back'));
           }
         },
       }),

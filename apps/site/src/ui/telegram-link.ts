@@ -1,5 +1,6 @@
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -70,6 +71,7 @@ export class TelegramLink {
 
   protected readonly auth = inject(AuthStore);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   protected readonly bot = inject(APP_CONFIG).telegramBotUsername;
 
   protected readonly linked = computed(() => Boolean(this.auth.user()?.telegramId));
@@ -106,7 +108,7 @@ export class TelegramLink {
   }
 
   protected async unlink(): Promise<void> {
-    if (!window.confirm(this.transloco.translate('telegramLink.unlinkConfirm'))) return;
+    if (!(await this.confirm({ title: 'telegramLink.unlinkConfirm', danger: true }))) return;
     this.busy.set(true);
     this.error.set(null);
     try {

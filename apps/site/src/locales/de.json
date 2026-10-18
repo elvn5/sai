@@ -14,7 +14,7 @@
     "trails": "Routen",
     "outings": "Touren"
   },
-  "theme": { "toggle": "Design" },
+  "theme": { "toggle": "Design", "light": "Hell", "dark": "Dunkel" },
   "colorTheme": { "toggle": "Farbthema" },
   "language": { "switch": "Sprache" },
   "home": {
@@ -160,7 +160,26 @@
     "submit": "Veröffentlichen",
     "createError": "Tour konnte nicht veröffentlicht werden. Bitte erneut versuchen",
     "deleteButton": "Löschen",
-    "deleteConfirm": "Diese Tour löschen?"
+    "deleteConfirm": "Diese Tour löschen?",
+    "perPerson": "pro Person",
+    "emptyHint": "Partner fügen jede Woche neue Termine hinzu. Schauen Sie sich inzwischen die Gruppentouren an.",
+    "emptyCta": "Gruppentouren ansehen",
+    "emptyFiltered": "Keine Touren zu diesen Filtern",
+    "emptyFilteredHint": "Wählen Sie eine andere Dauer oder entfernen Sie einen Filter.",
+    "filters": {
+      "duration": "Dauer",
+      "durations": {
+        "1": "1 Tag",
+        "2-3": "2–3 Tage",
+        "4+": "4+ Tage"
+      }
+    },
+    "sections": "Abschnitte der Tour",
+    "tabs": {
+      "about": "Beschreibung",
+      "reviews": "Bewertungen"
+    },
+    "perPersonShort": "p. P."
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -199,14 +218,17 @@
       "maxPricePerDay": "Max. Preis pro Tag",
       "minRating": "Bewertung",
       "anyRating": "Alle",
-      "freeCancellation": "Kostenlose Stornierung"
+      "freeCancellation": "Kostenlose Stornierung",
+      "more": "{count} weitere",
+      "resetShort": "Zurücksetzen"
     },
     "sort": {
       "rating": "Beste Bewertung",
       "price_asc": "Preis aufsteigend",
       "price_desc": "Preis absteigend",
       "newest": "Neueste",
-      "experience": "Meiste Erfahrung"
+      "experience": "Meiste Erfahrung",
+      "soonest": "Nächste zuerst"
     },
     "amenities": {
       "wifi": "WLAN",
@@ -283,7 +305,9 @@
       "publish": "Veröffentlichen",
       "save": "Speichern",
       "saveError": "Speichern fehlgeschlagen. Bitte Felder prüfen und erneut versuchen"
-    }
+    },
+    "foundLabel": "Gefunden:",
+    "share": "Teilen"
   },
   "hotels": {
     "heading": "Hotels & Gästehäuser",
@@ -454,8 +478,23 @@
       "invalidCode": "Ungültiger oder abgelaufener Code",
       "resendError": "Code konnte nicht gesendet werden. Bitte später erneut versuchen",
       "sendError": "Bestätigungscode konnte nicht gesendet werden. Bitte später erneut versuchen",
-      "back": "Zurück zur Anmeldung"
-    }
+      "back": "Zurück zur Anmeldung",
+      "subtitleEmailLead": "Wir haben einen Bestätigungscode gesendet an",
+      "pasteHint": "Fügen Sie den ganzen Code ein — die Felder füllen sich selbst.",
+      "resendIn": "Erneut senden in",
+      "resendLinkIn": "Neuer Link in",
+      "noEmail": "Keine E-Mail? Prüfen Sie den Spam-Ordner oder melden Sie sich mit Telegram an."
+    },
+    "pitch": "Speichern Sie Ihren Fortschritt, buchen Sie Touren und sammeln Sie Erfolge.",
+    "perks": {
+      "fame": "Ruhmeshalle",
+      "bookings": "Buchungen",
+      "telegram": "Telegram-Benachrichtigungen"
+    },
+    "signingIn": "Anmeldung…",
+    "withTelegram": "Mit Telegram anmelden",
+    "showPassword": "Passwort anzeigen",
+    "hidePassword": "Passwort verbergen"
   },
   "profile": {
     "logout": "Abmelden",
@@ -501,11 +540,19 @@
       "approved": "Sie sind Ermekten-Partner: Veröffentlichen Sie Unterkünfte, Touren, Guides, Fotos und Beiträge und verleihen Sie Reisenden Erfolge.",
       "addTourCta": "Tour hinzufügen",
       "awardCta": "Erfolg verleihen",
-      "publishOnly": "Nur Partner können Unterkünfte, Guides, Bergführer-Profile, Fotos und Blogbeiträge veröffentlichen."
+      "publishOnly": "Nur Partner können Unterkünfte, Guides, Bergführer-Profile, Fotos und Blogbeiträge veröffentlichen.",
+      "pitchTitle": "Partner werden",
+      "applied": "Antrag gesendet"
     },
     "achievements": {
       "summary": "Erhaltene Erfolge: {count}",
       "open": "Ruhmeshalle öffnen"
+    },
+    "stats": {
+      "outings": "Touren",
+      "bookings": "Bezahlte Buchungen",
+      "points": "Punkte",
+      "awards": "Erfolge"
     }
   },
   "footer": {
@@ -605,7 +652,8 @@
       "kmh": "km/h",
       "mm": "mm",
       "hours": "{count} Std.",
-      "days": "Tage: {count}"
+      "days": "Tage: {count}",
+      "daysShort": "{count} T."
     },
     "filters": {
       "allAreas": "Alle Gebiete",
@@ -613,7 +661,8 @@
       "anyGrade": "Jede Schwierigkeit",
       "anySeason": "Jede Jahreszeit",
       "harder": "3A und schwerer",
-      "search": "Routenname"
+      "search": "Routenname",
+      "show": "Routen anzeigen"
     },
     "area": {
       "ala_archa": "Ala-Artscha",
@@ -714,7 +763,8 @@
       "textPlaceholder": "Eis am Pass, Wasser an der Hütte, schwierige Stellen…",
       "photos": "Fotos",
       "submit": "Veröffentlichen",
-      "saveError": "Der Bericht konnte nicht gespeichert werden. Bitte erneut versuchen."
+      "saveError": "Der Bericht konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "noFresh": "Keine aktuellen Berichte"
     },
     "detail": {
       "summit": "Gipfel",
@@ -789,7 +839,9 @@
       "create": "Route veröffentlichen",
       "save": "Speichern",
       "saveError": "Die Route konnte nicht gespeichert werden."
-    }
+    },
+    "emptyHint": "Wählen Sie ein anderes Gebiet oder entfernen Sie Filter.",
+    "emptyAll": "Noch keine Routen"
   },
   "outings": {
     "title": "Gruppentouren",
@@ -928,14 +980,27 @@
       "expired": "Die Zahlungsfrist ist abgelaufen",
       "pending": "Zahlung wird geprüft…",
       "pendingText": "Das dauert meist nur ein paar Sekunden. Bitte lassen Sie die Seite geöffnet.",
-      "notFound": "Buchung nicht gefunden"
+      "notFound": "Buchung nicht gefunden",
+      "tour": "Tour",
+      "paidAmount": "Bezahlt",
+      "calendar": "In den Kalender"
     },
     "test": {
       "title": "Testzahlung",
       "banner": "Testmodus: es wird kein Geld abgebucht",
       "pay": "Bezahlen (Test)",
       "decline": "Ablehnen"
-    }
+    },
+    "commentLabel": "Hinweis für den Veranstalter",
+    "optional": "(optional)",
+    "commentPlaceholder": "Z. B. vegetarisches Essen",
+    "gatewayDownTitle": "Zahlungsdienst nicht verfügbar",
+    "notCreated": "Später erneut versuchen. Es wurde keine Buchung erstellt.",
+    "contactOrganizer": "Kontaktieren Sie den Veranstalter direkt.",
+    "holdUntil": "reserviert bis {time}",
+    "openTour": "Zur Tour",
+    "bookAgain": "Erneut buchen",
+    "noBookingsHint": "Wählen Sie eine Tour — Buchen und Bezahlen dauern nur ein paar Minuten."
   },
   "cabinet": {
     "title": "Partnerbereich",
@@ -971,7 +1036,9 @@
       "newReviews": "Unbeantwortete Bewertungen",
       "answer": "Antworten",
       "topListings": "Meistgesehene Angebote",
-      "allStats": "Gesamte Statistik"
+      "allStats": "Gesamte Statistik",
+      "period": "Zeitraum",
+      "periodDays": "{days} Tage"
     },
     "stats": {
       "subtitle": "Wie viele Menschen Ihre Angebote gesehen und Sie kontaktiert haben",
@@ -1091,11 +1158,14 @@
     "next": "Nächste Seite"
   },
   "breadcrumbs": {
-    "home": "Startseite"
+    "home": "Startseite",
+    "label": "Brotkrümelnavigation"
   },
   "errors": {
     "loadFailed": "Die Daten konnten nicht geladen werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "loadFailedTitle": "Daten konnten nicht geladen werden",
+    "loadFailedText": "Prüfen Sie die Verbindung und versuchen Sie es erneut."
   },
   "upload": {
     "choose": "Bild auswählen",
@@ -1134,5 +1204,35 @@
       "localGuides": "Lokale Guides: Sprachen, Spezialgebiete und Tagespreis.",
       "guides": "Artikel und Tipps: Ausrüstung, Jahreszeiten und Sicherheit in den Bergen."
     }
+  },
+  "notify": {
+    "close": "Schließen",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "confirm": "Bestätigen",
+    "retry": "Wiederholen",
+    "undo": "Rückgängig",
+    "offline": {
+      "title": "Keine Verbindung.",
+      "text": "Wir zeigen gespeicherte Daten.",
+      "reload": "Neu laden"
+    },
+    "online": "Wieder online",
+    "deleted": "Gelöscht",
+    "deleteFailed": "Löschen fehlgeschlagen",
+    "tryAgain": "Bitte versuchen Sie es erneut.",
+    "linkCopied": "Link kopiert",
+    "welcome": "Willkommen zurück, {name}",
+    "welcomePlain": "Sie sind angemeldet",
+    "codeSent": "Code gesendet",
+    "signedOut": "Sie sind abgemeldet",
+    "irreversible": "Das kann nicht rückgängig gemacht werden."
+  },
+  "search": {
+    "label": "Reiseziel suchen",
+    "placeholder": "Wohin? Issyk-Kul, Karakol, Ala-Artscha…",
+    "placeholderShort": "Wohin?",
+    "submit": "Suchen",
+    "popular": "Beliebt:"
   }
 }

@@ -10,7 +10,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
   template: `
     <button
       type="button"
-      class="flex size-9 items-center justify-center rounded-md transition-colors hover:bg-white/10"
+      class="flex size-10 items-center justify-center rounded-full border border-border transition-colors hover:border-brand-500/50"
       [attr.aria-label]="'colorTheme.toggle' | transloco"
       [title]="'colorTheme.toggle' | transloco"
       (click)="colorTheme.toggle()"

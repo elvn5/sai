@@ -8,15 +8,19 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
-    <div class="ui-card flex h-full flex-col gap-1 px-4 py-3">
-      <p class="flex items-center gap-2 text-sm text-text-muted">
+    <div class="ui-card flex h-full flex-col gap-0.5 px-4 py-3.5">
+      <p class="flex items-center gap-1.5 text-[0.8rem] text-text-muted">
         <span [class]="icon() + ' size-4 shrink-0'" aria-hidden="true"></span>
         <span class="truncate">{{ label() }}</span>
       </p>
-      <p class="text-2xl font-extrabold text-text tabular-nums">{{ value() }}</p>
+      <p class="overflow-hidden text-[1.625rem] leading-tight font-extrabold text-text tabular-nums">
+        @for (current of [value()]; track current) {
+          <span class="motion-roll-in">{{ current }}</span>
+        }
+      </p>
       <p class="flex flex-wrap items-center gap-x-2 text-xs text-text-muted">
         @if (delta(); as change) {
-          <span class="inline-flex items-center gap-0.5 font-semibold" [class]="change >= 0 ? 'text-emerald-800 dark:text-emerald-300' : 'text-red-800 dark:text-red-300'">
+          <span class="inline-flex items-center gap-0.5 font-semibold" [class]="change >= 0 ? 'text-success' : 'text-danger'">
             <span [class]="(change >= 0 ? 'icon-[heroicons--arrow-trending-up]' : 'icon-[heroicons--arrow-trending-down]') + ' size-3.5'" aria-hidden="true"></span>
             {{ change >= 0 ? '+' : '' }}{{ change }}%
           </span>

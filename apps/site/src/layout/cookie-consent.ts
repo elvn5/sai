@@ -13,21 +13,18 @@ const CONSENT_KEY = 'cookie-consent';
   template: `
     @if (visible()) {
       <div
-        class="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface px-4 py-4 shadow-lg"
+        class="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-50 flex max-w-md items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-3 text-sm text-text shadow-[0_12px_28px_-8px_rgb(15_23_42/0.25)] sm:right-auto sm:left-4 lg:bottom-4"
         role="region"
         aria-live="polite"
         [attr.aria-label]="'cookieConsent.title' | transloco"
+        animate.enter="motion-toast-in"
+        animate.leave="motion-toast-out"
       >
-        <div class="mx-auto flex max-w-4xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
-          <p class="text-sm text-text-muted">{{ 'cookieConsent.message' | transloco }}</p>
-          <button
-            type="button"
-            class="shrink-0 rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-            (click)="accept()"
-          >
-            {{ 'cookieConsent.accept' | transloco }}
-          </button>
-        </div>
+        <span class="icon-[heroicons--information-circle] size-5 shrink-0 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>
+        <p class="text-[0.8rem] text-text-muted">{{ 'cookieConsent.message' | transloco }}</p>
+        <button type="button" class="ui-btn-primary shrink-0" (click)="accept()">
+          {{ 'cookieConsent.accept' | transloco }}
+        </button>
       </div>
     }
   `,

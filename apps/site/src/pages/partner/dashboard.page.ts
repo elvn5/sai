@@ -13,13 +13,16 @@ import { loaded } from '@/core/lib/resource';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { DailyBarChart } from '@/pages/partner/daily-bar-chart';
 import { StatTile } from '@/pages/partner/stat-tile';
+import { PersonAvatar } from '@/ui/person-avatar';
 import { RatingStars } from '@/ui/rating-stars';
 import { SiteLink } from '@/ui/site-link';
 import { httpResource } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const DAYS = 30;
+// The periods the summary can cover.
+const PERIODS = [7, 30, 90];
 const TOP = 5;
 
 interface Departure {
@@ -34,18 +37,25 @@ interface Departure {
 // waiting for an answer and the most viewed listings.
 @Component({
   selector: 'app-partner-dashboard-page',
-  imports: [DailyBarChart, RatingStars, SiteLink, StatTile, TranslocoPipe],
+  imports: [DailyBarChart, PersonAvatar, RatingStars, SiteLink, StatTile, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-6">
-      <div>
-        <h1 class="text-2xl font-extrabold text-text sm:text-3xl">{{ 'cabinet.title' | transloco }}</h1>
-        <p class="mt-1 text-sm text-text-muted">{{ 'cabinet.dashboard.subtitle' | transloco: { days: days } }}</p>
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-extrabold tracking-tight text-text">{{ 'cabinet.nav.dashboard' | transloco }}</h1>
+          <p class="text-sm text-text-muted">{{ 'cabinet.dashboard.subtitle' | transloco: { days: days() } }}</p>
+        </div>
+        <div class="ui-segment w-60 text-[0.8rem]" role="radiogroup" [attr.aria-label]="'cabinet.dashboard.period' | transloco">
+          @for (option of periods; track option) {
+            <button type="button" role="radio" [attr.aria-checked]="days() === option" (click)="days.set(option)">{{ 'cabinet.dashboard.periodDays' | transloco: { days: option } }}</button>
+          }
+        </div>
       </div>
 
       @if (report() && onboardingLeft() > 0) {
-        <div class="rounded-card border border-brand-500/30 bg-brand-500/5 px-4 py-4">
-          <p class="font-semibold text-text">{{ 'cabinet.onboarding.title' | transloco }}</p>
+        <div class="rounded-card bg-sky-500/13 px-4 py-4">
+          <p class="flex items-center gap-2 font-semibold text-text"><span class="icon-[heroicons--sparkles] size-5 text-info" aria-hidden="true"></span>{{ 'cabinet.onboarding.title' | transloco }}</p>
           <ul class="mt-3 flex flex-col gap-2">
             @for (step of onboarding(); track step.key) {
               <li class="flex items-center gap-2 text-sm">
@@ -64,45 +74,47 @@ interface Departure {
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <app-stat-tile [label]="'cabinet.stats.views' | transloco" icon="icon-[heroicons--eye]" [value]="report() ? number(report()!.totals.views) : '—'" [delta]="report() ? change(report()!.totals.views, report()!.previous.views) : null" [hint]="'cabinet.dashboard.vsPrevious' | transloco" />
         <app-stat-tile [label]="'cabinet.stats.contacts' | transloco" icon="icon-[heroicons--chat-bubble-left-ellipsis]" [value]="report() ? number(report()!.totals.contacts) : '—'" [delta]="report() ? change(report()!.totals.contacts, report()!.previous.contacts) : null" [hint]="report() ? ('cabinet.stats.conversionHint' | transloco: { value: share(report()!.totals.contacts, report()!.totals.views) }) : null" />
-        <app-stat-tile [label]="'cabinet.dashboard.monthBookings' | transloco" icon="icon-[mdi--ticket-confirmation-outline]" [value]="money() ? '' + money()!.month.orders : '—'" [hint]="money() ? ('cabinet.dashboard.guests' | transloco: { count: money()!.month.guests }) : null" />
+        <app-stat-tile [label]="'cabinet.dashboard.monthBookings' | transloco" icon="icon-[heroicons--ticket]" [value]="money() ? '' + money()!.month.orders : '—'" [hint]="money() ? ('cabinet.dashboard.guests' | transloco: { count: money()!.month.guests }) : null" />
         <app-stat-tile [label]="'cabinet.finances.owed' | transloco" icon="icon-[heroicons--banknotes]" [value]="money() ? som(money()!.owed) : '—'" [hint]="money() ? ('cabinet.finances.owedOrders' | transloco: { count: money()!.owedOrders }) : null" />
       </div>
 
-      <div class="ui-card grid grid-cols-1 gap-6 p-4 sm:grid-cols-2">
-        <app-daily-bar-chart [title]="'cabinet.stats.viewsPerDay' | transloco" [points]="viewsPoints()" />
-        <app-daily-bar-chart [title]="'cabinet.stats.contactsPerDay' | transloco" [points]="contactsPoints()" />
-        <p class="text-xs text-text-muted sm:col-span-2">{{ 'cabinet.stats.howCounted' | transloco }}</p>
-      </div>
-
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section class="flex flex-col gap-3" aria-labelledby="departures">
+      <div class="grid grid-cols-1 gap-3.5 lg:grid-cols-[1.4fr_1fr]">
+        <div class="ui-card flex flex-col gap-4 p-4">
+          <app-daily-bar-chart [title]="'cabinet.stats.viewsPerDay' | transloco" [points]="viewsPoints()" />
+          <app-daily-bar-chart [title]="'cabinet.stats.contactsPerDay' | transloco" [points]="contactsPoints()" />
+          <p class="text-xs text-text-muted">{{ 'cabinet.stats.howCounted' | transloco }}</p>
+        </div>
+        <section class="ui-card flex flex-col gap-3 p-4" aria-labelledby="departures">
           <div class="flex items-center justify-between">
             <h2 id="departures" class="font-semibold text-text">{{ 'cabinet.dashboard.departures' | transloco }}</h2>
             <a appSiteLink="/partner/bookings" class="text-sm text-brand-700 hover:underline dark:text-brand-300">{{ 'cabinet.dashboard.allBookings' | transloco }}</a>
           </div>
           @if (departures().length > 0) {
-            <ul class="flex flex-col gap-2">
+            <ul class="flex flex-col gap-3">
               @for (departure of departures(); track departure.key) {
-                <li class="ui-card flex items-center justify-between gap-3 px-4 py-3">
+                <li class="flex items-center gap-3 text-sm">
+                  <span class="flex w-11 shrink-0 flex-col items-center rounded-lg border border-border py-0.5 leading-tight">
+                    <b class="text-text">{{ dayNumber(departure.date) }}</b>
+                    <span class="text-[0.68rem] text-text-muted">{{ monthShort(departure.date) }}</span>
+                  </span>
                   <div class="min-w-0">
-                    <p class="truncate font-medium text-text">{{ departure.title }}</p>
-                    <p class="text-xs text-text-muted">{{ day(departure.date) }}</p>
-                  </div>
-                  <div class="shrink-0 text-right">
-                    <p class="font-bold text-text tabular-nums">{{ 'cabinet.dashboard.guests' | transloco: { count: departure.guests } }}</p>
-                    <p class="text-xs text-text-muted">{{ 'cabinet.dashboard.bookingsCount' | transloco: { count: departure.bookings } }}</p>
+                    <p class="truncate font-semibold text-text">{{ departure.title }}</p>
+                    <p class="text-xs text-text-muted">{{ 'cabinet.dashboard.bookingsCount' | transloco: { count: departure.bookings } }} · {{ 'cabinet.dashboard.guests' | transloco: { count: departure.guests } }}</p>
                   </div>
                 </li>
               }
             </ul>
           } @else if (orders.hasValue()) {
-            <p class="rounded-card border border-dashed border-border px-4 py-6 text-center text-sm text-text-muted">
+            <p class="flex flex-1 flex-col items-center justify-center gap-2 py-4 text-center text-sm text-text-muted">
+              <span class="icon-[heroicons--calendar-days] size-7" aria-hidden="true"></span>
               {{ (hasPaid() ? 'cabinet.dashboard.noDepartures' : 'booking.noReceived') | transloco }}
             </p>
           }
         </section>
+      </div>
 
-        <section class="flex flex-col gap-3" aria-labelledby="new-reviews">
+      <div>
+        <section class="ui-card flex flex-col gap-3 p-4" aria-labelledby="new-reviews">
           <div class="flex items-center justify-between">
             <h2 id="new-reviews" class="font-semibold text-text">
               {{ 'cabinet.dashboard.newReviews' | transloco }}
@@ -111,21 +123,21 @@ interface Departure {
             <a appSiteLink="/partner/reviews" class="text-sm text-brand-700 hover:underline dark:text-brand-300">{{ 'cabinet.dashboard.answer' | transloco }}</a>
           </div>
           @if (newReviews().length > 0) {
-            <ul class="flex flex-col gap-2">
+            <ul class="flex flex-col divide-y divide-border">
               @for (review of newReviews(); track review.id) {
-                <li>
-                  <a appSiteLink="/partner/reviews" class="ui-card flex flex-col gap-1 px-4 py-3 hover:border-brand-500/40">
-                    <span class="flex items-center justify-between gap-2">
-                      <span class="truncate text-sm font-medium text-text">{{ review.listing.title }}</span>
-                      <app-rating-stars [value]="review.rating" />
-                    </span>
-                    <span class="line-clamp-2 text-sm text-text-muted">{{ review.text }}</span>
-                  </a>
+                <li class="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <app-person-avatar [person]="review.author" [size]="34" />
+                  <div class="min-w-0 flex-1 text-sm">
+                    <p class="flex flex-wrap items-center gap-2"><b class="text-text">{{ review.author.firstName ?? review.author.username }}</b><app-rating-stars [value]="review.rating" /></p>
+                    <p class="truncate text-xs text-text-muted">{{ review.listing.title }}</p>
+                    <p class="line-clamp-2 text-text-muted">{{ review.text }}</p>
+                  </div>
+                  <a appSiteLink="/partner/reviews" class="ui-btn-soft shrink-0"><span class="icon-[heroicons--chat-bubble-left-ellipsis] size-4" aria-hidden="true"></span>{{ 'cabinet.dashboard.answer' | transloco }}</a>
                 </li>
               }
             </ul>
           } @else if (reviews.hasValue()) {
-            <p class="rounded-card border border-dashed border-border px-4 py-6 text-center text-sm text-text-muted">{{ 'cabinet.reviews.allAnswered' | transloco }}</p>
+            <p class="flex items-center justify-center gap-2 py-4 text-sm text-text-muted"><span class="icon-[heroicons--check-circle] size-5 text-success" aria-hidden="true"></span>{{ 'cabinet.reviews.allAnswered' | transloco }}</p>
           }
         </section>
       </div>
@@ -156,11 +168,12 @@ export class PartnerDashboardPage {
   private readonly auth = inject(AuthStore);
   private readonly transloco = inject(TranslocoService);
   private readonly currentLang = injectLang();
-  protected readonly days = DAYS;
+  protected readonly periods = PERIODS;
+  protected readonly days = signal<number>(DAYS);
 
   private readonly stats = httpResource<StatsReport>(() => ({
     url: '/listing-stats/mine',
-    params: { days: DAYS },
+    params: { days: this.days() },
   }));
   private readonly finances = httpResource<PartnerFinances>(() => '/payouts/mine');
   protected readonly orders = httpResource<Order[]>(() => '/orders/received');
@@ -243,6 +256,14 @@ export class PartnerDashboardPage {
 
   protected som(value: number): string {
     return `${formatAmount(this.currentLang(), value)} ${this.transloco.translate('listing.currency')}`;
+  }
+
+  protected dayNumber(date: string): string {
+    return String(Number(date.slice(8, 10)));
+  }
+
+  protected monthShort(date: string): string {
+    return formatDate(this.currentLang(), date, { month: 'short' }).replace('.', '');
   }
 
   protected day(date: string): string {

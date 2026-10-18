@@ -4,6 +4,7 @@ import { formatDateRange, todayInBishkek } from '@/core/lib/format';
 import { contentLang } from '@/core/lib/partner-cabinet';
 import { loaded } from '@/core/lib/resource';
 import { bindPageMeta } from '@/core/seo/seo.service';
+import { injectConfirm } from '@/ui/confirm-dialog';
 import { SiteLink } from '@/ui/site-link';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
@@ -154,6 +155,7 @@ import { firstValueFrom } from 'rxjs';
 export class PartnerListingsPage {
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
   private readonly currentLang = injectLang();
 
   protected readonly tours = httpResource<Tour[]>(() => '/tours/mine');
@@ -208,9 +210,11 @@ export class PartnerListingsPage {
 
   protected async deleteTour(tour: Tour): Promise<void> {
     if (
-      !window.confirm(
-        this.transloco.translate('cabinet.listings.deleteTourConfirm', { title: tour.title }),
-      )
+      !(await this.confirm({
+        title: 'cabinet.listings.deleteTourConfirm',
+        params: { title: tour.title },
+        danger: true,
+      }))
     )
       return;
     await this.remove(tour.id, `/tours/${tour.id}`);
@@ -220,9 +224,11 @@ export class PartnerListingsPage {
 
   protected async deletePost(post: BlogPost): Promise<void> {
     if (
-      !window.confirm(
-        this.transloco.translate('profile.listings.deletePostConfirm', { title: post.title }),
-      )
+      !(await this.confirm({
+        title: 'profile.listings.deletePostConfirm',
+        params: { title: post.title },
+        danger: true,
+      }))
     )
       return;
     await this.remove(post.id, `/blog/${post.id}`);

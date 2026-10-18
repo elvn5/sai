@@ -14,7 +14,7 @@
     "trails": "Routes",
     "outings": "Outings"
   },
-  "theme": { "toggle": "Theme" },
+  "theme": { "toggle": "Theme", "light": "Light", "dark": "Dark" },
   "colorTheme": { "toggle": "Color theme" },
   "language": { "switch": "Language" },
   "home": {
@@ -160,7 +160,26 @@
     "submit": "Publish",
     "createError": "Could not publish the tour. Please try again",
     "deleteButton": "Delete",
-    "deleteConfirm": "Delete this tour?"
+    "deleteConfirm": "Delete this tour?",
+    "perPerson": "per person",
+    "emptyHint": "Partners add new dates every week. Meanwhile, check the group outings.",
+    "emptyCta": "See outings",
+    "emptyFiltered": "No tours match these filters",
+    "emptyFilteredHint": "Try another length or drop a filter.",
+    "filters": {
+      "duration": "Length",
+      "durations": {
+        "1": "1 day",
+        "2-3": "2–3 days",
+        "4+": "4+ days"
+      }
+    },
+    "sections": "Tour sections",
+    "tabs": {
+      "about": "About",
+      "reviews": "Reviews"
+    },
+    "perPersonShort": "per person"
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -199,14 +218,17 @@
       "maxPricePerDay": "Max price per day",
       "minRating": "Rating",
       "anyRating": "Any",
-      "freeCancellation": "Free cancellation"
+      "freeCancellation": "Free cancellation",
+      "more": "{count} more",
+      "resetShort": "Reset"
     },
     "sort": {
       "rating": "Top rated",
       "price_asc": "Price: low to high",
       "price_desc": "Price: high to low",
       "newest": "Newest",
-      "experience": "Most experienced"
+      "experience": "Most experienced",
+      "soonest": "Soonest first"
     },
     "amenities": {
       "wifi": "Wi-Fi",
@@ -283,7 +305,9 @@
       "publish": "Publish",
       "save": "Save",
       "saveError": "Couldn't save. Check the fields and try again"
-    }
+    },
+    "foundLabel": "Found:",
+    "share": "Share"
   },
   "hotels": {
     "heading": "Hotels & guesthouses",
@@ -454,8 +478,23 @@
       "invalidCode": "Invalid or expired code",
       "resendError": "Could not resend the code. Please try again later",
       "sendError": "Could not send the verification code. Please try again later",
-      "back": "Back to sign in"
-    }
+      "back": "Back to sign in",
+      "subtitleEmailLead": "We sent a confirmation code to",
+      "pasteHint": "Paste the whole code — the boxes fill themselves.",
+      "resendIn": "Resend in",
+      "resendLinkIn": "New link in",
+      "noEmail": "No email? Check your spam folder or sign in with Telegram."
+    },
+    "pitch": "Save your progress, book tours and earn achievements for your hikes.",
+    "perks": {
+      "fame": "Hall of fame",
+      "bookings": "Bookings",
+      "telegram": "Telegram alerts"
+    },
+    "signingIn": "Signing in…",
+    "withTelegram": "Sign in with Telegram",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "profile": {
     "logout": "Log out",
@@ -501,11 +540,19 @@
       "approved": "You're an Ermekten partner: publish stays, tours, guides, photos and posts, and award travelers achievements.",
       "addTourCta": "Add a tour",
       "awardCta": "Award an achievement",
-      "publishOnly": "Only partners can publish stays, guides, local-guide profiles, photos and blog posts."
+      "publishOnly": "Only partners can publish stays, guides, local-guide profiles, photos and blog posts.",
+      "pitchTitle": "Become a partner",
+      "applied": "Application sent"
     },
     "achievements": {
       "summary": "Achievements earned: {count}",
       "open": "Open the hall of fame"
+    },
+    "stats": {
+      "outings": "Outings",
+      "bookings": "Paid bookings",
+      "points": "Points",
+      "awards": "Achievements"
     }
   },
   "footer": {
@@ -605,7 +652,8 @@
       "kmh": "km/h",
       "mm": "mm",
       "hours": "{count} h",
-      "days": "Days: {count}"
+      "days": "Days: {count}",
+      "daysShort": "{count} d"
     },
     "filters": {
       "allAreas": "All areas",
@@ -613,7 +661,8 @@
       "anyGrade": "Any grade",
       "anySeason": "Any season",
       "harder": "3A and harder",
-      "search": "Route name"
+      "search": "Route name",
+      "show": "Show routes"
     },
     "area": {
       "ala_archa": "Ala-Archa",
@@ -714,7 +763,8 @@
       "textPlaceholder": "Ice on the pass, water at the hut, tricky bits…",
       "photos": "Photos",
       "submit": "Publish",
-      "saveError": "Couldn't save the report. Please try again."
+      "saveError": "Couldn't save the report. Please try again.",
+      "noFresh": "No recent reports"
     },
     "detail": {
       "summit": "Summit",
@@ -789,7 +839,9 @@
       "create": "Publish route",
       "save": "Save",
       "saveError": "Couldn't save the route."
-    }
+    },
+    "emptyHint": "Try another area or drop some filters.",
+    "emptyAll": "No routes yet"
   },
   "outings": {
     "title": "Outings",
@@ -928,14 +980,27 @@
       "expired": "The payment window has expired",
       "pending": "Checking the payment…",
       "pendingText": "This usually takes a few seconds. Please keep this page open.",
-      "notFound": "Booking not found"
+      "notFound": "Booking not found",
+      "tour": "Tour",
+      "paidAmount": "Paid",
+      "calendar": "Add to calendar"
     },
     "test": {
       "title": "Test payment",
       "banner": "Test mode: no money is charged",
       "pay": "Pay (test)",
       "decline": "Decline"
-    }
+    },
+    "commentLabel": "Note for the organizer",
+    "optional": "(optional)",
+    "commentPlaceholder": "E.g. vegetarian meals",
+    "gatewayDownTitle": "Payment service unavailable",
+    "notCreated": "Try again later. No booking was made.",
+    "contactOrganizer": "Contact the organizer directly.",
+    "holdUntil": "held until {time}",
+    "openTour": "Open tour",
+    "bookAgain": "Book again",
+    "noBookingsHint": "Pick a tour — booking and paying take a couple of minutes."
   },
   "cabinet": {
     "title": "Partner dashboard",
@@ -971,7 +1036,9 @@
       "newReviews": "Reviews awaiting a reply",
       "answer": "Reply",
       "topListings": "Most viewed listings",
-      "allStats": "All statistics"
+      "allStats": "All statistics",
+      "period": "Period",
+      "periodDays": "{days} days"
     },
     "stats": {
       "subtitle": "How many people saw your listings and messaged or called you",
@@ -1091,11 +1158,14 @@
     "next": "Next page"
   },
   "breadcrumbs": {
-    "home": "Home"
+    "home": "Home",
+    "label": "Breadcrumbs"
   },
   "errors": {
     "loadFailed": "Could not load the data. Check your connection and try again.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "loadFailedTitle": "Couldn't load the data",
+    "loadFailedText": "Check your connection and try again."
   },
   "upload": {
     "choose": "Choose image",
@@ -1134,5 +1204,35 @@
       "localGuides": "Local guides: languages, specialties and a price per day.",
       "guides": "Articles and tips: gear, seasons and safety in the mountains."
     }
+  },
+  "notify": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "undo": "Undo",
+    "offline": {
+      "title": "You're offline.",
+      "text": "Showing saved data.",
+      "reload": "Reload"
+    },
+    "online": "Back online",
+    "deleted": "Deleted",
+    "deleteFailed": "Couldn't delete",
+    "tryAgain": "Please try again.",
+    "linkCopied": "Link copied",
+    "welcome": "Welcome back, {name}",
+    "welcomePlain": "You're signed in",
+    "codeSent": "Code sent",
+    "signedOut": "You're signed out",
+    "irreversible": "This can't be undone."
+  },
+  "search": {
+    "label": "Search destinations",
+    "placeholder": "Where to? Issyk-Kul, Karakol, Ala-Archa…",
+    "placeholderShort": "Where to?",
+    "submit": "Search",
+    "popular": "Popular:"
   }
 }

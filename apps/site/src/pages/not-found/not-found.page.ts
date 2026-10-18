@@ -1,26 +1,53 @@
+import { splitLang } from '@/core/i18n/langs';
+import { injectCurrentUrl } from '@/core/lib/current-url';
 import { bindPageMeta } from '@/core/seo/seo.service';
+import { HeroImage } from '@/pages/home/hero-image';
 import { SiteLink } from '@/ui/site-link';
-import { ChangeDetectionStrategy, Component, RESPONSE_INIT, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, RESPONSE_INIT, computed, inject } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+
+const PARENTS = [
+  { path: '/tours', label: 'nav.tours' },
+  { path: '/trails', label: 'nav.trails' },
+  { path: '/outings', label: 'nav.outings' },
+  { path: '/hotels', label: 'nav.hotels' },
+  { path: '/local-guides', label: 'nav.localGuides' },
+  { path: '/guides', label: 'nav.guides' },
+  { path: '/blog', label: 'nav.blog' },
+] as const;
 
 // Unknown URLs answer with a real 404 (not a 200 "soft 404"), unindexed.
 @Component({
   selector: 'app-not-found-page',
-  imports: [SiteLink, TranslocoPipe],
+  imports: [HeroImage, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto flex max-w-xl flex-col items-center gap-4 px-4 py-24 text-center">
-      <span class="icon-[heroicons--map] size-12 text-text-muted" aria-hidden="true"></span>
-      <p class="text-5xl font-extrabold text-brand-600 dark:text-brand-300">404</p>
-      <h1 class="text-2xl font-bold text-text">{{ 'notFound.title' | transloco }}</h1>
-      <p class="text-text-muted">{{ 'notFound.text' | transloco }}</p>
-      <a appSiteLink="/" class="rounded-md bg-brand-600 px-4 py-2 font-semibold text-white hover:bg-brand-700">
-        {{ 'notFound.home' | transloco }}
-      </a>
+    <section class="relative isolate flex min-h-[70vh] items-center justify-center overflow-hidden px-4 py-20 text-center">
+      <div class="absolute inset-x-0 bottom-0 -z-10 h-56 opacity-50 [mask-image:linear-gradient(to_top,#000,transparent)]">
+        <app-hero-image />
+      </div>
+      <div>
+        <p class="motion-enter text-7xl leading-none font-extrabold tracking-tighter text-brand-600 sm:text-8xl dark:text-brand-300">404</p>
+        <h1 class="motion-enter motion-enter-1 mt-2 text-xl font-bold text-text">{{ 'notFound.title' | transloco }}</h1>
+        <p class="motion-enter motion-enter-2 mt-1.5 text-text-muted">{{ 'notFound.text' | transloco }}</p>
+        <div class="motion-enter motion-enter-3 mt-5 flex flex-wrap justify-center gap-2">
+          <a appSiteLink="/" class="ui-btn-primary ui-btn-lg"><span class="icon-[heroicons--home] size-[1.1rem]" aria-hidden="true"></span>{{ 'notFound.home' | transloco }}</a>
+          @if (section(); as parent) {
+            <a [appSiteLink]="parent.path" class="ui-btn-soft ui-btn-lg"><span class="icon-[heroicons--arrow-uturn-left] size-[1.1rem]" aria-hidden="true"></span>{{ parent.label | transloco }}</a>
+          }
+        </div>
+      </div>
     </section>
   `,
 })
 export class NotFoundPage {
+  private readonly url = injectCurrentUrl();
+  // The section the missing page would have been in (/tours/… → "All tours").
+  protected readonly section = computed(() => {
+    const path = splitLang(this.url()).path;
+    return PARENTS.find((parent) => path.startsWith(`${parent.path}/`)) ?? null;
+  });
+
   constructor() {
     const response = inject(RESPONSE_INIT, { optional: true });
     if (response) response.status = 404;

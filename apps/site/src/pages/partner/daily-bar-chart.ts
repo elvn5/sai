@@ -27,17 +27,22 @@ const GAP = 2;
         <span class="text-sm text-text-muted tabular-nums">{{ total() }}</span>
       </figcaption>
       <div class="relative" (pointerleave)="hovered.set(null)">
-        <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" preserveAspectRatio="none" class="h-28 w-full" aria-hidden="true">
+        <svg [attr.viewBox]="'0 0 ' + width + ' ' + height" preserveAspectRatio="none" class="h-36 w-full" aria-hidden="true">
           <line x1="0" [attr.x2]="width" [attr.y1]="height - 0.5" [attr.y2]="height - 0.5" stroke="var(--color-border)" stroke-width="1" />
           @for (bar of bars(); track bar.day; let index = $index) {
             @if (bar.value > 0) {
-              <path [attr.d]="bar.path" fill="var(--color-brand-600)" [attr.opacity]="hovered() === null || hovered() === index ? 1 : 0.4" />
+              <path
+                class="motion-grow-y [transform-box:fill-box]"
+                [style.--i]="index"
+                [attr.d]="bar.path"
+                [attr.fill]="hovered() === index ? 'var(--color-brand-500)' : 'var(--color-brand-200)'"
+              />
             }
             <rect [attr.x]="index * step()" y="0" [attr.width]="step()" [attr.height]="height" fill="transparent" (pointerenter)="hovered.set(index)" (pointerdown)="hovered.set(index)" />
           }
         </svg>
         @if (tooltip(); as tip) {
-          <div class="pointer-events-none absolute -top-8 -translate-x-1/2 rounded-md border border-border bg-surface px-2 py-1 text-xs font-medium whitespace-nowrap text-text shadow-sm" [style.left]="tip.left">{{ tip.text }}</div>
+          <div class="pointer-events-none absolute -top-8 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-xs font-medium whitespace-nowrap text-white shadow-sm dark:bg-slate-100 dark:text-slate-900" [style.left]="tip.left">{{ tip.text }}</div>
         }
       </div>
       @if (points().length > 0) {

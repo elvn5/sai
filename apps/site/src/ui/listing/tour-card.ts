@@ -16,33 +16,33 @@ import { TranslocoPipe } from '@jsverse/transloco';
   imports: [NgOptimizedImage, SharedTransition, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <a [appSiteLink]="'/tours/' + tour().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface motion-lift">
-      <div class="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800" [appSharedTransition]="coverTransition()">
+    <a [appSiteLink]="'/tours/' + tour().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.06)] motion-lift dark:shadow-none">
+      <div class="relative aspect-[16/10] overflow-hidden bg-slate-200 dark:bg-slate-800" [appSharedTransition]="coverTransition()">
         @if (cover(); as url) {
           <img [ngSrc]="url" fill sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw" alt="" class="motion-zoom object-cover" />
         } @else {
-          <span class="icon-[mdi--compass-outline] absolute inset-0 m-auto size-12 text-text-muted" aria-hidden="true"></span>
+          <span class="icon-[heroicons--map] absolute inset-0 m-auto size-12 text-text-muted" aria-hidden="true"></span>
         }
-        <span class="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-xs font-medium text-white">
+        <span class="ui-chip-on-image absolute top-2 left-2">
           <span class="icon-[heroicons--calendar-days] size-3.5" aria-hidden="true"></span>{{ dates() }}
         </span>
       </div>
-      <div class="flex flex-1 flex-col gap-2 p-4">
+      <div class="flex flex-1 flex-col gap-1.5 px-3.5 pt-3 pb-3.5">
         @if (tour().destination || tour().location) {
-          <p class="flex items-center gap-1 text-sm text-text-muted">
-            <span class="icon-[heroicons--map-pin] size-4" aria-hidden="true"></span>
+          <p class="flex items-center gap-1 text-[0.8rem] text-text-muted">
+            <span class="icon-[heroicons--map-pin] icon-anim-bounce size-4" aria-hidden="true"></span>
             @if (tour().destination) { {{ 'destinations.' + tour().destination | transloco }} } @else { {{ tour().location }} }
           </p>
         }
-        <h3 class="text-lg leading-snug font-semibold text-text">{{ tour().title }}</h3>
-        <p class="mt-auto flex items-baseline justify-between gap-2 pt-2 text-sm">
+        <h3 class="text-base leading-snug font-semibold text-text">{{ tour().title }}</h3>
+        <p class="mt-auto flex items-baseline justify-between gap-2 pt-1 text-[0.8125rem]">
           @if (tour().durationDays; as days) {
             <span class="text-text-muted">{{ 'tours.durationValue' | transloco: { days: days } }}</span>
           } @else {
             <span></span>
           }
           @if (tour().price; as price) {
-            <span class="font-semibold text-brand-700 dark:text-brand-300">{{ 'tours.priceValue' | transloco: { price: amount(price) } }}</span>
+            <span class="font-bold text-brand-700 dark:text-brand-300">{{ 'tours.priceValue' | transloco: { price: amount(price) } }}</span>
           }
         </p>
       </div>

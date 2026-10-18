@@ -1,9 +1,12 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   DestroyRef,
   Directive,
   ElementRef,
+  PLATFORM_ID,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   signal,
@@ -24,15 +27,33 @@ export class SharedTransition {
   readonly appSharedTransition = input.required<string>();
   // Named from the start (the page the card flies to).
   readonly sharedAlways = input(false);
+  // Named only while this media query matches: a page with one cover for
+  // phones and another for wide screens names the visible one.
+  readonly sharedMedia = input<string | null>(null);
 
   private readonly clicked = signal(false);
+  private readonly mediaMatches = signal(true);
   protected readonly name = computed(() =>
-    this.sharedAlways() || this.clicked() ? this.appSharedTransition() : null,
+    (this.sharedAlways() || this.clicked()) && this.mediaMatches()
+      ? this.appSharedTransition()
+      : null,
   );
 
   constructor() {
     const element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     const destroyRef = inject(DestroyRef);
+    // Known before the first paint in the browser: two elements may never
+    // carry the same name in one transition.
+    const browser = isPlatformBrowser(inject(PLATFORM_ID));
+    effect(() => {
+      const media = this.sharedMedia();
+      if (!browser || !media) return;
+      const query = matchMedia(media);
+      const update = (): void => this.mediaMatches.set(query.matches);
+      update();
+      query.addEventListener('change', update);
+      destroyRef.onDestroy(() => query.removeEventListener('change', update));
+    });
     afterNextRender(() => {
       const link = element.closest('a');
       if (!link) return;

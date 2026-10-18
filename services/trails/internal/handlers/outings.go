@@ -68,7 +68,7 @@ func (h *Outings) List(c *gin.Context) {
 		}
 		trailID = &trail.ID
 	}
-	outings, err := h.Store.UpcomingOutings(c.Request.Context(), trailID, limit)
+	outings, err := h.Store.UpcomingOutings(c.Request.Context(), trailID, limit, h.now())
 	if err != nil {
 		h.internalError(c, err)
 		return
@@ -158,7 +158,7 @@ func (h *Outings) Join(c *gin.Context) {
 		httperr.Abort(c, http.StatusBadRequest, "You organize this outing")
 		return
 	}
-	switch err := h.Store.Join(c.Request.Context(), outing.ID, currentUserID(c)); {
+	switch err := h.Store.Join(c.Request.Context(), outing.ID, currentUserID(c), h.now()); {
 	case errors.Is(err, store.ErrFull):
 		httperr.Abort(c, http.StatusConflict, "No seats left")
 		return
@@ -205,7 +205,7 @@ func (h *Outings) apply(c *gin.Context, req outingRequest, o *models.Outing, tak
 	if req.TrailID.Set {
 		o.Trail = nil
 		if req.TrailID.Valid {
-			trail, err := h.Store.Trail(c.Request.Context(), req.TrailID.Value)
+			trail, err := h.Store.Trail(c.Request.Context(), req.TrailID.Value, h.now())
 			if errors.Is(err, store.ErrNotFound) || (err == nil && !trail.IsPublished) {
 				return fieldError("trailId", "Route not found")
 			}

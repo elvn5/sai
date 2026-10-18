@@ -79,6 +79,13 @@ func (w *where) sql() string {
 	return strings.Join(w.conds, " AND ")
 }
 
+// atNow numbers the @now placeholder after args and adds now to them, so
+// "now" in a query is the app's clock rather than the database's.
+func atNow(query string, now time.Time, args []any) (string, []any) {
+	args = append(args, now)
+	return strings.ReplaceAll(query, "@now", "$"+strconv.Itoa(len(args))+"::timestamptz"), args
+}
+
 func (w *where) next(arg any) string {
 	w.args = append(w.args, arg)
 	return "$" + strconv.Itoa(len(w.args))

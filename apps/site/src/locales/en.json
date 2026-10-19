@@ -95,7 +95,9 @@
     "deleteConfirm": "Delete this photo?",
     "next": "Next",
     "previous": "Previous",
-    "close": "Close"
+    "close": "Close",
+    "more": "+{count} photos",
+    "count": "{count} photos"
   },
   "guides": {
     "heading": "Guides",
@@ -177,9 +179,41 @@
     "sections": "Tour sections",
     "tabs": {
       "about": "About",
-      "reviews": "Reviews"
+      "reviews": "Reviews",
+      "program": "Itinerary"
     },
-    "perPersonShort": "per person"
+    "perPersonShort": "per person",
+    "program": {
+      "heading": "Day by day",
+      "day": "Day {day}",
+      "all": "Show all {count} days",
+      "less": "Show less",
+      "hint": "What happens each day: route, overnight stay, effort.",
+      "titlePlaceholder": "E.g. Bishkek → Tamga",
+      "textLabel": "About the day",
+      "textPlaceholder": "Transfer, stops, overnight stay",
+      "up": "Move up",
+      "down": "Move down",
+      "remove": "Remove day",
+      "add": "Add a day"
+    },
+    "places": {
+      "free": "{count} places free",
+      "few": "Only {count} left",
+      "none": "Sold out"
+    },
+    "organizer": "Organizer",
+    "dates": {
+      "button": "Dates",
+      "from": "From",
+      "to": "To",
+      "apply": "Show",
+      "fromValue": "from {date}",
+      "toValue": "until {date}"
+    },
+    "capacityLabel": "Group size",
+    "capacityHint": "Leave empty for no limit. Online bookings won't exceed it.",
+    "photosLabel": "Gallery photos"
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -494,7 +528,22 @@
     "signingIn": "Signing in…",
     "withTelegram": "Sign in with Telegram",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "forgot": {
+      "link": "Forgot password?",
+      "title": "Reset your password",
+      "subtitle": "We'll email you a code to set a new password.",
+      "submit": "Send code",
+      "phoneHint": "Signed up with a phone? Sign in with Telegram — no password needed.",
+      "invalidEmail": "Enter the email you signed up with",
+      "tooOften": "A code was just sent — wait a minute"
+    },
+    "reset": {
+      "title": "New password",
+      "passwordLabel": "New password",
+      "submit": "Save and sign in",
+      "done": "Password changed"
+    }
   },
   "profile": {
     "logout": "Log out",
@@ -505,7 +554,8 @@
       "partner": "Partnership",
       "listings": "My listings",
       "achievements": "Hall of fame",
-      "bookings": "Bookings"
+      "bookings": "Bookings",
+      "favorites": "Favorites"
     },
     "listings": {
       "guideHeading": "Guide profile",
@@ -559,7 +609,11 @@
       "outings": "Outings",
       "bookings": "Paid bookings",
       "points": "Points",
-      "awards": "Achievements"
+      "awards": "Achievements",
+      "distance": "Distance",
+      "elevation": "Elevation gain",
+      "kmValue": "{value} km",
+      "metersValue": "{value} m"
     }
   },
   "footer": {
@@ -1007,7 +1061,10 @@
     "holdUntil": "held until {time}",
     "openTour": "Open tour",
     "bookAgain": "Book again",
-    "noBookingsHint": "Pick a tour — booking and paying take a couple of minutes."
+    "noBookingsHint": "Pick a tour — booking and paying take a couple of minutes.",
+    "soldOut": "All places on these dates are taken. Look at other tours or message the organizer.",
+    "placesTakenTitle": "Not enough places",
+    "placesTaken": "Places were taken while you filled in the form. Choose fewer people."
   },
   "cabinet": {
     "title": "Partner dashboard",
@@ -1241,5 +1298,24 @@
     "placeholderShort": "Where to?",
     "submit": "Search",
     "popular": "Popular:"
+  },
+  "favorites": {
+    "add": "Add to favorites",
+    "remove": "Remove from favorites",
+    "saved": "Saved to favorites",
+    "removed": "Removed from favorites",
+    "undo": "Undo",
+    "failed": "Couldn't save",
+    "empty": "No favorites yet",
+    "emptyHint": "Tap the heart on a tour, hotel or guide — it will show up here."
+  },
+  "tourAlerts": {
+    "follow": "Notify me of new tours",
+    "following": "You're subscribed",
+    "followed": "We'll message you on Telegram when new tours appear",
+    "unfollowed": "New tour alerts are off",
+    "linkFirst": "Alerts come on Telegram — link it to your account first.",
+    "unavailable": "Alerts are unavailable right now",
+    "failed": "Couldn't subscribe"
   }
 }

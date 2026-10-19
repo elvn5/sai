@@ -20,6 +20,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -165,10 +166,23 @@ interface BookingForm {
           <span class="text-2xl font-bold text-brand-700 dark:text-brand-300">{{ 'tours.priceValue' | transloco: { price: price() } }}</span>
           <span class="text-text-muted"> {{ 'tours.perPerson' | transloco }}</span>
         </p>
-        @if (auth.user()) {
+        @if (placesLeft() === 0) {
+          <div class="mt-3 flex items-start gap-2 rounded-xl bg-danger/10 p-3 text-sm text-danger" role="status">
+            <span class="icon-[heroicons--x-circle] mt-px size-5 shrink-0" aria-hidden="true"></span>
+            <div>
+              <p class="font-semibold">{{ 'tours.places.none' | transloco }}</p>
+              <p class="mt-0.5 text-text-muted">{{ 'booking.soldOut' | transloco }}</p>
+            </div>
+          </div>
+        } @else if (auth.user()) {
           <form class="mt-3 flex flex-col gap-3" novalidate (submit)="book($event)">
             <div>
-              <span id="places-label" class="ui-label">{{ 'booking.places' | transloco }}</span>
+              <span id="places-label" class="ui-label">
+                {{ 'booking.places' | transloco }}
+                @if (placesLeft() !== null) {
+                  <span class="font-normal text-text-muted">· {{ 'tours.places.free' | transloco: { count: placesLeft() } }}</span>
+                }
+              </span>
               <div class="ui-stepper" role="group" aria-labelledby="places-label">
                 <button type="button" [disabled]="quantity() <= 1" [attr.aria-label]="'booking.less' | transloco" (click)="quantity.set(quantity() - 1)">
                   <span class="icon-[heroicons--minus] size-4" aria-hidden="true"></span>
@@ -178,7 +192,7 @@ interface BookingForm {
                     <span class="motion-roll-in">{{ value }}</span>
                   }
                 </span>
-                <button type="button" [disabled]="quantity() >= maxPlaces" [attr.aria-label]="'booking.more' | transloco" (click)="quantity.set(quantity() + 1)">
+                <button type="button" [disabled]="quantity() >= maxPlaces()" [attr.aria-label]="'booking.more' | transloco" (click)="quantity.set(quantity() + 1)">
                   <span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>
                 </button>
               </div>
@@ -275,6 +289,10 @@ interface BookingForm {
 })
 export class TourBooking {
   readonly tour = input.required<Tour>();
+  // Free places, when the tour has a limit (null: no limit or not known).
+  readonly placesLeft = input<number | null>(null);
+  // Someone else took places while this form was open: count them again.
+  readonly placesTaken = output();
 
   protected readonly auth = inject(AuthStore);
   private readonly http = inject(HttpClient);
@@ -282,7 +300,9 @@ export class TourBooking {
   private readonly location = inject(DOCUMENT).location;
   private readonly lang = injectLang();
   private readonly url = injectCurrentUrl();
-  protected readonly maxPlaces = MAX_PLACES;
+  protected readonly maxPlaces = computed(() =>
+    Math.min(MAX_PLACES, this.placesLeft() ?? MAX_PLACES),
+  );
   protected readonly quantity = signal(1);
   protected readonly error = signal<string | null>(null);
   protected readonly payState = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -342,6 +362,12 @@ export class TourBooking {
       if (browser) document.body.style.overflow = this.sheetOpen() ? 'hidden' : '';
     });
 
+    // Never more than the free places.
+    effect(() => {
+      const max = Math.max(1, this.maxPlaces());
+      if (untracked(this.quantity) > max) this.quantity.set(max);
+    });
+
     // The account's name and phone, once known, unless typed already.
     effect(() => {
       const user = this.auth.user();
@@ -397,16 +423,25 @@ export class TourBooking {
         const status = error instanceof HttpErrorResponse ? error.status : 0;
         if (status === 502)
           this.notify.error({ title: 'booking.gatewayDownTitle', text: 'booking.notCreated' });
-        if (status === 409)
+        const noPlaces =
+          status === 409 &&
+          error instanceof HttpErrorResponse &&
+          String(error.error?.message ?? '').includes('free places');
+        if (noPlaces) {
+          this.placesTaken.emit();
+          this.notify.warning({ title: 'booking.placesTakenTitle', text: 'booking.placesTaken' });
+        } else if (status === 409)
           this.notify.warning({ title: 'booking.unavailable', text: 'booking.contactOrganizer' });
         this.error.set(
           status === 400
             ? 'booking.checkFields'
             : status === 502
               ? 'booking.gatewayDown'
-              : status === 409
-                ? 'booking.unavailable'
-                : 'booking.error',
+              : noPlaces
+                ? 'booking.placesTakenTitle'
+                : status === 409
+                  ? 'booking.unavailable'
+                  : 'booking.error',
         );
       }
       return undefined;

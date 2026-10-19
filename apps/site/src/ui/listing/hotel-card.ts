@@ -5,6 +5,7 @@ import { formatAmount } from '@/core/lib/format';
 import { HOTEL_AMENITY_OPTIONS, pickOptions } from '@/core/lib/listing-options';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { hotelCoverTransition } from '@/core/lib/view-transitions';
+import { FavoriteButton } from '@/ui/favorite-button';
 import { RatingStars } from '@/ui/rating-stars';
 import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
@@ -16,7 +17,14 @@ const CARD_AMENITIES = 4;
 
 @Component({
   selector: 'app-hotel-card',
-  imports: [NgOptimizedImage, RatingStars, SharedTransition, SiteLink, TranslocoPipe],
+  imports: [
+    FavoriteButton,
+    NgOptimizedImage,
+    RatingStars,
+    SharedTransition,
+    SiteLink,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a [appSiteLink]="'/hotels/' + hotel().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface motion-lift">
@@ -30,6 +38,7 @@ const CARD_AMENITIES = 4;
         @if (hotel().cancellationPolicy === 'free') {
           <span class="absolute top-2 right-2 rounded-full bg-green-700 px-2.5 py-1 text-xs font-medium text-white">{{ 'listing.cancellation.free' | transloco }}</span>
         }
+        <span class="absolute right-2 bottom-2"><app-favorite-button type="hotel" [targetId]="hotel().id" /></span>
       </div>
       <div class="flex flex-1 flex-col gap-2 p-4">
         <p class="flex items-center gap-1 text-sm text-text-muted">

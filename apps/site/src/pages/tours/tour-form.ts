@@ -1,4 +1,4 @@
-import { CancellationPolicy, type Destination, type Tour } from '@/core/api/types';
+import { CancellationPolicy, type Destination, type Tour, type TourDay } from '@/core/api/types';
 import {
   PHONE_PATTERN,
   TELEGRAM_PATTERN,
@@ -21,7 +21,9 @@ import {
 } from '@angular/core';
 import {
   FormField,
+  applyEach,
   form,
+  max,
   maxLength,
   min,
   submit,
@@ -44,10 +46,19 @@ export interface TourPayload {
   destination: Destination | null;
   cancellationPolicy: CancellationPolicy;
   coverImageUrl: string | null;
+  photos: string[];
+  program: TourDay[];
+  capacity: number | null;
   phone: string | null;
   whatsapp: string | null;
   telegram: string | null;
 }
+
+// Most days a program has, photos a tour shows and places it offers
+// (the API's limits).
+const MAX_DAYS = 30;
+const MAX_PHOTOS = 20;
+const MAX_CAPACITY = 500;
 
 interface TourFormModel {
   title: string;
@@ -60,6 +71,9 @@ interface TourFormModel {
   destination: string;
   cancellationPolicy: string;
   cover: string[];
+  photos: string[];
+  program: TourDay[];
+  capacity: number | null;
   content: string;
   whatsapp: string;
   telegram: string;
@@ -78,6 +92,9 @@ function toModel(tour: Partial<Tour> | undefined): TourFormModel {
     destination: tour?.destination ?? '',
     cancellationPolicy: tour?.cancellationPolicy ?? CancellationPolicy.FLEXIBLE,
     cover: tour?.coverImageUrl ? [tour.coverImageUrl] : [],
+    photos: tour?.photos ?? [],
+    program: (tour?.program ?? []).map((day) => ({ ...day })),
+    capacity: tour?.capacity ?? null,
     content: tour?.content ?? '',
     whatsapp: tour?.whatsapp ?? '',
     telegram: tour?.telegram ?? '',
@@ -118,6 +135,12 @@ function toModel(tour: Partial<Tour> | undefined): TourFormModel {
           <input class="ui-input" [formField]="tourForm.location" />
         </label>
       </div>
+      <label class="ui-field sm:max-w-xs">
+        {{ 'tours.capacityLabel' | transloco }}
+        <input class="ui-input" type="number" inputmode="numeric" [formField]="tourForm.capacity" />
+        <span class="ui-hint">{{ 'tours.capacityHint' | transloco }}</span>
+        <app-field-errors [state]="tourForm.capacity()" />
+      </label>
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <label class="ui-field">
           {{ 'tours.startDateLabel' | transloco }} *
@@ -171,10 +194,50 @@ function toModel(tour: Partial<Tour> | undefined): TourFormModel {
         <div class="w-40"><app-photo-uploader folder="tours" [limit]="1" [formField]="tourForm.cover" /></div>
       </div>
       <div class="ui-field">
+        <span>{{ 'tours.photosLabel' | transloco }}</span>
+        <app-photo-uploader folder="tours" [limit]="maxPhotos" [formField]="tourForm.photos" />
+      </div>
+      <div class="ui-field">
         <span>{{ 'tours.contentLabel' | transloco }} *</span>
         <app-rich-text-editor [placeholder]="'tours.contentPlaceholder' | transloco" [formField]="tourForm.content" />
         <app-field-errors [state]="tourForm.content()" />
       </div>
+      <fieldset class="flex flex-col gap-3">
+        <legend class="mb-1 font-medium text-text">{{ 'tours.program.heading' | transloco }}</legend>
+        <p class="ui-hint -mt-1">{{ 'tours.program.hint' | transloco }}</p>
+        @for (day of tourForm.program; track day; let index = $index) {
+          <div class="ui-card flex gap-3 p-3" animate.enter="motion-roll-in">
+            <span class="flex size-[1.875rem] shrink-0 items-center justify-center rounded-full bg-brand-600 text-[0.8125rem] font-bold text-white" aria-hidden="true">{{ index + 1 }}</span>
+            <div class="flex min-w-0 flex-1 flex-col gap-2">
+              <label class="ui-field">
+                <span>{{ 'tours.program.day' | transloco: { day: index + 1 } }} *</span>
+                <input class="ui-input" [placeholder]="'tours.program.titlePlaceholder' | transloco" [formField]="day.title" />
+                <app-field-errors [state]="day.title()" />
+              </label>
+              <label class="ui-field">
+                <span class="sr-only">{{ 'tours.program.textLabel' | transloco }}</span>
+                <textarea class="ui-input" rows="2" [placeholder]="'tours.program.textPlaceholder' | transloco" [formField]="day.text"></textarea>
+              </label>
+            </div>
+            <div class="flex flex-col gap-1">
+              <button type="button" class="ui-icon-btn size-8" [disabled]="index === 0" [attr.aria-label]="'tours.program.up' | transloco" (click)="moveDay(index, -1)">
+                <span class="icon-[heroicons--chevron-up] size-4" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="ui-icon-btn size-8" [disabled]="index === model().program.length - 1" [attr.aria-label]="'tours.program.down' | transloco" (click)="moveDay(index, 1)">
+                <span class="icon-[heroicons--chevron-down] size-4" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="ui-icon-btn size-8 hover:text-danger" [attr.aria-label]="'tours.program.remove' | transloco" (click)="removeDay(index)">
+                <span class="icon-[heroicons--trash] size-4" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+        }
+        @if (model().program.length < maxDays) {
+          <button type="button" class="ui-btn-soft self-start" (click)="addDay()">
+            <span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'tours.program.add' | transloco }}
+          </button>
+        }
+      </fieldset>
 
       @if (errorKey(); as key) {
         <p class="ui-error" role="alert">{{ key | transloco }}</p>
@@ -193,8 +256,10 @@ export class TourForm {
   protected readonly destinations = DESTINATION_OPTIONS;
   protected readonly cancellations = CANCELLATION_OPTIONS;
   protected readonly errorKey = signal<string | null>(null);
+  protected readonly maxDays = MAX_DAYS;
+  protected readonly maxPhotos = MAX_PHOTOS;
 
-  private readonly model = linkedSignal(() => toModel(this.tour()));
+  protected readonly model = linkedSignal(() => toModel(this.tour()));
   protected readonly tourForm = form(this.model, (path) => {
     const t = (key: string): string => this.transloco.translate(key);
     validateStandardSchema(
@@ -207,8 +272,15 @@ export class TourForm {
         whatsapp: optionalPattern(PHONE_PATTERN, t('listing.form.invalidPhone')),
         phone: optionalPattern(PHONE_PATTERN, t('listing.form.invalidPhone')),
         telegram: optionalPattern(TELEGRAM_PATTERN, t('listing.form.invalidTelegram')),
+        program: z.array(
+          z.object({ title: z.string().check(z.trim(), z.minLength(1, t('login.required'))) }),
+        ),
       }),
     );
+    applyEach(path.program, (day) => {
+      maxLength(day.title, 120);
+      maxLength(day.text, 2000);
+    });
     validate(path.endDate, (field) => {
       const start = field.valueOf(path.startDate);
       const end = field.value();
@@ -222,7 +294,32 @@ export class TourForm {
     maxLength(path.content, 20000);
     min(path.price, 0);
     min(path.durationDays, 1);
+    min(path.capacity, 1);
+    max(path.capacity, MAX_CAPACITY);
   });
+
+  protected addDay(): void {
+    this.model.update((value) => ({
+      ...value,
+      program: [...value.program, { title: '', text: '' }],
+    }));
+  }
+
+  protected removeDay(index: number): void {
+    this.model.update((value) => ({
+      ...value,
+      program: value.program.filter((_, i) => i !== index),
+    }));
+  }
+
+  protected moveDay(index: number, delta: number): void {
+    this.model.update((value) => {
+      const program = [...value.program];
+      const [day] = program.splice(index, 1);
+      if (day) program.splice(index + delta, 0, day);
+      return { ...value, program };
+    });
+  }
 
   protected async send(event: Event): Promise<void> {
     event.preventDefault();
@@ -242,6 +339,9 @@ export class TourForm {
           destination: (value.destination || null) as Destination | null,
           cancellationPolicy: value.cancellationPolicy as CancellationPolicy,
           coverImageUrl: value.cover[0] ?? null,
+          photos: value.photos,
+          program: value.program.map((day) => ({ title: day.title.trim(), text: day.text.trim() })),
+          capacity: value.capacity,
           phone: emptyToNull(value.phone),
           whatsapp: emptyToNull(value.whatsapp),
           telegram: telegramUsername(value.telegram),

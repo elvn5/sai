@@ -1,11 +1,12 @@
-import { ReviewTargetType, type Tour } from '@/core/api/types';
+import { type PublicAuthor, ReviewTargetType, type Tour } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
-import { formatAmount, formatDateRange, todayInBishkek } from '@/core/lib/format';
+import { formatAmount, formatDateRange, personName, todayInBishkek } from '@/core/lib/format';
 import { trackListingView } from '@/core/lib/listing-stats';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { usePageChrome } from '@/core/lib/page-chrome';
+import { FEW_PLACES, placesLeft, placesResource } from '@/core/lib/places';
 import { loaded } from '@/core/lib/resource';
 import { injectScrollSpy } from '@/core/lib/scroll-spy';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
@@ -15,17 +16,29 @@ import { plainText, touristTrip } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
 import { TourBooking } from '@/pages/tours/tour-booking';
+import { TourProgram } from '@/pages/tours/tour-program';
 import { injectConfirm } from '@/ui/confirm-dialog';
+import { FavoriteButton } from '@/ui/favorite-button';
 import { ContactCard } from '@/ui/listing/contact-card';
 import { PostsFeed } from '@/ui/listing/posts-feed';
 import { reviewsResource } from '@/ui/listing/reviews';
 import { ReviewsSection } from '@/ui/listing/reviews-section';
 import { LoadError } from '@/ui/load-error';
+import { PersonAvatar } from '@/ui/person-avatar';
+import { PhotoGrid } from '@/ui/photo-grid';
 import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 
@@ -35,14 +48,18 @@ import { firstValueFrom } from 'rxjs';
   selector: 'app-tour-page',
   imports: [
     ContactCard,
+    FavoriteButton,
     LoadError,
     NgOptimizedImage,
     NotFoundPage,
+    PersonAvatar,
+    PhotoGrid,
     PostsFeed,
     ReviewsSection,
     SharedTransition,
     SiteLink,
     TourBooking,
+    TourProgram,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,10 +81,18 @@ import { firstValueFrom } from 'rxjs';
             <a appSiteLink="/tours" class="flex size-10 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-sm" [attr.aria-label]="'tours.heading' | transloco">
               <span class="icon-[heroicons--chevron-left] size-5" aria-hidden="true"></span>
             </a>
-            <button type="button" class="flex size-10 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-sm" [attr.aria-label]="'listing.share' | transloco" (click)="share(item)">
-              <span class="icon-[heroicons--share] size-5" aria-hidden="true"></span>
-            </button>
+            <div class="flex gap-2">
+              <button type="button" class="flex size-10 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-sm" [attr.aria-label]="'listing.share' | transloco" (click)="share(item)">
+                <span class="icon-[heroicons--share] size-5" aria-hidden="true"></span>
+              </button>
+              <app-favorite-button type="tour" [targetId]="item.id" />
+            </div>
           </div>
+          @if (gallery().length > 1) {
+            <button type="button" class="ui-chip-on-image absolute bottom-7 left-3" (click)="photoGrid()?.open(0)">
+              <span class="icon-[heroicons--photo] size-3.5" aria-hidden="true"></span>{{ 'gallery.count' | transloco: { count: gallery().length } }}
+            </button>
+          }
         </div>
 
         <div class="ui-container relative -mt-4 rounded-t-2xl bg-bg pt-4 lg:mt-0 lg:rounded-none lg:pt-0">
@@ -79,9 +104,12 @@ import { firstValueFrom } from 'rxjs';
                 <a [appSiteLink]="'/tours?destination=' + item.destination">{{ 'destinations.' + item.destination | transloco }}</a>
               }
             </nav>
-            <button type="button" class="ui-btn-ghost" (click)="share(item)">
-              <span class="icon-[heroicons--share] size-4" aria-hidden="true"></span>{{ 'listing.share' | transloco }}
-            </button>
+            <div class="flex items-center gap-1">
+              <button type="button" class="ui-btn-ghost" (click)="share(item)">
+                <span class="icon-[heroicons--share] size-4" aria-hidden="true"></span>{{ 'listing.share' | transloco }}
+              </button>
+              <app-favorite-button type="tour" variant="plain" [targetId]="item.id" />
+            </div>
           </div>
           <h1 class="text-xl leading-tight font-extrabold tracking-tight text-text sm:text-[2rem] lg:mt-2.5">{{ item.title }}</h1>
           <div class="mt-2.5 flex flex-wrap items-center gap-1.5">
@@ -97,6 +125,11 @@ import { firstValueFrom } from 'rxjs';
             @if (item.cancellationPolicy === 'free') {
               <span class="ui-badge ui-badge-success"><span class="icon-[heroicons--check]" aria-hidden="true"></span>{{ 'listing.cancellation.free' | transloco }}</span>
             }
+            @if (left() !== null) {
+              <span class="ui-badge" [class]="left() === 0 ? 'ui-badge-danger' : left()! <= fewPlaces ? 'ui-badge-warning' : 'ui-badge-soft'">
+                <span class="icon-[heroicons--fire]" aria-hidden="true"></span>{{ placesLabel() | transloco: { count: left() } }}
+              </span>
+            }
             @if (item.reviewCount > 0) {
               <a href="#reviews" class="ml-1 inline-flex items-center gap-1 text-[0.8125rem]">
                 <span class="icon-[heroicons--star-solid] size-4 text-secondary-400" aria-hidden="true"></span>
@@ -109,19 +142,31 @@ import { firstValueFrom } from 'rxjs';
           <div class="mt-4 flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_21.25rem] lg:items-start lg:gap-[1.625rem]">
             <div class="flex min-w-0 flex-col gap-8">
               <div>
-                @if (item.coverImageUrl) {
+                <!-- Hidden on phones, where the chip on the photo opens its lightbox. -->
+                @if (gallery().length > 1) {
+                  <app-photo-grid class="hidden lg:block" variant="tour" [photos]="gallery()" [alt]="item.title" [sharedName]="item.coverImageUrl ? coverTransition(item.id) : null" sharedMedia="(width >= 64rem)" />
+                } @else if (item.coverImageUrl) {
                   <div class="relative hidden aspect-video overflow-hidden rounded-[0.875rem] lg:block" [appSharedTransition]="coverTransition(item.id)" [sharedAlways]="true" [sharedMedia]="'(width >= 64rem)'">
                     <img [ngSrc]="media(item.coverImageUrl)" fill priority sizes="(min-width: 1024px) 60vw, 100vw" alt="" class="object-cover" />
                   </div>
                 }
                 <nav class="ui-tabs sticky top-15 z-10 -mx-4 bg-bg/92 px-4 backdrop-blur-sm lg:mx-0 lg:mt-4 lg:px-0" [attr.aria-label]="'tours.sections' | transloco">
                   <a href="#about" class="ui-tab" [attr.aria-current]="spy.active() === 'about' ? 'true' : null" (click)="spy.go('about', $event)">{{ 'tours.tabs.about' | transloco }}</a>
+                  @if (item.program.length > 0) {
+                    <a href="#program" class="ui-tab" [attr.aria-current]="spy.active() === 'program' ? 'true' : null" (click)="spy.go('program', $event)">{{ 'tours.tabs.program' | transloco }}</a>
+                  }
                   <a href="#reviews" class="ui-tab" [attr.aria-current]="spy.active() === 'reviews' ? 'true' : null" (click)="spy.go('reviews', $event)">
                     {{ 'tours.tabs.reviews' | transloco }}
                     @if (item.reviewCount > 0) { · {{ item.reviewCount }} }
                   </a>
                 </nav>
                 <div id="about" class="prose prose-neutral dark:prose-invert mt-4 max-w-none scroll-mt-28" [innerHTML]="item.content"></div>
+                @if (item.program.length > 0) {
+                  <section id="program" class="mt-8 scroll-mt-28" aria-labelledby="program-heading">
+                    <h2 id="program-heading" class="mb-3.5 text-lg font-bold text-text">{{ 'tours.program.heading' | transloco }}</h2>
+                    <app-tour-program [days]="item.program" />
+                  </section>
+                }
                 @if (isOwner()) {
                   <div class="mt-6 flex flex-wrap gap-2">
                     <a [appSiteLink]="'/partner/tours/' + item.id" class="ui-btn-soft">
@@ -153,7 +198,21 @@ import { firstValueFrom } from 'rxjs';
                 <!-- Depends on who's signed in: hydrate early, not on interaction
                      (a replayed click on the anonymous "sign in" would leave). -->
                 @defer (on idle; hydrate on idle) {
-                  <app-tour-booking [tour]="item" />
+                  <app-tour-booking [tour]="item" [placesLeft]="left()" (placesTaken)="places.reload()" />
+                }
+                @if (item.organizer; as organizer) {
+                  <div class="ui-card flex items-center gap-3 p-3.5">
+                    <app-person-avatar [person]="organizer" [size]="44" />
+                    <div class="min-w-0">
+                      <p class="text-xs text-text-muted">{{ 'tours.organizer' | transloco }}</p>
+                      <p class="truncate font-semibold text-text">{{ organizerName(organizer) }}</p>
+                    </div>
+                    @if (item.reviewCount > 0) {
+                      <span class="ml-auto inline-flex items-center gap-1 text-[0.8125rem]">
+                        <span class="icon-[heroicons--star-solid] size-4 text-secondary-400" aria-hidden="true"></span><b class="text-text">{{ item.ratingAverage.toFixed(1) }}</b>
+                      </span>
+                    }
+                  </div>
                 }
                 <app-contact-card
                   [targetType]="targetType"
@@ -224,8 +283,33 @@ export class TourPage {
       : null;
   });
   protected readonly deleting = signal(false);
+  // The cover and the other photos, for the gallery.
+  protected readonly gallery = computed(() => {
+    const item = this.item();
+    if (!item) return [];
+    return [...(item.coverImageUrl ? [item.coverImageUrl] : []), ...item.photos];
+  });
+  protected readonly photoGrid = viewChild(PhotoGrid);
+  // Free places (tours with a limit), counted in the browser.
+  protected readonly places = placesResource(() => {
+    const item = this.item();
+    return item?.capacity != null ? [item.id] : undefined;
+  });
+  protected readonly left = computed(() => {
+    const item = this.item();
+    return item ? placesLeft(item, loaded(this.places)) : null;
+  });
+  protected readonly fewPlaces = FEW_PLACES;
+  protected readonly placesLabel = computed(() => {
+    const left = this.left();
+    return left === 0
+      ? 'tours.places.none'
+      : left !== null && left <= FEW_PLACES
+        ? 'tours.places.few'
+        : 'tours.places.free';
+  });
   // The tab of the section being read: description or reviews.
-  protected readonly spy = injectScrollSpy(['about', 'reviews'] as const);
+  protected readonly spy = injectScrollSpy(['about', 'program', 'reviews'] as const);
   private readonly confirm = injectConfirm();
   private readonly notify = inject(Notify);
 
@@ -282,6 +366,10 @@ export class TourPage {
   // The cover the tour's card flew in from (motion.css).
   protected coverTransition(id: string): string {
     return tourCoverTransition(id);
+  }
+
+  protected organizerName(organizer: PublicAuthor): string {
+    return personName(organizer);
   }
 
   protected refresh(): void {

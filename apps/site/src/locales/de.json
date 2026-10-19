@@ -95,7 +95,9 @@
     "deleteConfirm": "Dieses Foto löschen?",
     "next": "Weiter",
     "previous": "Zurück",
-    "close": "Schließen"
+    "close": "Schließen",
+    "more": "+{count} Fotos",
+    "count": "{count} Fotos"
   },
   "guides": {
     "heading": "Guides",
@@ -177,9 +179,41 @@
     "sections": "Abschnitte der Tour",
     "tabs": {
       "about": "Beschreibung",
-      "reviews": "Bewertungen"
+      "reviews": "Bewertungen",
+      "program": "Programm"
     },
-    "perPersonShort": "p. P."
+    "perPersonShort": "p. P.",
+    "program": {
+      "heading": "Programm nach Tagen",
+      "day": "Tag {day}",
+      "all": "Alle {count} Tage zeigen",
+      "less": "Weniger zeigen",
+      "hint": "Was an jedem Tag passiert: Route, Übernachtung, Anstrengung.",
+      "titlePlaceholder": "z. B. Bischkek → Tamga",
+      "textLabel": "Beschreibung des Tages",
+      "textPlaceholder": "Transfer, Stopps, Übernachtung",
+      "up": "Nach oben",
+      "down": "Nach unten",
+      "remove": "Tag entfernen",
+      "add": "Tag hinzufügen"
+    },
+    "places": {
+      "free": "Freie Plätze: {count}",
+      "few": "Nur noch {count} Plätze",
+      "none": "Ausgebucht"
+    },
+    "organizer": "Veranstalter",
+    "dates": {
+      "button": "Daten",
+      "from": "Von",
+      "to": "Bis",
+      "apply": "Anzeigen",
+      "fromValue": "ab {date}",
+      "toValue": "bis {date}"
+    },
+    "capacityLabel": "Gruppengröße",
+    "capacityHint": "Leer lassen für unbegrenzt. Online-Buchungen überschreiten diese Zahl nicht.",
+    "photosLabel": "Fotos für die Galerie"
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -494,7 +528,22 @@
     "signingIn": "Anmeldung…",
     "withTelegram": "Mit Telegram anmelden",
     "showPassword": "Passwort anzeigen",
-    "hidePassword": "Passwort verbergen"
+    "hidePassword": "Passwort verbergen",
+    "forgot": {
+      "link": "Passwort vergessen?",
+      "title": "Passwort zurücksetzen",
+      "subtitle": "Wir senden dir einen Code per E-Mail, um ein neues Passwort festzulegen.",
+      "submit": "Code senden",
+      "phoneHint": "Mit Telefon registriert? Melde dich über Telegram an – ohne Passwort.",
+      "invalidEmail": "Gib die E-Mail ein, mit der du dich registriert hast",
+      "tooOften": "Ein Code wurde gerade gesendet – warte eine Minute"
+    },
+    "reset": {
+      "title": "Neues Passwort",
+      "passwordLabel": "Neues Passwort",
+      "submit": "Speichern und anmelden",
+      "done": "Passwort geändert"
+    }
   },
   "profile": {
     "logout": "Abmelden",
@@ -505,7 +554,8 @@
       "partner": "Partnerschaft",
       "listings": "Meine Angebote",
       "achievements": "Ruhmeshalle",
-      "bookings": "Buchungen"
+      "bookings": "Buchungen",
+      "favorites": "Favoriten"
     },
     "listings": {
       "guideHeading": "Guide-Profil",
@@ -559,7 +609,11 @@
       "outings": "Touren",
       "bookings": "Bezahlte Buchungen",
       "points": "Punkte",
-      "awards": "Erfolge"
+      "awards": "Erfolge",
+      "distance": "Strecke",
+      "elevation": "Höhenmeter",
+      "kmValue": "{value} km",
+      "metersValue": "{value} m"
     }
   },
   "footer": {
@@ -1007,7 +1061,10 @@
     "holdUntil": "reserviert bis {time}",
     "openTour": "Zur Tour",
     "bookAgain": "Erneut buchen",
-    "noBookingsHint": "Wählen Sie eine Tour — Buchen und Bezahlen dauern nur ein paar Minuten."
+    "noBookingsHint": "Wählen Sie eine Tour — Buchen und Bezahlen dauern nur ein paar Minuten.",
+    "soldOut": "Alle Plätze für diese Termine sind vergeben. Sieh dir andere Touren an oder schreib dem Veranstalter.",
+    "placesTakenTitle": "Nicht genug Plätze",
+    "placesTaken": "Während du das Formular ausgefüllt hast, wurden Plätze vergeben. Wähle weniger Personen."
   },
   "cabinet": {
     "title": "Partnerbereich",
@@ -1241,5 +1298,24 @@
     "placeholderShort": "Wohin?",
     "submit": "Suchen",
     "popular": "Beliebt:"
+  },
+  "favorites": {
+    "add": "Zu Favoriten hinzufügen",
+    "remove": "Aus Favoriten entfernen",
+    "saved": "Zu Favoriten hinzugefügt",
+    "removed": "Aus Favoriten entfernt",
+    "undo": "Rückgängig",
+    "failed": "Speichern fehlgeschlagen",
+    "empty": "Noch keine Favoriten",
+    "emptyHint": "Tippe auf das Herz bei einer Tour, einem Hotel oder Guide – es erscheint hier."
+  },
+  "tourAlerts": {
+    "follow": "Über neue Touren informieren",
+    "following": "Abonniert",
+    "followed": "Wir schreiben dir auf Telegram, sobald neue Touren erscheinen",
+    "unfollowed": "Benachrichtigungen über neue Touren sind aus",
+    "linkFirst": "Benachrichtigungen kommen über Telegram – verknüpfe es zuerst mit deinem Konto.",
+    "unavailable": "Benachrichtigungen sind gerade nicht verfügbar",
+    "failed": "Abonnieren fehlgeschlagen"
   }
 }

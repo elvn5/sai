@@ -414,3 +414,47 @@ func TestPasswordReset(t *testing.T) {
 		t.Errorf("code reused: %d %s", r.status, r.body)
 	}
 }
+
+// The reset code can't be brute-forced, requested in a loop or used late.
+func TestPasswordResetLimits(t *testing.T) {
+	e := setup(t)
+	e.do("POST", "/auth/user/register", `{"email":"bek@example.kg","password":"old-secret"}`)
+	e.do("POST", "/auth/user/verify", `{"identifier":"bek@example.kg","code":"`+e.email.codes["bek@example.kg"]+`"}`)
+	*e.clock = e.clock.Add(2 * time.Minute)
+
+	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"bek@example.kg"}`); r.status != 200 {
+		t.Fatalf("forgot: %d %s", r.status, r.body)
+	}
+	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"bek@example.kg"}`); r.status != 429 {
+		t.Errorf("resend within the cooldown: %d %s", r.status, r.body)
+	}
+	code := e.email.codes["bek@example.kg"]
+	wrong := "000000"
+	if code == wrong {
+		wrong = "111111"
+	}
+	reset := func(c string) int {
+		return e.do("POST", "/auth/user/password/reset", `{"identifier":"bek@example.kg","code":"`+c+`","password":"new-secret"}`).status
+	}
+	for range 5 {
+		if status := reset(wrong); status != 401 {
+			t.Fatalf("wrong code: %d", status)
+		}
+	}
+	// Five misses lock the code: even the right one fails now.
+	if status := reset(code); status != 400 {
+		t.Errorf("right code after five misses: %d", status)
+	}
+	if r := e.do("POST", "/auth/user/login", `{"identifier":"bek@example.kg","password":"old-secret"}`); r.status != 200 {
+		t.Errorf("password changed despite the lock: %d", r.status)
+	}
+
+	// A new code expires after ten minutes.
+	*e.clock = e.clock.Add(2 * time.Minute)
+	e.do("POST", "/auth/user/password/forgot", `{"identifier":"bek@example.kg"}`)
+	code = e.email.codes["bek@example.kg"]
+	*e.clock = e.clock.Add(11 * time.Minute)
+	if status := reset(code); status != 400 {
+		t.Errorf("expired code: %d", status)
+	}
+}

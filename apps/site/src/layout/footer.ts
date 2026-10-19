@@ -5,7 +5,7 @@ import { ColorThemeToggle } from '@/layout/color-theme-toggle';
 import { AppLogo } from '@/ui/app-logo';
 import { LegalLinks } from '@/ui/legal-links';
 import { SiteLink } from '@/ui/site-link';
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, inject } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 @Component({
@@ -101,6 +101,13 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
             @if (company.name) {
               <p class="mt-1">{{ requisites() }}</p>
             }
+            @if (version) {
+              <!-- A triple click opens the developer menu (layout/dev-menu.ts);
+                   out of the tab order, it reads as plain text. -->
+              <button type="button" tabindex="-1" class="mt-1 block cursor-text text-xs text-text-muted tabular-nums select-none" (click)="versionClick($event)">
+                {{ 'footer.version' | transloco: { version } }}
+              </button>
+            }
           </div>
           <nav [attr.aria-label]="'footer.sections.legal' | transloco">
             <app-legal-links class="[&_ul]:justify-center sm:[&_ul]:justify-end" linkClass="text-text-muted hover:text-text hover:underline" />
@@ -117,6 +124,17 @@ export class Footer {
   protected readonly telegramUrl = this.botUsername ? `https://t.me/${this.botUsername}` : null;
   protected readonly year = new Date().getFullYear();
   protected readonly company = COMPANY;
+  protected readonly version = inject(APP_CONFIG).version;
+  // The developer menu exists only with a password in the config.
+  private readonly devMenu = Boolean(inject(APP_CONFIG).devMenuPasswordHash);
+  private readonly injector = inject(Injector);
+
+  protected async versionClick(event: MouseEvent): Promise<void> {
+    if (event.detail !== 3 || !this.devMenu) return;
+    // Loaded on demand, CDK Dialog included: not in every page's bundle.
+    const { openDevMenu } = await import('@/layout/dev-menu');
+    openDevMenu(this.injector);
+  }
 
   // "ОсОО «…», ИНН 0123…, г. Бишкек, …" — the operator, as the bank asks.
   protected requisites(): string {

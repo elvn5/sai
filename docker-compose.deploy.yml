@@ -195,6 +195,9 @@ services:
       SITE_URL: ${PUBLIC_SITE_URL}
       TELEGRAM_BOT_USERNAME: ${PUBLIC_TELEGRAM_BOT_USERNAME}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      # Shown in the footer: the deployed image's tag.
+      APP_VERSION: ${IMAGE_TAG}
+      DEV_MENU_PASSWORD_HASH: ${DEV_MENU_PASSWORD_HASH:-}
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${CLIENT_PORT}:3000"
     depends_on:

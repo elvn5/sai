@@ -630,7 +630,63 @@
     "location": "Kyrgyzstan",
     "bottomTagline": "guides and routes across Kyrgyzstan",
     "rights": "All rights reserved.",
-    "taxId": "Tax ID"
+    "taxId": "Tax ID",
+    "version": "Version {version}"
+  },
+  "devMenu": {
+    "title": "Developer menu",
+    "hint": "Switches apply to this browser only and stay until reset.",
+    "password": {
+      "title": "Developer access",
+      "label": "Password",
+      "submit": "Unlock",
+      "wrong": "Wrong password"
+    },
+    "reset": "Reset all",
+    "resetDone": "All features are on again",
+    "done": "Done",
+    "flags": {
+      "favorites": {
+        "title": "Favorites",
+        "text": "Hearts on cards and pages"
+      },
+      "tourAlerts": {
+        "title": "“Tell me about new tours”",
+        "text": "Telegram alerts about new tours"
+      },
+      "booking": {
+        "title": "Online booking",
+        "text": "The booking form on a tour page"
+      },
+      "tourDates": {
+        "title": "Date filter",
+        "text": "Picking dates in the tour catalog"
+      },
+      "showMore": {
+        "title": "“Show more”",
+        "text": "The tour catalog in parts; off — the whole list at once"
+      },
+      "tourGallery": {
+        "title": "Tour gallery",
+        "text": "Photo grid and viewer; off — the cover only"
+      },
+      "tourProgram": {
+        "title": "Day-by-day program",
+        "text": "The “Program” section and tab"
+      },
+      "placesLeft": {
+        "title": "Places left",
+        "text": "How many free places a tour has"
+      },
+      "passwordReset": {
+        "title": "Password reset",
+        "text": "The “Forgot password?” link on the sign-in page"
+      },
+      "viewTransitions": {
+        "title": "Page transitions",
+        "text": "View Transitions between pages"
+      }
+    }
   },
   "cookieConsent": {
     "title": "Cookie notice",

@@ -3,6 +3,7 @@ import {
   FavoritesStore,
   injectFavoriteToggle,
 } from '@/core/favorites/favorites.store';
+import { FeatureFlags } from '@/core/feature-flags/feature-flags';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
@@ -15,20 +16,22 @@ import { TranslocoPipe } from '@jsverse/transloco';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    <button
-      type="button"
-      class="flex shrink-0 items-center justify-center rounded-full transition-colors"
-      [class]="variant() === 'image' ? 'size-9 bg-white/92 text-slate-900 shadow-sm hover:bg-white' : 'size-10 text-text-muted hover:bg-text/6 hover:text-text'"
-      [attr.aria-pressed]="saved()"
-      [attr.aria-label]="(saved() ? 'favorites.remove' : 'favorites.add') | transloco"
-      (click)="click($event)"
-    >
-      @if (saved()) {
-        <span class="icon-[heroicons--heart-solid] motion-pop size-5 text-red-500" aria-hidden="true"></span>
-      } @else {
-        <span class="icon-[heroicons--heart] size-5" aria-hidden="true"></span>
-      }
-    </button>
+    @if (flags.isOn('favorites')) {
+      <button
+        type="button"
+        class="flex shrink-0 items-center justify-center rounded-full transition-colors"
+        [class]="variant() === 'image' ? 'size-9 bg-white/92 text-slate-900 shadow-sm hover:bg-white' : 'size-10 text-text-muted hover:bg-text/6 hover:text-text'"
+        [attr.aria-pressed]="saved()"
+        [attr.aria-label]="(saved() ? 'favorites.remove' : 'favorites.add') | transloco"
+        (click)="click($event)"
+      >
+        @if (saved()) {
+          <span class="icon-[heroicons--heart-solid] motion-pop size-5 text-red-500" aria-hidden="true"></span>
+        } @else {
+          <span class="icon-[heroicons--heart] size-5" aria-hidden="true"></span>
+        }
+      </button>
+    }
   `,
 })
 export class FavoriteButton {
@@ -36,6 +39,7 @@ export class FavoriteButton {
   readonly targetId = input.required<string>();
   readonly variant = input<'image' | 'plain'>('image');
 
+  protected readonly flags = inject(FeatureFlags);
   private readonly store = inject(FavoritesStore);
   private readonly toggle = injectFavoriteToggle();
   protected readonly saved = computed(() => this.store.has(this.type(), this.targetId()));

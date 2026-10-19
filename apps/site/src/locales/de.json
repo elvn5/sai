@@ -630,7 +630,63 @@
     "location": "Kirgisistan",
     "bottomTagline": "Guides und Routen in Kirgisistan",
     "rights": "Alle Rechte vorbehalten.",
-    "taxId": "Steuernummer"
+    "taxId": "Steuernummer",
+    "version": "Version {version}"
+  },
+  "devMenu": {
+    "title": "Entwicklermenü",
+    "hint": "Die Schalter gelten nur in diesem Browser und bleiben bis zum Zurücksetzen.",
+    "password": {
+      "title": "Zugang für Entwickler",
+      "label": "Passwort",
+      "submit": "Entsperren",
+      "wrong": "Falsches Passwort"
+    },
+    "reset": "Alles zurücksetzen",
+    "resetDone": "Alle Funktionen sind wieder an",
+    "done": "Fertig",
+    "flags": {
+      "favorites": {
+        "title": "Favoriten",
+        "text": "Herzen auf Karten und Seiten"
+      },
+      "tourAlerts": {
+        "title": "„Über neue Touren informieren“",
+        "text": "Telegram-Benachrichtigungen über neue Touren"
+      },
+      "booking": {
+        "title": "Online-Buchung",
+        "text": "Das Buchungsformular auf der Tourseite"
+      },
+      "tourDates": {
+        "title": "Datumsfilter",
+        "text": "Datumsauswahl im Tourenkatalog"
+      },
+      "showMore": {
+        "title": "„Mehr anzeigen“",
+        "text": "Tourenkatalog in Teilen; aus — die ganze Liste auf einmal"
+      },
+      "tourGallery": {
+        "title": "Tour-Galerie",
+        "text": "Fotoraster und Ansicht; aus — nur das Titelbild"
+      },
+      "tourProgram": {
+        "title": "Programm nach Tagen",
+        "text": "Der Abschnitt und Reiter „Programm“"
+      },
+      "placesLeft": {
+        "title": "Freie Plätze",
+        "text": "Wie viele Plätze eine Tour noch hat"
+      },
+      "passwordReset": {
+        "title": "Passwort zurücksetzen",
+        "text": "Der Link „Passwort vergessen?“ auf der Anmeldeseite"
+      },
+      "viewTransitions": {
+        "title": "Seitenübergänge",
+        "text": "View Transitions zwischen Seiten"
+      }
+    }
   },
   "cookieConsent": {
     "title": "Cookie-Hinweis",

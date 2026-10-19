@@ -19,7 +19,17 @@ describe('configFromEnv', () => {
       telegramBotUsername: 'ermekten_bot',
       mediaPublicUrl: 'https://media.ermekten.com',
       indexable: true,
+      version: '',
+      devMenuPasswordHash: '',
     });
+  });
+
+  it('reads the version and the developer menu password hash', () => {
+    const hash = 'A'.repeat(64);
+    const config = configFromEnv({ APP_VERSION: '1.2.3', DEV_MENU_PASSWORD_HASH: ` ${hash} ` });
+    expect(config.version).toBe('1.2.3');
+    expect(config.devMenuPasswordHash).toBe('a'.repeat(64));
+    expect(configFromEnv({ DEV_MENU_PASSWORD_HASH: 'secret' }).devMenuPasswordHash).toBe('');
   });
 
   it('keeps the internal API address out of the browser config', () => {

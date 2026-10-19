@@ -16,12 +16,12 @@ import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
-import { HeroImage } from '@/pages/home/hero-image';
 import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
 import { AwardCodeCard } from '@/ui/achievements/award-code-card';
 import { HallPodium } from '@/ui/achievements/hall-podium';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
+import { MountainScene } from '@/ui/mountain-scene';
 import { OrderCard } from '@/ui/order-card';
 import { OutingCard } from '@/ui/outing-card';
 import { PersonAvatar } from '@/ui/person-avatar';
@@ -63,7 +63,7 @@ interface ListingItem {
     AchievementShelf,
     AwardCodeCard,
     HallPodium,
-    HeroImage,
+    MountainScene,
     ListSkeleton,
     LoadError,
     OrderCard,
@@ -140,7 +140,7 @@ interface ListingItem {
   template: `
     @if (auth.user(); as user) {
       <div class="relative isolate h-24 overflow-hidden sm:h-28">
-        <app-hero-image />
+        <app-mountain-scene palette="dusk" [lake]="false" />
         <div class="absolute inset-0 -z-10 bg-linear-to-b from-black/20 to-black/45"></div>
       </div>
       <section class="ui-container pb-14">

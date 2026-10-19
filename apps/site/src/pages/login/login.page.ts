@@ -6,10 +6,10 @@ import { localizedPath } from '@/core/i18n/langs';
 import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { TelegramWebAppStore } from '@/core/telegram/telegram-web-app';
-import { HeroImage } from '@/pages/home/hero-image';
 import { AppLogo } from '@/ui/app-logo';
 import { CodeInput } from '@/ui/code-input';
 import { FieldErrors } from '@/ui/field-errors';
+import { MountainScene } from '@/ui/mountain-scene';
 import { SiteLink } from '@/ui/site-link';
 import { TelegramLoginWidget } from '@/ui/telegram-login-widget';
 import { NgTemplateOutlet } from '@angular/common';
@@ -50,7 +50,7 @@ export function safeRedirect(target: string | undefined): string | null {
     CodeInput,
     FieldErrors,
     FormField,
-    HeroImage,
+    MountainScene,
     NgTemplateOutlet,
     SiteLink,
     TelegramLoginWidget,
@@ -61,7 +61,7 @@ export function safeRedirect(target: string | undefined): string | null {
     <section class="ui-container py-6 sm:py-10">
       <div class="mx-auto grid max-w-5xl overflow-hidden rounded-[1.25rem] border-border bg-surface lg:min-h-[40rem] lg:grid-cols-2 lg:border lg:shadow-[0_30px_60px_-24px_rgb(15_23_42/0.25)]">
         <div class="relative isolate hidden overflow-hidden lg:block">
-          <app-hero-image />
+          <app-mountain-scene palette="meadow" fit="bottom" />
           <div class="absolute inset-0 -z-10 bg-linear-to-t from-black/65 to-transparent to-60%"></div>
           <div class="absolute inset-x-7 bottom-8 text-white">
             <span class="flex items-center gap-2 text-[1.06rem] font-extrabold">

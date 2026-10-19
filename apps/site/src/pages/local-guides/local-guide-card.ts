@@ -3,7 +3,9 @@ import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount } from '@/core/lib/format';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { guideAvatarTransition } from '@/core/lib/view-transitions';
 import { RatingStars } from '@/ui/rating-stars';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
@@ -13,13 +15,13 @@ const CARD_DESTINATIONS = 3;
 
 @Component({
   selector: 'app-local-guide-card',
-  imports: [NgOptimizedImage, RatingStars, SiteLink, TranslocoPipe],
+  imports: [NgOptimizedImage, RatingStars, SharedTransition, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a [appSiteLink]="'/local-guides/' + guide().slug" class="flex h-full flex-col gap-3 rounded-card border border-border bg-surface p-4 motion-lift">
       <div class="flex items-center gap-3">
         @if (avatar(); as url) {
-          <img [ngSrc]="url" width="64" height="64" [priority]="priority()" alt="" class="size-16 shrink-0 rounded-full object-cover" />
+          <img [ngSrc]="url" width="64" height="64" [priority]="priority()" alt="" class="size-16 shrink-0 rounded-full object-cover" [appSharedTransition]="avatarTransition()" />
         } @else {
           <span class="flex size-16 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-500 to-secondary-500 text-xl font-bold text-white" aria-hidden="true">{{ initial() }}</span>
         }
@@ -76,6 +78,8 @@ export class LocalGuideCard {
   private readonly apiBaseUrl = inject(APP_CONFIG).apiBaseUrl;
   private readonly lang = injectLang();
 
+  // The portrait flies to the guide's page once clicked.
+  protected readonly avatarTransition = computed(() => guideAvatarTransition(this.guide().id));
   protected readonly avatar = computed(() => {
     const url = this.guide().avatarUrl ?? this.guide().photos[0];
     return url ? resolveMediaUrl(this.apiBaseUrl, url) : null;

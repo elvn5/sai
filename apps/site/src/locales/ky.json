@@ -517,7 +517,14 @@
       "published": "Жарыяланган",
       "draft": "Долбоор",
       "deletePost": "Постту өчүрүү",
-      "deletePostConfirm": "«{title}» постун өчүрөсүзбү?"
+      "deletePostConfirm": "«{title}» постун өчүрөсүзбү?",
+      "empty": "Жарыялар азырынча жок",
+      "emptyHint": "Тур, турак жай же гид профилин кошуңуз — аларды саякатчылар көрөт.",
+      "partnersOnly": "Өнөктөштөр гана жарыялай алат",
+      "kinds": {
+        "trail": "Маршрут",
+        "post": "Пост"
+      }
     },
     "fields": { "username": "Логин", "email": "Email", "phone": "Телефон", "telegram": "Telegram" },
     "history": {

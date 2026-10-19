@@ -30,7 +30,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
         <span class="block truncate font-semibold text-text group-hover:text-brand-700 dark:group-hover:text-brand-300">{{ outing().title }}</span>
         @if (outing().trail; as trail) {
           <span class="flex items-center gap-1 truncate text-sm text-text-muted">
-            <span class="icon-[mdi--map-marker-path] size-4 shrink-0" aria-hidden="true"></span>{{ trail.name }}
+            <span class="icon-[heroicons--map] size-4 shrink-0" aria-hidden="true"></span>{{ trail.name }}
           </span>
         }
         @if (!compact()) {

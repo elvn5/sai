@@ -1,10 +1,15 @@
 import {
   type Achievement,
+  type BlogPost,
   type HallOfFame,
+  type Hotel,
+  type LocalGuide,
   type MyAchievements,
   type Order,
   type Outing,
   PartnerStatus,
+  type Tour,
+  type Trail,
 } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { loaded } from '@/core/lib/resource';
@@ -32,11 +37,23 @@ const TABS = [
   { key: 'info', icon: 'icon-[heroicons--user]' },
   { key: 'bookings', icon: 'icon-[heroicons--ticket]' },
   { key: 'history', icon: 'icon-[heroicons--flag]' },
+  { key: 'listings', icon: 'icon-[heroicons--rectangle-stack]' },
   { key: 'achievements', icon: 'icon-[heroicons--trophy]' },
   { key: 'partner', icon: 'icon-[heroicons--briefcase]' },
 ] as const;
 
 type Tab = (typeof TABS)[number]['key'];
+
+interface ListingItem {
+  key: string;
+  // Translation key of the kind ("Tour", "Hotel"…).
+  kind: string;
+  icon: string;
+  title: string;
+  path: string;
+  editPath: string | null;
+  draft: boolean;
+}
 
 // /profile: the account, the hall of fame (own medals, award code, the
 // leaders), bookings, outings and the partner application. ?tab=partner (etc.) opens a tab. Browser only.
@@ -278,6 +295,55 @@ type Tab = (typeof TABS)[number]['key'];
                 }
               </div>
             }
+            @case ('listings') {
+              @if (auth.isPartner()) {
+                <div class="flex flex-col gap-3">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-sm text-text-muted">{{ 'cabinet.listings.subtitle' | transloco }}</p>
+                    <div class="flex gap-2">
+                      <a appSiteLink="/partner/listings" class="ui-btn-soft"><span class="icon-[heroicons--squares-2x2] size-4" aria-hidden="true"></span>{{ 'cabinet.open' | transloco }}</a>
+                      <a appSiteLink="/tours/new" class="ui-btn-primary"><span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'tours.addButton' | transloco }}</a>
+                    </div>
+                  </div>
+                  @if (listingItems(); as items) {
+                    @if (items.length > 0) {
+                      <ul class="motion-reveal flex flex-col gap-2.5">
+                        @for (item of items; track item.key) {
+                          <li class="ui-card flex items-center gap-3 px-4 py-3">
+                            <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-300">
+                              <span [class]="item.icon + ' size-[1.1rem]'" aria-hidden="true"></span>
+                            </span>
+                            <div class="min-w-0 flex-1">
+                              <p class="flex flex-wrap items-center gap-1.5">
+                                <span class="ui-badge ui-badge-soft">{{ item.kind | transloco }}</span>
+                                @if (item.draft) {
+                                  <span class="ui-badge ui-badge-muted">{{ 'profile.listings.draft' | transloco }}</span>
+                                }
+                              </p>
+                              <a [appSiteLink]="item.path" class="mt-0.5 block truncate font-semibold text-text hover:underline">{{ item.title }}</a>
+                            </div>
+                            @if (item.editPath) {
+                              <a [appSiteLink]="item.editPath" class="ui-btn-soft shrink-0"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span><span class="max-sm:sr-only">{{ 'listing.edit' | transloco }}</span></a>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                      <app-state-block icon="icon-[heroicons--rectangle-stack]" title="profile.listings.empty" text="profile.listings.emptyHint">
+                        <a appSiteLink="/tours/new" class="ui-btn-primary"><span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'tours.addButton' | transloco }}</a>
+                        <a appSiteLink="/hotels/new" class="ui-btn-soft">{{ 'hotels.addButton' | transloco }}</a>
+                      </app-state-block>
+                    }
+                  } @else {
+                    <app-list-skeleton class="motion-delayed" variant="rows" [count]="2" />
+                  }
+                </div>
+              } @else {
+                <app-state-block icon="icon-[heroicons--rectangle-stack]" title="profile.listings.partnersOnly" text="profile.partner.pitch">
+                  <button type="button" class="ui-btn-primary" (click)="open('partner')">{{ 'profile.partner.applyCta' | transloco }}</button>
+                </app-state-block>
+              }
+            }
             @case ('partner') {
               <div class="flex flex-col gap-4">
                 @switch (user.partnerStatus) {
@@ -371,6 +437,80 @@ export class ProfilePage {
       (outing) => new Date(outing.startsAt).getTime() <= Date.now(),
     ),
   );
+  // A partner's listings, every kind in one list (the cabinet has the details).
+  private readonly listingsOpen = computed(
+    () => this.active() === 'listings' && this.auth.isPartner(),
+  );
+  private readonly myTours = httpResource<Tour[]>(() =>
+    this.listingsOpen() ? '/tours/mine' : undefined,
+  );
+  private readonly myHotels = httpResource<Hotel[]>(() =>
+    this.listingsOpen() ? '/hotels/mine' : undefined,
+  );
+  private readonly myGuide = httpResource<{ guide: LocalGuide | null }>(() =>
+    this.listingsOpen() ? '/local-guides/mine' : undefined,
+  );
+  private readonly myTrails = httpResource<Trail[]>(() =>
+    this.listingsOpen() ? '/trails/mine' : undefined,
+  );
+  private readonly myPosts = httpResource<BlogPost[]>(() =>
+    this.listingsOpen() ? '/blog/mine' : undefined,
+  );
+  // null until everything has answered (a failed kind counts as empty).
+  protected readonly listingItems = computed((): ListingItem[] | null => {
+    const sources = [this.myTours, this.myHotels, this.myGuide, this.myTrails, this.myPosts];
+    if (sources.some((source) => source.isLoading())) return null;
+    const guide = loaded(this.myGuide)?.guide;
+    const guideList = guide ? [guide] : [];
+    return [
+      ...(loaded(this.myTours) ?? []).map((tour) => ({
+        key: `tour-${tour.id}`,
+        kind: 'cabinet.kinds.tour',
+        icon: 'icon-[heroicons--map]',
+        title: tour.title,
+        path: `/tours/${tour.slug}`,
+        editPath: `/partner/tours/${tour.id}`,
+        draft: !tour.isPublished,
+      })),
+      ...(loaded(this.myHotels) ?? []).map((hotel) => ({
+        key: `hotel-${hotel.id}`,
+        kind: 'cabinet.kinds.hotel',
+        icon: 'icon-[heroicons--building-office-2]',
+        title: hotel.name,
+        path: `/hotels/${hotel.slug}`,
+        editPath: `/hotels/${hotel.slug}/edit`,
+        draft: false,
+      })),
+      ...guideList.map((guide) => ({
+        key: `guide-${guide.id}`,
+        kind: 'cabinet.kinds.local_guide',
+        icon: 'icon-[heroicons--identification]',
+        title: guide.name,
+        path: `/local-guides/${guide.slug}`,
+        editPath: `/local-guides/${guide.slug}/edit`,
+        draft: false,
+      })),
+      ...(loaded(this.myTrails) ?? []).map((trail) => ({
+        key: `trail-${trail.id}`,
+        kind: 'profile.listings.kinds.trail',
+        icon: 'icon-[heroicons--flag]',
+        title: trail.name,
+        path: `/trails/${trail.slug}`,
+        editPath: `/trails/${trail.slug}/edit`,
+        draft: !trail.isPublished,
+      })),
+      ...(loaded(this.myPosts) ?? []).map((post) => ({
+        key: `post-${post.id}`,
+        kind: 'profile.listings.kinds.post',
+        icon: 'icon-[heroicons--newspaper]',
+        title: post.title,
+        path: `/blog/${post.slug}`,
+        editPath: `/blog/edit/${post.id}`,
+        draft: !post.isPublished,
+      })),
+    ];
+  });
+
   // The summary: null while its number is loading.
   protected readonly stats = computed(() => {
     const mine = loaded(this.achievements);

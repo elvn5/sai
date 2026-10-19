@@ -4,7 +4,9 @@ import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount } from '@/core/lib/format';
 import { HOTEL_AMENITY_OPTIONS, pickOptions } from '@/core/lib/listing-options';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { hotelCoverTransition } from '@/core/lib/view-transitions';
 import { RatingStars } from '@/ui/rating-stars';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
@@ -14,11 +16,11 @@ const CARD_AMENITIES = 4;
 
 @Component({
   selector: 'app-hotel-card',
-  imports: [NgOptimizedImage, RatingStars, SiteLink, TranslocoPipe],
+  imports: [NgOptimizedImage, RatingStars, SharedTransition, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a [appSiteLink]="'/hotels/' + hotel().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface motion-lift">
-      <div class="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800">
+      <div class="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-slate-800" [appSharedTransition]="coverTransition()">
         @if (cover(); as url) {
           <img [ngSrc]="url" fill [priority]="priority()" sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw" alt="" class="motion-zoom object-cover" />
         } @else {
@@ -72,6 +74,8 @@ export class HotelCard {
   private readonly apiBaseUrl = inject(APP_CONFIG).apiBaseUrl;
   private readonly lang = injectLang();
 
+  // The cover flies to the hotel page's photos once clicked.
+  protected readonly coverTransition = computed(() => hotelCoverTransition(this.hotel().id));
   protected readonly cover = computed(() => {
     const url = this.hotel().coverImageUrl ?? this.hotel().photos[0];
     return url ? resolveMediaUrl(this.apiBaseUrl, url) : null;

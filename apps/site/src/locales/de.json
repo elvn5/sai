@@ -503,7 +503,7 @@
       "info": "Profil",
       "history": "Tourenverlauf",
       "partner": "Partnerschaft",
-      "listings": "Meine Einträge",
+      "listings": "Meine Angebote",
       "achievements": "Ruhmeshalle",
       "bookings": "Buchungen"
     },
@@ -517,7 +517,14 @@
       "published": "Veröffentlicht",
       "draft": "Entwurf",
       "deletePost": "Beitrag löschen",
-      "deletePostConfirm": "Beitrag „{title}“ löschen?"
+      "deletePostConfirm": "Beitrag „{title}“ löschen?",
+      "empty": "Noch keine Angebote",
+      "emptyHint": "Fügen Sie eine Tour, eine Unterkunft oder ein Guide-Profil hinzu.",
+      "partnersOnly": "Nur Partner können veröffentlichen",
+      "kinds": {
+        "trail": "Route",
+        "post": "Beitrag"
+      }
     },
     "fields": {
       "username": "Benutzername",

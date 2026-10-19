@@ -2,6 +2,8 @@ import type { Trail } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { FRESH_REPORT_DAYS, daysSince, formatGrade } from '@/core/lib/trail-options';
+import { trailCoverTransition } from '@/core/lib/view-transitions';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
@@ -15,11 +17,11 @@ const HAZARD = ['deep_snow', 'ice'];
 // grade, elevation gain and time. On hover the flag takes a step.
 @Component({
   selector: 'app-trail-card',
-  imports: [NgOptimizedImage, SiteLink, TranslocoPipe],
+  imports: [NgOptimizedImage, SharedTransition, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a [appSiteLink]="'/trails/' + trail().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.06)] motion-lift dark:shadow-none">
-      <div class="relative aspect-[16/10] overflow-hidden bg-linear-to-br from-brand-700 to-secondary-700">
+      <div class="relative aspect-[16/10] overflow-hidden bg-linear-to-br from-brand-700 to-secondary-700" [appSharedTransition]="coverTransition()">
         @if (cover(); as url) {
           <img [ngSrc]="url" fill [priority]="priority()" sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" alt="" class="motion-zoom object-cover" />
         } @else {
@@ -70,6 +72,8 @@ export class TrailCard {
     const url = this.trail().coverImageUrl ?? this.trail().photos[0];
     return url ? resolveMediaUrl(this.apiBaseUrl, url) : null;
   });
+  // The cover flies to the route page's hero once clicked.
+  protected readonly coverTransition = computed(() => trailCoverTransition(this.trail().id));
   protected readonly grade = computed(() => formatGrade(this.trail().grade));
   // A report older than two weeks says nothing about today.
   protected readonly condition = computed(() => {

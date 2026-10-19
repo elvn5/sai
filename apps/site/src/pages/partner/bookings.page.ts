@@ -60,7 +60,7 @@ type When = 'upcoming' | 'past' | 'all';
         </ul>
       } @else if (orders.hasValue()) {
         <div class="flex flex-col items-center gap-2 rounded-card border border-dashed border-border px-6 py-12 text-center">
-          <span class="icon-[mdi--ticket-confirmation-outline] size-10 text-text-muted" aria-hidden="true"></span>
+          <span class="icon-[heroicons--ticket] size-10 text-text-muted" aria-hidden="true"></span>
           <p class="font-medium text-text">{{ 'booking.noReceived' | transloco }}</p>
           <p class="max-w-sm text-sm text-text-muted">{{ 'cabinet.bookings.emptyHint' | transloco }}</p>
         </div>

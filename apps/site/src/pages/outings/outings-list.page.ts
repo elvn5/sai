@@ -61,7 +61,7 @@ interface DayGroup {
         </div>
       } @else if (outings.hasValue()) {
         <div class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border px-6 py-14 text-center">
-          <span class="icon-[mdi--account-group-outline] size-10 text-text-muted" aria-hidden="true"></span>
+          <span class="icon-[heroicons--user-group] size-10 text-text-muted" aria-hidden="true"></span>
           <p class="font-medium text-text">{{ 'outings.empty' | transloco }}</p>
           <p class="max-w-sm text-sm text-text-muted">{{ 'outings.emptyHint' | transloco }}</p>
         </div>

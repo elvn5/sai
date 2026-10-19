@@ -29,7 +29,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
       </span>
     } @else {
       <span class="inline-flex items-center gap-1 rounded-full bg-text/5 px-2.5 py-1 text-xs text-text-muted">
-        <span class="icon-[mdi--help-circle-outline] size-3.5" aria-hidden="true"></span>{{ 'trails.conditions.none' | transloco }}
+        <span class="icon-[heroicons--question-mark-circle] size-3.5" aria-hidden="true"></span>{{ 'trails.conditions.none' | transloco }}
       </span>
     }
   `,

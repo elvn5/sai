@@ -101,7 +101,7 @@ interface GuideForm {
                 @for (file of attachments(); track file.url; let index = $index) {
                   <li class="ui-card flex items-center justify-between px-3 py-2 text-sm">
                     <span class="flex items-center gap-2 text-text">
-                      <span class="icon-[mdi--file-outline] size-4 shrink-0 text-text-muted" aria-hidden="true"></span>
+                      <span class="icon-[heroicons--document] size-4 shrink-0 text-text-muted" aria-hidden="true"></span>
                       {{ file.name }}
                       <span class="text-text-muted">({{ size(file.size) }})</span>
                     </span>

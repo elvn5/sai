@@ -15,11 +15,11 @@ import { resolveMediaUrl } from '@/core/lib/media-url';
 import { usePageChrome } from '@/core/lib/page-chrome';
 import { loaded } from '@/core/lib/resource';
 import { bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
-import { HeroImage } from '@/pages/home/hero-image';
 import { AppLogo } from '@/ui/app-logo';
 import { DestinationSearch } from '@/ui/destination-search';
 import { HotelCard } from '@/ui/listing/hotel-card';
 import { TourCard } from '@/ui/listing/tour-card';
+import { MountainScene } from '@/ui/mountain-scene';
 import { OutingCard } from '@/ui/outing-card';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
@@ -46,7 +46,7 @@ const QUICK_LINKS = [
   imports: [
     AppLogo,
     DestinationSearch,
-    HeroImage,
+    MountainScene,
     HotelCard,
     NgOptimizedImage,
     OutingCard,
@@ -57,8 +57,8 @@ const QUICK_LINKS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="relative isolate -mt-[3.8125rem] overflow-hidden pt-[3.8125rem] lg:mt-0 lg:pt-0">
-      <app-hero-image class="motion-parallax" />
-      <div class="absolute inset-0 -z-10 bg-linear-to-b from-black/62 via-black/35 via-55% to-bg"></div>
+      <app-mountain-scene palette="sunset" [lake]="false" [parallax]="true" />
+      <div class="absolute inset-0 -z-10 bg-linear-to-b from-black/40 via-black/15 via-55% to-bg"></div>
       <div class="ui-container pt-14 pb-20 text-white sm:pt-16 sm:pb-24 lg:text-center">
         <span class="motion-enter hidden size-14 items-center justify-center rounded-2xl bg-brand-600 lg:mx-auto lg:flex">
           <app-logo class="size-9 text-white" />

@@ -1,4 +1,5 @@
 import { AuthStore } from '@/core/auth/auth.store';
+import { FeatureFlags } from '@/core/feature-flags/feature-flags';
 import { injectCurrentUrl } from '@/core/lib/current-url';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { Notify } from '@/core/notify/notify';
@@ -29,20 +30,22 @@ import { firstValueFrom } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'contents' },
   template: `
-    @if (following()) {
-      <button type="button" class="ui-btn-soft" [disabled]="busy()" [attr.aria-pressed]="true" (click)="unfollow()">
-        <span class="icon-[heroicons--bell-alert-solid] motion-pop size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'tourAlerts.following' | transloco }}
-      </button>
-    } @else {
-      <button type="button" class="ui-btn-soft group" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="follow()">
-        <span class="icon-[heroicons--bell] icon-anim-wiggle size-4" aria-hidden="true"></span>{{ 'tourAlerts.follow' | transloco }}
-      </button>
-    }
-    @if (needsTelegram()) {
-      <div class="motion-roll-in basis-full rounded-xl border border-border bg-surface p-3 text-left">
-        <p class="mb-2 text-sm text-text-muted">{{ 'tourAlerts.linkFirst' | transloco }}</p>
-        <app-telegram-link [compact]="true" />
-      </div>
+    @if (flags.isOn('tourAlerts')) {
+      @if (following()) {
+        <button type="button" class="ui-btn-soft" [disabled]="busy()" [attr.aria-pressed]="true" (click)="unfollow()">
+          <span class="icon-[heroicons--bell-alert-solid] motion-pop size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'tourAlerts.following' | transloco }}
+        </button>
+      } @else {
+        <button type="button" class="ui-btn-soft group" [disabled]="busy()" [attr.aria-busy]="busy()" (click)="follow()">
+          <span class="icon-[heroicons--bell] icon-anim-wiggle size-4" aria-hidden="true"></span>{{ 'tourAlerts.follow' | transloco }}
+        </button>
+      }
+      @if (needsTelegram()) {
+        <div class="motion-roll-in basis-full rounded-xl border border-border bg-surface p-3 text-left">
+          <p class="mb-2 text-sm text-text-muted">{{ 'tourAlerts.linkFirst' | transloco }}</p>
+          <app-telegram-link [compact]="true" />
+        </div>
+      }
     }
   `,
 })
@@ -50,6 +53,7 @@ export class TourAlertButton {
   // The destination to follow; empty for any.
   readonly destination = input<string>('');
 
+  protected readonly flags = inject(FeatureFlags);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthStore);
   private readonly notify = inject(Notify);

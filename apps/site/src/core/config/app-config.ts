@@ -1,3 +1,4 @@
+import { normalizeHash } from '@/core/feature-flags/dev-menu-password';
 import {
   InjectionToken,
   REQUEST_CONTEXT,
@@ -22,6 +23,10 @@ export interface AppConfig {
   mediaPublicUrl: string;
   // Only ermekten.com is indexable; staging and previews are noindex.
   indexable: boolean;
+  // Shown at the foot of every page: APP_VERSION, else package.json's.
+  version: string;
+  // SHA-256 (hex) of the developer menu's password ('' — no menu).
+  devMenuPasswordHash: string;
 }
 
 // What the SSR server passes to Angular as the request context.
@@ -41,6 +46,8 @@ const FALLBACK: AppConfig = {
   telegramBotUsername: '',
   mediaPublicUrl: '',
   indexable: false,
+  version: '',
+  devMenuPasswordHash: '',
 };
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG', {
@@ -99,5 +106,7 @@ export function configFromEnv(env: Record<string, string | undefined>): AppConfi
     telegramBotUsername: env['TELEGRAM_BOT_USERNAME'] ?? '',
     mediaPublicUrl: (env['R2_PUBLIC_URL'] ?? '').replace(/\/$/, ''),
     indexable: siteUrl === 'https://ermekten.com',
+    version: env['APP_VERSION'] ?? '',
+    devMenuPasswordHash: normalizeHash(env['DEV_MENU_PASSWORD_HASH']),
   };
 }

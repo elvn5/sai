@@ -212,6 +212,8 @@ services:
       SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
       TELEGRAM_BOT_USERNAME: ${PUBLIC_TELEGRAM_BOT_USERNAME:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      # SHA-256 (hex) of the developer menu password; unset — no menu.
+      DEV_MENU_PASSWORD_HASH: ${DEV_MENU_PASSWORD_HASH:-}
     ports:
       - "${CLIENT_PORT:-3002}:3000"
     depends_on:

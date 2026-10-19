@@ -12,6 +12,8 @@ export const TEST_CONFIG: AppConfig = {
   telegramBotUsername: '',
   mediaPublicUrl: '',
   indexable: true,
+  version: '',
+  devMenuPasswordHash: '',
 };
 
 // What page specs need: a fake API (HttpTestingController), a router, the

@@ -9,10 +9,12 @@ import {
 } from '@angular/ssr/node';
 import compression from 'compression';
 import express from 'express';
+import { version } from '#package.json';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 // Read once: the environment doesn't change while the server runs.
-const context = contextFromEnv(process.env);
+// The version defaults to package.json's; APP_VERSION (a release tag) wins.
+const context = contextFromEnv({ APP_VERSION: version, ...process.env });
 const { config } = context;
 const apiUrl = context.apiInternalUrl ?? config.apiBaseUrl;
 const sitemaps = new SitemapCache(config.siteUrl, async (path) => {

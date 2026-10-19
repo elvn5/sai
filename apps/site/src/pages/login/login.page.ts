@@ -1,6 +1,7 @@
 import type { TelegramWidgetPayload } from '@/core/api/types';
 import { AuthStore, type PendingVerification } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
+import { FeatureFlags } from '@/core/feature-flags/feature-flags';
 import { injectLang } from '@/core/i18n/current-lang';
 import { localizedPath } from '@/core/i18n/langs';
 import { Notify } from '@/core/notify/notify';
@@ -225,7 +226,9 @@ export function safeRedirect(target: string | undefined): string | null {
                   <label class="block">
                     <span class="flex items-baseline justify-between gap-2">
                       <span class="ui-label">{{ 'login.passwordLabel' | transloco }}</span>
-                      <button type="button" class="text-[0.8rem] font-medium text-brand-700 hover:underline dark:text-brand-300" (click)="openForgot()">{{ 'login.forgot.link' | transloco }}</button>
+                      @if (flags.isOn('passwordReset')) {
+                        <button type="button" class="text-[0.8rem] font-medium text-brand-700 hover:underline dark:text-brand-300" (click)="openForgot()">{{ 'login.forgot.link' | transloco }}</button>
+                      }
                     </span>
                     <span class="ui-input-icon">
                       <span class="icon-[heroicons--lock-closed]" aria-hidden="true"></span>
@@ -331,6 +334,7 @@ export class LoginPage {
   readonly redirect = input<string | undefined>(undefined);
 
   private readonly auth = inject(AuthStore);
+  protected readonly flags = inject(FeatureFlags);
   protected readonly telegram = inject(TelegramWebAppStore);
   private readonly transloco = inject(TranslocoService);
   private readonly router = inject(Router);

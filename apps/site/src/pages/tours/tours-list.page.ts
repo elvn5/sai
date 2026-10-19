@@ -1,6 +1,7 @@
 import { type PublicAuthor, SeoPage, type Tour } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
+import { FeatureFlags } from '@/core/feature-flags/feature-flags';
 import { injectLang } from '@/core/i18n/current-lang';
 import {
   formatAmount,
@@ -139,14 +140,16 @@ function matchesDuration(days: number | null, range: string): boolean {
           }
         </p>
         <div class="flex flex-wrap items-center gap-2">
-          <button type="button" class="ui-btn-soft" aria-controls="tour-dates" [attr.aria-expanded]="datesOpen()" (click)="datesOpen.set(!datesOpen())">
-            <span class="icon-[heroicons--calendar-days] size-4" aria-hidden="true"></span>
-            @if (from() || to()) {
-              {{ datesLabel() }}
-            } @else {
-              {{ 'tours.dates.button' | transloco }}
-            }
-          </button>
+          @if (flags.isOn('tourDates')) {
+            <button type="button" class="ui-btn-soft" aria-controls="tour-dates" [attr.aria-expanded]="datesOpen()" (click)="datesOpen.set(!datesOpen())">
+              <span class="icon-[heroicons--calendar-days] size-4" aria-hidden="true"></span>
+              @if (from() || to()) {
+                {{ datesLabel() }}
+              } @else {
+                {{ 'tours.dates.button' | transloco }}
+              }
+            </button>
+          }
           <button type="button" class="ui-btn-soft" [cdkMenuTriggerFor]="filtersMenu" [attr.aria-label]="'listing.filters.title' | transloco">
             <span class="icon-[heroicons--adjustments-horizontal] size-4" aria-hidden="true"></span>{{ 'listing.filters.title' | transloco }}
             @if (activeFilters() > 0) {
@@ -160,7 +163,7 @@ function matchesDuration(days: number | null, range: string): boolean {
         </div>
       </div>
 
-      @if (datesOpen()) {
+      @if (datesOpen() && flags.isOn('tourDates')) {
         <form id="tour-dates" class="motion-roll-in mb-2 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-3" (submit)="applyDates($event, fromInput.value, toInput.value)">
           <label class="block">
             <span class="ui-label">{{ 'tours.dates.from' | transloco }}</span>
@@ -336,6 +339,7 @@ export class ToursListPage {
   readonly from = input<string | undefined>(undefined);
   readonly to = input<string | undefined>(undefined);
   protected readonly auth = inject(AuthStore);
+  protected readonly flags = inject(FeatureFlags);
   private readonly apiBaseUrl = inject(APP_CONFIG).apiBaseUrl;
   private readonly transloco = inject(TranslocoService);
   private readonly lang = injectLang();
@@ -400,7 +404,10 @@ export class ToursListPage {
   });
   // How many of the list are shown; back to one page when it changes.
   private readonly limit = linkedSignal({ source: this.list, computation: () => PAGE_SIZE });
-  protected readonly shown = computed(() => this.list().slice(0, this.limit()));
+  // Without "Show more" (feature flag) the whole list shows at once.
+  protected readonly shown = computed(() =>
+    this.flags.isOn('showMore') ? this.list().slice(0, this.limit()) : this.list(),
+  );
   // Free places of the shown tours that have a limit.
   private readonly places = placesResource(() =>
     this.shown()
@@ -474,7 +481,7 @@ export class ToursListPage {
   }
 
   protected left(tour: Tour): number | null {
-    return placesLeft(tour, loaded(this.places));
+    return this.flags.isOn('placesLeft') ? placesLeft(tour, loaded(this.places)) : null;
   }
 
   protected organizerName(organizer: PublicAuthor): string {

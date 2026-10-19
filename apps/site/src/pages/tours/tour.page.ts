@@ -1,6 +1,7 @@
 import { type PublicAuthor, ReviewTargetType, type Tour } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
+import { FeatureFlags } from '@/core/feature-flags/feature-flags';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount, formatDateRange, personName, todayInBishkek } from '@/core/lib/format';
 import { trackListingView } from '@/core/lib/listing-stats';
@@ -125,7 +126,7 @@ import { firstValueFrom } from 'rxjs';
             @if (item.cancellationPolicy === 'free') {
               <span class="ui-badge ui-badge-success"><span class="icon-[heroicons--check]" aria-hidden="true"></span>{{ 'listing.cancellation.free' | transloco }}</span>
             }
-            @if (left() !== null) {
+            @if (left() !== null && flags.isOn('placesLeft')) {
               <span class="ui-badge" [class]="left() === 0 ? 'ui-badge-danger' : left()! <= fewPlaces ? 'ui-badge-warning' : 'ui-badge-soft'">
                 <span class="icon-[heroicons--fire]" aria-hidden="true"></span>{{ placesLabel() | transloco: { count: left() } }}
               </span>
@@ -152,7 +153,7 @@ import { firstValueFrom } from 'rxjs';
                 }
                 <nav class="ui-tabs sticky top-15 z-10 -mx-4 bg-bg/92 px-4 backdrop-blur-sm lg:mx-0 lg:mt-4 lg:px-0" [attr.aria-label]="'tours.sections' | transloco">
                   <a href="#about" class="ui-tab" [attr.aria-current]="spy.active() === 'about' ? 'true' : null" (click)="spy.go('about', $event)">{{ 'tours.tabs.about' | transloco }}</a>
-                  @if (item.program.length > 0) {
+                  @if (showProgram()) {
                     <a href="#program" class="ui-tab" [attr.aria-current]="spy.active() === 'program' ? 'true' : null" (click)="spy.go('program', $event)">{{ 'tours.tabs.program' | transloco }}</a>
                   }
                   <a href="#reviews" class="ui-tab" [attr.aria-current]="spy.active() === 'reviews' ? 'true' : null" (click)="spy.go('reviews', $event)">
@@ -161,7 +162,7 @@ import { firstValueFrom } from 'rxjs';
                   </a>
                 </nav>
                 <div id="about" class="prose prose-neutral dark:prose-invert mt-4 max-w-none scroll-mt-28" [innerHTML]="item.content"></div>
-                @if (item.program.length > 0) {
+                @if (showProgram()) {
                   <section id="program" class="mt-8 scroll-mt-28" aria-labelledby="program-heading">
                     <h2 id="program-heading" class="mb-3.5 text-lg font-bold text-text">{{ 'tours.program.heading' | transloco }}</h2>
                     <app-tour-program [days]="item.program" />
@@ -197,8 +198,10 @@ import { firstValueFrom } from 'rxjs';
               <div class="flex flex-col gap-4 lg:sticky lg:top-20">
                 <!-- Depends on who's signed in: hydrate early, not on interaction
                      (a replayed click on the anonymous "sign in" would leave). -->
-                @defer (on idle; hydrate on idle) {
-                  <app-tour-booking [tour]="item" [placesLeft]="left()" (placesTaken)="places.reload()" />
+                @if (flags.isOn('booking')) {
+                  @defer (on idle; hydrate on idle) {
+                    <app-tour-booking [tour]="item" [placesLeft]="left()" (placesTaken)="places.reload()" />
+                  }
                 }
                 @if (item.organizer; as organizer) {
                   <div class="ui-card flex items-center gap-3 p-3.5">
@@ -241,6 +244,7 @@ export class TourPage {
   protected readonly targetType = ReviewTargetType.TOUR;
 
   private readonly auth = inject(AuthStore);
+  protected readonly flags = inject(FeatureFlags);
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
   private readonly config = inject(APP_CONFIG);
@@ -283,13 +287,17 @@ export class TourPage {
       : null;
   });
   protected readonly deleting = signal(false);
-  // The cover and the other photos, for the gallery.
+  // The cover and the other photos, for the gallery; with the gallery
+  // switched off (feature flag), the cover alone.
   protected readonly gallery = computed(() => {
     const item = this.item();
-    if (!item) return [];
+    if (!item || !this.flags.isOn('tourGallery')) return [];
     return [...(item.coverImageUrl ? [item.coverImageUrl] : []), ...item.photos];
   });
   protected readonly photoGrid = viewChild(PhotoGrid);
+  protected readonly showProgram = computed(
+    () => (this.item()?.program.length ?? 0) > 0 && this.flags.isOn('tourProgram'),
+  );
   // Free places (tours with a limit), counted in the browser.
   protected readonly places = placesResource(() => {
     const item = this.item();

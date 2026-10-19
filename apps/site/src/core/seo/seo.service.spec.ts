@@ -12,6 +12,8 @@ const CONFIG: AppConfig = {
   telegramBotUsername: '',
   mediaPublicUrl: '',
   indexable: true,
+  version: '',
+  devMenuPasswordHash: '',
 };
 
 function setup(

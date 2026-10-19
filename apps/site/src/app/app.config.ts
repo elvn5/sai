@@ -1,6 +1,7 @@
 import { routes } from '@/app/app.routes';
 import { apiInterceptor } from '@/core/api/api.interceptor';
 import { loadClientConfig } from '@/core/config/app-config';
+import { FeatureFlags } from '@/core/feature-flags/feature-flags';
 import { provideI18n } from '@/core/i18n/i18n';
 import { provideImageThumbnails } from '@/core/lib/image-loader';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
@@ -46,6 +47,11 @@ export const appConfig: ApplicationConfig = {
       withViewTransitions({
         skipInitialTransition: true,
         onViewTransitionCreated: ({ transition }) => {
+          // Switched off in the developer menu (core/feature-flags).
+          if (!inject(FeatureFlags).isOn('viewTransitions')) {
+            transition.skipTransition();
+            return;
+          }
           const navigation = inject(Router).currentNavigation();
           const from = navigation?.previousNavigation?.finalUrl;
           if (from && samePath(from, navigation?.finalUrl)) {

@@ -61,23 +61,23 @@ const WHEN: Intl.DateTimeFormatOptions = {
             }
             <h1 class="text-2xl font-black sm:text-3xl">{{ o.title }}</h1>
             <p class="mt-2 flex items-center gap-2 text-white/90">
-              <span class="icon-[mdi--calendar-clock] size-5" aria-hidden="true"></span>{{ when(o.startsAt) }}
+              <span class="icon-[heroicons--calendar-days] size-5" aria-hidden="true"></span>{{ when(o.startsAt) }}
             </p>
             @if (o.returnsAt) {
               <p class="mt-1 flex items-center gap-2 text-sm text-white/80">
-                <span class="icon-[mdi--home-import-outline] size-5" aria-hidden="true"></span>{{ 'outings.returns' | transloco: { when: when(o.returnsAt) } }}
+                <span class="icon-[heroicons--home] size-5" aria-hidden="true"></span>{{ 'outings.returns' | transloco: { when: when(o.returnsAt) } }}
               </p>
             }
           </header>
 
           <dl class="grid gap-4 p-6 sm:grid-cols-2">
             <div class="relative pl-8">
-              <dt class="text-xs text-text-muted"><span class="absolute top-0.5 left-0 icon-[mdi--map-marker-radius] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'outings.form.meetingPoint' | transloco }}</dt>
+              <dt class="text-xs text-text-muted"><span class="absolute top-0.5 left-0 icon-[heroicons--map-pin] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'outings.form.meetingPoint' | transloco }}</dt>
               <dd class="font-medium text-text">{{ o.meetingPoint }}</dd>
             </div>
             @if (o.trail; as trail) {
               <div class="relative pl-8">
-                <dt class="text-xs text-text-muted"><span class="absolute top-0.5 left-0 icon-[mdi--map-marker-path] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'outings.form.trail' | transloco }}</dt>
+                <dt class="text-xs text-text-muted"><span class="absolute top-0.5 left-0 icon-[heroicons--map] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'outings.form.trail' | transloco }}</dt>
                 <dd><a [appSiteLink]="'/trails/' + trail.slug" class="font-medium text-text hover:underline">{{ trail.name }}</a></dd>
               </div>
             }
@@ -91,7 +91,7 @@ const WHEN: Intl.DateTimeFormatOptions = {
             </div>
             @if (o.costPerPerson !== null) {
               <div class="relative pl-8">
-                <dt class="text-xs text-text-muted"><span class="absolute top-0.5 left-0 icon-[mdi--cash-multiple] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'outings.form.cost' | transloco }}</dt>
+                <dt class="text-xs text-text-muted"><span class="absolute top-0.5 left-0 icon-[heroicons--banknotes] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'outings.form.cost' | transloco }}</dt>
                 <dd class="font-medium text-text">
                   @if (o.costPerPerson === 0) { {{ 'outings.free' | transloco }} } @else { {{ cost() }} {{ 'listing.currency' | transloco }} }
                 </dd>
@@ -128,7 +128,7 @@ const WHEN: Intl.DateTimeFormatOptions = {
 
           @if (o.contact) {
             <div class="flex items-center gap-3 border-t border-border bg-emerald-500/10 px-6 py-4">
-              <span class="icon-[mdi--message-text-outline] size-5 text-emerald-700 dark:text-emerald-300" aria-hidden="true"></span>
+              <span class="icon-[heroicons--chat-bubble-bottom-center-text] size-5 text-emerald-700 dark:text-emerald-300" aria-hidden="true"></span>
               <div>
                 <p class="text-xs text-text-muted">{{ 'outings.contact' | transloco }}</p>
                 <p class="font-semibold text-text">{{ o.contact }}</p>
@@ -149,7 +149,7 @@ const WHEN: Intl.DateTimeFormatOptions = {
                 <button type="button" class="ui-btn-soft" [disabled]="busy()" (click)="leave()">{{ 'outings.leave' | transloco }}</button>
               } @else {
                 <button type="button" class="ui-btn-primary px-4 py-2 text-base" [disabled]="left() === 0 || busy()" (click)="join()">
-                  <span class="icon-[mdi--hand-wave] size-5" aria-hidden="true"></span>{{ (left() === 0 ? 'outings.full' : 'outings.join') | transloco }}
+                  <span class="icon-[heroicons--hand-raised] size-5" aria-hidden="true"></span>{{ (left() === 0 ? 'outings.full' : 'outings.join') | transloco }}
                 </button>
                 @if (left() > 0) {
                   <span class="text-sm text-text-muted">{{ 'outings.joinHint' | transloco }}</span>
@@ -158,7 +158,7 @@ const WHEN: Intl.DateTimeFormatOptions = {
             }
             @if (started() && o.trail && (o.isJoined || o.isOrganizer)) {
               <a [appSiteLink]="'/trails/' + o.trail.slug" class="ui-btn-soft">
-                <span class="icon-[mdi--clipboard-text-outline] size-4" aria-hidden="true"></span>{{ 'outings.reportAfter' | transloco }}
+                <span class="icon-[heroicons--clipboard-document-list] size-4" aria-hidden="true"></span>{{ 'outings.reportAfter' | transloco }}
               </a>
             }
             @if (actionError(); as key) {

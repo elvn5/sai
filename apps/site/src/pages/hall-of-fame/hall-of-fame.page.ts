@@ -74,7 +74,7 @@ import { firstValueFrom } from 'rxjs';
       }
       <div class="trophy relative mx-auto mb-6 flex size-28 items-center justify-center" aria-hidden="true">
         <span class="rays absolute inset-[-60%]"></span>
-        <span class="icon-[mdi--trophy] relative size-24 text-amber-300 drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]"></span>
+        <span class="icon-[heroicons--trophy-solid] relative size-24 text-amber-300 drop-shadow-[0_0_25px_rgba(251,191,36,0.6)]"></span>
       </div>
       <h1 class="text-4xl font-black tracking-tight text-white sm:text-5xl">{{ 'hallOfFame.title' | transloco }}</h1>
       <p class="mx-auto mt-3 max-w-xl text-white/85">{{ 'hallOfFame.subtitle' | transloco }}</p>

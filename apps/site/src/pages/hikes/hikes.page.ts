@@ -5,8 +5,8 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const SECTIONS = [
   { path: '/trails', key: 'trails', icon: 'icon-[heroicons--map] icon-anim-flip' },
-  { path: '/outings', key: 'outings', icon: 'icon-[mdi--hiking] icon-anim-step' },
-  { path: '/tours', key: 'tours', icon: 'icon-[mdi--compass-outline] icon-anim-spin' },
+  { path: '/outings', key: 'outings', icon: 'icon-[heroicons--user-group] icon-anim-pop' },
+  { path: '/tours', key: 'tours', icon: 'icon-[heroicons--map] icon-anim-flip' },
   { path: '/hotels', key: 'hotels', icon: 'icon-[heroicons--building-office-2] icon-anim-bounce' },
   { path: '/local-guides', key: 'localGuides', icon: 'icon-[heroicons--user-group] icon-anim-pop' },
   { path: '/guides', key: 'guides', icon: 'icon-[heroicons--book-open] icon-anim-wiggle' },

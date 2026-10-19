@@ -50,7 +50,7 @@ const POLL_MS = 3000;
                 <span class="icon-[mdi--telegram] size-4" aria-hidden="true"></span>{{ 'telegramLink.open' | transloco: { bot: '@' + bot } }}
               </a>
               <span class="inline-flex items-center gap-2 text-sm text-text-muted" role="status">
-                <span class="icon-[mdi--loading] size-4 animate-spin" aria-hidden="true"></span>{{ 'telegramLink.waiting' | transloco }}
+                <span class="icon-[heroicons--arrow-path] size-4 animate-spin" aria-hidden="true"></span>{{ 'telegramLink.waiting' | transloco }}
               </span>
             } @else {
               <button type="button" class="ui-btn-primary bg-sky-700 hover:bg-sky-800" [disabled]="busy()" (click)="start()">

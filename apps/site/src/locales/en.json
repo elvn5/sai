@@ -517,7 +517,14 @@
       "published": "Published",
       "draft": "Draft",
       "deletePost": "Delete post",
-      "deletePostConfirm": "Delete the post “{title}”?"
+      "deletePostConfirm": "Delete the post “{title}”?",
+      "empty": "No listings yet",
+      "emptyHint": "Add a tour, a place to stay or a guide profile for travelers to find.",
+      "partnersOnly": "Partners can publish listings",
+      "kinds": {
+        "trail": "Route",
+        "post": "Post"
+      }
     },
     "fields": {
       "username": "Username",

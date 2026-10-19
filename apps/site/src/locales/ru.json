@@ -517,7 +517,14 @@
       "published": "Опубликован",
       "draft": "Черновик",
       "deletePost": "Удалить пост",
-      "deletePostConfirm": "Удалить пост «{title}»?"
+      "deletePostConfirm": "Удалить пост «{title}»?",
+      "empty": "Объявлений пока нет",
+      "emptyHint": "Добавьте тур, жильё или профиль гида — их увидят путешественники.",
+      "partnersOnly": "Публиковать могут партнёры",
+      "kinds": {
+        "trail": "Маршрут",
+        "post": "Пост"
+      }
     },
     "fields": { "username": "Логин", "email": "Email", "phone": "Телефон", "telegram": "Telegram" },
     "history": {

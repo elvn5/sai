@@ -52,7 +52,7 @@ export function normalizeAwardCode(code: string): string {
   template: `
     <section class="mx-auto max-w-4xl px-4 py-12">
       <div class="flex items-center gap-3">
-        <span class="icon-[mdi--medal] size-9 text-amber-600" aria-hidden="true"></span>
+        <span class="icon-[heroicons--trophy] size-9 text-amber-600" aria-hidden="true"></span>
         <h1 class="text-3xl font-extrabold text-text">{{ 'award.title' | transloco }}</h1>
       </div>
       <p class="mt-2 text-text-muted">{{ 'award.subtitle' | transloco }}</p>
@@ -60,7 +60,7 @@ export function normalizeAwardCode(code: string): string {
       <form class="mt-8 flex flex-col gap-3 sm:flex-row" novalidate (submit)="lookup($event)">
         <label class="sr-only" for="award-code">{{ 'award.codePlaceholder' | transloco }}</label>
         <div class="relative flex-1">
-          <span class="icon-[mdi--qrcode-scan] pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-text-muted" aria-hidden="true"></span>
+          <span class="icon-[heroicons--qr-code] pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-text-muted" aria-hidden="true"></span>
           <input id="award-code" class="ui-input py-3 pl-10 font-mono text-lg tracking-[0.2em] uppercase" autocomplete="off" [placeholder]="'award.codePlaceholder' | transloco" [value]="code()" (input)="code.set($any($event.target).value)" />
         </div>
         <button type="submit" class="ui-btn-primary px-6 py-3 text-base" [disabled]="looking()">{{ 'award.find' | transloco }}</button>
@@ -127,7 +127,7 @@ export function normalizeAwardCode(code: string): string {
                 <p class="ui-error" role="alert">{{ key | transloco }}</p>
               }
               <button type="submit" class="ui-btn-primary py-3 text-base" [disabled]="giving()">
-                <span class="icon-[mdi--medal] size-5" aria-hidden="true"></span>{{ 'award.give' | transloco: { title: title(achievement) } }}
+                <span class="icon-[heroicons--trophy] size-5" aria-hidden="true"></span>{{ 'award.give' | transloco: { title: title(achievement) } }}
               </button>
             </form>
           }

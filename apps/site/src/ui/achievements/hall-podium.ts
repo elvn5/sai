@@ -30,7 +30,7 @@ const DELAYS = ['0.3s', '0s', '0.6s'];
         <li class="step flex w-24 flex-col items-center sm:w-36" [style.animation-delay]="place.delay" [style.order]="place.order">
           <div class="relative mb-2">
             @if (place.entry.rank === 1) {
-              <span class="crown icon-[mdi--crown] absolute -top-7 left-1/2 size-8 -translate-x-1/2 text-amber-400 drop-shadow" aria-hidden="true"></span>
+              <span class="crown icon-[heroicons--star-solid] absolute -top-7 left-1/2 size-8 -translate-x-1/2 text-amber-400 drop-shadow" aria-hidden="true"></span>
             }
             <app-person-avatar
               [person]="place.entry.user"

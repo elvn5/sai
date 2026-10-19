@@ -8,6 +8,7 @@ import { trackListingView } from '@/core/lib/listing-stats';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
+import { hotelCoverTransition } from '@/core/lib/view-transitions';
 import { lodgingBusiness, plainText } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
@@ -20,6 +21,7 @@ import { LoadError } from '@/ui/load-error';
 import { LocationMap } from '@/ui/location-map';
 import { PhotoGrid } from '@/ui/photo-grid';
 import { RatingStars } from '@/ui/rating-stars';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
@@ -40,6 +42,7 @@ import { firstValueFrom } from 'rxjs';
     PostsFeed,
     RatingStars,
     ReviewsSection,
+    SharedTransition,
     SiteLink,
     TranslocoPipe,
   ],
@@ -87,7 +90,7 @@ import { firstValueFrom } from 'rxjs';
           }
         </div>
 
-        <app-photo-grid class="mt-6 block" variant="hero" [photos]="item.photos" [alt]="item.name" />
+        <app-photo-grid class="mt-6 block" variant="hero" [photos]="item.photos" [alt]="item.name" [appSharedTransition]="coverTransition(item.id)" [sharedAlways]="true" />
 
         <div class="mt-8 flex flex-col gap-10 lg:flex-row">
           <div class="flex min-w-0 flex-1 flex-col gap-10">
@@ -291,5 +294,10 @@ export class HotelPage {
     } finally {
       this.deleting.set(false);
     }
+  }
+
+  // The cover the hotel's card flew in from (motion.css).
+  protected coverTransition(id: string): string {
+    return hotelCoverTransition(id);
   }
 }

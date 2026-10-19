@@ -154,13 +154,14 @@
     @apply flex gap-1 overflow-x-auto border-b border-border;
   }
   .ui-tab {
-    @apply relative inline-flex shrink-0 items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap text-text-muted transition-colors hover:text-text aria-selected:text-text aria-[current=page]:text-text;
+    @apply relative inline-flex shrink-0 items-center gap-1.5 px-3 py-2.5 text-sm font-medium whitespace-nowrap text-text-muted transition-colors hover:text-text aria-selected:text-text aria-[current=page]:text-text aria-[current=true]:text-text;
   }
   .ui-tab::after {
     @apply absolute inset-x-2 -bottom-px h-0.5 scale-x-0 rounded-full bg-brand-500 transition-transform duration-(--dur-base) ease-spring content-[''];
   }
   .ui-tab[aria-selected="true"]::after,
-  .ui-tab[aria-current="page"]::after {
+  .ui-tab[aria-current="page"]::after,
+  .ui-tab[aria-current="true"]::after {
     @apply scale-x-100;
   }
 

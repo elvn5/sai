@@ -53,7 +53,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
         }
         @if (report().avalancheRisk; as risk) {
           <li class="inline-flex items-center gap-1 rounded-full px-2.5 py-1" [class]="risk === 'low' ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200' : 'bg-red-500/15 text-red-800 dark:text-red-200'">
-            <span class="icon-[mdi--alert-outline] size-4" aria-hidden="true"></span>{{ 'trails.avalanche.' + risk | transloco }}
+            <span class="icon-[heroicons--exclamation-triangle] size-4" aria-hidden="true"></span>{{ 'trails.avalanche.' + risk | transloco }}
           </li>
         }
       </ul>

@@ -175,7 +175,7 @@ function toModel(trail: Trail | undefined): TrailFormModel {
         <div class="flex flex-wrap items-center gap-3">
           <label class="ui-btn-primary cursor-pointer focus-within:ring-2 focus-within:ring-brand-500/40">
             <input type="file" accept=".gpx,application/gpx+xml" class="sr-only" (change)="onGpx($event)" />
-            <span class="icon-[mdi--upload] size-4" aria-hidden="true"></span>{{ 'trails.form.uploadGpx' | transloco }}
+            <span class="icon-[heroicons--arrow-up-tray] size-4" aria-hidden="true"></span>{{ 'trails.form.uploadGpx' | transloco }}
           </label>
           @if (gpxUploading()) {
             <span class="text-sm text-text-muted">{{ 'trails.form.uploading' | transloco }}</span>

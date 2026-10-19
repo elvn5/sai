@@ -86,7 +86,7 @@ import { firstValueFrom } from 'rxjs';
                     rel="noopener noreferrer"
                     class="flex items-center gap-2 text-sm text-brand-700 hover:underline dark:text-brand-300"
                   >
-                    <span class="icon-[mdi--file-download-outline] size-4 shrink-0" aria-hidden="true"></span>
+                    <span class="icon-[heroicons--document-arrow-down] size-4 shrink-0" aria-hidden="true"></span>
                     {{ file.name }}
                     <span class="text-text-muted">({{ size(file.size) }})</span>
                   </a>

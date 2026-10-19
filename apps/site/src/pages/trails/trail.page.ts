@@ -12,6 +12,7 @@ import {
   gradeClass,
   optionIcon,
 } from '@/core/lib/trail-options';
+import { trailCoverTransition } from '@/core/lib/view-transitions';
 import { plainText, touristAttraction } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
@@ -26,6 +27,7 @@ import { MountainWeather, type WeatherPoint } from '@/pages/trails/mountain-weat
 import { TrailMap } from '@/pages/trails/trail-map';
 import { LoadError } from '@/ui/load-error';
 import { OutingCard } from '@/ui/outing-card';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { Dialog } from '@angular/cdk/dialog';
 import { NgOptimizedImage } from '@angular/common';
@@ -56,6 +58,7 @@ interface Stat {
     NgOptimizedImage,
     NotFoundPage,
     OutingCard,
+    SharedTransition,
     SiteLink,
     TrailMap,
     TranslocoPipe,
@@ -69,7 +72,7 @@ interface Stat {
     } @else if (item(); as tr) {
       <section class="relative isolate overflow-hidden px-4 pt-16 pb-10 text-white">
         @if (cover(); as url) {
-          <img [ngSrc]="url" fill priority sizes="100vw" alt="" class="-z-20 object-cover" />
+          <img [ngSrc]="url" fill priority sizes="100vw" alt="" class="-z-20 object-cover" [appSharedTransition]="coverTransition(tr.id)" [sharedAlways]="true" />
           <div class="absolute inset-0 -z-10 bg-linear-to-b from-black/60 via-black/50 to-black/85"></div>
         } @else {
           <div class="absolute inset-0 -z-10 bg-linear-to-br from-brand-800 via-brand-900 to-secondary-900"></div>
@@ -104,10 +107,10 @@ interface Stat {
           </dl>
           <div class="mt-6 flex flex-wrap gap-2">
             <a [appSiteLink]="organizeLink()" class="ui-btn-primary px-4 py-2 text-base">
-              <span class="icon-[mdi--account-group] size-5" aria-hidden="true"></span>{{ 'trails.detail.organize' | transloco }}
+              <span class="icon-[heroicons--user-group] size-5" aria-hidden="true"></span>{{ 'trails.detail.organize' | transloco }}
             </a>
             <button type="button" class="ui-btn-soft bg-white/15 px-4 py-2 text-base text-white hover:bg-white/25" (click)="openReport()">
-              <span class="icon-[mdi--clipboard-text-outline] size-5" aria-hidden="true"></span>{{ 'trails.conditions.add' | transloco }}
+              <span class="icon-[heroicons--clipboard-document-list] size-5" aria-hidden="true"></span>{{ 'trails.conditions.add' | transloco }}
             </button>
             @if (isOwner()) {
               <a [appSiteLink]="'/trails/' + tr.slug + '/edit'" class="ui-btn-soft bg-white/15 px-4 py-2 text-base text-white hover:bg-white/25">
@@ -131,7 +134,7 @@ interface Stat {
               }
               @if (tr.gpxUrl) {
                 <a [href]="media(tr.gpxUrl)" download class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:underline dark:text-brand-300">
-                  <span class="icon-[mdi--download] size-4" aria-hidden="true"></span>{{ 'trails.detail.downloadGpx' | transloco }}
+                  <span class="icon-[heroicons--arrow-down-tray] size-4" aria-hidden="true"></span>{{ 'trails.detail.downloadGpx' | transloco }}
                 </a>
               }
             </section>
@@ -242,7 +245,7 @@ interface Stat {
           @if (tr.gettingThere) {
             <section class="ui-card p-4">
               <h2 class="mb-2 flex items-center gap-2 font-semibold text-text">
-                <span class="icon-[mdi--bus] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'trails.detail.gettingThere' | transloco }}
+                <span class="icon-[heroicons--map-pin] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'trails.detail.gettingThere' | transloco }}
               </h2>
               <p class="text-sm whitespace-pre-line text-text">{{ tr.gettingThere }}</p>
             </section>
@@ -324,34 +327,34 @@ export class TrailPage {
     const stats: (Stat | null)[] = [
       tr.summitElevation
         ? {
-            icon: 'icon-[mdi--summit]',
+            icon: 'icon-[heroicons--flag]',
             value: `${tr.summitElevation} ${m}`,
             label: t('trails.detail.summit'),
           }
         : null,
       gain
         ? {
-            icon: 'icon-[mdi--trending-up]',
+            icon: 'icon-[heroicons--arrow-trending-up]',
             value: `+${gain} ${m}`,
             label: t('trails.detail.gain'),
           }
         : null,
       distance
         ? {
-            icon: 'icon-[mdi--map-marker-distance]',
+            icon: 'icon-[heroicons--arrows-right-left]',
             value: `${distance} ${t('trails.units.km')}`,
             label: t('trails.detail.distance'),
           }
         : null,
       tr.durationHours
         ? {
-            icon: 'icon-[mdi--clock-outline]',
+            icon: 'icon-[heroicons--clock]',
             value: t('trails.units.hours', { count: tr.durationHours }),
             label: t('trails.detail.duration'),
           }
         : null,
       {
-        icon: 'icon-[mdi--calendar-range]',
+        icon: 'icon-[heroicons--calendar-days]',
         value: t('trails.units.days', { count: tr.days }),
         label: t('trails.detail.days'),
       },
@@ -434,5 +437,10 @@ export class TrailPage {
     await firstValueFrom(this.http.delete(`/conditions/${report.id}`));
     this.reports.reload();
     this.trail.reload();
+  }
+
+  // The cover the route's card flew in from (motion.css).
+  protected coverTransition(id: string): string {
+    return trailCoverTransition(id);
   }
 }

@@ -7,6 +7,7 @@ import { trackListingView } from '@/core/lib/listing-stats';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { usePageChrome } from '@/core/lib/page-chrome';
 import { loaded } from '@/core/lib/resource';
+import { injectScrollSpy } from '@/core/lib/scroll-spy';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { tourCoverTransition } from '@/core/lib/view-transitions';
 import { Notify } from '@/core/notify/notify';
@@ -114,8 +115,8 @@ import { firstValueFrom } from 'rxjs';
                   </div>
                 }
                 <nav class="ui-tabs sticky top-15 z-10 -mx-4 bg-bg/92 px-4 backdrop-blur-sm lg:mx-0 lg:mt-4 lg:px-0" [attr.aria-label]="'tours.sections' | transloco">
-                  <a href="#about" class="ui-tab" [attr.aria-current]="section() === 'about' ? 'page' : null" (click)="section.set('about')">{{ 'tours.tabs.about' | transloco }}</a>
-                  <a href="#reviews" class="ui-tab" [attr.aria-current]="section() === 'reviews' ? 'page' : null" (click)="section.set('reviews')">
+                  <a href="#about" class="ui-tab" [attr.aria-current]="spy.active() === 'about' ? 'true' : null" (click)="spy.go('about', $event)">{{ 'tours.tabs.about' | transloco }}</a>
+                  <a href="#reviews" class="ui-tab" [attr.aria-current]="spy.active() === 'reviews' ? 'true' : null" (click)="spy.go('reviews', $event)">
                     {{ 'tours.tabs.reviews' | transloco }}
                     @if (item.reviewCount > 0) { · {{ item.reviewCount }} }
                   </a>
@@ -223,8 +224,8 @@ export class TourPage {
       : null;
   });
   protected readonly deleting = signal(false);
-  // The tab under the title: description or reviews.
-  protected readonly section = signal<'about' | 'reviews'>('about');
+  // The tab of the section being read: description or reviews.
+  protected readonly spy = injectScrollSpy(['about', 'reviews'] as const);
   private readonly confirm = injectConfirm();
   private readonly notify = inject(Notify);
 

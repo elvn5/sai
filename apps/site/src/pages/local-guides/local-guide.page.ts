@@ -8,6 +8,7 @@ import { trackListingView } from '@/core/lib/listing-stats';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
+import { guideAvatarTransition } from '@/core/lib/view-transitions';
 import { guideBusiness, plainText } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
@@ -19,6 +20,7 @@ import { ReviewsSection } from '@/ui/listing/reviews-section';
 import { LoadError } from '@/ui/load-error';
 import { PhotoGrid } from '@/ui/photo-grid';
 import { RatingStars } from '@/ui/rating-stars';
+import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
@@ -39,6 +41,7 @@ import { firstValueFrom } from 'rxjs';
     PostsFeed,
     RatingStars,
     ReviewsSection,
+    SharedTransition,
     SiteLink,
     TranslocoPipe,
   ],
@@ -54,7 +57,7 @@ import { firstValueFrom } from 'rxjs';
 
         <div class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
           @if (avatar(); as url) {
-            <img [ngSrc]="url" width="112" height="112" priority alt="" class="size-28 shrink-0 rounded-full object-cover ring-4 ring-brand-500/20" />
+            <img [ngSrc]="url" width="112" height="112" priority alt="" class="size-28 shrink-0 rounded-full object-cover ring-4 ring-brand-500/20" [appSharedTransition]="avatarTransition(item.id)" [sharedAlways]="true" />
           } @else {
             <span class="flex size-28 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-500 to-secondary-500 text-4xl font-bold text-white" aria-hidden="true">{{ item.name.charAt(0).toUpperCase() }}</span>
           }
@@ -283,5 +286,10 @@ export class LocalGuidePage {
     } finally {
       this.deleting.set(false);
     }
+  }
+
+  // The portrait the guide's card flew in from (motion.css).
+  protected avatarTransition(id: string): string {
+    return guideAvatarTransition(id);
   }
 }

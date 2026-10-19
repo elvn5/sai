@@ -15,7 +15,7 @@ import (
 const tourColumns = `id, locale, slug, title, excerpt, content, price, duration_days, location,
 	to_char(start_date, 'YYYY-MM-DD'), to_char(end_date, 'YYYY-MM-DD'), destination,
 	cancellation_policy, cover_image_url, phone, whatsapp, telegram, rating_average, review_count,
-	is_published, published_at, user_id::text, created_at, updated_at`
+	is_published, published_at, user_id::text, created_at, updated_at, photos, program, capacity`
 
 func scanTour(row pgx.Row) (models.Tour, error) {
 	var t models.Tour
@@ -24,8 +24,12 @@ func scanTour(row pgx.Row) (models.Tour, error) {
 	err := row.Scan(&t.ID, &t.Locale, &t.Slug, &t.Title, &t.Excerpt, &t.Content, &t.Price,
 		&t.DurationDays, &t.Location, &t.StartDate, &t.EndDate, &t.Destination, &t.CancellationPolicy,
 		&t.CoverImageURL, &t.Phone, &t.Whatsapp, &t.Telegram, &t.RatingAverage, &t.ReviewCount,
-		&t.IsPublished, &publishedAt, &t.UserID, &created, &updated)
+		&t.IsPublished, &publishedAt, &t.UserID, &created, &updated, &t.Photos, &t.Program, &t.Capacity)
 	t.PublishedAt = jsontime.Ptr(publishedAt)
+	t.Photos = nonNil(t.Photos)
+	if t.Program == nil {
+		t.Program = []models.ProgramDay{}
+	}
 	t.CreatedAt, t.UpdatedAt = times(created, updated)
 	return t, err
 }
@@ -38,10 +42,17 @@ func (s *Store) collectTours(ctx context.Context, query string, args ...any) ([]
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (models.Tour, error) { return scanTour(r) })
 }
 
-func (s *Store) PublishedTours(ctx context.Context, locale string, destination *string) ([]models.Tour, error) {
+// TourFilter narrows the public list: a destination, and departures from
+// / until a date (YYYY-MM-DD, inclusive).
+type TourFilter struct {
+	Destination, From, To *string
+}
+
+func (s *Store) PublishedTours(ctx context.Context, locale string, f TourFilter) ([]models.Tour, error) {
 	return s.collectTours(ctx, `SELECT `+tourColumns+` FROM tours
 		WHERE is_published AND locale = $1 AND ($2::text IS NULL OR destination = $2)
-		ORDER BY published_at DESC, created_at DESC`, locale, destination)
+		AND ($3::date IS NULL OR start_date >= $3::date) AND ($4::date IS NULL OR start_date <= $4::date)
+		ORDER BY published_at DESC, created_at DESC`, locale, f.Destination, f.From, f.To)
 }
 
 func (s *Store) ToursByUser(ctx context.Context, userID string) ([]models.Tour, error) {
@@ -67,21 +78,26 @@ func (s *Store) TourSlugTaken(ctx context.Context, locale, slug, excludeID strin
 }
 
 func (s *Store) SaveTour(ctx context.Context, t models.Tour) (models.Tour, error) {
+	program := t.Program
+	if program == nil {
+		program = []models.ProgramDay{}
+	}
 	args := []any{t.Locale, t.Slug, t.Title, t.Excerpt, t.Content, t.Price, t.DurationDays, t.Location,
-		t.StartDate, t.EndDate, t.Destination, t.CancellationPolicy, t.CoverImageURL, t.Phone, t.Whatsapp, t.Telegram}
+		t.StartDate, t.EndDate, t.Destination, t.CancellationPolicy, t.CoverImageURL, t.Phone, t.Whatsapp, t.Telegram,
+		nonNil(t.Photos), program, t.Capacity}
 	var row pgx.Row
 	if t.ID == "" {
 		row = s.db.QueryRow(ctx, `INSERT INTO tours (locale, slug, title, excerpt, content, price,
 			duration_days, location, start_date, end_date, destination, cancellation_policy,
-			cover_image_url, phone, whatsapp, telegram, is_published, published_at, user_id)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::date,$10::date,$11,$12,$13,$14,$15,$16,true,now(),$17)
+			cover_image_url, phone, whatsapp, telegram, photos, program, capacity, is_published, published_at, user_id)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::date,$10::date,$11,$12,$13,$14,$15,$16,$17,$18,$19,true,now(),$20)
 			RETURNING `+tourColumns, append(args, t.UserID)...)
 	} else {
 		row = s.db.QueryRow(ctx, `UPDATE tours SET locale=$1, slug=$2, title=$3, excerpt=$4, content=$5,
 			price=$6, duration_days=$7, location=$8, start_date=$9::date, end_date=$10::date,
 			destination=$11, cancellation_policy=$12, cover_image_url=$13, phone=$14, whatsapp=$15,
-			telegram=$16, updated_at=now()
-			WHERE id=$17 RETURNING `+tourColumns, append(args, t.ID)...)
+			telegram=$16, photos=$17, program=$18, capacity=$19, updated_at=now()
+			WHERE id=$20 RETURNING `+tourColumns, append(args, t.ID)...)
 	}
 	saved, err := scanTour(row)
 	return saved, duplicate(notFound(err))

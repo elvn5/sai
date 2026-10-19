@@ -64,30 +64,44 @@ type LocalGuide struct {
 }
 
 type Tour struct {
-	ID                 string         `json:"id"`
-	Locale             string         `json:"locale"`
-	Slug               string         `json:"slug"`
-	Title              string         `json:"title"`
-	Excerpt            *string        `json:"excerpt"`
-	Content            string         `json:"content"`
-	Price              *int           `json:"price"`
-	DurationDays       *int           `json:"durationDays"`
-	Location           *string        `json:"location"`
-	StartDate          string         `json:"startDate"` // YYYY-MM-DD
-	EndDate            string         `json:"endDate"`
-	Destination        *string        `json:"destination"`
-	CancellationPolicy *string        `json:"cancellationPolicy"`
-	CoverImageURL      *string        `json:"coverImageUrl"`
-	Phone              *string        `json:"phone"`
-	Whatsapp           *string        `json:"whatsapp"`
-	Telegram           *string        `json:"telegram"`
-	RatingAverage      float32        `json:"ratingAverage"`
-	ReviewCount        int            `json:"reviewCount"`
-	IsPublished        bool           `json:"isPublished"`
-	PublishedAt        *jsontime.Time `json:"publishedAt"`
-	UserID             *string        `json:"userId"`
-	CreatedAt          jsontime.Time  `json:"createdAt"`
-	UpdatedAt          jsontime.Time  `json:"updatedAt"`
+	ID                 string  `json:"id"`
+	Locale             string  `json:"locale"`
+	Slug               string  `json:"slug"`
+	Title              string  `json:"title"`
+	Excerpt            *string `json:"excerpt"`
+	Content            string  `json:"content"`
+	Price              *int    `json:"price"`
+	DurationDays       *int    `json:"durationDays"`
+	Location           *string `json:"location"`
+	StartDate          string  `json:"startDate"` // YYYY-MM-DD
+	EndDate            string  `json:"endDate"`
+	Destination        *string `json:"destination"`
+	CancellationPolicy *string `json:"cancellationPolicy"`
+	CoverImageURL      *string `json:"coverImageUrl"`
+	// The gallery under the cover.
+	Photos []string `json:"photos"`
+	// The trip day by day.
+	Program []ProgramDay `json:"program"`
+	// Places per departure; nil: not limited.
+	Capacity      *int           `json:"capacity"`
+	Phone         *string        `json:"phone"`
+	Whatsapp      *string        `json:"whatsapp"`
+	Telegram      *string        `json:"telegram"`
+	RatingAverage float32        `json:"ratingAverage"`
+	ReviewCount   int            `json:"reviewCount"`
+	IsPublished   bool           `json:"isPublished"`
+	PublishedAt   *jsontime.Time `json:"publishedAt"`
+	UserID        *string        `json:"userId"`
+	// The partner who runs it, on public reads (nil on the owner's lists).
+	Organizer *usersclient.Author `json:"organizer,omitempty"`
+	CreatedAt jsontime.Time       `json:"createdAt"`
+	UpdatedAt jsontime.Time       `json:"updatedAt"`
+}
+
+// ProgramDay is one day of a tour's program.
+type ProgramDay struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
 }
 
 // Review is the public shape: the author's profile, never their contacts.

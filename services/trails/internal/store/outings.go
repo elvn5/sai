@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -57,6 +58,47 @@ func (s *Store) OutingsOf(ctx context.Context, userID string) ([]models.Outing, 
 	return s.collectOutings(ctx, `SELECT `+outingColumns+` WHERE o.user_id::text = $1
 		OR EXISTS (SELECT 1 FROM outing_participants p WHERE p.outing_id = o.id AND p.user_id::text = $1)
 		ORDER BY o.starts_at DESC LIMIT 100`, userID)
+}
+
+// OutingsSummary adds up what userID has been on: the open outings that
+// have started, organized or joined, with their routes' distance and climb
+// (as entered, else measured from the track).
+func (s *Store) OutingsSummary(ctx context.Context, userID string, now time.Time) (models.OutingsSummary, error) {
+	rows, err := s.db.Query(ctx, `SELECT t.distance_km::float8, t.elevation_gain, coalesce(t.track, '[]'::jsonb)
+		FROM outings o LEFT JOIN trails t ON t.id = o.trail_id
+		WHERE o.status = 'open' AND o.starts_at <= $2
+		AND (o.user_id::text = $1
+			OR EXISTS (SELECT 1 FROM outing_participants p WHERE p.outing_id = o.id AND p.user_id::text = $1))`,
+		userID, now)
+	if err != nil {
+		return models.OutingsSummary{}, err
+	}
+	defer rows.Close()
+	var sum models.OutingsSummary
+	for rows.Next() {
+		var distance *float64
+		var gain *int
+		var track []models.TrackPoint
+		if err := rows.Scan(&distance, &gain, &track); err != nil {
+			return sum, err
+		}
+		sum.Outings++
+		measured := models.ComputeTrackStats(track)
+		switch {
+		case distance != nil:
+			sum.DistanceKm += *distance
+		case measured != nil:
+			sum.DistanceKm += measured.DistanceKm
+		}
+		switch {
+		case gain != nil:
+			sum.ElevationGain += *gain
+		case measured != nil:
+			sum.ElevationGain += measured.ElevationGain
+		}
+	}
+	sum.DistanceKm = math.Round(sum.DistanceKm*10) / 10
+	return sum, rows.Err()
 }
 
 func (s *Store) Outing(ctx context.Context, id string) (models.Outing, error) {

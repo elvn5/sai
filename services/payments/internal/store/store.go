@@ -17,6 +17,8 @@ var (
 	ErrNotFound = errors.New("not found")
 	// ErrConflict: the order isn't in a state that allows the change.
 	ErrConflict = errors.New("conflict")
+	// ErrNoPlaces: the item hasn't enough free places left.
+	ErrNoPlaces = errors.New("no places")
 )
 
 type Store struct {
@@ -29,7 +31,7 @@ func New(db *pgxpool.Pool) *Store {
 
 const orderColumns = `id::text, kind, item_id::text, item_title, item_slug, item_locale, item_date::text, quantity,
 	unit_price, amount, fee, payee_amount, user_id::text, payee_id::text, contact_name, contact_phone, comment,
-	status, provider, payment_url, provider_error, expires_at, paid_at, refund_note, payout_id::text, created_at`
+	status, provider, payment_url, provider_error, expires_at, paid_at, refund_note, payout_id::text, created_at, item_image_url`
 
 func scanOrder(row pgx.Row) (models.Order, error) {
 	var o models.Order
@@ -38,7 +40,7 @@ func scanOrder(row pgx.Row) (models.Order, error) {
 	err := row.Scan(&o.ID, &o.Kind, &o.ItemID, &o.ItemTitle, &o.ItemSlug, &o.ItemLocale, &o.ItemDate, &o.Quantity,
 		&o.UnitPrice, &o.Amount, &o.Fee, &o.PayeeAmount, &o.UserID, &o.PayeeID, &o.ContactName, &o.ContactPhone,
 		&o.Comment, &o.Status, &o.Provider, &o.PaymentURL, &o.ProviderError, &expires, &paid, &o.RefundNote,
-		&o.PayoutID, &created)
+		&o.PayoutID, &created, &o.ItemImageURL)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return o, ErrNotFound
 	}
@@ -54,15 +56,61 @@ func (s *Store) collect(ctx context.Context, query string, args ...any) ([]model
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (models.Order, error) { return scanOrder(r) })
 }
 
-func (s *Store) InsertOrder(ctx context.Context, o models.Order) (models.Order, error) {
-	return scanOrder(s.db.QueryRow(ctx, `INSERT INTO orders (kind, item_id, item_title, item_slug, item_locale,
+// InsertOrder saves a new order. With a capacity, it first checks under a
+// per-item lock that the places are still free (ErrNoPlaces otherwise), so
+// two bookings at once can't both take the last places.
+func (s *Store) InsertOrder(ctx context.Context, o models.Order, capacity *int, now time.Time) (models.Order, error) {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return o, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if capacity != nil {
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext($1))`, o.ItemID); err != nil {
+			return o, err
+		}
+		var taken int
+		if err := tx.QueryRow(ctx, `SELECT coalesce(sum(quantity), 0) FROM orders WHERE item_id::text = $1 AND `+
+			holdsPlaces, o.ItemID, now).Scan(&taken); err != nil {
+			return o, err
+		}
+		if taken+o.Quantity > *capacity {
+			return o, ErrNoPlaces
+		}
+	}
+	saved, err := scanOrder(tx.QueryRow(ctx, `INSERT INTO orders (kind, item_id, item_title, item_slug, item_locale,
 		item_date, quantity, unit_price, amount, fee, payee_amount, user_id, payee_id, contact_name, contact_phone,
-		comment, provider, expires_at)
-		VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		comment, provider, expires_at, item_image_url)
+		VALUES ($1, $2, $3, $4, $5, $6::date, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		RETURNING `+orderColumns,
 		o.Kind, o.ItemID, o.ItemTitle, o.ItemSlug, o.ItemLocale, o.ItemDate, o.Quantity, o.UnitPrice, o.Amount,
 		o.Fee, o.PayeeAmount, o.UserID, o.PayeeID, o.ContactName, o.ContactPhone, o.Comment, o.Provider,
-		o.ExpiresAt.Time))
+		o.ExpiresAt.Time, o.ItemImageURL))
+	if err != nil {
+		return saved, err
+	}
+	return saved, tx.Commit(ctx)
+}
+
+// An order holds its places once paid, or while its payment is pending ($2:
+// now).
+const holdsPlaces = `(status = 'paid' OR (status = 'pending' AND expires_at > $2))`
+
+// TakenPlaces counts the places held on each of the items.
+func (s *Store) TakenPlaces(ctx context.Context, itemIDs []string, now time.Time) (map[string]int, error) {
+	rows, err := s.db.Query(ctx, `SELECT item_id::text, sum(quantity)::int FROM orders
+		WHERE item_id::text = ANY($1) AND `+holdsPlaces+` GROUP BY item_id`, itemIDs, now)
+	if err != nil {
+		return nil, err
+	}
+	taken := make(map[string]int, len(itemIDs))
+	var id string
+	var n int
+	_, err = pgx.ForEachRow(rows, []any{&id, &n}, func() error {
+		taken[id] = n
+		return nil
+	})
+	return taken, err
 }
 
 func (s *Store) Order(ctx context.Context, id string) (models.Order, error) {

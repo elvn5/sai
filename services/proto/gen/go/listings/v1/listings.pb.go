@@ -77,8 +77,12 @@ type Tour struct {
 	StartDate string `protobuf:"bytes,6,opt,name=start_date,json=startDate,proto3" json:"start_date,omitempty"`
 	EndDate   string `protobuf:"bytes,7,opt,name=end_date,json=endDate,proto3" json:"end_date,omitempty"`
 	// The partner who published it; absent for editorial tours.
-	UserId        *string `protobuf:"bytes,8,opt,name=user_id,json=userId,proto3,oneof" json:"user_id,omitempty"`
-	IsPublished   bool    `protobuf:"varint,9,opt,name=is_published,json=isPublished,proto3" json:"is_published,omitempty"`
+	UserId      *string `protobuf:"bytes,8,opt,name=user_id,json=userId,proto3,oneof" json:"user_id,omitempty"`
+	IsPublished bool    `protobuf:"varint,9,opt,name=is_published,json=isPublished,proto3" json:"is_published,omitempty"`
+	// Places for travelers; absent when the tour has no limit.
+	Capacity *int32 `protobuf:"varint,10,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
+	// The tour's cover picture (an /uploads/… path or URL), if any.
+	CoverImageUrl *string `protobuf:"bytes,11,opt,name=cover_image_url,json=coverImageUrl,proto3,oneof" json:"cover_image_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -176,6 +180,20 @@ func (x *Tour) GetIsPublished() bool {
 	return false
 }
 
+func (x *Tour) GetCapacity() int32 {
+	if x != nil && x.Capacity != nil {
+		return *x.Capacity
+	}
+	return 0
+}
+
+func (x *Tour) GetCoverImageUrl() string {
+	if x != nil && x.CoverImageUrl != nil {
+		return *x.CoverImageUrl
+	}
+	return ""
+}
+
 type GetTourResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Tour          *Tour                  `protobuf:"bytes,1,opt,name=tour,proto3" json:"tour,omitempty"`
@@ -226,7 +244,7 @@ const file_listings_v1_listings_proto_rawDesc = "" +
 	"\n" +
 	"\x1alistings/v1/listings.proto\x12\vlistings.v1\" \n" +
 	"\x0eGetTourRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x84\x02\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xf3\x02\n" +
 	"\x04Tour\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x16\n" +
@@ -237,10 +255,15 @@ const file_listings_v1_listings_proto_rawDesc = "" +
 	"start_date\x18\x06 \x01(\tR\tstartDate\x12\x19\n" +
 	"\bend_date\x18\a \x01(\tR\aendDate\x12\x1c\n" +
 	"\auser_id\x18\b \x01(\tH\x01R\x06userId\x88\x01\x01\x12!\n" +
-	"\fis_published\x18\t \x01(\bR\visPublishedB\b\n" +
+	"\fis_published\x18\t \x01(\bR\visPublished\x12\x1f\n" +
+	"\bcapacity\x18\n" +
+	" \x01(\x05H\x02R\bcapacity\x88\x01\x01\x12+\n" +
+	"\x0fcover_image_url\x18\v \x01(\tH\x03R\rcoverImageUrl\x88\x01\x01B\b\n" +
 	"\x06_priceB\n" +
 	"\n" +
-	"\b_user_id\"8\n" +
+	"\b_user_idB\v\n" +
+	"\t_capacityB\x12\n" +
+	"\x10_cover_image_url\"8\n" +
 	"\x0fGetTourResponse\x12%\n" +
 	"\x04tour\x18\x01 \x01(\v2\x11.listings.v1.TourR\x04tour2W\n" +
 	"\x0fListingsService\x12D\n" +

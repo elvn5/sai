@@ -62,6 +62,17 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.POST("/listing-posts", requireUser, posts.Create)
 	r.DELETE("/listing-posts/:id", requireUser, posts.Delete)
 
+	// A traveler's saved listings, and "tell me about new tours".
+	favorites := &handlers.Favorites{Deps: d}
+	r.GET("/favorites/mine", requireUser, favorites.Mine)
+	r.GET("/favorites/mine/ids", requireUser, favorites.IDs)
+	r.PUT("/favorites/:type/:id", requireUser, favorites.Add)
+	r.DELETE("/favorites/:type/:id", requireUser, favorites.Remove)
+	alerts := &handlers.TourAlerts{Deps: d}
+	r.GET("/tour-alerts/mine", requireUser, alerts.Mine)
+	r.PUT("/tour-alerts", requireUser, alerts.Add)
+	r.DELETE("/tour-alerts", requireUser, alerts.Remove)
+
 	// Partner cabinet: visits and contact clicks of listings.
 	stats := &handlers.Stats{Deps: d}
 	r.POST("/listing-stats/events", middleware.OptionalUser(verifier), stats.Record)

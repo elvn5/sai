@@ -27,6 +27,10 @@ message Tour {
   // The partner who published it; absent for editorial tours.
   optional string user_id = 8;
   bool is_published = 9;
+  // Places for travelers; absent when the tour has no limit.
+  optional int32 capacity = 10;
+  // The tour's cover picture (an /uploads/… path or URL), if any.
+  optional string cover_image_url = 11;
 }
 
 message GetTourResponse {

@@ -25,6 +25,9 @@ type Tour struct {
 	StartDate, EndDate      string
 	UserID                  *string
 	IsPublished             bool
+	// Places for travelers; nil when unlimited.
+	Capacity      *int
+	CoverImageURL *string
 }
 
 type Client struct {
@@ -54,7 +57,12 @@ func (c *Client) Tour(ctx context.Context, id string) (Tour, error) {
 	}
 	t := res.GetTour()
 	tour := Tour{ID: t.GetId(), Slug: t.GetSlug(), Locale: t.GetLocale(), Title: t.GetTitle(),
-		StartDate: t.GetStartDate(), EndDate: t.GetEndDate(), UserID: t.UserId, IsPublished: t.GetIsPublished()}
+		StartDate: t.GetStartDate(), EndDate: t.GetEndDate(), UserID: t.UserId, IsPublished: t.GetIsPublished(),
+		CoverImageURL: t.CoverImageUrl}
+	if t.Capacity != nil {
+		capacity := int(t.GetCapacity())
+		tour.Capacity = &capacity
+	}
 	if t.Price != nil {
 		price := int(t.GetPrice())
 		tour.Price = &price

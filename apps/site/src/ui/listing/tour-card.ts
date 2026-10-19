@@ -4,6 +4,7 @@ import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount, formatDateRange } from '@/core/lib/format';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { tourCoverTransition } from '@/core/lib/view-transitions';
+import { FavoriteButton } from '@/ui/favorite-button';
 import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
@@ -13,7 +14,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 // A tour in a grid: cover, dates, where, title and price.
 @Component({
   selector: 'app-tour-card',
-  imports: [NgOptimizedImage, SharedTransition, SiteLink, TranslocoPipe],
+  imports: [FavoriteButton, NgOptimizedImage, SharedTransition, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a [appSiteLink]="'/tours/' + tour().slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.06)] motion-lift dark:shadow-none">
@@ -26,6 +27,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
         <span class="ui-chip-on-image absolute top-2 left-2">
           <span class="icon-[heroicons--calendar-days] size-3.5" aria-hidden="true"></span>{{ dates() }}
         </span>
+        <span class="absolute top-2 right-2"><app-favorite-button type="tour" [targetId]="tour().id" /></span>
       </div>
       <div class="flex flex-1 flex-col gap-1.5 px-3.5 pt-3 pb-3.5">
         @if (tour().destination || tour().location) {

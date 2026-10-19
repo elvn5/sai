@@ -35,7 +35,11 @@ func (s *Server) GetTour(ctx context.Context, req *listingsv1.GetTourRequest) (*
 	}
 	tour := &listingsv1.Tour{
 		Id: t.ID, Slug: t.Slug, Locale: t.Locale, Title: t.Title, StartDate: t.StartDate, EndDate: t.EndDate,
-		UserId: t.UserID, IsPublished: t.IsPublished,
+		UserId: t.UserID, IsPublished: t.IsPublished, CoverImageUrl: t.CoverImageURL,
+	}
+	if t.Capacity != nil {
+		capacity := int32(*t.Capacity) //nolint:gosec // capacity is validated to at most 500
+		tour.Capacity = &capacity
 	}
 	if t.Price != nil {
 		price := int32(*t.Price) //nolint:gosec // prices are validated far below 2^31

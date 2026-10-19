@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,7 @@ import (
 	"github.com/elvn5/sai/services/payments/internal/listingsclient"
 	"github.com/elvn5/sai/services/payments/internal/models"
 	"github.com/elvn5/sai/services/payments/internal/provider"
+	"github.com/elvn5/sai/services/payments/internal/store"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/jsontime"
 	"github.com/elvn5/sai/services/pkg/respond"
@@ -80,11 +82,15 @@ func (h *Orders) Create(c *gin.Context) {
 	fee := int(math.Round(float64(amount) * h.FeePercent / 100))
 	order, err := h.Store.InsertOrder(ctx, models.Order{
 		Kind: "tour", ItemID: tour.ID, ItemTitle: tour.Title, ItemSlug: &tour.Slug, ItemLocale: &tour.Locale,
-		ItemDate: &tour.StartDate, Quantity: *req.Quantity, UnitPrice: *tour.Price, Amount: amount, Fee: fee,
+		ItemDate: &tour.StartDate, ItemImageURL: tour.CoverImageURL, Quantity: *req.Quantity, UnitPrice: *tour.Price, Amount: amount, Fee: fee,
 		PayeeAmount: amount - fee, UserID: currentUserID(c), PayeeID: *tour.UserID,
 		ContactName: string(*req.ContactName), ContactPhone: *req.ContactPhone, Comment: req.Comment.Ptr(),
 		Provider: h.Provider.Name(), ExpiresAt: jsontime.New(h.now().Add(h.PaymentTTL)),
-	})
+	}, tour.Capacity, h.now())
+	if errors.Is(err, store.ErrNoPlaces) {
+		httperr.Abort(c, http.StatusConflict, "Not enough free places on this tour")
+		return
+	}
 	if err != nil {
 		h.internalError(c, err)
 		return
@@ -113,6 +119,32 @@ func (h *Orders) Create(c *gin.Context) {
 		return
 	}
 	respond.JSON(c, http.StatusCreated, order)
+}
+
+// Most items one /orders/places request may ask about.
+const maxPlacesItems = 50
+
+// Places handles GET /orders/places?ids=a,b: how many places bookings hold
+// on each item (paid, or pending payment), for "N places left". Public.
+func (h *Orders) Places(c *gin.Context) {
+	ids := strings.Split(c.Query("ids"), ",")
+	if len(ids) > maxPlacesItems {
+		httperr.Abort(c, http.StatusBadRequest, "Too many ids")
+		return
+	}
+	valid := ids[:0]
+	for _, id := range ids {
+		if validID(id) {
+			valid = append(valid, id)
+		}
+	}
+	taken, err := h.Store.TakenPlaces(c.Request.Context(), valid, h.now())
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "no-store")
+	respond.JSON(c, http.StatusOK, taken)
 }
 
 type paymentsConfig struct {

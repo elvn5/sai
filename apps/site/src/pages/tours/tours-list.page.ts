@@ -1,18 +1,28 @@
-import { SeoPage, type Tour } from '@/core/api/types';
+import { type PublicAuthor, SeoPage, type Tour } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
-import { formatAmount, formatDateRange } from '@/core/lib/format';
+import {
+  formatAmount,
+  formatDate,
+  formatDateRange,
+  personName,
+  todayInBishkek,
+} from '@/core/lib/format';
 import { DESTINATION_OPTIONS } from '@/core/lib/listing-options';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { FEW_PLACES, placesLeft, placesResource } from '@/core/lib/places';
 import { injectQueryFilters } from '@/core/lib/query-filters';
 import { withQuery } from '@/core/lib/query-link';
 import { loaded } from '@/core/lib/resource';
 import { tourCoverTransition } from '@/core/lib/view-transitions';
 import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
+import { TourAlertButton } from '@/pages/tours/tour-alert-button';
+import { FavoriteButton } from '@/ui/favorite-button';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
+import { PersonAvatar } from '@/ui/person-avatar';
 import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
 import { StateBlock } from '@/ui/state-block';
@@ -25,7 +35,15 @@ import {
 } from '@angular/cdk/menu';
 import { NgOptimizedImage } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const SORT_KEYS = ['soonest', 'price_asc', 'price_desc', 'rating'] as const;
@@ -36,6 +54,11 @@ const DURATIONS = ['1', '2-3', '4+'] as const;
 
 // Destinations shown as pills before "More".
 const VISIBLE_DESTINATIONS = 6;
+
+// Tours shown at first, and added by each "Show more".
+const PAGE_SIZE = 10;
+
+const isDate = (value: string | undefined): boolean => /^\d{4}-\d{2}-\d{2}$/.test(value ?? '');
 
 function matchesDuration(days: number | null, range: string): boolean {
   if (!days) return false;
@@ -55,12 +78,15 @@ function matchesDuration(days: number | null, range: string): boolean {
     CdkMenuItemCheckbox,
     CdkMenuItemRadio,
     CdkMenuTrigger,
+    FavoriteButton,
     ListSkeleton,
     LoadError,
     NgOptimizedImage,
+    PersonAvatar,
     SharedTransition,
     SiteLink,
     StateBlock,
+    TourAlertButton,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -112,7 +138,15 @@ function matchesDuration(days: number | null, range: string): boolean {
             </span>
           }
         </p>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" class="ui-btn-soft" aria-controls="tour-dates" [attr.aria-expanded]="datesOpen()" (click)="datesOpen.set(!datesOpen())">
+            <span class="icon-[heroicons--calendar-days] size-4" aria-hidden="true"></span>
+            @if (from() || to()) {
+              {{ datesLabel() }}
+            } @else {
+              {{ 'tours.dates.button' | transloco }}
+            }
+          </button>
           <button type="button" class="ui-btn-soft" [cdkMenuTriggerFor]="filtersMenu" [attr.aria-label]="'listing.filters.title' | transloco">
             <span class="icon-[heroicons--adjustments-horizontal] size-4" aria-hidden="true"></span>{{ 'listing.filters.title' | transloco }}
             @if (activeFilters() > 0) {
@@ -126,12 +160,31 @@ function matchesDuration(days: number | null, range: string): boolean {
         </div>
       </div>
 
+      @if (datesOpen()) {
+        <form id="tour-dates" class="motion-roll-in mb-2 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-3" (submit)="applyDates($event, fromInput.value, toInput.value)">
+          <label class="block">
+            <span class="ui-label">{{ 'tours.dates.from' | transloco }}</span>
+            <input #fromInput class="ui-input" type="date" [value]="from() ?? ''" [min]="today" />
+          </label>
+          <label class="block">
+            <span class="ui-label">{{ 'tours.dates.to' | transloco }}</span>
+            <input #toInput class="ui-input" type="date" [value]="to() ?? ''" [min]="from() ?? today" />
+          </label>
+          <div class="flex gap-2">
+            <button type="submit" class="ui-btn-primary">{{ 'tours.dates.apply' | transloco }}</button>
+            @if (from() || to()) {
+              <button type="button" class="ui-btn-ghost" (click)="clearDates()">{{ 'listing.filters.reset' | transloco }}</button>
+            }
+          </div>
+        </form>
+      }
+
       @if (tours.error()) {
         <app-load-error (retry)="tours.reload()" />
       } @else if (tours.hasValue()) {
         @if (list().length > 0) {
           <ul class="motion-reveal mt-2 flex flex-col gap-3.5">
-            @for (tour of list(); track tour.id; let first = $first) {
+            @for (tour of shown(); track tour.id; let first = $first) {
               <li>
                 <a [appSiteLink]="'/tours/' + tour.slug" class="ui-card group flex flex-col gap-4 p-3.5 motion-lift sm:flex-row sm:gap-[1.125rem]">
                   <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-[0.625rem] bg-slate-200 sm:w-[15.5rem] dark:bg-slate-800" [appSharedTransition]="coverTransition(tour)">
@@ -140,6 +193,7 @@ function matchesDuration(days: number | null, range: string): boolean {
                     } @else {
                       <span class="icon-[heroicons--map] absolute inset-0 m-auto size-10 text-text-muted" aria-hidden="true"></span>
                     }
+                    <span class="absolute top-2 right-2"><app-favorite-button type="tour" [targetId]="tour.id" /></span>
                   </div>
                   <div class="flex min-w-0 flex-1 flex-col gap-1.5">
                     <div class="flex flex-wrap gap-1.5">
@@ -156,16 +210,32 @@ function matchesDuration(days: number | null, range: string): boolean {
                         <span class="ui-badge ui-badge-soft">{{ 'tours.durationValue' | transloco: { days: days } }}</span>
                       }
                       <span class="ui-badge ui-badge-soft"><span class="icon-[heroicons--calendar-days]" aria-hidden="true"></span>{{ dates(tour) }}</span>
+                      @if (left(tour); as count) {
+                        @if (count <= fewPlaces) {
+                          <span class="ui-badge ui-badge-warning"><span class="icon-[heroicons--fire]" aria-hidden="true"></span>{{ 'tours.places.few' | transloco: { count: count } }}</span>
+                        }
+                      } @else if (left(tour) === 0) {
+                        <span class="ui-badge ui-badge-danger">{{ 'tours.places.none' | transloco }}</span>
+                      }
                     </div>
                     <h2 class="text-[1.0625rem] leading-snug font-semibold text-text">{{ tour.title }}</h2>
                     @if (tour.excerpt) {
                       <p class="line-clamp-2 text-[0.8125rem] text-text-muted">{{ tour.excerpt }}</p>
                     }
-                    @if (tour.reviewCount > 0) {
-                      <p class="mt-auto flex items-center gap-1 pt-1 text-[0.8rem]">
-                        <span class="icon-[heroicons--star-solid] size-4 text-secondary-400" aria-hidden="true"></span>
-                        <b class="text-text">{{ rating(tour) }}</b>
-                        <span class="text-text-muted">({{ tour.reviewCount }})</span>
+                    @if (tour.organizer || tour.reviewCount > 0) {
+                      <p class="mt-auto flex items-center gap-1.5 pt-1 text-[0.8rem]">
+                        @if (tour.organizer; as organizer) {
+                          <app-person-avatar [person]="organizer" [size]="20" />
+                          <span class="truncate text-text-muted">{{ organizerName(organizer) }}</span>
+                        }
+                        @if (tour.reviewCount > 0) {
+                          @if (tour.organizer) {
+                            <span class="text-text-muted" aria-hidden="true">·</span>
+                          }
+                          <span class="icon-[heroicons--star-solid] size-4 shrink-0 text-secondary-400" aria-hidden="true"></span>
+                          <b class="text-text">{{ rating(tour) }}</b>
+                          <span class="text-text-muted">({{ tour.reviewCount }})</span>
+                        }
                       </p>
                     }
                   </div>
@@ -179,7 +249,15 @@ function matchesDuration(days: number | null, range: string): boolean {
               </li>
             }
           </ul>
-        } @else if (all().length > 0) {
+          @if (list().length > shown().length) {
+            <div class="mt-5 flex justify-center">
+              <button type="button" class="ui-btn-soft group" (click)="showMore()">
+                <span class="icon-[heroicons--arrow-down] icon-anim-bounce size-4" aria-hidden="true"></span>
+                {{ 'listing.loadMore' | transloco }}
+              </button>
+            </div>
+          }
+        } @else if (all().length > 0 || from() || to()) {
           <app-state-block class="mt-2" icon="icon-[heroicons--magnifying-glass]" title="tours.emptyFiltered" text="tours.emptyFilteredHint">
             <button type="button" class="ui-btn-primary" (click)="resetFilters()">
               <span class="icon-[heroicons--x-mark] size-4" aria-hidden="true"></span>{{ 'listing.filters.reset' | transloco }}
@@ -188,8 +266,9 @@ function matchesDuration(days: number | null, range: string): boolean {
         } @else {
           <app-state-block class="mt-2" icon="icon-[heroicons--map]" title="tours.empty" text="tours.emptyHint">
             <a appSiteLink="/outings" class="ui-btn-primary">{{ 'tours.emptyCta' | transloco }}</a>
+            <app-tour-alert-button [destination]="destination() ?? ''" />
             @if (destination()) {
-              <a appSiteLink="/tours" class="ui-btn-soft">{{ 'listing.filters.allDestinations' | transloco }}</a>
+              <a appSiteLink="/tours" class="ui-btn-ghost">{{ 'listing.filters.allDestinations' | transloco }}</a>
             }
           </app-state-block>
         }
@@ -253,6 +332,9 @@ export class ToursListPage {
   readonly sort = input<string | undefined>(undefined);
   readonly duration = input<string | undefined>(undefined);
   readonly free = input<string | undefined>(undefined);
+  // Start dates, YYYY-MM-DD (?from=&to=).
+  readonly from = input<string | undefined>(undefined);
+  readonly to = input<string | undefined>(undefined);
   protected readonly auth = inject(AuthStore);
   private readonly apiBaseUrl = inject(APP_CONFIG).apiBaseUrl;
   private readonly transloco = inject(TranslocoService);
@@ -261,12 +343,17 @@ export class ToursListPage {
   protected readonly sortKeys = SORT_KEYS;
   protected readonly durations = DURATIONS;
   protected readonly moreOpen = signal(false);
+  protected readonly datesOpen = signal(false);
+  protected readonly fewPlaces = FEW_PLACES;
+  protected readonly today = todayInBishkek();
 
   protected readonly tours = httpResource<Tour[]>(() => ({
     url: '/tours',
     params: {
       locale: this.lang(),
       ...(this.destination() ? { destination: this.destination() as string } : {}),
+      ...(isDate(this.from()) ? { from: this.from() as string } : {}),
+      ...(isDate(this.to()) ? { to: this.to() as string } : {}),
     },
   }));
 
@@ -311,6 +398,23 @@ export class ToursListPage {
     };
     return [...tours].sort(by[this.sortKey()]);
   });
+  // How many of the list are shown; back to one page when it changes.
+  private readonly limit = linkedSignal({ source: this.list, computation: () => PAGE_SIZE });
+  protected readonly shown = computed(() => this.list().slice(0, this.limit()));
+  // Free places of the shown tours that have a limit.
+  private readonly places = placesResource(() =>
+    this.shown()
+      .filter((tour) => tour.capacity != null)
+      .map((tour) => tour.id),
+  );
+  protected readonly datesLabel = computed(() => {
+    const from = this.from();
+    const to = this.to();
+    if (from && to) return formatDateRange(this.lang(), from, to);
+    return this.transloco.translate(from ? 'tours.dates.fromValue' : 'tours.dates.toValue', {
+      date: formatDate(this.lang(), (from ?? to) as string, { day: 'numeric', month: 'short' }),
+    });
+  });
 
   constructor() {
     const seo = inject(SeoService);
@@ -345,11 +449,36 @@ export class ToursListPage {
       sort: this.sort(),
       duration: this.duration(),
       free: this.free(),
+      from: this.from(),
+      to: this.to(),
     });
   }
 
   protected resetFilters(): void {
-    this.setQuery({ duration: null, free: null });
+    this.setQuery({ duration: null, free: null, from: null, to: null });
+  }
+
+  protected showMore(): void {
+    this.limit.update((limit) => limit + PAGE_SIZE);
+  }
+
+  protected applyDates(event: Event, from: string, to: string): void {
+    event.preventDefault();
+    this.setQuery({ from: from || null, to: to || null });
+    this.datesOpen.set(false);
+  }
+
+  protected clearDates(): void {
+    this.setQuery({ from: null, to: null });
+    this.datesOpen.set(false);
+  }
+
+  protected left(tour: Tour): number | null {
+    return placesLeft(tour, loaded(this.places));
+  }
+
+  protected organizerName(organizer: PublicAuthor): string {
+    return personName(organizer);
   }
 
   protected rating(tour: Tour): string {

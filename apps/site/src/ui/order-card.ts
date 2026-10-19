@@ -1,9 +1,12 @@
 import type { Order, OrderStatus } from '@/core/api/types';
+import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount, formatDate, formatInBishkek } from '@/core/lib/format';
+import { resolveMediaUrl } from '@/core/lib/media-url';
 import { contentLang } from '@/core/lib/partner-cabinet';
 import { SiteLink } from '@/ui/site-link';
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 // Each status: its badge (color, icon and words together).
@@ -16,12 +19,12 @@ const STATUS: Record<OrderStatus, { badge: string; icon: string | null }> = {
 };
 
 // A booking: its status, what, when, how many, how much, and the next step
-// (pay, open the tour, book again). Waiting for payment, it stands out;
-// expired or failed, it fades. `forPartner` shows the customer and what the
+// (pay, open the tour, book again), with the tour's cover. Waiting for
+// payment, it stands out; expired or failed, it fades (the cover in grey). `forPartner` shows the customer and what the
 // partner gets instead.
 @Component({
   selector: 'app-order-card',
-  imports: [SiteLink, TranslocoPipe],
+  imports: [NgOptimizedImage, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -30,6 +33,15 @@ const STATUS: Record<OrderStatus, { badge: string; icon: string | null }> = {
       [class.!border-amber-500/50]="!forPartner() && order().status === 'pending'"
       [class.opacity-75]="!forPartner() && closed()"
     >
+      @if (!forPartner()) {
+        <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-[0.625rem] bg-slate-200 sm:aspect-[4/3] sm:w-28 dark:bg-slate-800" [class.grayscale]="closed()">
+          @if (cover(); as url) {
+            <img [ngSrc]="url" fill sizes="(min-width: 640px) 10vw, 100vw" alt="" class="object-cover" />
+          } @else {
+            <span class="icon-[heroicons--map] absolute inset-0 m-auto size-8 text-text-muted" aria-hidden="true"></span>
+          }
+        </div>
+      }
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="ui-badge" [class]="status().badge">
@@ -96,6 +108,12 @@ export class OrderCard {
   readonly order = input.required<Order>();
   readonly forPartner = input(false);
   private readonly lang = injectLang();
+  private readonly apiBaseUrl = inject(APP_CONFIG).apiBaseUrl;
+
+  protected readonly cover = computed(() => {
+    const url = this.order().itemImageUrl;
+    return url ? resolveMediaUrl(this.apiBaseUrl, url) : null;
+  });
 
   protected readonly tourLang = computed(() => contentLang(this.order().itemLocale));
   protected readonly status = computed(() => STATUS[this.order().status]);

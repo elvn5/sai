@@ -131,6 +131,12 @@ func (s *Store) Save(ctx context.Context, u models.User) (models.User, error) {
 	return saved, duplicate(err)
 }
 
+// SetPassword replaces the password hash.
+func (s *Store) SetPassword(ctx context.Context, id, hash string) error {
+	_, err := s.db.Exec(ctx, `UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1`, id, hash)
+	return err
+}
+
 func (s *Store) Delete(ctx context.Context, id string) error {
 	_, err := s.db.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
 	return err

@@ -4,6 +4,7 @@ import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount } from '@/core/lib/format';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { guideAvatarTransition } from '@/core/lib/view-transitions';
+import { FavoriteButton } from '@/ui/favorite-button';
 import { RatingStars } from '@/ui/rating-stars';
 import { SharedTransition } from '@/ui/shared-transition';
 import { SiteLink } from '@/ui/site-link';
@@ -15,7 +16,14 @@ const CARD_DESTINATIONS = 3;
 
 @Component({
   selector: 'app-local-guide-card',
-  imports: [NgOptimizedImage, RatingStars, SharedTransition, SiteLink, TranslocoPipe],
+  imports: [
+    FavoriteButton,
+    NgOptimizedImage,
+    RatingStars,
+    SharedTransition,
+    SiteLink,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a [appSiteLink]="'/local-guides/' + guide().slug" class="flex h-full flex-col gap-3 rounded-card border border-border bg-surface p-4 motion-lift">
@@ -25,12 +33,13 @@ const CARD_DESTINATIONS = 3;
         } @else {
           <span class="flex size-16 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-500 to-secondary-500 text-xl font-bold text-white" aria-hidden="true">{{ initial() }}</span>
         }
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <h2 class="truncate text-lg font-semibold text-text">{{ guide().name }}</h2>
           @if (guide().headline) {
             <p class="line-clamp-2 text-sm text-text-muted">{{ guide().headline }}</p>
           }
         </div>
+        <app-favorite-button class="self-start" type="local_guide" variant="plain" [targetId]="guide().id" />
       </div>
       <div class="flex items-center gap-2 text-sm">
         @if (guide().reviewCount > 0) {

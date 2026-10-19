@@ -33,12 +33,13 @@ import (
 )
 
 const (
-	secret   = "test-secret-at-least-16-chars"
-	partner  = "11111111-1111-1111-1111-111111111111"
-	tourist  = "22222222-2222-2222-2222-222222222222"
-	tourID   = "aaaaaaaa-0000-0000-0000-000000000001"
-	freeTour = "aaaaaaaa-0000-0000-0000-000000000002"
-	oldTour  = "aaaaaaaa-0000-0000-0000-000000000003"
+	secret    = "test-secret-at-least-16-chars"
+	partner   = "11111111-1111-1111-1111-111111111111"
+	tourist   = "22222222-2222-2222-2222-222222222222"
+	tourID    = "aaaaaaaa-0000-0000-0000-000000000001"
+	freeTour  = "aaaaaaaa-0000-0000-0000-000000000002"
+	oldTour   = "aaaaaaaa-0000-0000-0000-000000000003"
+	smallTour = "aaaaaaaa-0000-0000-0000-000000000004"
 )
 
 var now = time.Date(2026, 10, 12, 6, 0, 0, 0, time.UTC)
@@ -84,7 +85,9 @@ func strp(s string) *string { return &s }
 var tours = fakeTours{
 	tourID:   {ID: tourID, Slug: "ala-kul", Locale: "ru", Title: "Ала-Куль", Price: intp(12000), StartDate: "2026-10-20", UserID: strp(partner), IsPublished: true},
 	freeTour: {ID: freeTour, Slug: "free", Locale: "ru", Title: "Free", StartDate: "2026-10-20", UserID: strp(partner), IsPublished: true},
-	oldTour:  {ID: oldTour, Slug: "old", Locale: "ru", Title: "Old", Price: intp(5000), StartDate: "2026-10-01", UserID: strp(partner), IsPublished: true},
+	smallTour: {ID: smallTour, Slug: "small", Locale: "ru", Title: "Small", Price: intp(3000), StartDate: "2026-10-20",
+		UserID: strp(partner), IsPublished: true, Capacity: intp(3), CoverImageURL: strp("/uploads/small.webp")},
+	oldTour: {ID: oldTour, Slug: "old", Locale: "ru", Title: "Old", Price: intp(5000), StartDate: "2026-10-01", UserID: strp(partner), IsPublished: true},
 }
 
 type sent struct {
@@ -266,6 +269,36 @@ func TestTourBookingAndPayment(t *testing.T) {
 	}
 	if status, _ := e.do("POST", "/orders/"+id+"/refund", `{}`, "admin"); status != 409 {
 		t.Errorf("refund after payout: %d", status)
+	}
+}
+
+func TestCapacityAndPlaces(t *testing.T) {
+	e := setup(t, &provider.Fake{SiteURL: "https://ermekten.kg"})
+
+	status, body := e.do("POST", "/orders", order(smallTour, 2), tourist)
+	if status != 201 || obj(t, body)["itemImageUrl"] != "/uploads/small.webp" {
+		t.Fatalf("create: %d %s", status, body)
+	}
+	// Two of three places are on hold while the payment is pending.
+	if status, body := e.do("POST", "/orders", order(smallTour, 2), tourist); status != 409 || !strings.Contains(body, "free places") {
+		t.Errorf("over capacity: %d %s", status, body)
+	}
+	if status, body := e.do("GET", "/orders/places?ids="+smallTour+","+tourID+",nope", "", ""); status != 200 ||
+		body != `{"`+smallTour+`":2}` {
+		t.Errorf("places: %d %s", status, body)
+	}
+	// Unlimited tours take any number.
+	if status, _ := e.do("POST", "/orders", order(tourID, 20), tourist); status != 201 {
+		t.Errorf("unlimited: %d", status)
+	}
+
+	// An unpaid order lets its places go once it expires.
+	*e.clock = e.clock.Add(31 * time.Minute)
+	if _, body := e.do("GET", "/orders/places?ids="+smallTour, "", ""); body != `{}` {
+		t.Errorf("places after expiry: %s", body)
+	}
+	if status, body := e.do("POST", "/orders", order(smallTour, 3), tourist); status != 201 {
+		t.Errorf("after expiry: %d %s", status, body)
 	}
 }
 

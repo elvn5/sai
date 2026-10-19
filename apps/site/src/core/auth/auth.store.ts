@@ -88,6 +88,20 @@ export class AuthStore {
     this.setUser((await this.post<{ user: AppUser }>('/auth/user/verify', payload)).user);
   }
 
+  // Emails a code for setting a new password (accounts with an email).
+  async forgotPassword(identifier: string): Promise<PendingVerification> {
+    const res = await this.post<{ verification: PendingVerification }>(
+      '/auth/user/password/forgot',
+      { identifier },
+    );
+    return res.verification;
+  }
+
+  // Sets the new password with the emailed code, and signs in.
+  async resetPassword(payload: VerifyCodePayload & { password: string }): Promise<void> {
+    this.setUser((await this.post<{ user: AppUser }>('/auth/user/password/reset', payload)).user);
+  }
+
   async resendCode(identifier: string): Promise<PendingVerification> {
     const res = await this.post<{ verification: PendingVerification }>('/auth/user/resend-code', {
       identifier,

@@ -293,6 +293,18 @@ export interface Tour extends ListingContacts {
   publishedAt: string | null;
   updatedAt: string;
   userId: string | null;
+  photos: string[];
+  program: TourDay[];
+  // Places for travelers; null when unlimited.
+  capacity: number | null;
+  // The partner who runs it (absent for editorial tours).
+  organizer?: PublicAuthor;
+}
+
+// One day of a tour's program.
+export interface TourDay {
+  title: string;
+  text: string;
 }
 
 export interface Paginated<T> {
@@ -356,6 +368,8 @@ export interface Order {
   itemSlug: string | null;
   itemLocale: string | null;
   itemDate: string | null;
+  // The tour's cover when booked.
+  itemImageUrl: string | null;
   quantity: number;
   unitPrice: number;
   amount: number;

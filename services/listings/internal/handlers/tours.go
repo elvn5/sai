@@ -1,7 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -34,6 +37,9 @@ type tourRequest struct {
 	Destination        validation.Field[string] `json:"destination" binding:"omitempty,oneof=issyk_kul karakol bishkek ala_archa song_kol naryn tash_rabat kel_suu osh arslanbob sary_chelek talas batken chuy"`
 	CancellationPolicy validation.Field[string] `json:"cancellationPolicy" binding:"omitempty,oneof=free flexible strict non_refundable"`
 	CoverImageURL      validation.Field[string] `json:"coverImageUrl" binding:"omitempty,max=2000"`
+	Photos             []string                 `json:"photos" binding:"omitempty,max=20,dive,max=2000,mediaurl"`
+	Program            []programDay             `json:"program" binding:"omitempty,max=30,dive"`
+	Capacity           validation.Field[int]    `json:"capacity" binding:"omitempty,gt=0,lte=500"`
 	Phone              validation.Field[string] `json:"phone" binding:"omitempty,max=32,phone"`
 	Whatsapp           validation.Field[string] `json:"whatsapp" binding:"omitempty,max=32,phone"`
 	Telegram           validation.Field[string] `json:"telegram" binding:"omitempty,max=33,telegram"`
@@ -53,9 +59,17 @@ type createTourRequest struct {
 	Destination        validation.Field[string] `json:"destination" binding:"omitempty,oneof=issyk_kul karakol bishkek ala_archa song_kol naryn tash_rabat kel_suu osh arslanbob sary_chelek talas batken chuy"`
 	CancellationPolicy validation.Field[string] `json:"cancellationPolicy" binding:"omitempty,oneof=free flexible strict non_refundable"`
 	CoverImageURL      validation.Field[string] `json:"coverImageUrl" binding:"omitempty,max=2000"`
+	Photos             []string                 `json:"photos" binding:"omitempty,max=20,dive,max=2000,mediaurl"`
+	Program            []programDay             `json:"program" binding:"omitempty,max=30,dive"`
+	Capacity           validation.Field[int]    `json:"capacity" binding:"omitempty,gt=0,lte=500"`
 	Phone              validation.Field[string] `json:"phone" binding:"omitempty,max=32,phone"`
 	Whatsapp           validation.Field[string] `json:"whatsapp" binding:"omitempty,max=32,phone"`
 	Telegram           validation.Field[string] `json:"telegram" binding:"omitempty,max=33,telegram"`
+}
+
+type programDay struct {
+	Title string `json:"title" binding:"required,min=1,max=120"`
+	Text  string `json:"text" binding:"max=2000"`
 }
 
 func (r createTourRequest) asUpdate() tourRequest {
@@ -89,6 +103,18 @@ func (r tourRequest) apply(t *models.Tour) {
 	applyField(&t.Destination, r.Destination)
 	applyField(&t.CancellationPolicy, r.CancellationPolicy)
 	applyField(&t.CoverImageURL, r.CoverImageURL)
+	if r.Photos != nil {
+		t.Photos = r.Photos
+	}
+	if r.Program != nil {
+		t.Program = make([]models.ProgramDay, 0, len(r.Program))
+		for _, day := range r.Program {
+			t.Program = append(t.Program, models.ProgramDay{
+				Title: strings.TrimSpace(day.Title), Text: strings.TrimSpace(day.Text),
+			})
+		}
+	}
+	applyField(&t.Capacity, r.Capacity)
 	contactFields{r.Phone, r.Whatsapp, r.Telegram}.apply(&t.Phone, &t.Whatsapp, &t.Telegram)
 }
 
@@ -97,15 +123,18 @@ type Tours struct{ Deps }
 func (h *Tours) List(c *gin.Context) {
 	q := validation.NewQuery(c)
 	locale := q.RequiredEnum("locale", models.Locales)
-	destination := q.Enum("destination", models.Destinations)
+	filter := store.TourFilter{Destination: q.Enum("destination", models.Destinations)}
+	filter.From, filter.To = isoDate(c, "from"), isoDate(c, "to")
 	if !q.OK() {
 		return
 	}
-	tours, err := h.Store.PublishedTours(c.Request.Context(), locale, destination)
+	ctx := c.Request.Context()
+	tours, err := h.Store.PublishedTours(ctx, locale, filter)
 	if err != nil {
 		h.fail(c, err, tourNotFound, "")
 		return
 	}
+	h.withOrganizers(ctx, tours)
 	respond.JSON(c, http.StatusOK, tours)
 }
 
@@ -119,12 +148,15 @@ func (h *Tours) ListMine(c *gin.Context) {
 }
 
 func (h *Tours) GetBySlug(c *gin.Context) {
-	tour, err := h.Store.PublishedTourBySlug(c.Request.Context(), c.Param("locale"), c.Param("slug"))
+	ctx := c.Request.Context()
+	tour, err := h.Store.PublishedTourBySlug(ctx, c.Param("locale"), c.Param("slug"))
 	if err != nil {
 		h.fail(c, err, tourNotFound, "")
 		return
 	}
-	respond.JSON(c, http.StatusOK, tour)
+	tours := []models.Tour{tour}
+	h.withOrganizers(ctx, tours)
+	respond.JSON(c, http.StatusOK, tours[0])
 }
 
 func (h *Tours) Create(c *gin.Context) {
@@ -152,6 +184,10 @@ func (h *Tours) Create(c *gin.Context) {
 	if err != nil {
 		h.fail(c, err, tourNotFound, tourSlugTaken)
 		return
+	}
+	// Published at once: tell its destination's followers.
+	if h.Alerts != nil {
+		go h.Alerts.TourPublished(context.WithoutCancel(ctx), saved)
 	}
 	respond.JSON(c, http.StatusCreated, saved)
 }
@@ -198,6 +234,43 @@ func (h *Tours) Delete(c *gin.Context) {
 		return
 	}
 	respond.Empty(c, http.StatusOK)
+}
+
+// withOrganizers adds the partners' public profiles (best effort: a tour
+// without one still shows).
+func (h *Tours) withOrganizers(ctx context.Context, tours []models.Tour) {
+	ids := make([]string, 0, len(tours))
+	for _, t := range tours {
+		if t.UserID != nil {
+			ids = append(ids, *t.UserID)
+		}
+	}
+	if len(ids) == 0 {
+		return
+	}
+	authors, err := h.Authors.Authors(ctx, ids)
+	if err != nil {
+		h.Log.WarnContext(ctx, "tour organizers", "error", err)
+		return
+	}
+	for i := range tours {
+		if tours[i].UserID == nil {
+			continue
+		}
+		if a, ok := authors[*tours[i].UserID]; ok {
+			tours[i].Organizer = &a
+		}
+	}
+}
+
+// isoDate reads an optional YYYY-MM-DD query parameter; a malformed one
+// is ignored, as the filter is only a narrowing.
+func isoDate(c *gin.Context, name string) *string {
+	value := c.Query(name)
+	if _, err := time.Parse(time.DateOnly, value); err != nil || len(value) != len(time.DateOnly) {
+		return nil
+	}
+	return &value
 }
 
 func (h *Tours) owned(c *gin.Context) (models.Tour, bool) {

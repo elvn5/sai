@@ -97,6 +97,14 @@ type ConditionReport struct {
 	UserID        string        `json:"-"`
 }
 
+// OutingsSummary is a person's record: outings been on, and the distance
+// and climb of their routes.
+type OutingsSummary struct {
+	Outings       int     `json:"outings"`
+	DistanceKm    float64 `json:"distanceKm"`
+	ElevationGain int     `json:"elevationGain"`
+}
+
 type Outing struct {
 	ID            string         `json:"id"`
 	Trail         *TrailRef      `json:"trail"`

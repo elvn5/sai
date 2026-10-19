@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/elvn5/sai/services/listings/internal/alerts"
 	"github.com/elvn5/sai/services/listings/internal/store"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
@@ -44,7 +45,9 @@ type AuthorSource interface {
 type Deps struct {
 	Store   *store.Store
 	Authors AuthorSource
-	Log     *slog.Logger
+	// Telegram messages about new tours; nil when the bot isn't configured.
+	Alerts *alerts.Notifier
+	Log    *slog.Logger
 }
 
 // fail answers a store error. Messages for "not found" and duplicates

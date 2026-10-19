@@ -1,7 +1,7 @@
 import { splitLang } from '@/core/i18n/langs';
 import { injectCurrentUrl } from '@/core/lib/current-url';
 import { bindPageMeta } from '@/core/seo/seo.service';
-import { HeroImage } from '@/pages/home/hero-image';
+import { MountainScene } from '@/ui/mountain-scene';
 import { SiteLink } from '@/ui/site-link';
 import { ChangeDetectionStrategy, Component, RESPONSE_INIT, computed, inject } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -19,12 +19,12 @@ const PARENTS = [
 // Unknown URLs answer with a real 404 (not a 200 "soft 404"), unindexed.
 @Component({
   selector: 'app-not-found-page',
-  imports: [HeroImage, SiteLink, TranslocoPipe],
+  imports: [MountainScene, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="relative isolate flex min-h-[70vh] items-center justify-center overflow-hidden px-4 py-20 text-center">
       <div class="absolute inset-x-0 bottom-0 -z-10 h-56 opacity-50 [mask-image:linear-gradient(to_top,#000,transparent)]">
-        <app-hero-image />
+        <app-mountain-scene palette="peaks" [lake]="false" />
       </div>
       <div>
         <p class="motion-enter text-7xl leading-none font-extrabold tracking-tighter text-brand-600 sm:text-8xl dark:text-brand-300">404</p>

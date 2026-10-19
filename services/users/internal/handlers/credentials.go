@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -48,6 +49,12 @@ type loginRequest struct {
 type verifyRequest struct {
 	Identifier *string `json:"identifier" binding:"required,min=1,max=255"`
 	Code       *string `json:"code" binding:"required,sixdigits"`
+}
+
+type resetPasswordRequest struct {
+	Identifier *string `json:"identifier" binding:"required,min=1,max=255"`
+	Code       *string `json:"code" binding:"required,sixdigits"`
+	Password   *string `json:"password" binding:"required,min=8,max=100"`
 }
 
 type identifierRequest struct {
@@ -196,6 +203,106 @@ func (h *Credentials) ResendCode(c *gin.Context) {
 		return
 	}
 	respond.JSON(c, http.StatusOK, gin.H{"verification": pending})
+}
+
+// ForgotPassword emails a code for setting a new password. Only email
+// accounts can: a phone account signs in through Telegram instead (422).
+// An unknown email gets the same answer as a known one, so the form can't
+// be used to find out who has an account.
+func (h *Credentials) ForgotPassword(c *gin.Context) {
+	var req identifierRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	ctx := c.Request.Context()
+	identifier := strings.TrimSpace(*req.Identifier)
+	sent := gin.H{"verification": PendingVerification{Identifier: identifier, Method: "email"}}
+	if !strings.Contains(identifier, "@") {
+		httperr.Abort(c, http.StatusUnprocessableEntity, "Password reset is only available for email accounts")
+		return
+	}
+	user, err := h.Store.ByIdentifier(ctx, identifier)
+	if errors.Is(err, store.ErrNotFound) || (err == nil && user.Email == nil) {
+		respond.JSON(c, http.StatusOK, sent)
+		return
+	} else if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	if user.VerificationCodeSentAt != nil && h.now().Sub(*user.VerificationCodeSentAt) < verification.ResendCooldown {
+		httperr.AbortPlain(c, http.StatusTooManyRequests, "Please wait before requesting another code")
+		return
+	}
+	code, err := verification.Code()
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	store.SetVerification(&user, verification.Hash(code), verification.CodeTTL, h.now())
+	if _, err := h.Store.Save(ctx, user); err != nil {
+		h.internalError(c, err)
+		return
+	}
+	if err := h.Email.SendVerificationCode(ctx, *user.Email, code); err != nil {
+		h.Log.ErrorContext(ctx, "password reset email failed", "error", err)
+		httperr.Abort(c, http.StatusInternalServerError, "Could not send verification email")
+		return
+	}
+	respond.JSON(c, http.StatusOK, sent)
+}
+
+// ResetPassword sets a new password with the emailed code and signs in. The
+// code proves the email, so an unverified account becomes verified.
+func (h *Credentials) ResetPassword(c *gin.Context) {
+	var req resetPasswordRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	ctx := c.Request.Context()
+	user, err := h.Store.ByIdentifier(ctx, strings.TrimSpace(*req.Identifier))
+	if errors.Is(err, store.ErrNotFound) {
+		httperr.Abort(c, http.StatusUnauthorized, "Invalid code")
+		return
+	} else if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	switch {
+	case user.VerificationCodeHash == nil || user.VerificationCodeExpiresAt == nil:
+		httperr.Abort(c, http.StatusBadRequest, "No verification code pending. Please request a new one.")
+		return
+	case user.VerificationCodeExpiresAt.Before(h.now()):
+		httperr.Abort(c, http.StatusBadRequest, "Code has expired. Please request a new one.")
+		return
+	case user.VerificationAttempts >= verification.MaxAttempts:
+		httperr.Abort(c, http.StatusBadRequest, "Too many attempts. Please request a new code.")
+		return
+	}
+	if !verification.Matches(*req.Code, *user.VerificationCodeHash) {
+		user.VerificationAttempts++
+		if _, err := h.Store.Save(ctx, user); err != nil {
+			h.internalError(c, err)
+			return
+		}
+		httperr.Abort(c, http.StatusUnauthorized, "Invalid code")
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), passwordCost)
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	if err := h.Store.SetPassword(ctx, user.ID, string(hash)); err != nil {
+		h.internalError(c, err)
+		return
+	}
+	store.ClearVerification(&user)
+	saved, err := h.Store.Save(ctx, user)
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	h.startSession(c, saved)
 }
 
 // VerificationStatus is polled by the site while the Telegram bot confirms

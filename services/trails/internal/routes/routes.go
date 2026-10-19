@@ -48,6 +48,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	outings := &handlers.Outings{Deps: d}
 	r.GET("/outings", optionalUser, outings.List)
 	r.GET("/outings/mine", requireUser, outings.Mine)
+	r.GET("/outings/mine/summary", requireUser, outings.Summary)
 	r.GET("/outings/:id", optionalUser, outings.Get)
 	r.POST("/outings", requireUser, outings.Create)
 	r.PUT("/outings/:id", requireUser, outings.Update)

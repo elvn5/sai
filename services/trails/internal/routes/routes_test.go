@@ -316,3 +316,36 @@ func TestOutings(t *testing.T) {
 		t.Errorf("cancelled still listed: %s", body)
 	}
 }
+
+func TestOutingsSummary(t *testing.T) {
+	deps := newDeps(t)
+	c := client{t, routes.Setup(deps, users, secret)}
+	_, body := c.do("POST", "/trails", komsomolets, partner)
+	trailID := obj(t, body)["id"].(string)
+	_, body = c.do("POST", "/outings", `{"trailId":"`+trailID+`","title":"Комсомолец","startsAt":"2026-10-17T06:00:00+06:00",
+		"meetingPoint":"Южные ворота","transport":"car","seats":3,"level":"intermediate"}`, hiker)
+	id := obj(t, body)["id"].(string)
+	c.do("POST", "/outings/"+id+"/join", "", friend)
+
+	if status, body := c.do("GET", "/outings/mine/summary", "", friend); status != 200 || !strings.Contains(body, `"outings":0`) {
+		t.Errorf("before the start nothing counts: %d %s", status, body)
+	}
+	if status, _ := c.do("GET", "/outings/mine/summary", "", ""); status != 401 {
+		t.Errorf("anonymous: %d", status)
+	}
+
+	// A week later the outing is behind them.
+	later := deps
+	later.Now = func() time.Time { return now.Add(7 * 24 * time.Hour) }
+	c = client{t, routes.Setup(later, users, secret)}
+	for _, who := range []string{friend, hiker} {
+		_, body := c.do("GET", "/outings/mine/summary", "", who)
+		sum := obj(t, body)
+		if sum["outings"] != float64(1) || sum["distanceKm"].(float64) <= 0 || sum["elevationGain"].(float64) <= 0 {
+			t.Errorf("summary for %s: %s", who, body)
+		}
+	}
+	if _, body := c.do("GET", "/outings/mine/summary", "", other); !strings.Contains(body, `"outings":0`) {
+		t.Errorf("outsider: %s", body)
+	}
+}

@@ -29,6 +29,7 @@ type Order struct {
 	ItemSlug      *string        `json:"itemSlug"`
 	ItemLocale    *string        `json:"itemLocale"`
 	ItemDate      *string        `json:"itemDate"`
+	ItemImageURL  *string        `json:"itemImageUrl"`
 	Quantity      int            `json:"quantity"`
 	UnitPrice     int            `json:"unitPrice"`
 	Amount        int            `json:"amount"`

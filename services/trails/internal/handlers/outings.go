@@ -86,6 +86,17 @@ func (h *Outings) Mine(c *gin.Context) {
 	h.respondList(c, outings)
 }
 
+// Summary: how many outings the visitor has been on and how far and high
+// they took them (the profile's numbers).
+func (h *Outings) Summary(c *gin.Context) {
+	sum, err := h.Store.OutingsSummary(c.Request.Context(), currentUserID(c), h.now())
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	respond.JSON(c, http.StatusOK, sum)
+}
+
 func (h *Outings) Get(c *gin.Context) {
 	outing, ok := h.load(c)
 	if ok {

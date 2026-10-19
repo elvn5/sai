@@ -11,12 +11,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 
+	"github.com/elvn5/sai/services/listings/internal/alerts"
 	"github.com/elvn5/sai/services/listings/internal/config"
 	"github.com/elvn5/sai/services/listings/internal/grpcserver"
 	"github.com/elvn5/sai/services/listings/internal/handlers"
@@ -29,6 +31,7 @@ import (
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
 	"github.com/elvn5/sai/services/pkg/partnerpurge"
+	"github.com/elvn5/sai/services/pkg/telegram"
 	"github.com/elvn5/sai/services/pkg/usersclient"
 	listingsv1 "github.com/elvn5/sai/services/proto/gen/go/listings/v1"
 )
@@ -73,6 +76,13 @@ func run(log *slog.Logger) error {
 	go partnerpurge.Run(ctx, db, users, purge.Service(), log)
 
 	st := store.New(db)
+	deps := handlers.Deps{Store: st, Authors: users, Log: log}
+	if cfg.BotToken != "" {
+		deps.Alerts = &alerts.Notifier{
+			Store: st, Chats: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL),
+			SiteURL: strings.TrimRight(cfg.SiteURL, "/"), Log: log,
+		}
+	}
 	grpcSrv := grpc.NewServer()
 	listingsv1.RegisterListingsServiceServer(grpcSrv, &grpcserver.Server{Store: st, Log: log})
 	grpcLis, err := (&net.ListenConfig{}).Listen(ctx, "tcp", ":"+cfg.GRPCPort)
@@ -83,7 +93,7 @@ func run(log *slog.Logger) error {
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           routes.Setup(handlers.Deps{Store: st, Authors: users, Log: log}, users, cfg.JWTSecret),
+		Handler:           routes.Setup(deps, users, cfg.JWTSecret),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,
 	}

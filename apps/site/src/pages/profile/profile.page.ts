@@ -12,16 +12,22 @@ import {
   type Trail,
 } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
+import { FavoritesStore } from '@/core/favorites/favorites.store';
+import { injectLang } from '@/core/i18n/current-lang';
+import { formatAmount } from '@/core/lib/format';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
-import { HeroImage } from '@/pages/home/hero-image';
 import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
 import { AwardCodeCard } from '@/ui/achievements/award-code-card';
 import { HallPodium } from '@/ui/achievements/hall-podium';
 import { ListSkeleton } from '@/ui/list-skeleton';
+import { HotelCard } from '@/ui/listing/hotel-card';
+import { LocalGuideCard } from '@/ui/listing/local-guide-card';
+import { TourCard } from '@/ui/listing/tour-card';
 import { LoadError } from '@/ui/load-error';
+import { MountainScene } from '@/ui/mountain-scene';
 import { OrderCard } from '@/ui/order-card';
 import { OutingCard } from '@/ui/outing-card';
 import { PersonAvatar } from '@/ui/person-avatar';
@@ -36,6 +42,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 const TABS = [
   { key: 'info', icon: 'icon-[heroicons--user]' },
   { key: 'bookings', icon: 'icon-[heroicons--ticket]' },
+  { key: 'favorites', icon: 'icon-[heroicons--heart]' },
   { key: 'history', icon: 'icon-[heroicons--flag]' },
   { key: 'listings', icon: 'icon-[heroicons--rectangle-stack]' },
   { key: 'achievements', icon: 'icon-[heroicons--trophy]' },
@@ -43,6 +50,20 @@ const TABS = [
 ] as const;
 
 type Tab = (typeof TABS)[number]['key'];
+
+// What /favorites/mine answers: the saved listings that are still published.
+interface Favorites {
+  tours: Tour[];
+  hotels: Hotel[];
+  localGuides: LocalGuide[];
+}
+
+// Completed outings and what they add up to (/outings/mine/summary).
+interface OutingsSummary {
+  outings: number;
+  distanceKm: number;
+  elevationGain: number;
+}
 
 interface ListingItem {
   key: string;
@@ -63,7 +84,9 @@ interface ListingItem {
     AchievementShelf,
     AwardCodeCard,
     HallPodium,
-    HeroImage,
+    HotelCard,
+    LocalGuideCard,
+    MountainScene,
     ListSkeleton,
     LoadError,
     OrderCard,
@@ -72,6 +95,7 @@ interface ListingItem {
     SiteLink,
     StateBlock,
     TelegramLink,
+    TourCard,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -140,7 +164,7 @@ interface ListingItem {
   template: `
     @if (auth.user(); as user) {
       <div class="relative isolate h-24 overflow-hidden sm:h-28">
-        <app-hero-image />
+        <app-mountain-scene palette="dusk" [lake]="false" />
         <div class="absolute inset-0 -z-10 bg-linear-to-b from-black/20 to-black/45"></div>
       </div>
       <section class="ui-container pb-14">
@@ -264,6 +288,29 @@ interface ListingItem {
                 <app-load-error (retry)="orders.reload()" />
               } @else {
                 <app-list-skeleton class="motion-delayed" variant="rows" [count]="2" />
+              }
+            }
+            @case ('favorites') {
+              @if (favorites.error()) {
+                <app-load-error (retry)="favorites.reload()" />
+              } @else if (favoriteCount() > 0) {
+                <ul class="motion-reveal grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                  @for (tour of favoritesValue()?.tours; track tour.id) {
+                    <li><app-tour-card [tour]="tour" /></li>
+                  }
+                  @for (hotel of favoritesValue()?.hotels; track hotel.id) {
+                    <li><app-hotel-card [hotel]="hotel" /></li>
+                  }
+                  @for (guide of favoritesValue()?.localGuides; track guide.id) {
+                    <li><app-local-guide-card [guide]="guide" /></li>
+                  }
+                </ul>
+              } @else if (favorites.hasValue()) {
+                <app-state-block icon="icon-[heroicons--heart]" title="favorites.empty" text="favorites.emptyHint">
+                  <a appSiteLink="/tours" class="ui-btn-primary"><span class="icon-[heroicons--map] size-4" aria-hidden="true"></span>{{ 'booking.browseTours' | transloco }}</a>
+                </app-state-block>
+              } @else {
+                <app-list-skeleton class="motion-delayed" [count]="3" />
               }
             }
             @case ('history') {
@@ -412,6 +459,20 @@ export class ProfilePage {
   // Bookings, outings and medals feed the summary on top, so they load
   // at once; the hall of fame loads when its tab opens.
   protected readonly orders = httpResource<Order[]>(() => '/orders/mine');
+  private readonly summary = httpResource<OutingsSummary>(() => '/outings/mine/summary');
+  // Reloaded when a heart changes (here or on another page).
+  private readonly favoritesStore = inject(FavoritesStore);
+  protected readonly favorites = httpResource<Favorites>(() => {
+    this.favoritesStore.version();
+    return this.active() === 'favorites' ? '/favorites/mine' : undefined;
+  });
+  protected readonly favoritesValue = computed(() => loaded(this.favorites));
+  protected readonly favoriteCount = computed(() => {
+    const value = this.favoritesValue();
+    return value ? value.tours.length + value.hotels.length + value.localGuides.length : 0;
+  });
+  private readonly lang = injectLang();
+  private readonly transloco = inject(TranslocoService);
   protected readonly outings = httpResource<Outing[]>(() => '/outings/mine');
   private readonly achievements = httpResource<MyAchievements>(() => '/achievements/me');
   private readonly hall = httpResource<HallOfFame>(() =>
@@ -514,26 +575,37 @@ export class ProfilePage {
   // The summary: null while its number is loading.
   protected readonly stats = computed(() => {
     const mine = loaded(this.achievements);
-    const orders = loaded(this.orders);
-    const outings = loaded(this.outings);
+    const summary = loaded(this.summary);
+    const done = this.summary.error() ? { outings: 0, distanceKm: 0, elevationGain: 0 } : summary;
+    const lang = this.lang();
     return [
-      { key: 'outings', value: outings ? outings.length : null },
+      { key: 'outings', value: done ? formatAmount(lang, done.outings) : null },
       {
-        key: 'bookings',
-        value: orders ? orders.filter((order) => order.status === 'paid').length : null,
+        key: 'distance',
+        value: done
+          ? this.transloco.translate('profile.stats.kmValue', {
+              value: formatAmount(lang, done.distanceKm),
+            })
+          : null,
       },
-      { key: 'points', value: mine ? mine.points : null },
-      { key: 'awards', value: mine ? mine.awards.length : null },
+      {
+        key: 'elevation',
+        value: done
+          ? this.transloco.translate('profile.stats.metersValue', {
+              value: formatAmount(lang, done.elevationGain),
+            })
+          : null,
+      },
+      { key: 'awards', value: mine ? String(mine.awards.length) : null },
     ];
   });
   protected readonly applying = signal(false);
   protected readonly applyFailed = signal(false);
 
   constructor() {
-    const transloco = inject(TranslocoService);
     bindPageMeta(() => ({
-      title: transloco.translate('profile.title'),
-      description: transloco.translate('login.subtitle'),
+      title: this.transloco.translate('profile.title'),
+      description: this.transloco.translate('login.subtitle'),
       robots: 'noindex',
     }));
   }

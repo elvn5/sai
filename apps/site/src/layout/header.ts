@@ -3,14 +3,14 @@ import { splitLang } from '@/core/i18n/langs';
 import { injectCurrentUrl } from '@/core/lib/current-url';
 import { PageChrome } from '@/core/lib/page-chrome';
 import { Notify } from '@/core/notify/notify';
-import { ColorModeStore } from '@/core/theme/color-mode';
 import { LanguageSwitcher } from '@/layout/language-switcher';
+import { MobileMenu } from '@/layout/mobile-menu';
 import { ThemeToggle } from '@/layout/theme-toggle';
 import { AppLogo } from '@/ui/app-logo';
 import { DestinationSearch } from '@/ui/destination-search';
+import { Menu, MenuPanel, MenuTrigger } from '@/ui/menu';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
-import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -25,14 +25,12 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 
 // The sections, as in the sketches: the hiking hub, then each catalog.
+// Hotels, local guides, trails and travel guides are paused for now
+// (server/paused-sections.ts).
 const NAV_LINKS = [
   { path: '/hikes', label: 'nav.hikes', icon: 'icon-[heroicons--fire]' },
-  { path: '/trails', label: 'nav.trails', icon: 'icon-[heroicons--flag]' },
   { path: '/outings', label: 'nav.outings', icon: 'icon-[heroicons--user-group]' },
   { path: '/tours', label: 'nav.tours', icon: 'icon-[heroicons--map]' },
-  { path: '/hotels', label: 'nav.hotels', icon: 'icon-[heroicons--building-office-2]' },
-  { path: '/local-guides', label: 'nav.localGuides', icon: 'icon-[heroicons--identification]' },
-  { path: '/guides', label: 'nav.guides', icon: 'icon-[heroicons--book-open]' },
   { path: '/blog', label: 'nav.blog', icon: 'icon-[heroicons--newspaper]' },
 ] as const;
 
@@ -51,11 +49,12 @@ const TUCK_AFTER = 240;
   host: { '(document:keydown.escape)': 'closePanels()' },
   imports: [
     AppLogo,
-    CdkMenu,
-    CdkMenuItem,
-    CdkMenuTrigger,
     DestinationSearch,
     LanguageSwitcher,
+    Menu,
+    MenuPanel,
+    MenuTrigger,
+    MobileMenu,
     PersonAvatar,
     SiteLink,
     ThemeToggle,
@@ -106,14 +105,42 @@ const TUCK_AFTER = 240;
             <app-language-switcher />
             <app-theme-toggle />
             @if (auth.user(); as user) {
-              <button
-                type="button"
-                class="ml-1 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-                [cdkMenuTriggerFor]="account"
-                [attr.aria-label]="'profile.title' | transloco"
-              >
-                <app-person-avatar [person]="user" [size]="34" />
-              </button>
+              <div appMenu #account="appMenu" class="relative ml-1">
+                <button
+                  type="button"
+                  appMenuTrigger
+                  class="flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                  [attr.aria-label]="'profile.title' | transloco"
+                >
+                  <app-person-avatar [person]="user" [size]="34" />
+                </button>
+                @if (account.open()) {
+                  <div appMenuPanel class="motion-drop-in absolute top-full right-0 z-50 mt-2 min-w-52 rounded-xl border border-border bg-surface p-1 text-sm text-text shadow-lg">
+                    <div class="flex items-center gap-2.5 px-3 py-2.5">
+                      <app-person-avatar [person]="user" [size]="32" />
+                      <div class="min-w-0">
+                        <p class="truncate font-semibold">{{ auth.displayName() }}</p>
+                        @if (user.username) {
+                          <p class="truncate text-xs text-text-muted">&#64;{{ user.username }}</p>
+                        }
+                      </div>
+                    </div>
+                    <div class="my-1 h-px bg-border" role="separator"></div>
+                    <a role="menuitem" appSiteLink="/profile" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
+                      <span class="icon-[heroicons--user-circle] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.title' | transloco }}
+                    </a>
+                    @if (auth.isPartner()) {
+                      <a role="menuitem" appSiteLink="/partner" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
+                        <span class="icon-[heroicons--squares-2x2] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'cabinet.title' | transloco }}
+                      </a>
+                    }
+                    <div class="my-1 h-px bg-border" role="separator"></div>
+                    <button role="menuitem" type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-text/5 focus:bg-text/5 focus:outline-none" (click)="logout()">
+                      <span class="icon-[heroicons--arrow-right-start-on-rectangle] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.logout' | transloco }}
+                    </button>
+                  </div>
+                }
+              </div>
             } @else {
               <a [appSiteLink]="loginLink()" class="ui-btn-primary ml-1">
                 <span class="icon-[heroicons--user-circle] size-4" aria-hidden="true"></span>{{ 'login.cta' | transloco }}
@@ -164,98 +191,18 @@ const TUCK_AFTER = 240;
           animate.enter="motion-drop-in"
           animate.leave="motion-drop-out"
         >
-          <nav class="motion-cascade flex flex-col gap-0.5" [attr.aria-label]="'footer.sections.nav' | transloco">
-            <a
-              appSiteLink="/"
-              class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-3 font-medium"
-              [class]="section() === '/' ? 'bg-brand-500/14 font-semibold text-brand-700 dark:text-brand-300' : ''"
-              [attr.aria-current]="section() === '/' ? 'page' : null"
-            >
-              <span [class]="(section() === '/' ? 'icon-[heroicons--home-solid]' : 'icon-[heroicons--home] text-text-muted') + ' size-5'" aria-hidden="true"></span>
-              {{ 'nav.feed' | transloco }}
-            </a>
-            @for (link of links; track link.path) {
-              <a
-                [appSiteLink]="link.path"
-                class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-3 font-medium"
-                [class]="section() === link.path ? 'bg-brand-500/14 font-semibold text-brand-700 dark:text-brand-300' : ''"
-                [attr.aria-current]="section() === link.path ? 'page' : null"
-              >
-                <span [class]="link.icon + ' size-5' + (section() === link.path ? '' : ' text-text-muted')" aria-hidden="true"></span>
-                {{ link.label | transloco }}
-              </a>
-            }
-          </nav>
-          <div class="mt-1.5 flex items-center justify-between border-t border-border px-1 pt-3">
-            <app-language-switcher [showName]="true" />
-            <div class="ui-segment w-32" role="radiogroup" [attr.aria-label]="'theme.toggle' | transloco">
-              <button type="button" role="radio" [attr.aria-checked]="colorMode.mode() === 'light'" [attr.aria-label]="'theme.light' | transloco" (click)="setMode('light', $event)">
-                <span class="icon-[heroicons--sun] size-4 align-[-0.2em]" aria-hidden="true"></span>
-              </button>
-              <button type="button" role="radio" [attr.aria-checked]="colorMode.mode() === 'dark'" [attr.aria-label]="'theme.dark' | transloco" (click)="setMode('dark', $event)">
-                <span class="icon-[heroicons--moon] size-4 align-[-0.2em]" aria-hidden="true"></span>
-              </button>
-            </div>
-          </div>
-          <div class="mt-3.5 flex flex-col gap-1">
-            @if (auth.user(); as user) {
-              <a appSiteLink="/profile" class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-2.5 font-medium hover:bg-text/5">
-                <app-person-avatar [person]="user" [size]="30" />{{ auth.displayName() }}
-              </a>
-              @if (auth.isPartner()) {
-                <a appSiteLink="/partner" class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-2.5 font-medium hover:bg-text/5">
-                  <span class="icon-[heroicons--squares-2x2] size-5 text-text-muted" aria-hidden="true"></span>{{ 'cabinet.title' | transloco }}
-                </a>
-              }
-              <button type="button" class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-2.5 text-left font-medium hover:bg-text/5" (click)="logout()">
-                <span class="icon-[heroicons--arrow-right-start-on-rectangle] size-5 text-text-muted" aria-hidden="true"></span>{{ 'profile.logout' | transloco }}
-              </button>
-            } @else {
-              <a [appSiteLink]="loginLink()" class="ui-btn-primary ui-btn-lg w-full">
-                <span class="icon-[heroicons--user-circle] size-[1.15rem]" aria-hidden="true"></span>{{ 'login.cta' | transloco }}
-              </a>
-            }
-          </div>
+          <!-- Its own chunk, fetched while the page is idle: the panel opens
+               at once, and its code stays out of the first bundle. -->
+          @defer (on immediate; prefetch on idle) {
+            <app-mobile-menu [links]="links" [section]="section()" [loginLink]="loginLink()" (done)="menuOpen.set(false)" />
+          }
         </div>
       }
     </header>
-
-    <ng-template #account>
-      <div cdkMenu class="motion-drop-in min-w-52 rounded-xl border border-border bg-surface p-1 text-sm text-text shadow-lg">
-        @if (auth.user(); as user) {
-          <div class="flex items-center gap-2.5 px-3 py-2.5">
-            <app-person-avatar [person]="user" [size]="32" />
-            <div class="min-w-0">
-              <p class="truncate font-semibold">{{ auth.displayName() }}</p>
-              @if (user.username) {
-                <p class="truncate text-xs text-text-muted">&#64;{{ user.username }}</p>
-              }
-            </div>
-          </div>
-          <div class="my-1 h-px bg-border"></div>
-        }
-        <a cdkMenuItem appSiteLink="/profile" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
-          <span class="icon-[heroicons--user-circle] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.title' | transloco }}
-        </a>
-        <a cdkMenuItem appSiteLink="/profile?tab=bookings" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
-          <span class="icon-[heroicons--ticket] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.tabs.bookings' | transloco }}
-        </a>
-        @if (auth.isPartner()) {
-          <a cdkMenuItem appSiteLink="/partner" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
-            <span class="icon-[heroicons--squares-2x2] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'cabinet.title' | transloco }}
-          </a>
-        }
-        <div class="my-1 h-px bg-border"></div>
-        <button cdkMenuItem type="button" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left hover:bg-text/5 focus:bg-text/5 focus:outline-none" (cdkMenuItemTriggered)="logout()">
-          <span class="icon-[heroicons--arrow-right-start-on-rectangle] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.logout' | transloco }}
-        </button>
-      </div>
-    </ng-template>
   `,
 })
 export class Header {
   protected readonly auth = inject(AuthStore);
-  protected readonly colorMode = inject(ColorModeStore);
   private readonly chrome = inject(PageChrome);
   private readonly notify = inject(Notify);
   protected readonly links = NAV_LINKS;
@@ -328,12 +275,6 @@ export class Header {
   protected toggleSearch(): void {
     this.menuOpen.set(false);
     this.searchOpen.set(!this.searchOpen());
-  }
-
-  protected setMode(mode: 'light' | 'dark', event: MouseEvent): void {
-    if (this.colorMode.mode() === mode) return;
-    const origin = event.detail > 0 ? { x: event.clientX, y: event.clientY } : undefined;
-    this.colorMode.toggle(origin);
   }
 
   protected async logout(): Promise<void> {

@@ -8,7 +8,7 @@ describe('serverRoutes', () => {
       .map((route) => route.path);
     expect(client).toContain('blog/new');
     expect(client).toContain('en/blog/edit/:id');
-    expect(client).toContain('de/guides/new');
+    expect(client).toContain('de/tours/new');
     expect(serverRoutes.at(-1)).toMatchObject({ path: '**', renderMode: RenderMode.Server });
   });
 });

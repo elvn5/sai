@@ -3,14 +3,33 @@
 @import "@angular/cdk/overlay-prebuilt.css";
 /* Animations, transitions and animated icons. */
 @import "./motion.css";
-/* Icons as CSS (icon-[heroicons--home], icon-[mdi--trophy]): no JS, render on the server. */
-@plugin "@iconify/tailwind4";
+/* Icons as CSS (icon-[heroicons--home], icon-[mdi--trophy]): no JS, render on the server.
+   Each icon class carries only its picture (--svg); the mask that draws it
+   is shared below instead of repeated in every one of them. */
+@plugin "@iconify/tailwind4" {
+  /* biome-ignore lint/correctness/noUnknownProperty: a plugin option, not a CSS property */
+  override-only: true;
+}
 /* .prose for blog posts, guides and the editor. */
 @plugin "@tailwindcss/typography";
 
 /* The UI kit shared with apps/panel: plain elements with these classes.
    Tailwind 4 can't @apply one component class inside another, so shared
    bases are selector lists. */
+/* What every icon class shares (see the plugin above); a
+   size-* utility overrides the 1em box. */
+@layer components {
+  [class*="icon-["] {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    background-color: currentColor;
+    mask-image: var(--svg);
+    mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+  }
+}
+
 @layer components {
   /* The page column (the sketches' 1120px grid). */
   .ui-container {

@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { contextFromEnv } from '@/core/config/app-config';
+import { pausedSectionRedirect } from '@/server/paused-sections';
 import { SitemapCache, isSitemapType, renderIndex } from '@/server/sitemap';
 import {
   AngularNodeAppEngine,
@@ -48,6 +49,16 @@ app.use((req, res, next) => {
   const [path, query] = req.originalUrl.split(/\?(.*)/s, 2);
   if (path && path.length > 1 && path.endsWith('/')) {
     res.redirect(301, path.replace(/\/+$/, '') + (query ? `?${query}` : ''));
+    return;
+  }
+  next();
+});
+
+// Sections paused for now: their addresses lead to what's left (302).
+app.use((req, res, next) => {
+  const target = pausedSectionRedirect(req.originalUrl);
+  if (target) {
+    res.redirect(302, target);
     return;
   }
   next();

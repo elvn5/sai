@@ -2,14 +2,10 @@ import {
   type Achievement,
   type BlogPost,
   type HallOfFame,
-  type Hotel,
-  type LocalGuide,
   type MyAchievements,
-  type Order,
   type Outing,
   PartnerStatus,
   type Tour,
-  type Trail,
 } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { FavoritesStore } from '@/core/favorites/favorites.store';
@@ -23,12 +19,9 @@ import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
 import { AwardCodeCard } from '@/ui/achievements/award-code-card';
 import { HallPodium } from '@/ui/achievements/hall-podium';
 import { ListSkeleton } from '@/ui/list-skeleton';
-import { HotelCard } from '@/ui/listing/hotel-card';
-import { LocalGuideCard } from '@/ui/listing/local-guide-card';
 import { TourCard } from '@/ui/listing/tour-card';
 import { LoadError } from '@/ui/load-error';
 import { MountainScene } from '@/ui/mountain-scene';
-import { OrderCard } from '@/ui/order-card';
 import { OutingCard } from '@/ui/outing-card';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
@@ -41,7 +34,6 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const TABS = [
   { key: 'info', icon: 'icon-[heroicons--user]' },
-  { key: 'bookings', icon: 'icon-[heroicons--ticket]' },
   { key: 'favorites', icon: 'icon-[heroicons--heart]' },
   { key: 'history', icon: 'icon-[heroicons--flag]' },
   { key: 'listings', icon: 'icon-[heroicons--rectangle-stack]' },
@@ -51,11 +43,10 @@ const TABS = [
 
 type Tab = (typeof TABS)[number]['key'];
 
-// What /favorites/mine answers: the saved listings that are still published.
+// What /favorites/mine answers: the saved listings that are still published
+// (only tours are shown while hotels and local guides are paused).
 interface Favorites {
   tours: Tour[];
-  hotels: Hotel[];
-  localGuides: LocalGuide[];
 }
 
 // Completed outings and what they add up to (/outings/mine/summary).
@@ -67,7 +58,7 @@ interface OutingsSummary {
 
 interface ListingItem {
   key: string;
-  // Translation key of the kind ("Tour", "Hotel"…).
+  // Translation key of the kind ("Tour", "Post").
   kind: string;
   icon: string;
   title: string;
@@ -77,19 +68,16 @@ interface ListingItem {
 }
 
 // /profile: the account, the hall of fame (own medals, award code, the
-// leaders), bookings, outings and the partner application. ?tab=partner (etc.) opens a tab. Browser only.
+// leaders), outings and the partner application. ?tab=partner (etc.) opens a tab. Browser only.
 @Component({
   selector: 'app-profile-page',
   imports: [
     AchievementShelf,
     AwardCodeCard,
     HallPodium,
-    HotelCard,
-    LocalGuideCard,
     MountainScene,
     ListSkeleton,
     LoadError,
-    OrderCard,
     OutingCard,
     PersonAvatar,
     SiteLink,
@@ -273,23 +261,6 @@ interface ListingItem {
                 </a>
               </div>
             }
-            @case ('bookings') {
-              @if (orderList().length > 0) {
-                <ul class="motion-reveal flex flex-col gap-3">
-                  @for (order of orderList(); track order.id) {
-                    <li><app-order-card [order]="order" /></li>
-                  }
-                </ul>
-              } @else if (orders.hasValue()) {
-                <app-state-block icon="icon-[heroicons--ticket]" title="booking.noBookings" text="booking.noBookingsHint">
-                  <a appSiteLink="/tours" class="ui-btn-primary ui-btn-lg"><span class="icon-[heroicons--map] size-[1.1rem]" aria-hidden="true"></span>{{ 'booking.browseTours' | transloco }}</a>
-                </app-state-block>
-              } @else if (orders.error()) {
-                <app-load-error (retry)="orders.reload()" />
-              } @else {
-                <app-list-skeleton class="motion-delayed" variant="rows" [count]="2" />
-              }
-            }
             @case ('favorites') {
               @if (favorites.error()) {
                 <app-load-error (retry)="favorites.reload()" />
@@ -297,12 +268,6 @@ interface ListingItem {
                 <ul class="motion-reveal grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
                   @for (tour of favoritesValue()?.tours; track tour.id) {
                     <li><app-tour-card [tour]="tour" /></li>
-                  }
-                  @for (hotel of favoritesValue()?.hotels; track hotel.id) {
-                    <li><app-hotel-card [hotel]="hotel" /></li>
-                  }
-                  @for (guide of favoritesValue()?.localGuides; track guide.id) {
-                    <li><app-local-guide-card [guide]="guide" /></li>
                   }
                 </ul>
               } @else if (favorites.hasValue()) {
@@ -378,7 +343,6 @@ interface ListingItem {
                     } @else {
                       <app-state-block icon="icon-[heroicons--rectangle-stack]" title="profile.listings.empty" text="profile.listings.emptyHint">
                         <a appSiteLink="/tours/new" class="ui-btn-primary"><span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'tours.addButton' | transloco }}</a>
-                        <a appSiteLink="/hotels/new" class="ui-btn-soft">{{ 'hotels.addButton' | transloco }}</a>
                       </app-state-block>
                     }
                   } @else {
@@ -456,9 +420,8 @@ export class ProfilePage {
     return user?.firstName ?? user?.username ?? user?.email ?? '';
   });
 
-  // Bookings, outings and medals feed the summary on top, so they load
-  // at once; the hall of fame loads when its tab opens.
-  protected readonly orders = httpResource<Order[]>(() => '/orders/mine');
+  // Outings and medals feed the summary on top, so they load at once; the
+  // hall of fame loads when its tab opens.
   private readonly summary = httpResource<OutingsSummary>(() => '/outings/mine/summary');
   // Reloaded when a heart changes (here or on another page).
   private readonly favoritesStore = inject(FavoritesStore);
@@ -469,7 +432,7 @@ export class ProfilePage {
   protected readonly favoritesValue = computed(() => loaded(this.favorites));
   protected readonly favoriteCount = computed(() => {
     const value = this.favoritesValue();
-    return value ? value.tours.length + value.hotels.length + value.localGuides.length : 0;
+    return value?.tours.length ?? 0;
   });
   private readonly lang = injectLang();
   private readonly transloco = inject(TranslocoService);
@@ -481,7 +444,6 @@ export class ProfilePage {
   private readonly catalog = httpResource<Achievement[]>(() =>
     this.active() === 'achievements' ? '/achievements' : undefined,
   );
-  protected readonly orderList = computed(() => loaded(this.orders) ?? []);
   protected readonly achievementsValue = computed(() => loaded(this.achievements));
   protected readonly catalogList = computed(() => loaded(this.catalog) ?? []);
   protected readonly leaders = computed(() => loaded(this.hall)?.leaders ?? []);
@@ -505,24 +467,13 @@ export class ProfilePage {
   private readonly myTours = httpResource<Tour[]>(() =>
     this.listingsOpen() ? '/tours/mine' : undefined,
   );
-  private readonly myHotels = httpResource<Hotel[]>(() =>
-    this.listingsOpen() ? '/hotels/mine' : undefined,
-  );
-  private readonly myGuide = httpResource<{ guide: LocalGuide | null }>(() =>
-    this.listingsOpen() ? '/local-guides/mine' : undefined,
-  );
-  private readonly myTrails = httpResource<Trail[]>(() =>
-    this.listingsOpen() ? '/trails/mine' : undefined,
-  );
   private readonly myPosts = httpResource<BlogPost[]>(() =>
     this.listingsOpen() ? '/blog/mine' : undefined,
   );
   // null until everything has answered (a failed kind counts as empty).
   protected readonly listingItems = computed((): ListingItem[] | null => {
-    const sources = [this.myTours, this.myHotels, this.myGuide, this.myTrails, this.myPosts];
+    const sources = [this.myTours, this.myPosts];
     if (sources.some((source) => source.isLoading())) return null;
-    const guide = loaded(this.myGuide)?.guide;
-    const guideList = guide ? [guide] : [];
     return [
       ...(loaded(this.myTours) ?? []).map((tour) => ({
         key: `tour-${tour.id}`,
@@ -532,33 +483,6 @@ export class ProfilePage {
         path: `/tours/${tour.slug}`,
         editPath: `/partner/tours/${tour.id}`,
         draft: !tour.isPublished,
-      })),
-      ...(loaded(this.myHotels) ?? []).map((hotel) => ({
-        key: `hotel-${hotel.id}`,
-        kind: 'cabinet.kinds.hotel',
-        icon: 'icon-[heroicons--building-office-2]',
-        title: hotel.name,
-        path: `/hotels/${hotel.slug}`,
-        editPath: `/hotels/${hotel.slug}/edit`,
-        draft: false,
-      })),
-      ...guideList.map((guide) => ({
-        key: `guide-${guide.id}`,
-        kind: 'cabinet.kinds.local_guide',
-        icon: 'icon-[heroicons--identification]',
-        title: guide.name,
-        path: `/local-guides/${guide.slug}`,
-        editPath: `/local-guides/${guide.slug}/edit`,
-        draft: false,
-      })),
-      ...(loaded(this.myTrails) ?? []).map((trail) => ({
-        key: `trail-${trail.id}`,
-        kind: 'profile.listings.kinds.trail',
-        icon: 'icon-[heroicons--flag]',
-        title: trail.name,
-        path: `/trails/${trail.slug}`,
-        editPath: `/trails/${trail.slug}/edit`,
-        draft: !trail.isPublished,
       })),
       ...(loaded(this.myPosts) ?? []).map((post) => ({
         key: `post-${post.id}`,

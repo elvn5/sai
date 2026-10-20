@@ -3,13 +3,11 @@ import { SiteLink } from '@/ui/site-link';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
+// Outings and tours for now: the other sections are paused
+// (server/paused-sections.ts).
 const SECTIONS = [
-  { path: '/trails', key: 'trails', icon: 'icon-[heroicons--map] icon-anim-flip' },
   { path: '/outings', key: 'outings', icon: 'icon-[heroicons--user-group] icon-anim-pop' },
   { path: '/tours', key: 'tours', icon: 'icon-[heroicons--map] icon-anim-flip' },
-  { path: '/hotels', key: 'hotels', icon: 'icon-[heroicons--building-office-2] icon-anim-bounce' },
-  { path: '/local-guides', key: 'localGuides', icon: 'icon-[heroicons--user-group] icon-anim-pop' },
-  { path: '/guides', key: 'guides', icon: 'icon-[heroicons--book-open] icon-anim-wiggle' },
 ] as const;
 
 // /hikes: everything for a trip in the mountains, one card per section;
@@ -23,7 +21,7 @@ const SECTIONS = [
       <h1 class="motion-enter text-3xl font-extrabold text-text">{{ 'hikes.title' | transloco }}</h1>
       <p class="motion-enter motion-enter-1 mt-2 max-w-2xl text-text-muted">{{ 'hikes.subtitle' | transloco }}</p>
 
-      <ul class="motion-reveal mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul class="motion-reveal mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         @for (section of sections; track section.key) {
           <li>
             <a

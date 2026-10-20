@@ -11,13 +11,6 @@ const LINKS = [
   { path: '/partner', key: 'dashboard', icon: 'icon-[heroicons--squares-2x2]', exact: true },
   { path: '/partner/stats', key: 'stats', icon: 'icon-[heroicons--chart-bar]', exact: false },
   {
-    path: '/partner/bookings',
-    key: 'bookings',
-    icon: 'icon-[heroicons--ticket]',
-    exact: false,
-  },
-  { path: '/partner/finances', key: 'finances', icon: 'icon-[heroicons--banknotes]', exact: false },
-  {
     path: '/partner/listings',
     key: 'listings',
     icon: 'icon-[heroicons--rectangle-stack]',

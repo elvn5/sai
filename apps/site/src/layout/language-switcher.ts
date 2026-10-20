@@ -1,8 +1,8 @@
 import { injectLang } from '@/core/i18n/current-lang';
-import { LANGS, LANG_NAMES, type Lang, splitLang } from '@/core/i18n/langs';
+import { LANGS, LANG_NAMES, type Lang, isLang, splitLang } from '@/core/i18n/langs';
 import { injectCurrentUrl } from '@/core/lib/current-url';
+import { Menu, MenuPanel, MenuTrigger } from '@/ui/menu';
 import { SiteLink } from '@/ui/site-link';
-import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,53 +18,71 @@ import { TranslocoPipe } from '@jsverse/transloco';
 const LANG_COOKIE = 'i18n_redirected';
 
 // Opens the current page in another language. Search engines find the
-// other languages through hreflang, so the menu only renders on demand.
+// other languages through hreflang, so the menu only renders on demand;
+// in the phone menu (showName) the languages are a row of links.
 @Component({
   selector: 'app-language-switcher',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, SiteLink, TranslocoPipe],
+  imports: [Menu, MenuPanel, MenuTrigger, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // A chosen language is remembered (the links carry hreflang).
+  host: { '(click)': 'onClick($event)' },
   template: `
-    <button
-      type="button"
-      class="flex h-9 items-center gap-1.5 rounded-[0.625rem] px-2 text-[0.8rem] font-medium text-text-muted transition-colors duration-(--dur-fast) hover:bg-text/5 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-      [cdkMenuTriggerFor]="menu"
-      [attr.aria-label]="'language.switch' | transloco"
-      [title]="'language.switch' | transloco"
-    >
-      <span class="icon-[heroicons--language] size-[1.15rem]" aria-hidden="true"></span>
-      @if (showName()) {
-        <span class="text-sm text-text">{{ currentName() }}</span>
-      } @else {
-        <span>{{ lang().toUpperCase() }}</span>
-      }
-    </button>
-    <ng-template #menu>
-      <div cdkMenu class="motion-drop-in min-w-40 rounded-xl border border-border bg-surface p-1 text-text shadow-lg">
+    @if (showName()) {
+      <!-- The phone menu: every language at hand, no dropdown. -->
+      <nav class="flex items-center gap-1" [attr.aria-label]="'language.switch' | transloco">
+        <span class="icon-[heroicons--language] mr-0.5 size-[1.15rem] text-text-muted" aria-hidden="true"></span>
         @for (item of items(); track item.lang) {
           <a
-            cdkMenuItem
             [appSiteLink]="item.path"
             [lang]="item.lang"
             [attr.hreflang]="item.lang"
             [attr.aria-current]="item.lang === lang() ? 'true' : null"
-            class="flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm hover:bg-bg focus:bg-bg focus:outline-none"
-            (cdkMenuItemTriggered)="remember(item.lang)"
+            [title]="item.name"
+            class="rounded-md px-2 py-1.5 text-[0.8rem] font-medium text-text-muted aria-[current]:bg-brand-500/14 aria-[current]:text-brand-700 dark:aria-[current]:text-brand-300"
           >
-            {{ item.name }}
-            @if (item.lang === lang()) {
-              <span class="icon-[heroicons--check-20-solid] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>
-            }
+            {{ item.lang.toUpperCase() }}
           </a>
         }
+      </nav>
+    } @else {
+      <div appMenu #menu="appMenu" class="relative">
+        <button
+          type="button"
+          appMenuTrigger
+          class="flex h-9 items-center gap-1.5 rounded-[0.625rem] px-2 text-[0.8rem] font-medium text-text-muted transition-colors duration-(--dur-fast) hover:bg-text/5 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+          [attr.aria-label]="'language.switch' | transloco"
+          [title]="'language.switch' | transloco"
+        >
+          <span class="icon-[heroicons--language] size-[1.15rem]" aria-hidden="true"></span>
+          <span>{{ lang().toUpperCase() }}</span>
+        </button>
+        @if (menu.open()) {
+          <div appMenuPanel class="motion-drop-in absolute top-full right-0 z-50 mt-2 min-w-40 rounded-xl border border-border bg-surface p-1 text-text shadow-lg">
+            @for (item of items(); track item.lang) {
+              <a
+                role="menuitem"
+                [appSiteLink]="item.path"
+                [lang]="item.lang"
+                [attr.hreflang]="item.lang"
+                [attr.aria-current]="item.lang === lang() ? 'true' : null"
+                class="flex items-center justify-between gap-3 rounded-md px-3 py-2 text-sm hover:bg-bg focus:bg-bg focus:outline-none"
+              >
+                {{ item.name }}
+                @if (item.lang === lang()) {
+                  <span class="icon-[heroicons--check-20-solid] size-4 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>
+                }
+              </a>
+            }
+          </div>
+        }
       </div>
-    </ng-template>
+    }
   `,
 })
 export class LanguageSwitcher {
-  // The language's full name next to the icon (the phone menu).
+  // The phone menu: the languages as a row of links.
   readonly showName = input(false);
   protected readonly lang = injectLang();
-  protected readonly currentName = computed(() => LANG_NAMES[this.lang()]);
   private readonly url = injectCurrentUrl();
   private readonly document = inject(DOCUMENT);
 
@@ -75,7 +93,12 @@ export class LanguageSwitcher {
     return LANGS.map((lang) => ({ lang, name: LANG_NAMES[lang], path: target }));
   });
 
-  protected remember(lang: Lang): void {
+  protected onClick(event: MouseEvent): void {
+    const lang = (event.target as Element).closest('a[hreflang]')?.getAttribute('hreflang');
+    if (isLang(lang)) this.remember(lang);
+  }
+
+  private remember(lang: Lang): void {
     this.document.cookie = `${LANG_COOKIE}=${lang}; path=/; max-age=31536000; samesite=lax`;
   }
 }

@@ -8,11 +8,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const PARENTS = [
   { path: '/tours', label: 'nav.tours' },
-  { path: '/trails', label: 'nav.trails' },
   { path: '/outings', label: 'nav.outings' },
-  { path: '/hotels', label: 'nav.hotels' },
-  { path: '/local-guides', label: 'nav.localGuides' },
-  { path: '/guides', label: 'nav.guides' },
   { path: '/blog', label: 'nav.blog' },
 ] as const;
 

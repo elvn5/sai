@@ -1,4 +1,4 @@
-import type { BlogPost, Hotel, LocalGuide, StatsReport, Tour, Trail } from '@/core/api/types';
+import type { BlogPost, StatsReport, Tour } from '@/core/api/types';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatDateRange, todayInBishkek } from '@/core/lib/format';
 import { contentLang } from '@/core/lib/partner-cabinet';
@@ -11,9 +11,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 
-// /partner/listings: everything the partner publishes — tours (edit,
-// repeat on new dates, delete), places to stay, the guide profile, routes
-// and blog posts — with each listing's views over 30 days.
+// /partner/listings: what the partner publishes — tours (edit, repeat on
+// new dates, delete) and blog posts — with each listing's views over 30
+// days. (Places to stay, the guide profile and routes are paused for now.)
 @Component({
   selector: 'app-partner-listings-page',
   imports: [SiteLink, TranslocoPipe],
@@ -57,70 +57,6 @@ import { firstValueFrom } from 'rxjs';
         }
       </section>
 
-      <section class="flex flex-col gap-3" aria-labelledby="my-hotels">
-        <div class="flex items-center justify-between gap-2">
-          <h2 id="my-hotels" class="font-semibold text-text">{{ 'profile.listings.hotelsHeading' | transloco }}</h2>
-          <a appSiteLink="/hotels/new" class="ui-btn-primary"><span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'hotels.addButton' | transloco }}</a>
-        </div>
-        @for (hotel of hotelList(); track hotel.id) {
-          <div class="ui-card flex items-center justify-between gap-4 px-4 py-3">
-            <div class="min-w-0">
-              <a [appSiteLink]="'/hotels/' + hotel.slug" class="block truncate font-medium text-text hover:underline">{{ hotel.name }}</a>
-              <p class="text-xs text-text-muted">
-                {{ 'destinations.' + hotel.destination | transloco }} · {{ 'cabinet.listings.views30' | transloco: { count: views().get(hotel.id) ?? 0 } }} · {{ 'reviews.count' | transloco: { count: hotel.reviewCount } }}
-              </p>
-            </div>
-            <a [appSiteLink]="'/hotels/' + hotel.slug + '/edit'" class="ui-btn-soft shrink-0"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>{{ 'listing.edit' | transloco }}</a>
-          </div>
-        } @empty {
-          @if (hotels.hasValue()) {
-            <p class="rounded-card border border-dashed border-border px-6 py-8 text-center text-sm text-text-muted">{{ 'profile.listings.noHotels' | transloco }}</p>
-          }
-        }
-      </section>
-
-      <section class="flex flex-col gap-3" aria-labelledby="my-guide">
-        <h2 id="my-guide" class="font-semibold text-text">{{ 'profile.listings.guideHeading' | transloco }}</h2>
-        @if (guide(); as profile) {
-          <div class="ui-card flex items-center justify-between gap-4 px-4 py-3">
-            <div class="min-w-0">
-              <a [appSiteLink]="'/local-guides/' + profile.slug" class="block truncate font-medium text-text hover:underline">{{ profile.name }}</a>
-              <p class="text-xs text-text-muted">
-                {{ 'cabinet.listings.views30' | transloco: { count: views().get(profile.id) ?? 0 } }} · {{ 'reviews.count' | transloco: { count: profile.reviewCount } }}
-              </p>
-            </div>
-            <a [appSiteLink]="'/local-guides/' + profile.slug + '/edit'" class="ui-btn-soft shrink-0"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>{{ 'listing.edit' | transloco }}</a>
-          </div>
-        } @else if (guideResource.hasValue()) {
-          <div class="flex flex-col items-center gap-3 rounded-card border border-dashed border-border px-6 py-8 text-center">
-            <p class="max-w-sm text-sm text-text-muted">{{ 'profile.listings.guidePitch' | transloco }}</p>
-            <a appSiteLink="/local-guides/new" class="ui-btn-primary">{{ 'localGuides.addButton' | transloco }}</a>
-          </div>
-        }
-      </section>
-
-      <section class="flex flex-col gap-3" aria-labelledby="my-trails">
-        <div class="flex items-center justify-between gap-2">
-          <h2 id="my-trails" class="font-semibold text-text">{{ 'cabinet.listings.trails' | transloco }}</h2>
-          <a appSiteLink="/trails/new" class="ui-btn-primary"><span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'cabinet.listings.addTrail' | transloco }}</a>
-        </div>
-        @for (trail of trailList(); track trail.id) {
-          <div class="ui-card flex items-center justify-between gap-4 px-4 py-3">
-            <div class="min-w-0">
-              <a [appSiteLink]="'/trails/' + trail.slug" class="block truncate font-medium text-text hover:underline">{{ trail.name }}</a>
-              @if (!trail.isPublished) {
-                <p class="text-xs text-text-muted">{{ 'trails.draft' | transloco }}</p>
-              }
-            </div>
-            <a [appSiteLink]="'/trails/' + trail.slug + '/edit'" class="ui-btn-soft shrink-0"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>{{ 'listing.edit' | transloco }}</a>
-          </div>
-        } @empty {
-          @if (trails.hasValue()) {
-            <p class="rounded-card border border-dashed border-border px-6 py-8 text-center text-sm text-text-muted">{{ 'cabinet.listings.noTrails' | transloco }}</p>
-          }
-        }
-      </section>
-
       <section class="flex flex-col gap-3" aria-labelledby="my-posts">
         <div class="flex items-center justify-between gap-2">
           <h2 id="my-posts" class="font-semibold text-text">{{ 'profile.listings.postsHeading' | transloco }}</h2>
@@ -159,11 +95,6 @@ export class PartnerListingsPage {
   private readonly currentLang = injectLang();
 
   protected readonly tours = httpResource<Tour[]>(() => '/tours/mine');
-  protected readonly hotels = httpResource<Hotel[]>(() => '/hotels/mine');
-  protected readonly guideResource = httpResource<{ guide: LocalGuide | null }>(
-    () => '/local-guides/mine',
-  );
-  protected readonly trails = httpResource<Trail[]>(() => '/trails/mine');
   protected readonly posts = httpResource<BlogPost[]>(() => '/blog/mine');
   private readonly stats = httpResource<StatsReport>(() => ({
     url: '/listing-stats/mine',
@@ -171,9 +102,6 @@ export class PartnerListingsPage {
   }));
 
   protected readonly tourList = computed(() => loaded(this.tours) ?? []);
-  protected readonly hotelList = computed(() => loaded(this.hotels) ?? []);
-  protected readonly guide = computed(() => loaded(this.guideResource)?.guide ?? null);
-  protected readonly trailList = computed(() => loaded(this.trails) ?? []);
   protected readonly postList = computed(() => loaded(this.posts) ?? []);
   // Upcoming tours soonest first; past ones most recent first.
   protected readonly tourGroups = computed(() => {

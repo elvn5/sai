@@ -38,12 +38,12 @@ func tourAction(action, tab string, index int, id string) string {
 	return data
 }
 
-func tourURL(links Links, t api.Tour) string {
+func tourPath(t api.Tour) string {
 	path := "/tours/" + t.Slug
 	if t.Locale != "" && t.Locale != "ru" {
 		path = "/" + t.Locale + path
 	}
-	return links.site(path)
+	return path
 }
 
 // ToursView is what the tours screen shows.
@@ -112,7 +112,7 @@ func Tours(v ToursView, links Links) Screen {
 		if v.Favorites[t.ID] {
 			save = keyboards.Button("💔 Из избранного", tourAction(ActDrop, v.Tab, index, t.ID))
 		}
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Link("🌐 Подробнее", tourURL(links, t)), save})
+		buttons = append(buttons, []telego.InlineKeyboardButton{links.Open("🌐 Подробнее", tourPath(t)), save})
 	}
 
 	buttons = append(buttons, keyboards.Tabs(TourData(v.Tab, 0),

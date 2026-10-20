@@ -13,6 +13,8 @@ import (
 	"unicode/utf8"
 
 	"github.com/mymmrac/telego"
+
+	"github.com/elvn5/sai/services/bot/internal/keyboards"
 )
 
 // Screen is one message: HTML text, buttons and an optional link preview
@@ -27,11 +29,21 @@ type Screen struct {
 type Links struct {
 	// The public site, no trailing slash.
 	Site string
+	// The Mini App (the same site inside Telegram), no trailing slash;
+	// when set, buttons open pages there instead of the browser.
+	MiniApp string
 	// The gateway's public address, for /uploads/… pictures.
 	PublicAPI string
 }
 
-func (l Links) site(path string) string { return l.Site + path }
+// Open is a button opening a page of the site: in the Mini App when there
+// is one, else in the browser.
+func (l Links) Open(text, path string) telego.InlineKeyboardButton {
+	if l.MiniApp != "" {
+		return keyboards.WebApp(text, l.MiniApp+path)
+	}
+	return keyboards.Link(text, l.Site+path)
+}
 
 // Picture is an absolute URL of a cover Telegram can fetch, "" if none.
 // Uploads go through the media service's thumbnails (1280 px wide).

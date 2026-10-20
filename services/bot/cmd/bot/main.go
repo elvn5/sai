@@ -88,7 +88,10 @@ func run(log *slog.Logger) error {
 	} else {
 		log.Warn("API_URL or JWT_SECRET unset: outings, tours and blog sections are off")
 	}
-	links := screens.Links{Site: strings.TrimRight(cfg.Site(), "/"), PublicAPI: strings.TrimRight(cfg.PublicAPIURL, "/")}
+	links := screens.Links{
+		Site: strings.TrimRight(cfg.Site(), "/"), MiniApp: strings.TrimRight(cfg.MiniAppURL, "/"),
+		PublicAPI: strings.TrimRight(cfg.PublicAPIURL, "/"),
+	}
 
 	options := []telego.BotOption{telego.WithLogger(botLogger{log: log, token: cfg.BotToken})}
 	if cfg.TelegramAPIURL != "" {

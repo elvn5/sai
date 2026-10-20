@@ -27,7 +27,11 @@ func layout(s screens.Screen) []string {
 	for _, row := range s.Markup.InlineKeyboard {
 		var cells []string
 		for _, b := range row {
-			cells = append(cells, b.Text+"→"+b.CallbackData+b.URL)
+			target := b.CallbackData + b.URL
+			if b.WebApp != nil {
+				target = "webapp:" + b.WebApp.URL
+			}
+			cells = append(cells, b.Text+"→"+target)
 		}
 		out = append(out, strings.Join(cells, " | "))
 	}

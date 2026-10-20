@@ -32,12 +32,12 @@ func blogAction(action string, index int) string {
 	return keyboards.BlogPrefix + action + ":" + strconv.Itoa(index)
 }
 
-func postURL(links Links, p api.BlogPost) string {
+func postPath(p api.BlogPost) string {
 	path := "/blog/" + p.Slug
 	if p.Locale != "" && p.Locale != "ru" {
 		path = "/" + p.Locale + path
 	}
-	return links.site(path)
+	return path
 }
 
 // Blog shows one post of the blog, newest first, with its cover.
@@ -64,7 +64,7 @@ func Blog(posts []api.BlogPost, index int, subscribed bool, links Links) Screen 
 		if n > 1 {
 			buttons = append(buttons, keyboards.Pager(index, n, BlogData))
 		}
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Link("📖 Читать статью", postURL(links, p))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{links.Open("📖 Читать статью", postPath(p))})
 	}
 	sub := keyboards.Button("🔔 Присылать новые статьи", blogAction(ActSubscribe, index))
 	if subscribed {
@@ -84,7 +84,7 @@ func BlogPost(p api.BlogPost, links Links) (caption string, markup *telego.Inlin
 		b.WriteString("\n" + esc(clip(*p.Excerpt, 600)))
 	}
 	return b.String(), rows([]telego.InlineKeyboardButton{
-		keyboards.Link("📖 Читать", postURL(links, p)),
+		links.Open("📖 Читать", postPath(p)),
 		keyboards.Button("🔕 Не присылать", NotifyBlogOff),
 	})
 }

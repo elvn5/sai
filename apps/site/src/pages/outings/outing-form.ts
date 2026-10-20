@@ -3,8 +3,10 @@ import { injectLang } from '@/core/i18n/current-lang';
 import { emptyToNull } from '@/core/lib/listing-form';
 import { loaded } from '@/core/lib/resource';
 import { LEVELS, TRANSPORTS } from '@/core/lib/trail-options';
+import { DateTimeField } from '@/ui/date-time-field';
 import { FieldErrors } from '@/ui/field-errors';
 import { type IconOption, IconPicker } from '@/ui/icon-picker';
+import { SelectField, type SelectOption } from '@/ui/select-field';
 import { httpResource } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -29,6 +31,8 @@ import {
 } from '@angular/forms/signals';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { z } from 'zod/mini';
+
+let nextFormId = 0;
 
 // Kyrgyzstan doesn't observe DST: always UTC+6.
 const BISHKEK_OFFSET_MS = 6 * 3_600_000;
@@ -62,8 +66,8 @@ interface OutingFormModel {
   contact: string;
 }
 
-// datetime-local works in the browser's zone; outings are planned in
-// Bishkek time, so the field holds Bishkek wall-clock time.
+// The date fields hold wall-clock time without a zone; outings are
+// planned in Bishkek time, so they hold Bishkek wall-clock time.
 export function toBishkekInput(iso: string): string {
   return new Date(new Date(iso).getTime() + BISHKEK_OFFSET_MS).toISOString().slice(0, 16);
 }
@@ -103,37 +107,39 @@ function toModel(outing: Outing | undefined): OutingFormModel {
 // optional; ?trail=<slug> picks it (and its name as the title).
 @Component({
   selector: 'app-outing-form',
-  imports: [FieldErrors, FormField, IconPicker, TranslocoPipe],
+  imports: [DateTimeField, FieldErrors, FormField, IconPicker, SelectField, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="flex flex-col gap-6" novalidate (submit)="send($event)">
-      <label class="ui-field">
-        {{ 'outings.form.trail' | transloco }}
-        <select class="ui-input" [formField]="outingForm.trailId">
-          <option value="">{{ 'outings.form.noTrail' | transloco }}</option>
-          @for (trail of trailList(); track trail.id) {
-            <option [value]="trail.id">{{ trail.name }}</option>
-          }
-        </select>
+      <div class="ui-field">
+        <span [id]="ids + '-trail'">{{ 'outings.form.trail' | transloco }}</span>
+        <app-select-field [options]="trailOptions()" [labelledBy]="ids + '-trail'" [formField]="outingForm.trailId" />
         <span class="ui-hint">{{ 'outings.form.trailHint' | transloco }}</span>
-      </label>
+      </div>
       <label class="ui-field">
         {{ 'outings.form.title' | transloco }} *
         <input class="ui-input py-2.5 text-base" [placeholder]="'outings.form.titlePlaceholder' | transloco" [formField]="outingForm.title" />
         <app-field-errors [state]="outingForm.title()" />
       </label>
       <div class="grid gap-4 sm:grid-cols-2">
-        <label class="ui-field">
-          {{ 'outings.form.startsAt' | transloco }} *
-          <input class="ui-input" type="datetime-local" [formField]="outingForm.startsAt" />
+        <div class="ui-field">
+          <span [id]="ids + '-starts'">{{ 'outings.form.startsAt' | transloco }} *</span>
+          <app-date-time-field [earliest]="today" defaultTime="06:00" [labelledBy]="ids + '-starts'" [formField]="outingForm.startsAt" />
           <span class="ui-hint">{{ 'outings.form.bishkekTime' | transloco }}</span>
           <app-field-errors [state]="outingForm.startsAt()" />
-        </label>
-        <label class="ui-field">
-          {{ 'outings.form.returnsAt' | transloco }}
-          <input class="ui-input" type="datetime-local" [formField]="outingForm.returnsAt" />
+        </div>
+        <div class="ui-field">
+          <span [id]="ids + '-returns'">{{ 'outings.form.returnsAt' | transloco }}</span>
+          <app-date-time-field
+            [earliest]="startDay()"
+            defaultTime="18:00"
+            anchor="end"
+            [clearable]="true"
+            [labelledBy]="ids + '-returns'"
+            [formField]="outingForm.returnsAt"
+          />
           <app-field-errors [state]="outingForm.returnsAt()" />
-        </label>
+        </div>
       </div>
       <label class="ui-field">
         {{ 'outings.form.meetingPoint' | transloco }} *
@@ -196,6 +202,17 @@ export class OutingForm {
     params: { sort: 'name' },
   }));
   protected readonly trailList = computed(() => loaded(this.trails) ?? []);
+  protected readonly trailOptions = computed<SelectOption[]>(() => {
+    this.lang();
+    return [
+      { value: '', label: this.transloco.translate('outings.form.noTrail') },
+      ...this.trailList().map((trail) => ({ value: trail.id, label: trail.name })),
+    ];
+  });
+  // Ids tying the custom fields to their labels.
+  protected readonly ids = `outing-form-${nextFormId++}`;
+  // Bishkek's today: no outing starts earlier.
+  protected readonly today = new Date(Date.now() + BISHKEK_OFFSET_MS).toISOString().slice(0, 10);
   // Options read the language at render: labels follow the switcher.
   protected readonly transportOptions = computed(() =>
     this.options(TRANSPORTS, 'outings.transport'),
@@ -205,6 +222,8 @@ export class OutingForm {
   protected readonly failed = signal<string | null>(null);
 
   protected readonly model = linkedSignal(() => toModel(this.outing()));
+  // Nobody comes back before leaving.
+  protected readonly startDay = computed(() => this.model().startsAt.slice(0, 10) || this.today);
   protected readonly outingForm = form(this.model, (path) => {
     const t = (key: string): string => this.transloco.translate(key);
     const required = t('login.required');

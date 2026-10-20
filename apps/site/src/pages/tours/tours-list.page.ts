@@ -20,6 +20,7 @@ import { tourCoverTransition } from '@/core/lib/view-transitions';
 import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { TourAlertButton } from '@/pages/tours/tour-alert-button';
+import { DateTimeField } from '@/ui/date-time-field';
 import { FavoriteButton } from '@/ui/favorite-button';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
@@ -79,6 +80,7 @@ function matchesDuration(days: number | null, range: string): boolean {
     CdkMenuItemCheckbox,
     CdkMenuItemRadio,
     CdkMenuTrigger,
+    DateTimeField,
     FavoriteButton,
     ListSkeleton,
     LoadError,
@@ -164,15 +166,22 @@ function matchesDuration(days: number | null, range: string): boolean {
       </div>
 
       @if (datesOpen() && flags.isOn('tourDates')) {
-        <form id="tour-dates" class="motion-roll-in mb-2 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-3" (submit)="applyDates($event, fromInput.value, toInput.value)">
-          <label class="block">
-            <span class="ui-label">{{ 'tours.dates.from' | transloco }}</span>
-            <input #fromInput class="ui-input" type="date" [value]="from() ?? ''" [min]="today" />
-          </label>
-          <label class="block">
-            <span class="ui-label">{{ 'tours.dates.to' | transloco }}</span>
-            <input #toInput class="ui-input" type="date" [value]="to() ?? ''" [min]="from() ?? today" />
-          </label>
+        <form id="tour-dates" class="motion-roll-in mb-2 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-3" (submit)="applyDates($event, draftFrom(), draftTo())">
+          <div class="w-full sm:w-60">
+            <span id="tour-dates-from" class="ui-label">{{ 'tours.dates.from' | transloco }}</span>
+            <app-date-time-field [withTime]="false" [clearable]="true" [earliest]="today" labelledBy="tour-dates-from" [(value)]="draftFrom" />
+          </div>
+          <div class="w-full sm:w-60">
+            <span id="tour-dates-to" class="ui-label">{{ 'tours.dates.to' | transloco }}</span>
+            <app-date-time-field
+              [withTime]="false"
+              [clearable]="true"
+              [earliest]="draftFrom() || today"
+              anchor="end"
+              labelledBy="tour-dates-to"
+              [(value)]="draftTo"
+            />
+          </div>
           <div class="flex gap-2">
             <button type="submit" class="ui-btn-primary">{{ 'tours.dates.apply' | transloco }}</button>
             @if (from() || to()) {
@@ -350,6 +359,9 @@ export class ToursListPage {
   protected readonly datesOpen = signal(false);
   protected readonly fewPlaces = FEW_PLACES;
   protected readonly today = todayInBishkek();
+  // The dates being picked, applied on submit.
+  protected readonly draftFrom = linkedSignal(() => this.from() ?? '');
+  protected readonly draftTo = linkedSignal(() => this.to() ?? '');
 
   protected readonly tours = httpResource<Tour[]>(() => ({
     url: '/tours',

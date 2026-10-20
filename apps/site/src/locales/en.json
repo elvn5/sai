@@ -889,5 +889,17 @@
     "linkFirst": "Alerts come on Telegram — link it to your account first.",
     "unavailable": "Alerts are unavailable right now",
     "failed": "Couldn't subscribe"
+  },
+  "picker": {
+    "chooseDate": "Choose a date",
+    "chooseDateTime": "Choose date and time",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "done": "Done",
+    "clear": "Clear",
+    "search": "Search",
+    "noResults": "Nothing found"
   }
 }

@@ -10,6 +10,7 @@
 - **Logging:** `log/slog` in Go. Avoid `console.log`.
 - **Environment:** Manage environment variables via `dotenv` (`.env`).
 - **TypeScript:** Strict mode enabled. Always specify return types for public functions/methods.
+- **Git:** Claude may commit and push straight to `main`, without a branch or PR. Before pushing, run the checks for what changed (Biome, `ng lint`, `pnpm typecheck`, the app's tests; `golangci-lint` and `go test ./...` for a Go module), and say so if one fails. A push to `main` deploys staging (`deploy-staging.yml`).
 
 ## Migrations (done)
 Plan, phases and requirements: `docs/angular-migration-plan.md`. Work starts only on an explicit request.

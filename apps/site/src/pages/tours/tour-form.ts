@@ -1,4 +1,5 @@
 import { CancellationPolicy, type Destination, type Tour, type TourDay } from '@/core/api/types';
+import { injectLang } from '@/core/i18n/current-lang';
 import {
   PHONE_PATTERN,
   TELEGRAM_PATTERN,
@@ -7,13 +8,20 @@ import {
   requiredHtml,
   telegramUsername,
 } from '@/core/lib/listing-form';
-import { CANCELLATION_OPTIONS, DESTINATION_OPTIONS } from '@/core/lib/listing-options';
+import {
+  CANCELLATION_OPTIONS,
+  DESTINATION_OPTIONS,
+  type ListingOption,
+} from '@/core/lib/listing-options';
+import { DateTimeField } from '@/ui/date-time-field';
 import { FieldErrors } from '@/ui/field-errors';
 import { PhotoUploader } from '@/ui/photo-uploader';
 import { RichTextEditor } from '@/ui/rich-text-editor';
+import { SelectField, type SelectOption } from '@/ui/select-field';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
   linkedSignal,
@@ -104,9 +112,19 @@ function toModel(tour: Partial<Tour> | undefined): TourFormModel {
 
 // A tour: creates one, or prefills from `tour` (a copy passes the original
 // without its dates).
+let nextFormId = 0;
+
 @Component({
   selector: 'app-tour-form',
-  imports: [FieldErrors, FormField, PhotoUploader, RichTextEditor, TranslocoPipe],
+  imports: [
+    DateTimeField,
+    FieldErrors,
+    FormField,
+    PhotoUploader,
+    RichTextEditor,
+    SelectField,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="flex flex-col gap-6" novalidate (submit)="send($event)">
@@ -142,35 +160,37 @@ function toModel(tour: Partial<Tour> | undefined): TourFormModel {
         <app-field-errors [state]="tourForm.capacity()" />
       </label>
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <label class="ui-field">
-          {{ 'tours.startDateLabel' | transloco }} *
-          <input class="ui-input" type="date" [formField]="tourForm.startDate" />
+        <div class="ui-field">
+          <span [id]="ids + '-start'">{{ 'tours.startDateLabel' | transloco }} *</span>
+          <app-date-time-field [withTime]="false" [labelledBy]="ids + '-start'" [formField]="tourForm.startDate" />
           <app-field-errors [state]="tourForm.startDate()" />
-        </label>
-        <label class="ui-field">
-          {{ 'tours.endDateLabel' | transloco }} *
-          <input class="ui-input" type="date" [formField]="tourForm.endDate" />
+        </div>
+        <div class="ui-field">
+          <span [id]="ids + '-end'">{{ 'tours.endDateLabel' | transloco }} *</span>
+          <app-date-time-field
+            [withTime]="false"
+            [earliest]="model().startDate || null"
+            anchor="end"
+            [labelledBy]="ids + '-end'"
+            [formField]="tourForm.endDate"
+          />
           <app-field-errors [state]="tourForm.endDate()" />
-        </label>
+        </div>
       </div>
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <label class="ui-field">
-          {{ 'listing.form.destinationLabel' | transloco }}
-          <select class="ui-input" [formField]="tourForm.destination">
-            <option value="">{{ 'listing.form.choose' | transloco }}</option>
-            @for (option of destinations; track option.value) {
-              <option [value]="option.value">{{ option.labelKey | transloco }}</option>
-            }
-          </select>
-        </label>
-        <label class="ui-field">
-          {{ 'listing.form.cancellationLabel' | transloco }} *
-          <select class="ui-input" [formField]="tourForm.cancellationPolicy">
-            @for (option of cancellations; track option.value) {
-              <option [value]="option.value">{{ option.labelKey | transloco }}</option>
-            }
-          </select>
-        </label>
+        <div class="ui-field">
+          <span [id]="ids + '-destination'">{{ 'listing.form.destinationLabel' | transloco }}</span>
+          <app-select-field
+            [options]="destinationOptions()"
+            [placeholder]="'listing.form.choose' | transloco"
+            [labelledBy]="ids + '-destination'"
+            [formField]="tourForm.destination"
+          />
+        </div>
+        <div class="ui-field">
+          <span [id]="ids + '-cancellation'">{{ 'listing.form.cancellationLabel' | transloco }} *</span>
+          <app-select-field [options]="cancellationOptions()" [labelledBy]="ids + '-cancellation'" [formField]="tourForm.cancellationPolicy" />
+        </div>
       </div>
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <label class="ui-field">
@@ -253,8 +273,12 @@ export class TourForm {
   readonly save = input.required<(payload: TourPayload) => Promise<void>>();
 
   private readonly transloco = inject(TranslocoService);
-  protected readonly destinations = DESTINATION_OPTIONS;
-  protected readonly cancellations = CANCELLATION_OPTIONS;
+  private readonly lang = injectLang();
+  // Labels follow the language switcher.
+  protected readonly destinationOptions = computed(() => this.translated(DESTINATION_OPTIONS));
+  protected readonly cancellationOptions = computed(() => this.translated(CANCELLATION_OPTIONS));
+  // Ids tying the custom fields to their labels.
+  protected readonly ids = `tour-form-${nextFormId++}`;
   protected readonly errorKey = signal<string | null>(null);
   protected readonly maxDays = MAX_DAYS;
   protected readonly maxPhotos = MAX_PHOTOS;
@@ -319,6 +343,14 @@ export class TourForm {
       if (day) program.splice(index + delta, 0, day);
       return { ...value, program };
     });
+  }
+
+  private translated(options: ListingOption[]): SelectOption[] {
+    this.lang();
+    return options.map((option) => ({
+      value: option.value,
+      label: this.transloco.translate(option.labelKey),
+    }));
   }
 
   protected async send(event: Event): Promise<void> {

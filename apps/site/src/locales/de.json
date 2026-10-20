@@ -889,5 +889,17 @@
     "linkFirst": "Benachrichtigungen kommen über Telegram – verknüpfe es zuerst mit deinem Konto.",
     "unavailable": "Benachrichtigungen sind gerade nicht verfügbar",
     "failed": "Abonnieren fehlgeschlagen"
+  },
+  "picker": {
+    "chooseDate": "Datum wählen",
+    "chooseDateTime": "Datum und Uhrzeit wählen",
+    "prevMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "hours": "Stunden",
+    "minutes": "Minuten",
+    "done": "Fertig",
+    "clear": "Zurücksetzen",
+    "search": "Suchen",
+    "noResults": "Nichts gefunden"
   }
 }

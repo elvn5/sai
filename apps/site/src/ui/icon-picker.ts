@@ -13,7 +13,7 @@ export interface IconOption {
   selector: 'app-icon-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-wrap gap-3" role="group">
+    <div class="grid max-w-sm grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-2" role="group">
       @for (option of options(); track option.value) {
         <button
           type="button"
@@ -38,7 +38,7 @@ export class IconPicker implements FormValueControl<string> {
   selector: 'app-icon-multi-picker',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex flex-wrap gap-3" role="group">
+    <div class="grid max-w-sm grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-2" role="group">
       @for (option of options(); track option.value) {
         <button
           type="button"

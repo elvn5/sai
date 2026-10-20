@@ -132,7 +132,7 @@ func TestSketchOutingCard(t *testing.T) {
 			"🧑 Организатор: Айгуль\n"+
 			"💬 Связь: @aigul_trek\n\n"+
 			"✅ Вы идёте",
-		"🌐 Открыть на сайте→https://ermekten.kg/outings/o1",
+		"🌐 Открыть в Ermekten→https://ermekten.kg/outings/o1",
 		"🙅 Не смогу пойти→o:ask:u:o1",
 		"⬅️ К моим выходам→o:list:u",
 	)

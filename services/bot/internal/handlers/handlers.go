@@ -1,6 +1,7 @@
-// Package handlers holds the bot's update handlers. Texts, buttons and
-// callback data match the former NestJS bot one to one: the
-// site links into the bot with t.me deep links.
+// Package handlers holds the bot's update handlers: account linking and
+// the profile (texts, buttons and callback data as in the former NestJS
+// bot: the site links into the bot with t.me deep links), and the outings,
+// tours, blog and notification sections (sections.go).
 package handlers
 
 import (
@@ -9,12 +10,15 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/mymmrac/telego"
 	th "github.com/mymmrac/telego/telegohandler"
 	tu "github.com/mymmrac/telego/telegoutil"
 
+	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
+	"github.com/elvn5/sai/services/bot/internal/screens"
 	"github.com/elvn5/sai/services/bot/internal/session"
 	"github.com/elvn5/sai/services/bot/internal/users"
 )
@@ -23,6 +27,7 @@ import (
 const (
 	verifyPrefix = "verify_"
 	linkPrefix   = "link_"
+	outingPrefix = "outing_"
 )
 
 // Accounts is the users service, as the handlers use it.
@@ -40,14 +45,33 @@ type Handlers struct {
 	Sessions   *session.Store
 	MiniAppURL string
 	Log        *slog.Logger
+
+	// The outings, tours, blog and notification sections; off unless both
+	// are set.
+	Content     Content
+	Subscribers Subscribers
+	Links       screens.Links
+	// Now is overridable in tests.
+	Now func() time.Time
 }
 
 // Register routes updates to the handlers. The first matching route wins,
 // so free text (a value being edited) comes last.
 func (h *Handlers) Register(bh *th.BotHandler) {
 	bh.HandleMessage(h.start, th.CommandEqual("start"))
-	bh.HandleMessage(h.profile, th.TextEqual(keyboards.Profile))
-	bh.HandleMessage(h.support, th.TextEqual(keyboards.Support))
+	bh.HandleMessage(h.profile, th.Or(th.TextEqual(keyboards.Profile), th.CommandEqual("profile")))
+	bh.HandleMessage(h.support, th.Or(th.TextEqual(keyboards.Support), th.CommandEqual("support")))
+	if h.sections() {
+		bh.HandleMessage(h.outingsMenu, th.Or(th.TextEqual(keyboards.Outings), th.CommandEqual("outings")))
+		bh.HandleMessage(h.toursMenu, th.Or(th.TextEqual(keyboards.Tours), th.CommandEqual("tours")))
+		bh.HandleMessage(h.blogMenu, th.Or(th.TextEqual(keyboards.Blog), th.CommandEqual("blog")))
+		bh.HandleMessage(h.notifyMenu, th.Or(th.TextEqual(keyboards.Notifications), th.CommandEqual("notifications")))
+		bh.HandleCallbackQuery(h.outingPress, th.CallbackDataPrefix(keyboards.OutingsPrefix))
+		bh.HandleCallbackQuery(h.tourPress, th.CallbackDataPrefix(keyboards.ToursPrefix))
+		bh.HandleCallbackQuery(h.blogPress, th.CallbackDataPrefix(keyboards.BlogPrefix))
+		bh.HandleCallbackQuery(h.notifyPress, th.CallbackDataPrefix(keyboards.NotifyPrefix))
+	}
+	bh.HandleCallbackQuery(h.noop, th.CallbackDataEqual(keyboards.Noop))
 	bh.HandleCallbackQuery(h.linkMove, th.CallbackDataPrefix(keyboards.LinkMovePrefix))
 	bh.HandleCallbackQuery(h.linkCancel, th.CallbackDataEqual(keyboards.LinkCancel))
 	bh.HandleCallbackQuery(h.editField(session.FieldName, "Введите новое имя:"), th.CallbackDataEqual(keyboards.EditName))
@@ -67,7 +91,9 @@ func (h *Handlers) reply(ctx *th.Context, chatID int64, text string, markup tele
 	return nil
 }
 
-func (h *Handlers) mainMenu() telego.ReplyMarkup { return keyboards.MainMenu(h.MiniAppURL) }
+func (h *Handlers) mainMenu() telego.ReplyMarkup {
+	return keyboards.MainMenu(h.MiniAppURL, h.sections())
+}
 
 func profileOf(u *telego.User) users.Profile {
 	return users.Profile{TelegramID: u.ID, Username: u.Username, FirstName: u.FirstName, LastName: u.LastName}
@@ -96,15 +122,42 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 		return h.link(ctx, msg.Chat.ID, from, token, false)
 	}
 
-	if _, err := h.Users.FindOrCreate(ctx, profileOf(from)); err != nil {
+	account, err := h.Users.FindOrCreate(ctx, profileOf(from))
+	if err != nil {
 		return err
+	}
+	if h.sections() {
+		if id, ok := strings.CutPrefix(payload, outingPrefix); ok && id != "" {
+			return h.outingCard(ctx, msg.Chat.ID, from, id)
+		}
 	}
 	name := from.FirstName
 	if name == "" {
 		name = "гость"
 	}
-	return h.reply(ctx, msg.Chat.ID, "Здравствуйте, "+name+
-		"! Я помогу с гайдами и маршрутами по Кыргызстану и отвечу на вопросы. Выберите раздел в меню ниже.", h.mainMenu())
+	if !h.sections() {
+		return h.reply(ctx, msg.Chat.ID, "Здравствуйте, "+name+
+			"! Я помогу с гайдами и маршрутами по Кыргызстану и отвечу на вопросы. Выберите раздел в меню ниже.", h.mainMenu())
+	}
+	greeting := tu.Message(tu.ID(msg.Chat.ID), h.welcome(ctx, account.ID, name)).
+		WithParseMode(telego.ModeHTML).WithReplyMarkup(h.mainMenu())
+	if _, err := ctx.Bot().SendMessage(ctx, greeting); err != nil {
+		return fmt.Errorf("send message: %w", err)
+	}
+	return nil
+}
+
+// welcome greets the user with the main menu and their nearest outing.
+func (h *Handlers) welcome(ctx context.Context, userID, name string) string {
+	var next *api.Outing
+	if list, err := h.Content.MyOutings(ctx, userID); err == nil {
+		if upcoming, _ := screens.SplitOutings(list, h.now()); len(upcoming) > 0 {
+			next = &upcoming[0]
+		}
+	} else {
+		h.Log.WarnContext(ctx, "nearest outing", slog.Any("error", err))
+	}
+	return screens.Welcome(name, next)
 }
 
 func (h *Handlers) verify(ctx *th.Context, chatID int64, token string) error {

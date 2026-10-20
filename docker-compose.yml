@@ -192,11 +192,28 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       MINI_APP_URL: ${MINI_APP_URL:-http://localhost:3002}
-      # Accounts and support contacts come from the users service; the bot
-      # has no database of its own.
+      # Accounts and support contacts come from the users service.
       USERS_GRPC_ADDR: users:9083
+      # Outings, tours and the blog: the gateway, called on users' behalf
+      # with sessions signed with JWT_SECRET.
+      API_URL: http://gateway:8080
+      JWT_SECRET: ${JWT_SECRET}
+      SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
+      # Cover pictures Telegram fetches itself.
+      PUBLIC_API_URL: ${PUBLIC_API_BASE_URL:-http://localhost:3001}
+      # Its own database: blog subscribers.
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      BOT_DB_NAME: bot
     depends_on:
-      - users
+      postgres:
+        condition: service_healthy
+      users:
+        condition: service_started
+      gateway:
+        condition: service_started
 
   # The public site (SSR) and the admin panel. Settings are read at start,
   # so one image serves every environment.

@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -100,16 +101,18 @@ func (f *fakeUsers) Support(context.Context) (users.Support, error) {
 }
 
 type harness struct {
-	t       *testing.T
-	calls   chan call
-	updates chan telego.Update
-	users   *fakeUsers
-	nextID  int
+	// editError, when set, is the Bot API's answer to editMessageText.
+	editError atomic.Value
+	t         *testing.T
+	calls     chan call
+	updates   chan telego.Update
+	users     *fakeUsers
+	nextID    int
 }
 
 // newHarness runs the handlers against a fake Bot API that records every
 // request.
-func newHarness(t *testing.T, miniAppURL string) *harness {
+func newHarness(t *testing.T, miniAppURL string, configure ...func(*handlers.Handlers)) *harness {
 	t.Helper()
 	h := &harness{t: t, calls: make(chan call, 32), updates: make(chan telego.Update), users: &fakeUsers{}}
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -119,8 +122,12 @@ func newHarness(t *testing.T, miniAppURL string) *harness {
 		method := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
 		h.calls <- call{method: method, params: params}
 		w.Header().Set("Content-Type", "application/json")
+		if desc, _ := h.editError.Load().(string); desc != "" && method == "editMessageText" {
+			_, _ = io.WriteString(w, `{"ok":false,"error_code":400,"description":"`+desc+`"}`)
+			return
+		}
 		switch method {
-		case "sendMessage", "editMessageReplyMarkup":
+		case "sendMessage", "editMessageReplyMarkup", "editMessageText":
 			_, _ = io.WriteString(w, `{"ok":true,"result":{"message_id":7,"date":0,"chat":{"id":42,"type":"private"}}}`)
 		default:
 			_, _ = io.WriteString(w, `{"ok":true,"result":true}`)
@@ -136,7 +143,11 @@ func newHarness(t *testing.T, miniAppURL string) *harness {
 	if err != nil {
 		t.Fatal(err)
 	}
-	(&handlers.Handlers{Users: h.users, Sessions: session.New(), MiniAppURL: miniAppURL, Log: slog.New(slog.DiscardHandler)}).Register(bh)
+	handler := &handlers.Handlers{Users: h.users, Sessions: session.New(), MiniAppURL: miniAppURL, Log: slog.New(slog.DiscardHandler)}
+	for _, c := range configure {
+		c(handler)
+	}
+	handler.Register(bh)
 	go func() { _ = bh.Start() }()
 	t.Cleanup(func() { _ = bh.Stop() })
 	return h
@@ -152,11 +163,17 @@ func (h *harness) message(text string) {
 }
 
 func (h *harness) press(data string) {
+	h.pressOn(data, &telego.Message{MessageID: 5, Chat: telego.Chat{ID: chatID, Type: "private"}})
+}
+
+// pressOn presses a button under msg (nil: a message Telegram no longer has).
+func (h *harness) pressOn(data string, msg *telego.Message) {
 	h.nextID++
-	h.updates <- telego.Update{UpdateID: h.nextID, CallbackQuery: &telego.CallbackQuery{
-		ID: "q1", From: sender, Data: data,
-		Message: &telego.Message{MessageID: 5, Chat: telego.Chat{ID: chatID, Type: "private"}},
-	}}
+	q := &telego.CallbackQuery{ID: "q1", From: sender, Data: data}
+	if msg != nil {
+		q.Message = msg
+	}
+	h.updates <- telego.Update{UpdateID: h.nextID, CallbackQuery: q}
 }
 
 // expect waits for the next Bot API calls, in order, by method.

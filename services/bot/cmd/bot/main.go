@@ -1,6 +1,8 @@
 // Command bot is Ermekten's Telegram bot: greets users, links Telegram to
 // site accounts, confirms phone registrations, edits profiles and shows
-// support contacts. Accounts live in the users service.
+// support contacts; shows the user's outings, tours and the blog, and
+// sends new blog posts to subscribers. Accounts live in the users service,
+// outings, tours and posts behind the gateway.
 package main
 
 import (
@@ -17,16 +19,36 @@ import (
 	"github.com/mymmrac/telego"
 	th "github.com/mymmrac/telego/telegohandler"
 
+	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/blogfeed"
 	"github.com/elvn5/sai/services/bot/internal/config"
 	"github.com/elvn5/sai/services/bot/internal/handlers"
+	"github.com/elvn5/sai/services/bot/internal/migrations"
+	"github.com/elvn5/sai/services/bot/internal/screens"
 	"github.com/elvn5/sai/services/bot/internal/session"
+	"github.com/elvn5/sai/services/bot/internal/store"
 	"github.com/elvn5/sai/services/bot/internal/users"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
+	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
 )
 
-// shutdownTimeout bounds waiting for updates in progress on shutdown.
-const shutdownTimeout = 15 * time.Second
+const (
+	// shutdownTimeout bounds waiting for updates in progress on shutdown.
+	shutdownTimeout = 15 * time.Second
+	// How often the blog feed looks for new posts.
+	blogFeedInterval = 10 * time.Minute
+)
+
+// commands is the bot's command menu.
+var commands = []telego.BotCommand{
+	{Command: "outings", Description: "Мои выходы"},
+	{Command: "tours", Description: "Туры: избранное и ближайшие"},
+	{Command: "blog", Description: "Статьи блога"},
+	{Command: "notifications", Description: "Что присылать"},
+	{Command: "profile", Description: "Профиль"},
+	{Command: "support", Description: "Поддержка"},
+}
 
 func main() {
 	log := logger.New("bot")
@@ -51,6 +73,23 @@ func run(log *slog.Logger) error {
 	}
 	defer func() { _ = accounts.Close() }()
 
+	pool, err := database.Connect(ctx, cfg.DSN(), migrations.FS, log)
+	if err != nil {
+		return fmt.Errorf("database: %w", err)
+	}
+	defer pool.Close()
+	db := store.New(pool)
+
+	var content *api.Client
+	if cfg.APIURL != "" && cfg.JWTSecret != "" {
+		if content, err = api.New(cfg.APIURL, cfg.JWTSecret); err != nil {
+			return err
+		}
+	} else {
+		log.Warn("API_URL or JWT_SECRET unset: outings, tours and blog sections are off")
+	}
+	links := screens.Links{Site: strings.TrimRight(cfg.Site(), "/"), PublicAPI: strings.TrimRight(cfg.PublicAPIURL, "/")}
+
 	options := []telego.BotOption{telego.WithLogger(botLogger{log: log, token: cfg.BotToken})}
 	if cfg.TelegramAPIURL != "" {
 		options = append(options, telego.WithAPIServer(cfg.TelegramAPIURL))
@@ -73,6 +112,12 @@ func run(log *slog.Logger) error {
 		}
 	}
 
+	if content != nil {
+		if err := bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{Commands: commands}); err != nil {
+			log.Warn("could not set the command menu", slog.Any("error", err))
+		}
+	}
+
 	updates, err := bot.UpdatesViaLongPolling(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("long polling: %w", err)
@@ -81,7 +126,13 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("bot handler: %w", err)
 	}
-	(&handlers.Handlers{Users: accounts, Sessions: session.New(), MiniAppURL: cfg.MiniAppURL, Log: log}).Register(bh)
+	h := &handlers.Handlers{Users: accounts, Sessions: session.New(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links}
+	if content != nil {
+		h.Content, h.Subscribers = content, db
+		feed := &blogfeed.Feed{Posts: content, Store: db, Bot: bot, Links: links, Log: log, Interval: blogFeedInterval}
+		go feed.Run(ctx)
+	}
+	h.Register(bh)
 
 	errCh := make(chan error, 1)
 	go func() { errCh <- bh.Start() }()

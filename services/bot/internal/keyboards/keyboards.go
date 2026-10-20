@@ -89,6 +89,12 @@ func Link(text, url string) telego.InlineKeyboardButton {
 	return tu.InlineKeyboardButton(text).WithURL(url)
 }
 
+// WebApp is an inline button opening a page of the Mini App inside
+// Telegram (private chats only).
+func WebApp(text, url string) telego.InlineKeyboardButton {
+	return tu.InlineKeyboardButton(text).WithWebApp(tu.WebAppInfo(url))
+}
+
 // Pager is "◀️ i / n ▶️" for page index of n, wrapping around; data makes
 // the callback data of a page.
 func Pager(index, n int, data func(page int) string) []telego.InlineKeyboardButton {

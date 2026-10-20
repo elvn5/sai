@@ -194,7 +194,7 @@ func newSections(t *testing.T) (*harness, *fakeContent, *fakeSubscribers) {
 	subs := &fakeSubscribers{subs: map[int64]bool{}}
 	h := newHarness(t, miniApp, func(hs *handlers.Handlers) {
 		hs.Content, hs.Subscribers = content, subs
-		hs.Links = screens.Links{Site: "https://ermekten.kg"}
+		hs.Links = screens.Links{Site: "https://ermekten.kg", MiniApp: miniApp}
 		hs.Now = func() time.Time { return now }
 	})
 	h.users.account = users.Account{ID: "u1"}
@@ -513,4 +513,15 @@ func TestSectionsUsersDown(t *testing.T) {
 	h.message("🥾 Мои выходы")
 	h.message("/start outing_o1")
 	h.quiet()
+}
+
+// "Собрать выход" opens the Mini App, not the browser (as Telegram gets it).
+func TestCreateOutingOpensMiniApp(t *testing.T) {
+	h, content, _ := newSections(t)
+	content.outings = map[string]api.Outing{}
+	h.press("o:find:0")
+	m := h.expect("answerCallbackQuery", "editMessageText")[1].markup()
+	if !strings.Contains(m, `{"text":"➕ Собрать выход","web_app":{"url":"https://ermekten.com/outings/new"}}`) || strings.Contains(m, `"url":"https://ermekten.kg`) {
+		t.Errorf("create button: %s", m)
+	}
 }

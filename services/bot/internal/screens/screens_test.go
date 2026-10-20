@@ -26,7 +26,11 @@ func buttons(s screens.Screen) []string {
 	}
 	for _, row := range s.Markup.InlineKeyboard {
 		for _, b := range row {
-			out = append(out, b.Text+"→"+b.CallbackData+b.URL)
+			target := b.CallbackData + b.URL
+			if b.WebApp != nil {
+				target = "webapp:" + b.WebApp.URL
+			}
+			out = append(out, b.Text+"→"+target)
 		}
 	}
 	return out
@@ -328,5 +332,35 @@ func TestBlogEdges(t *testing.T) {
 	}
 	if !has(buttons(screens.Blog([]api.BlogPost{en}, 0, false, links)), "📖 Читать статью→https://ermekten.kg/en/blog/x") {
 		t.Error("locale prefix in the post link")
+	}
+}
+
+// With a Mini App every site button opens the page inside Telegram.
+func TestMiniAppButtons(t *testing.T) {
+	app := screens.Links{Site: "https://ermekten.kg", MiniApp: "https://app.ermekten.kg"}
+	o := outing("o1", "Пик", now.Add(48*time.Hour), "open")
+	tour := api.Tour{ID: "t1", Slug: "son-kol", Locale: "ky", Title: "Сон-Кёль"}
+	post := api.BlogPost{ID: "p1", Slug: "checklist", Title: "Чек-лист"}
+	_, pushMarkup := screens.BlogPost(post, app)
+
+	for _, tc := range []struct {
+		s    screens.Screen
+		want string
+	}{
+		{screens.FindOutings(nil, 0, app), "➕ Собрать выход→webapp:https://app.ermekten.kg/outings/new"},
+		{screens.OutingCard(o, screens.FromMine, app, now), "🌐 Открыть на сайте→webapp:https://app.ermekten.kg/outings/o1"},
+		{screens.Tours(screens.ToursView{Tab: screens.TabUpcoming, Tours: []api.Tour{tour}}, app), "🌐 Подробнее→webapp:https://app.ermekten.kg/ky/tours/son-kol"},
+		{screens.Blog([]api.BlogPost{post}, 0, false, app), "📖 Читать статью→webapp:https://app.ermekten.kg/blog/checklist"},
+		{screens.Screen{Markup: pushMarkup}, "📖 Читать→webapp:https://app.ermekten.kg/blog/checklist"},
+	} {
+		got := buttons(tc.s)
+		if !has(got, tc.want) {
+			t.Errorf("no %q in %v", tc.want, got)
+		}
+		for _, b := range got {
+			if strings.Contains(b, "→https://") {
+				t.Errorf("a button still opens the browser: %q", b)
+			}
+		}
 	}
 }

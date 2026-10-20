@@ -167,7 +167,7 @@ func FindOutings(list []api.Outing, page int, links Links) Screen {
 	var buttons [][]telego.InlineKeyboardButton
 	if len(list) == 0 {
 		b.WriteString("\n\nБлижайших выходов пока нет. Загляните позже — или соберите свою компанию на сайте.")
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Link("➕ Собрать выход", links.site("/outings/new"))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{links.Open("➕ Собрать выход", "/outings/new")})
 	}
 	start := page * findPageSize
 	for i := start; i < min(start+findPageSize, len(list)); i++ {
@@ -213,7 +213,7 @@ func seatsBar(taken, seats int) string {
 	return strings.Repeat("▰", filled) + strings.Repeat("▱", marks-filled)
 }
 
-func outingURL(links Links, id string) string { return links.site("/outings/" + id) }
+func outingPath(id string) string { return "/outings/" + id }
 
 // OutingCard is one outing with what the user can do about it.
 func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
@@ -277,7 +277,7 @@ func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
 		b.WriteString("\n\nЕсть свободные места — присоединяйтесь!")
 	}
 
-	buttons := [][]telego.InlineKeyboardButton{{keyboards.Link("🌐 Открыть на сайте", outingURL(links, o.ID))}}
+	buttons := [][]telego.InlineKeyboardButton{{links.Open("🌐 Открыть на сайте", outingPath(o.ID))}}
 	if upcoming && !o.IsOrganizer {
 		switch {
 		case o.IsJoined:

@@ -5,15 +5,9 @@ import { publishedLegalPaths } from '@/core/legal/documents';
 // content type (/sitemaps/<type>.xml), with lastmod and hreflang alternates
 // (docs/angular-migration-plan.md, section 4).
 
-export const SITEMAP_TYPES = [
-  'pages',
-  'tours',
-  'hotels',
-  'local-guides',
-  'trails',
-  'blog',
-  'guides',
-] as const;
+// Hotels, local guides, trails and travel guides are paused for now
+// (server/paused-sections.ts): no sitemaps of theirs.
+export const SITEMAP_TYPES = ['pages', 'tours', 'blog'] as const;
 export type SitemapType = (typeof SITEMAP_TYPES)[number];
 
 export function isSitemapType(value: string): value is SitemapType {
@@ -26,24 +20,18 @@ const SECTION_PATHS = [
   '/',
   '/hikes',
   '/tours',
-  '/hotels',
-  '/local-guides',
-  '/trails',
   '/outings',
   '/blog',
-  '/guides',
   '/gallery',
   '/hall-of-fame',
   ...publishedLegalPaths(),
 ];
 
-const PAGE_SIZE = 50;
-
 // A GET of the API returning parsed JSON; throws when the API fails.
 export type GetJson = (path: string) => Promise<unknown>;
 
 export interface SitemapEntry {
-  // Unprefixed path ("/hotels/ak-say").
+  // Unprefixed path ("/tours/song-kol").
   path: string;
   lastmod?: string | null;
   // One language only (its own slug), or every language (hreflang).
@@ -55,25 +43,7 @@ interface Published {
   publishedAt: string | null;
 }
 
-interface Updated {
-  slug: string;
-  updatedAt: string;
-}
-
-// Hotels and local guides come in pages of { items, total }.
-async function allPages<T>(getJson: GetJson, path: string): Promise<T[]> {
-  const items: T[] = [];
-  for (let offset = 0; ; offset += PAGE_SIZE) {
-    const page = (await getJson(`${path}?limit=${PAGE_SIZE}&offset=${offset}&sort=newest`)) as {
-      items: T[];
-      total: number;
-    };
-    items.push(...page.items);
-    if (page.items.length < PAGE_SIZE || items.length >= page.total) return items;
-  }
-}
-
-// Tours, blog posts and guides are written per language, each with its own slug.
+// Tours and blog posts are written per language, each with its own slug.
 async function perLanguage(getJson: GetJson, section: string): Promise<SitemapEntry[]> {
   const lists = await Promise.all(
     LANGS.map(async (lang) => ({
@@ -90,20 +60,8 @@ export async function collectEntries(type: SitemapType, getJson: GetJson): Promi
   switch (type) {
     case 'pages':
       return SECTION_PATHS.map((path) => ({ path }));
-    case 'hotels':
-    case 'local-guides':
-      return (await allPages<Updated>(getJson, `/${type}`)).map((item) => ({
-        path: `/${type}/${item.slug}`,
-        lastmod: item.updatedAt,
-      }));
-    case 'trails':
-      return ((await getJson('/trails')) as Updated[]).map((item) => ({
-        path: `/trails/${item.slug}`,
-        lastmod: item.updatedAt,
-      }));
     case 'tours':
     case 'blog':
-    case 'guides':
       return perLanguage(getJson, type);
   }
 }

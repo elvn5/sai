@@ -34,20 +34,6 @@ const pages: Routes = [
   },
 
   {
-    path: 'guides',
-    loadComponent: () => import('@/pages/guides/guides-list.page').then((m) => m.GuidesListPage),
-  },
-  {
-    path: 'guides/new',
-    canActivate: [requirePartner],
-    loadComponent: () => import('@/pages/guides/guide-new.page').then((m) => m.GuideNewPage),
-  },
-  {
-    path: 'guides/:slug',
-    loadComponent: () => import('@/pages/guides/guide.page').then((m) => m.GuidePage),
-  },
-
-  {
     path: 'gallery',
     loadComponent: () => import('@/pages/gallery/gallery.page').then((m) => m.GalleryPage),
   },
@@ -55,48 +41,6 @@ const pages: Routes = [
     path: 'hall-of-fame',
     loadComponent: () =>
       import('@/pages/hall-of-fame/hall-of-fame.page').then((m) => m.HallOfFamePage),
-  },
-
-  {
-    path: 'hotels',
-    loadComponent: () => import('@/pages/hotels/hotels-list.page').then((m) => m.HotelsListPage),
-  },
-  {
-    path: 'hotels/new',
-    canActivate: [requirePartner],
-    loadComponent: () => import('@/pages/hotels/hotel-new.page').then((m) => m.HotelNewPage),
-  },
-  {
-    path: 'hotels/:slug/edit',
-    canActivate: [requireAuth],
-    loadComponent: () => import('@/pages/hotels/hotel-edit.page').then((m) => m.HotelEditPage),
-  },
-  {
-    path: 'hotels/:slug',
-    loadComponent: () => import('@/pages/hotels/hotel.page').then((m) => m.HotelPage),
-  },
-
-  {
-    path: 'local-guides',
-    loadComponent: () =>
-      import('@/pages/local-guides/local-guides-list.page').then((m) => m.LocalGuidesListPage),
-  },
-  {
-    path: 'local-guides/new',
-    canActivate: [requirePartner],
-    loadComponent: () =>
-      import('@/pages/local-guides/local-guide-new.page').then((m) => m.LocalGuideNewPage),
-  },
-  {
-    path: 'local-guides/:slug/edit',
-    canActivate: [requireAuth],
-    loadComponent: () =>
-      import('@/pages/local-guides/local-guide-edit.page').then((m) => m.LocalGuideEditPage),
-  },
-  {
-    path: 'local-guides/:slug',
-    loadComponent: () =>
-      import('@/pages/local-guides/local-guide.page').then((m) => m.LocalGuidePage),
   },
 
   {
@@ -112,25 +56,6 @@ const pages: Routes = [
     path: 'tours/:slug',
     resolve: { prefetched: prefetchTour },
     loadComponent: () => import('@/pages/tours/tour.page').then((m) => m.TourPage),
-  },
-
-  {
-    path: 'trails',
-    loadComponent: () => import('@/pages/trails/trails-list.page').then((m) => m.TrailsListPage),
-  },
-  {
-    path: 'trails/new',
-    canActivate: [requirePartner],
-    loadComponent: () => import('@/pages/trails/trail-new.page').then((m) => m.TrailNewPage),
-  },
-  {
-    path: 'trails/:slug/edit',
-    canActivate: [requirePartner],
-    loadComponent: () => import('@/pages/trails/trail-edit.page').then((m) => m.TrailEditPage),
-  },
-  {
-    path: 'trails/:slug',
-    loadComponent: () => import('@/pages/trails/trail.page').then((m) => m.TrailPage),
   },
 
   {
@@ -168,18 +93,6 @@ const pages: Routes = [
     loadComponent: () => import('@/pages/profile/profile.page').then((m) => m.ProfilePage),
   },
   {
-    path: 'payments/return',
-    canActivate: [requireAuth],
-    loadComponent: () =>
-      import('@/pages/payments/payment-return.page').then((m) => m.PaymentReturnPage),
-  },
-  {
-    path: 'payments/test',
-    canActivate: [requireAuth],
-    loadComponent: () =>
-      import('@/pages/payments/payment-test.page').then((m) => m.PaymentTestPage),
-  },
-  {
     path: 'achievements/award',
     canActivate: [requirePartner],
     loadComponent: () => import('@/pages/achievements/award.page').then((m) => m.AwardPage),
@@ -197,16 +110,6 @@ const pages: Routes = [
       {
         path: 'stats',
         loadComponent: () => import('@/pages/partner/stats.page').then((m) => m.PartnerStatsPage),
-      },
-      {
-        path: 'bookings',
-        loadComponent: () =>
-          import('@/pages/partner/bookings.page').then((m) => m.PartnerBookingsPage),
-      },
-      {
-        path: 'finances',
-        loadComponent: () =>
-          import('@/pages/partner/finances.page').then((m) => m.PartnerFinancesPage),
       },
       {
         path: 'listings',

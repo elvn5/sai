@@ -16,7 +16,6 @@ import { Notify } from '@/core/notify/notify';
 import { plainText, touristTrip } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
-import { TourBooking } from '@/pages/tours/tour-booking';
 import { TourProgram } from '@/pages/tours/tour-program';
 import { injectConfirm } from '@/ui/confirm-dialog';
 import { FavoriteButton } from '@/ui/favorite-button';
@@ -44,7 +43,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 
 // One tour (written in one language: no hreflang alternates), with
-// booking, contacts, the owner's posts and reviews.
+// contacts, the owner's posts and reviews.
 @Component({
   selector: 'app-tour-page',
   imports: [
@@ -59,7 +58,6 @@ import { firstValueFrom } from 'rxjs';
     ReviewsSection,
     SharedTransition,
     SiteLink,
-    TourBooking,
     TourProgram,
     TranslocoPipe,
   ],
@@ -196,13 +194,7 @@ import { firstValueFrom } from 'rxjs';
 
             <aside>
               <div class="flex flex-col gap-4 lg:sticky lg:top-20">
-                <!-- Depends on who's signed in: hydrate early, not on interaction
-                     (a replayed click on the anonymous "sign in" would leave). -->
-                @if (flags.isOn('booking')) {
-                  @defer (on idle; hydrate on idle) {
-                    <app-tour-booking [tour]="item" [placesLeft]="left()" (placesTaken)="places.reload()" />
-                  }
-                }
+                <!-- Online booking is paused for now: the contacts below take it. -->
                 @if (item.organizer; as organizer) {
                   <div class="ui-card flex items-center gap-3 p-3.5">
                     <app-person-avatar [person]="organizer" [size]="44" />

@@ -24,6 +24,10 @@
     "viewAllPosts": "View all posts",
     "ctaHotels": "Find a place to stay",
     "quick": {
+      "outings": {
+        "title": "Outings",
+        "description": "Group hikes this weekend and beyond"
+      },
       "hotels": {
         "title": "Hotels & guesthouses",
         "description": "Prices, amenities and guest reviews"
@@ -653,10 +657,6 @@
       "tourAlerts": {
         "title": "“Tell me about new tours”",
         "text": "Telegram alerts about new tours"
-      },
-      "booking": {
-        "title": "Online booking",
-        "text": "The booking form on a tour page"
       },
       "tourDates": {
         "title": "Date filter",

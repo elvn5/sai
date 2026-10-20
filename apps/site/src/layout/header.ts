@@ -25,14 +25,12 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 
 // The sections, as in the sketches: the hiking hub, then each catalog.
+// Hotels, local guides, trails and travel guides are paused for now
+// (server/paused-sections.ts).
 const NAV_LINKS = [
   { path: '/hikes', label: 'nav.hikes', icon: 'icon-[heroicons--fire]' },
-  { path: '/trails', label: 'nav.trails', icon: 'icon-[heroicons--flag]' },
   { path: '/outings', label: 'nav.outings', icon: 'icon-[heroicons--user-group]' },
   { path: '/tours', label: 'nav.tours', icon: 'icon-[heroicons--map]' },
-  { path: '/hotels', label: 'nav.hotels', icon: 'icon-[heroicons--building-office-2]' },
-  { path: '/local-guides', label: 'nav.localGuides', icon: 'icon-[heroicons--identification]' },
-  { path: '/guides', label: 'nav.guides', icon: 'icon-[heroicons--book-open]' },
   { path: '/blog', label: 'nav.blog', icon: 'icon-[heroicons--newspaper]' },
 ] as const;
 
@@ -236,9 +234,6 @@ const TUCK_AFTER = 240;
         }
         <a cdkMenuItem appSiteLink="/profile" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
           <span class="icon-[heroicons--user-circle] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.title' | transloco }}
-        </a>
-        <a cdkMenuItem appSiteLink="/profile?tab=bookings" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
-          <span class="icon-[heroicons--ticket] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.tabs.bookings' | transloco }}
         </a>
         @if (auth.isPartner()) {
           <a cdkMenuItem appSiteLink="/partner" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">

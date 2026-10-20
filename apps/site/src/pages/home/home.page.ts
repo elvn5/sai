@@ -1,12 +1,4 @@
-import {
-  type BlogPost,
-  Destination,
-  type Hotel,
-  type Outing,
-  type Paginated,
-  SeoPage,
-  type Tour,
-} from '@/core/api/types';
+import { type BlogPost, Destination, type Outing, SeoPage, type Tour } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { todayInBishkek } from '@/core/lib/format';
@@ -17,7 +9,6 @@ import { loaded } from '@/core/lib/resource';
 import { bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { AppLogo } from '@/ui/app-logo';
 import { DestinationSearch } from '@/ui/destination-search';
-import { HotelCard } from '@/ui/listing/hotel-card';
 import { TourCard } from '@/ui/listing/tour-card';
 import { MountainScene } from '@/ui/mountain-scene';
 import { OutingCard } from '@/ui/outing-card';
@@ -28,18 +19,18 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const NEWS_LIMIT = 3;
-const TOP_HOTELS_LIMIT = 3;
 const OUTINGS_LIMIT = 4;
 const TOURS_LIMIT = 6;
 
+// Outings and tours for now: the other sections are paused
+// (server/paused-sections.ts).
 const QUICK_LINKS = [
-  { path: '/hotels', icon: 'icon-[heroicons--building-office-2] icon-anim-bounce', key: 'hotels' },
+  { path: '/outings', icon: 'icon-[heroicons--user-group] icon-anim-pop', key: 'outings' },
   { path: '/tours', icon: 'icon-[heroicons--map] icon-anim-flip', key: 'tours' },
-  { path: '/local-guides', icon: 'icon-[heroicons--user-group] icon-anim-pop', key: 'localGuides' },
 ] as const;
 
 // The home page (the feed): the nearest tours, who's heading out this
-// weekend, where to go, where to stay and the latest news, all rendered on the server (the cached
+// weekend, where to go and the latest news, all rendered on the server (the cached
 // page is at most minutes old, so the outings' seats stay close enough).
 @Component({
   selector: 'app-home-page',
@@ -47,7 +38,6 @@ const QUICK_LINKS = [
     AppLogo,
     DestinationSearch,
     MountainScene,
-    HotelCard,
     NgOptimizedImage,
     OutingCard,
     SiteLink,
@@ -76,7 +66,7 @@ const QUICK_LINKS = [
     </section>
 
     <nav class="ui-container relative z-10 -mt-[2.125rem]" [attr.aria-label]="'brand.name' | transloco">
-      <ul class="motion-enter motion-enter-4 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3.5">
+      <ul class="motion-enter motion-enter-4 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3.5">
         @for (link of quickLinks; track link.key) {
           <li>
             <a [appSiteLink]="link.path" class="group flex h-full items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-[0_1px_2px_rgb(15_23_42/0.06)] motion-lift sm:p-4">
@@ -144,30 +134,12 @@ const QUICK_LINKS = [
             </h3>
             <p class="mt-1.5 flex-1 text-[0.8125rem] text-text-muted">{{ 'home.destinationBlurbs.' + destination | transloco }}</p>
             <p class="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[0.8125rem] font-medium">
-              <a [appSiteLink]="'/hotels?destination=' + destination" class="text-brand-700 hover:underline dark:text-brand-300">{{ 'nav.hotels' | transloco }}</a>
               <a [appSiteLink]="'/tours?destination=' + destination" class="text-brand-700 hover:underline dark:text-brand-300">{{ 'nav.tours' | transloco }}</a>
-              <a [appSiteLink]="'/local-guides?destination=' + destination" class="text-brand-700 hover:underline dark:text-brand-300">{{ 'nav.localGuides' | transloco }}</a>
             </p>
           </li>
         }
       </ul>
     </section>
-
-    @if (topHotels().length > 0) {
-      <section class="ui-container pb-12" aria-labelledby="home-hotels">
-        <div class="mb-3.5 flex items-center justify-between gap-4">
-          <h2 id="home-hotels" class="text-xl font-bold tracking-tight text-text">{{ 'home.topHotels' | transloco }}</h2>
-          <a appSiteLink="/hotels" class="group flex shrink-0 items-center gap-1 text-[0.84rem] font-medium text-brand-700 dark:text-brand-300">
-            {{ 'home.viewAllHotels' | transloco }}<span class="icon-[heroicons--arrow-right] icon-anim-nudge size-4" aria-hidden="true"></span>
-          </a>
-        </div>
-        <ul class="motion-reveal grid grid-cols-1 gap-4 sm:grid-cols-3">
-          @for (hotel of topHotels(); track hotel.id) {
-            <li><app-hotel-card [hotel]="hotel" /></li>
-          }
-        </ul>
-      </section>
-    }
 
     <section class="ui-container pb-16" aria-labelledby="home-news">
       <div class="mb-3.5 flex items-center justify-between gap-4">
@@ -214,10 +186,6 @@ export class HomePage {
     url: '/blog',
     params: { locale: this.lang() },
   }));
-  private readonly hotels = httpResource<Paginated<Hotel>>(() => ({
-    url: '/hotels',
-    params: { sort: 'rating', limit: TOP_HOTELS_LIMIT },
-  }));
   private readonly tours = httpResource<Tour[]>(() => ({
     url: '/tours',
     params: { locale: this.lang() },
@@ -229,7 +197,6 @@ export class HomePage {
 
   // A section whose request failed is left out: the rest of the page stands.
   protected readonly latestPosts = computed(() => (loaded(this.posts) ?? []).slice(0, NEWS_LIMIT));
-  protected readonly topHotels = computed(() => loaded(this.hotels)?.items ?? []);
   protected readonly upcoming = computed(() => loaded(this.outings) ?? []);
   // Tours still ahead, soonest first.
   protected readonly upcomingTours = computed(() => {

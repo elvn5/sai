@@ -18,10 +18,10 @@ function flags(platform: 'browser' | 'server' = 'browser'): FeatureFlags {
 describe('parseOverrides', () => {
   it('keeps known flags with a boolean value', () => {
     expect(
-      parseOverrides('{"favorites":false,"booking":true,"unknown":false,"tourDates":"no"}'),
+      parseOverrides('{"favorites":false,"tourDates":true,"unknown":false,"showMore":"no"}'),
     ).toEqual({
       favorites: false,
-      booking: true,
+      tourDates: true,
     });
   });
 
@@ -46,7 +46,7 @@ describe('FeatureFlags', () => {
     const service = flags();
     service.set('favorites', false);
     expect(service.isOn('favorites')).toBe(false);
-    expect(service.isOn('booking')).toBe(true);
+    expect(service.isOn('tourGallery')).toBe(true);
     expect(JSON.parse(localStorage.getItem(FEATURE_FLAGS_KEY) ?? '{}')).toEqual({
       favorites: false,
     });
@@ -66,11 +66,11 @@ describe('FeatureFlags', () => {
 
   it('resets everything', () => {
     const service = flags();
-    service.set('booking', false);
+    service.set('tourGallery', false);
     service.set('viewTransitions', false);
     service.reset();
     expect(service.changedCount()).toBe(0);
-    expect(service.isOn('booking')).toBe(true);
+    expect(service.isOn('tourGallery')).toBe(true);
     expect(localStorage.getItem(FEATURE_FLAGS_KEY)).toBe('{}');
   });
 
@@ -78,7 +78,7 @@ describe('FeatureFlags', () => {
     localStorage.setItem(FEATURE_FLAGS_KEY, JSON.stringify({ favorites: false }));
     const service = flags('server');
     expect(service.isOn('favorites')).toBe(true);
-    service.set('booking', false);
+    service.set('tourGallery', false);
     expect(localStorage.getItem(FEATURE_FLAGS_KEY)).toBe('{"favorites":false}');
   });
 

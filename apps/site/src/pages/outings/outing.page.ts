@@ -78,7 +78,7 @@ const WHEN: Intl.DateTimeFormatOptions = {
             @if (o.trail; as trail) {
               <div class="relative pl-8">
                 <dt class="text-xs text-text-muted"><span class="absolute top-0.5 left-0 icon-[heroicons--map] size-5 text-brand-600 dark:text-brand-300" aria-hidden="true"></span>{{ 'outings.form.trail' | transloco }}</dt>
-                <dd><a [appSiteLink]="'/trails/' + trail.slug" class="font-medium text-text hover:underline">{{ trail.name }}</a></dd>
+                <dd class="font-medium text-text">{{ trail.name }}</dd>
               </div>
             }
             <div class="relative pl-8">
@@ -155,11 +155,6 @@ const WHEN: Intl.DateTimeFormatOptions = {
                   <span class="text-sm text-text-muted">{{ 'outings.joinHint' | transloco }}</span>
                 }
               }
-            }
-            @if (started() && o.trail && (o.isJoined || o.isOrganizer)) {
-              <a [appSiteLink]="'/trails/' + o.trail.slug" class="ui-btn-soft">
-                <span class="icon-[heroicons--clipboard-document-list] size-4" aria-hidden="true"></span>{{ 'outings.reportAfter' | transloco }}
-              </a>
             }
             @if (actionError(); as key) {
               <p class="ui-error w-full" role="alert">{{ key | transloco }}</p>

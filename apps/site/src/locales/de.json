@@ -24,6 +24,10 @@
     "viewAllPosts": "Alle Beiträge",
     "ctaHotels": "Unterkunft finden",
     "quick": {
+      "outings": {
+        "title": "Ausflüge",
+        "description": "Gemeinsame Wanderungen am Wochenende"
+      },
       "hotels": {
         "title": "Hotels & Gästehäuser",
         "description": "Preise, Ausstattung und Gästebewertungen"
@@ -653,10 +657,6 @@
       "tourAlerts": {
         "title": "„Über neue Touren informieren“",
         "text": "Telegram-Benachrichtigungen über neue Touren"
-      },
-      "booking": {
-        "title": "Online-Buchung",
-        "text": "Das Buchungsformular auf der Tourseite"
       },
       "tourDates": {
         "title": "Datumsfilter",

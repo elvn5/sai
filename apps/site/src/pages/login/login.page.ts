@@ -73,7 +73,6 @@ export function safeRedirect(target: string | undefined): string | null {
             <p class="mt-4 text-xl leading-snug font-bold">{{ 'login.pitch' | transloco }}</p>
             <ul class="mt-3.5 flex flex-wrap gap-4 text-[0.8rem] text-white/90">
               <li class="flex items-center gap-1"><span class="icon-[heroicons--trophy] size-4" aria-hidden="true"></span>{{ 'login.perks.fame' | transloco }}</li>
-              <li class="flex items-center gap-1"><span class="icon-[heroicons--ticket] size-4" aria-hidden="true"></span>{{ 'login.perks.bookings' | transloco }}</li>
               <li class="flex items-center gap-1"><span class="icon-[heroicons--bell] size-4" aria-hidden="true"></span>{{ 'login.perks.telegram' | transloco }}</li>
             </ul>
           </div>

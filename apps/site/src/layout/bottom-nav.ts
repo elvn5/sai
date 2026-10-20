@@ -22,10 +22,10 @@ const ITEMS = [
     active: 'icon-[heroicons--home-solid]',
   },
   {
-    path: '/trails',
-    label: 'nav.trails',
-    icon: 'icon-[heroicons--flag]',
-    active: 'icon-[heroicons--flag-solid]',
+    path: '/outings',
+    label: 'nav.outings',
+    icon: 'icon-[heroicons--user-group]',
+    active: 'icon-[heroicons--user-group-solid]',
   },
   {
     path: '/tours',
@@ -34,10 +34,10 @@ const ITEMS = [
     active: 'icon-[heroicons--map-solid]',
   },
   {
-    path: '/outings',
-    label: 'nav.outings',
-    icon: 'icon-[heroicons--user-group]',
-    active: 'icon-[heroicons--user-group-solid]',
+    path: '/blog',
+    label: 'nav.blog',
+    icon: 'icon-[heroicons--newspaper]',
+    active: 'icon-[heroicons--newspaper-solid]',
   },
 ] as const;
 

@@ -12,18 +12,19 @@ describe('sitemap', () => {
   it('indexes one sitemap per content type', () => {
     const xml = renderIndex(SITE);
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/pages.xml</loc>');
-    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/trails.xml</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/tours.xml</loc>');
+    expect(xml).not.toContain('hotels.xml');
     // Outing pages aren't indexed: they're gone in days.
     expect(xml).not.toContain('outings.xml');
   });
 
   it('lists language-independent pages in every language with hreflang', () => {
-    const xml = renderUrlset(SITE, [{ path: '/hotels/ak-say', lastmod: '2026-10-01T10:00:00Z' }]);
+    const xml = renderUrlset(SITE, [{ path: '/hikes', lastmod: '2026-10-01T10:00:00Z' }]);
     expect(xml.match(/<url>/g)).toHaveLength(4);
-    expect(xml).toContain('<loc>https://ermekten.com/en/hotels/ak-say</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/en/hikes</loc>');
     expect(xml).toContain('<lastmod>2026-10-01T10:00:00.000Z</lastmod>');
-    expect(xml).toContain('hreflang="ky" href="https://ermekten.com/ky/hotels/ak-say"');
-    expect(xml).toContain('hreflang="x-default" href="https://ermekten.com/hotels/ak-say"');
+    expect(xml).toContain('hreflang="ky" href="https://ermekten.com/ky/hikes"');
+    expect(xml).toContain('hreflang="x-default" href="https://ermekten.com/hikes"');
   });
 
   it('lists per-language content once, under its own language', () => {
@@ -34,26 +35,10 @@ describe('sitemap', () => {
     expect(xml).not.toContain('lastmod');
   });
 
-  it('pages through hotels and asks for tours in each language', async () => {
-    const calls: string[] = [];
-    const getJson: GetJson = async (path) => {
-      calls.push(path);
-      if (path.startsWith('/hotels')) {
-        const offset = Number(new URLSearchParams(path.split('?')[1]).get('offset'));
-        const items = Array.from({ length: offset === 0 ? 50 : 1 }, (_, i) => ({
-          slug: `h${offset + i}`,
-          updatedAt: '2026-10-01T00:00:00Z',
-        }));
-        return { items, total: 51 };
-      }
-      return [{ slug: `tour-${path.split('=')[1]}`, publishedAt: null }];
-    };
-
-    expect(await collectEntries('hotels', getJson)).toHaveLength(51);
-    expect(calls).toEqual([
-      '/hotels?limit=50&offset=0&sort=newest',
-      '/hotels?limit=50&offset=50&sort=newest',
-    ]);
+  it('asks for tours in each language', async () => {
+    const getJson: GetJson = async (path) => [
+      { slug: `tour-${path.split('=')[1]}`, publishedAt: null },
+    ];
     const tours = await collectEntries('tours', getJson);
     expect(tours).toContainEqual({ path: '/tours/tour-ky', lastmod: null, lang: 'ky' });
     expect(tours).toHaveLength(4);
@@ -66,17 +51,18 @@ describe('sitemap', () => {
     const getJson: GetJson = async () => {
       calls++;
       if (fail) throw new Error('API down');
-      return [{ slug: 'ala-kul', updatedAt: '2026-10-01T00:00:00Z' }];
+      return [{ slug: 'ala-kul', publishedAt: null }];
     };
     const cache = new SitemapCache(SITE, getJson, 1000, () => now);
 
-    await expect(cache.get('trails')).rejects.toThrow('API down');
+    await expect(cache.get('tours')).rejects.toThrow('API down');
     fail = false;
-    expect(await cache.get('trails')).toContain('/trails/ala-kul');
-    await cache.get('trails');
-    expect(calls).toBe(2);
+    expect(await cache.get('tours')).toContain('/tours/ala-kul');
+    // One request per language each time the sitemap is built.
+    await cache.get('tours');
+    expect(calls).toBe(8);
     now = 2000;
-    await cache.get('trails');
-    expect(calls).toBe(3);
+    await cache.get('tours');
+    expect(calls).toBe(12);
   });
 });

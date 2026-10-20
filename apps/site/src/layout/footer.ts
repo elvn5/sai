@@ -68,7 +68,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
                 <a appSiteLink="/login" class="hover:text-text">{{ 'login.cta' | transloco }}</a>
               }
             </li>
-            <li><a appSiteLink="/guides" class="hover:text-text">{{ 'footer.startTrip' | transloco }}</a></li>
+            <li><a appSiteLink="/tours" class="hover:text-text">{{ 'footer.startTrip' | transloco }}</a></li>
           </ul>
         </div>
 

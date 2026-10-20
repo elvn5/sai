@@ -8,7 +8,6 @@ import { Injectable, PLATFORM_ID, afterNextRender, computed, inject, signal } fr
 export const FEATURE_FLAGS = [
   'favorites',
   'tourAlerts',
-  'booking',
   'tourDates',
   'showMore',
   'tourGallery',

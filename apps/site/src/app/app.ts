@@ -52,7 +52,13 @@ import { TranslocoPipe } from '@jsverse/transloco';
         <router-outlet />
       </main>
       @if (!telegram.isTma()) {
-        <app-footer [class.max-lg:pb-16]="!chrome.ownBottomBar()" />
+        <!-- Rendered on the server; its code loads (and hydrates) only when
+             scrolled into view, out of every page's first bundle. -->
+        @defer (on viewport; hydrate on viewport) {
+          <app-footer [class.max-lg:pb-16]="!chrome.ownBottomBar()" />
+        } @placeholder {
+          <div class="min-h-80"></div>
+        }
         <!-- Fixed overlays: nothing to lay out, so they load once the page is idle. -->
         @if (!chrome.ownBottomBar()) {
           @defer (on idle) {
@@ -61,7 +67,9 @@ import { TranslocoPipe } from '@jsverse/transloco';
         }
       }
     </div>
-    <app-cookie-consent />
+    @defer (on idle) {
+      <app-cookie-consent />
+    }
     @defer (on idle) {
       <app-toast-outlet />
     }

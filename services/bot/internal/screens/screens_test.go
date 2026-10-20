@@ -112,7 +112,7 @@ func TestOutingCardActions(t *testing.T) {
 	if s.Text != want {
 		t.Errorf("card:\n%s\nwant:\n%s", s.Text, want)
 	}
-	if got := buttons(s); strings.Join(got, ",") != "🌐 Открыть на сайте→https://ermekten.kg/outings/o1,"+
+	if got := buttons(s); strings.Join(got, ",") != "🌐 Открыть в Ermekten→https://ermekten.kg/outings/o1,"+
 		"🙅 Не смогу пойти→o:ask:f:o1,⬅️ К ближайшим выходам→o:find:0" {
 		t.Errorf("joined buttons: %v", got)
 	}
@@ -283,7 +283,7 @@ func TestOutingCardDetails(t *testing.T) {
 	if !strings.HasSuffix(ps.Text, "🏁 Выход уже прошёл") || strings.Contains(ps.Text, "Организатор") {
 		t.Errorf("past:\n%s", ps.Text)
 	}
-	if got := buttons(ps); strings.Join(got, ",") != "🌐 Открыть на сайте→https://ermekten.kg/outings/o2,⬅️ К моим выходам→o:list:p" {
+	if got := buttons(ps); strings.Join(got, ",") != "🌐 Открыть в Ermekten→https://ermekten.kg/outings/o2,⬅️ К моим выходам→o:list:p" {
 		t.Errorf("past buttons: %v", got)
 	}
 	// Started less than 3 hours ago: still upcoming, as on the site.
@@ -348,7 +348,7 @@ func TestMiniAppButtons(t *testing.T) {
 		want string
 	}{
 		{screens.FindOutings(nil, 0, app), "➕ Собрать выход→webapp:https://app.ermekten.kg/outings/new"},
-		{screens.OutingCard(o, screens.FromMine, app, now), "🌐 Открыть на сайте→webapp:https://app.ermekten.kg/outings/o1"},
+		{screens.OutingCard(o, screens.FromMine, app, now), "🌐 Открыть в Ermekten→webapp:https://app.ermekten.kg/outings/o1"},
 		{screens.Tours(screens.ToursView{Tab: screens.TabUpcoming, Tours: []api.Tour{tour}}, app), "🌐 Подробнее→webapp:https://app.ermekten.kg/ky/tours/son-kol"},
 		{screens.Blog([]api.BlogPost{post}, 0, false, app), "📖 Читать статью→webapp:https://app.ermekten.kg/blog/checklist"},
 		{screens.Screen{Markup: pushMarkup}, "📖 Читать→webapp:https://app.ermekten.kg/blog/checklist"},

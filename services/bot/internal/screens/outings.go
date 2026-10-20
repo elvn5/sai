@@ -277,7 +277,7 @@ func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
 		b.WriteString("\n\nЕсть свободные места — присоединяйтесь!")
 	}
 
-	buttons := [][]telego.InlineKeyboardButton{{links.Open("🌐 Открыть на сайте", outingPath(o.ID))}}
+	buttons := [][]telego.InlineKeyboardButton{{links.Open("🌐 Открыть в Ermekten", outingPath(o.ID))}}
 	if upcoming && !o.IsOrganizer {
 		switch {
 		case o.IsJoined:

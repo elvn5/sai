@@ -17,9 +17,11 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work starts onl
 **Track A — frontend, Nuxt 3 → Angular 22: done.** `apps/site` and `apps/panel` serve staging and production (nginx: `docs/nginx.md`). **URLs are a contract:** keep every public path and the locale scheme (Russian unprefixed, `/ky`, `/en`, `/de`) exactly as they are. Storage keys and the language cookie keep their Nuxt-era names (`nuxt-color-mode`, `i18n_redirected`) so visitors' settings survive.
 
 **Track B — Telegram bot, NestJS + Telegraf → Go + [Telego](https://github.com/mymmrac/telego) (`services/bot`): done** (the NestJS `apps/bot` is removed).
-- Its own Docker service (`services/bot/Dockerfile`, image `ermekten-bot`); same Go conventions as the other services, but Telego (`telego`, `telegohandler`, `telegoutil`) instead of Gin — the bot has no HTTP API. Layout: `cmd/bot/main.go`, `internal/{config,handlers,keyboards,session,users}`.
-- Long polling, as today; users data over the existing `users` gRPC API; same env (`BOT_TOKEN`, `USERS_GRPC_ADDR`, `MINI_APP_URL`).
-- Behavior parity: same commands, deep links (`verify_`, `link_`), callback data, message texts and keyboards. Bot changes go to `services/bot` only.
+- Its own Docker service (`services/bot/Dockerfile`, image `ermekten-bot`); same Go conventions as the other services, but Telego (`telego`, `telegohandler`, `telegoutil`) instead of Gin — the bot has no HTTP API. Layout: `cmd/bot/main.go`, `internal/{config,handlers,keyboards,screens,session,users,api,store,migrations,blogfeed}`.
+- Long polling; users data over the `users` gRPC API (`BOT_TOKEN`, `USERS_GRPC_ADDR`, `MINI_APP_URL`).
+- Sections (design: the "Ermekten — Telegram-бот" canvas): 🥾 my outings (join/leave), 🧭 tours (favorites, upcoming, new-tour alerts), 📰 blog, 🔔 notification settings. They call the gateway (`API_URL`) as the user, with a short session signed with `JWT_SECRET` (`internal/api`) — off without both. A section is one message: inline buttons edit it (`internal/screens` renders text + keyboard). Covers show as a link preview above the text (`PUBLIC_API_URL` for `/uploads/…`); links go to `SITE_URL`. `screens/sketches_test.go` renders every artboard from its data: change a screen and its sketch together.
+- Its own database (`BOT_DB_NAME`): blog subscribers and posts already sent; `internal/blogfeed` checks the blog every 10 min and sends new posts. Deep link `outing_<id>` opens an outing's card.
+- Account linking and the profile keep the NestJS bot's deep links (`verify_`, `link_`), callback data and texts. Bot changes go to `services/bot` only.
 - `trails`/`payments` keep sending notifications through `services/pkg/telegram`.
 
 ## Angular Apps
@@ -48,7 +50,7 @@ Plan, phases and requirements: `docs/angular-migration-plan.md`. Work starts onl
 
 ## Tech Stack
 - **Backend:** Go + Gin (`services/`), gRPC (buf), PostgreSQL (pgx, goose), Docker
-- **Bot:** Go + Telego (`services/bot`), long polling, gRPC client to the users service
+- **Bot:** Go + Telego (`services/bot`), long polling, gRPC client to the users service, the gateway on users' behalf, its own PostgreSQL database
 - **Frontend:** Angular 22 + `@angular/ssr` (`apps/site`, `apps/panel`) — see Angular Apps above
 - **Linter/Formatter:** Biome (+ angular-eslint for Angular templates)
 

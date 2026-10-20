@@ -13,7 +13,7 @@ COPY services/proto proto
 COPY services/bot bot
 RUN cd bot && go build -trimpath -ldflags="-s -w" -o /out/bot ./cmd/bot
 
-# No ports: the bot polls Telegram and calls the users service.
+# No ports: the bot polls Telegram and calls the users service and the gateway.
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/bot /bot
 ENTRYPOINT ["/bot"]

@@ -126,8 +126,8 @@ func TestOutingNotifications(t *testing.T) {
 	for _, m := range sent {
 		switch m.chat {
 		case 1001:
-			if !strings.Contains(m.text, "Участников: 1") {
-				t.Errorf("organizer reminder: %s", m.text)
+			if !strings.Contains(m.text, "Участников: 1") || m.button == nil || m.button.Data != "g:rn:"+id {
+				t.Errorf("organizer reminder: %s %+v", m.text, m.button)
 			}
 		case 1002:
 			if !strings.Contains(m.text, "Организатор: @hiker_kg") || !strings.Contains(m.text, "📍 Асанбай") {

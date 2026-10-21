@@ -349,3 +349,42 @@ func TestOutingsSummary(t *testing.T) {
 		t.Errorf("outsider: %s", body)
 	}
 }
+
+func TestOutingArrivals(t *testing.T) {
+	deps := newDeps(t)
+	c := client{t, routes.Setup(deps, users, secret)}
+	_, body := c.do("POST", "/outings", `{"title":"Хайк","startsAt":"2026-10-17T06:00:00+06:00",
+		"meetingPoint":"Ала-Арча","transport":"bus","seats":3,"level":"beginner"}`, hiker)
+	id := obj(t, body)["id"].(string)
+	c.do("POST", "/outings/"+id+"/join", "", friend)
+	arrival := "/outings/" + id + "/participants/" + friend + "/arrival"
+
+	if _, body := c.do("GET", "/outings/"+id, "", friend); strings.Contains(body, `"roster"`) {
+		t.Errorf("roster shown to a participant: %s", body)
+	}
+	if _, body := c.do("GET", "/outings/"+id, "", hiker); !strings.Contains(body, `"roster":[{"id":"`+friend) ||
+		!strings.Contains(body, `"arrivedAt":null`) {
+		t.Errorf("organizer's roster: %s", body)
+	}
+	if status, body := c.do("PUT", arrival, "", hiker); status != 409 || !strings.Contains(body, "a day before") {
+		t.Errorf("check-in too early: %d %s", status, body)
+	}
+
+	// On the day.
+	onTheDay := deps
+	onTheDay.Now = func() time.Time { return time.Date(2026, 10, 16, 23, 50, 0, 0, time.UTC) }
+	c = client{t, routes.Setup(onTheDay, users, secret)}
+	if status, _ := c.do("PUT", arrival, "", friend); status != 403 {
+		t.Errorf("participant marking: %d", status)
+	}
+	if status, _ := c.do("PUT", "/outings/"+id+"/participants/"+other+"/arrival", "", hiker); status != 404 {
+		t.Errorf("marking a stranger: %d", status)
+	}
+	status, body := c.do("PUT", arrival, "", hiker)
+	if status != 200 || !strings.Contains(body, `"arrivedAt":"2026-10-16T23:50:00`) {
+		t.Errorf("mark arrived: %d %s", status, body)
+	}
+	if status, body := c.do("DELETE", arrival, "", hiker); status != 200 || !strings.Contains(body, `"arrivedAt":null`) {
+		t.Errorf("unmark: %d %s", status, body)
+	}
+}

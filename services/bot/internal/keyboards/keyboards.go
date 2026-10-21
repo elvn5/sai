@@ -43,6 +43,8 @@ const (
 	DraftPrefix = "d:"
 	// A trail condition report: "c:<step>:<outing id>[:<answers>]".
 	ConditionPrefix = "c:"
+	// The organizer's room: "g:<action>[:<arg>…]".
+	OrganizerPrefix = "g:"
 )
 
 // MainMenu is the persistent menu, with a Mini App button when its URL is

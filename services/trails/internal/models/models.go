@@ -105,6 +105,13 @@ type OutingsSummary struct {
 	ElevationGain int     `json:"elevationGain"`
 }
 
+// RosterEntry is a participant as the organizer sees them.
+type RosterEntry struct {
+	Person
+	JoinedAt  jsontime.Time  `json:"joinedAt"`
+	ArrivedAt *jsontime.Time `json:"arrivedAt"`
+}
+
 type Outing struct {
 	ID            string         `json:"id"`
 	Trail         *TrailRef      `json:"trail"`
@@ -119,14 +126,17 @@ type Outing struct {
 	Level         string         `json:"level"`
 	Description   *string        `json:"description"`
 	// Contact is shown to the organizer and participants only.
-	Contact      *string       `json:"contact"`
-	Status       string        `json:"status"`
-	Organizer    Person        `json:"organizer"`
-	Participants []Person      `json:"participants,omitempty"`
-	IsJoined     bool          `json:"isJoined"`
-	IsOrganizer  bool          `json:"isOrganizer"`
-	CreatedAt    jsontime.Time `json:"createdAt"`
-	UserID       string        `json:"-"`
+	Contact      *string  `json:"contact"`
+	Status       string   `json:"status"`
+	Organizer    Person   `json:"organizer"`
+	Participants []Person `json:"participants,omitempty"`
+	// Who joined and who turned up: for the organizer, on one outing's
+	// details only.
+	Roster      []RosterEntry `json:"roster,omitempty"`
+	IsJoined    bool          `json:"isJoined"`
+	IsOrganizer bool          `json:"isOrganizer"`
+	CreatedAt   jsontime.Time `json:"createdAt"`
+	UserID      string        `json:"-"`
 	// When the reminder and follow-up notifications are due (see Schedule).
 	RemindAt   *time.Time `json:"-"`
 	FollowUpAt *time.Time `json:"-"`

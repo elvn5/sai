@@ -64,6 +64,12 @@ func outingButton(o models.Outing) (*string, *string) {
 	return botButton("Открыть выход", "o:view:n:"+o.ID)
 }
 
+// checkInButton opens the organizer's roster in the bot, to mark who
+// arrived.
+func checkInButton(o models.Outing) (*string, *string) {
+	return botButton("📋 Отметить прибывших", "g:rn:"+o.ID)
+}
+
 func (n *Notifier) message(userID, kind string, o models.Outing, text string) store.Notification {
 	btnText, btnData := outingButton(o)
 	return store.Notification{UserID: userID, Kind: kind, OutingID: &o.ID, Text: text, ButtonText: btnText, ButtonData: btnData}
@@ -182,7 +188,11 @@ func (n *Notifier) schedule(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		items := []store.Notification{once(n.message(o.UserID, "reminder", o, reminderText(o, true)), o.RemindAt)}
+		toOrganizer := n.message(o.UserID, "reminder", o, reminderText(o, true))
+		if o.Taken > 0 {
+			toOrganizer.ButtonText, toOrganizer.ButtonData = checkInButton(o)
+		}
+		items := []store.Notification{once(toOrganizer, o.RemindAt)}
 		for _, p := range participants {
 			items = append(items, once(n.message(p, "reminder", o, reminderText(o, false)), o.RemindAt))
 		}

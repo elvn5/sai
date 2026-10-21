@@ -107,6 +107,15 @@ type Outing struct {
 	IsOrganizer   bool       `json:"isOrganizer"`
 	// Who joined: on one outing's details only.
 	Participants []Person `json:"participants"`
+	// The organizer's view of them: when each joined and arrived.
+	Roster []RosterEntry `json:"roster"`
+}
+
+// RosterEntry is a participant as the organizer sees them.
+type RosterEntry struct {
+	Person
+	JoinedAt  time.Time  `json:"joinedAt"`
+	ArrivedAt *time.Time `json:"arrivedAt"`
 }
 
 // OutingInput creates an outing or replaces an outing's fields. Times are
@@ -153,13 +162,58 @@ type Tour struct {
 	RatingAverage float32 `json:"ratingAverage"`
 	ReviewCount   int     `json:"reviewCount"`
 
-	// On one tour's details only.
+	// On one tour's details and the organizer's own list.
 	Content  string       `json:"content"` // HTML
 	Program  []ProgramDay `json:"program"`
 	Capacity *int         `json:"capacity"`
 	Phone    *string      `json:"phone"`
 	Whatsapp *string      `json:"whatsapp"`
 	Telegram *string      `json:"telegram"`
+	// On the organizer's own list.
+	IsPublished bool `json:"isPublished"`
+}
+
+// StatCounts are a listing's visits and contact-button clicks.
+type StatCounts struct {
+	Views    int `json:"views"`
+	Contacts int `json:"contacts"`
+}
+
+// ListingStats are the organizer's listings' numbers over the last days.
+type ListingStats struct {
+	Totals   StatCounts `json:"totals"`
+	Listings []struct {
+		Listing struct {
+			TargetType string `json:"targetType"`
+			ID         string `json:"id"`
+		} `json:"listing"`
+		StatCounts
+	} `json:"listings"`
+}
+
+// Of is one listing's numbers (zero when it had none).
+func (s ListingStats) Of(targetType, id string) StatCounts {
+	for _, l := range s.Listings {
+		if l.Listing.TargetType == targetType && l.Listing.ID == id {
+			return l.StatCounts
+		}
+	}
+	return StatCounts{}
+}
+
+// Order is a paid booking of the organizer's listing.
+type Order struct {
+	ID           string     `json:"id"`
+	Kind         string     `json:"kind"`
+	ItemID       string     `json:"itemId"`
+	ItemDate     *string    `json:"itemDate"`
+	Quantity     int        `json:"quantity"`
+	Amount       int        `json:"amount"`
+	ContactName  string     `json:"contactName"`
+	ContactPhone string     `json:"contactPhone"`
+	Comment      *string    `json:"comment"`
+	Status       string     `json:"status"`
+	PaidAt       *time.Time `json:"paidAt"`
 }
 
 // ProgramDay is a day of a tour's program (plain text).
@@ -305,6 +359,38 @@ func (c *Client) UpdateOuting(ctx context.Context, userID, id string, in OutingI
 // CancelOuting calls off an outing the user organizes.
 func (c *Client) CancelOuting(ctx context.Context, userID, id string) error {
 	return c.do(ctx, http.MethodPost, "/outings/"+url.PathEscape(id)+"/cancel", userID, nil, nil)
+}
+
+// SetArrival marks a participant of an outing the user organizes as
+// arrived at the meeting point, or not.
+func (c *Client) SetArrival(ctx context.Context, userID, outingID, participantID string, arrived bool) (Outing, error) {
+	method := http.MethodPut
+	if !arrived {
+		method = http.MethodDelete
+	}
+	var out Outing
+	path := "/outings/" + url.PathEscape(outingID) + "/participants/" + url.PathEscape(participantID) + "/arrival"
+	return out, c.do(ctx, method, path, userID, nil, &out)
+}
+
+// MyTours lists the tours the user runs, published or not, newest first.
+func (c *Client) MyTours(ctx context.Context, userID string) ([]Tour, error) {
+	var out []Tour
+	return out, c.do(ctx, http.MethodGet, "/tours/mine", userID, nil, &out)
+}
+
+// ListingStats are the user's listings' visits over the last 30 days
+// (partners only: 403 for others).
+func (c *Client) ListingStats(ctx context.Context, userID string) (ListingStats, error) {
+	var out ListingStats
+	return out, c.do(ctx, http.MethodGet, "/listing-stats/mine?days=30", userID, nil, &out)
+}
+
+// ReceivedOrders lists paid bookings of the user's listings, latest first
+// (partners only).
+func (c *Client) ReceivedOrders(ctx context.Context, userID string) ([]Order, error) {
+	var out []Order
+	return out, c.do(ctx, http.MethodGet, "/orders/received", userID, nil, &out)
 }
 
 // Trails lists published routes, most popular first; search narrows them

@@ -20,6 +20,10 @@ const (
 	outingNotFound = "Outing not found"
 	// How far ahead an outing can be planned.
 	maxPlanAhead = 180 * 24 * time.Hour
+	// The organizer marks arrivals from a day before the start until a
+	// week after it.
+	checkInBefore = 24 * time.Hour
+	checkInAfter  = 7 * 24 * time.Hour
 )
 
 type outingRequest struct {
@@ -203,6 +207,42 @@ func (h *Outings) Leave(c *gin.Context) {
 	}
 }
 
+// SetArrival marks a participant as arrived at the meeting point (PUT) or
+// not (DELETE): the organizer's check-in.
+func (h *Outings) SetArrival(c *gin.Context) {
+	outing, ok := h.load(c)
+	if !ok {
+		return
+	}
+	if outing.UserID != currentUserID(c) {
+		httperr.Abort(c, http.StatusForbidden, "Only the organizer can mark arrivals")
+		return
+	}
+	now := h.now()
+	switch {
+	case outing.Status != "open":
+		httperr.Abort(c, http.StatusConflict, "This outing is closed")
+		return
+	case now.Before(outing.StartsAt.Add(-checkInBefore)):
+		httperr.Abort(c, http.StatusConflict, "Check-in opens a day before the start")
+		return
+	case now.After(outing.StartsAt.Add(checkInAfter)):
+		httperr.Abort(c, http.StatusConflict, "Check-in is over")
+		return
+	}
+	participant := c.Param("userId")
+	if !validID(participant) {
+		httperr.Abort(c, http.StatusNotFound, "Participant not found")
+		return
+	}
+	arrived := c.Request.Method == http.MethodPut
+	if err := h.Store.SetArrived(c.Request.Context(), outing.ID, participant, arrived, now); err != nil {
+		h.fail(c, err, "Participant not found")
+		return
+	}
+	h.reload(c, outing.ID)
+}
+
 // apply validates req against the outing being created or edited (taken:
 // seats already filled) and copies it over.
 func (h *Outings) apply(c *gin.Context, req outingRequest, o *models.Outing, taken int) bool {
@@ -344,27 +384,46 @@ func (h *Outings) respondList(c *gin.Context, outings []models.Outing) {
 	respond.JSON(c, http.StatusOK, outings)
 }
 
-// respondDetail adds participants, and the contact for those who joined.
+// respondDetail adds participants, and the contact for those who joined;
+// the organizer also gets the roster (when each joined and arrived).
 func (h *Outings) respondDetail(c *gin.Context, o models.Outing, status int) {
 	ctx := c.Request.Context()
-	participantIDs, err := h.Store.ParticipantIDs(ctx, o.ID)
+	participants, err := h.Store.Participants(ctx, o.ID)
 	if err != nil {
 		h.internalError(c, err)
 		return
 	}
-	people := h.people(ctx, append([]string{o.UserID}, participantIDs...))
+	ids := make([]string, 0, len(participants)+1)
+	ids = append(ids, o.UserID)
+	for _, p := range participants {
+		ids = append(ids, p.UserID)
+	}
+	people := h.people(ctx, ids)
 	me := currentUserID(c)
 	o.Organizer = people[o.UserID]
-	o.Participants = make([]models.Person, 0, len(participantIDs))
-	for _, id := range participantIDs {
-		o.Participants = append(o.Participants, people[id])
-		if id == me {
+	o.IsOrganizer = me != "" && o.UserID == me
+	o.Participants = make([]models.Person, 0, len(participants))
+	for _, p := range participants {
+		o.Participants = append(o.Participants, people[p.UserID])
+		if p.UserID == me {
 			o.IsJoined = true
 		}
+		if o.IsOrganizer || isAdmin(c) {
+			o.Roster = append(o.Roster, models.RosterEntry{
+				Person: people[p.UserID], JoinedAt: jsontime.New(p.JoinedAt), ArrivedAt: arrivedAt(p.ArrivedAt),
+			})
+		}
 	}
-	o.IsOrganizer = me != "" && o.UserID == me
 	if !o.IsOrganizer && !o.IsJoined && !isAdmin(c) {
 		o.Contact = nil
 	}
 	respond.JSON(c, status, o)
+}
+
+func arrivedAt(t *time.Time) *jsontime.Time {
+	if t == nil {
+		return nil
+	}
+	v := jsontime.New(*t)
+	return &v
 }

@@ -204,3 +204,15 @@ func (c *Client) Support(ctx context.Context) (Support, error) {
 		WorkingHours:    s.WorkingHours,
 	}, nil
 }
+
+// TelegramChats are the private chats of users, by account id; users
+// without Telegram are left out.
+func (c *Client) TelegramChats(ctx context.Context, ids []string) (map[string]int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	res, err := c.client.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{UserIds: ids})
+	if err != nil {
+		return nil, fmt.Errorf("get telegram chats: %w", err)
+	}
+	return res.GetChatIds(), nil
+}

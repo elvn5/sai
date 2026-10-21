@@ -12,6 +12,10 @@ type Field string
 const (
 	FieldName  Field = "name"
 	FieldPhone Field = "phone"
+	// A message from an outing's organizer to its participants: being
+	// written (the argument is the outing), then written (outing and text).
+	FieldBroadcast      Field = "broadcast"
+	FieldBroadcastReady Field = "broadcast_ready"
 )
 
 // ttl drops edits a user walked away from.
@@ -19,6 +23,7 @@ const ttl = 10 * time.Minute
 
 type pending struct {
 	field   Field
+	arg     string
 	expires time.Time
 }
 
@@ -35,7 +40,10 @@ func New() *Store {
 	return &Store{edits: map[int64]pending{}, Now: time.Now}
 }
 
-func (s *Store) Start(chatID int64, field Field) {
+func (s *Store) Start(chatID int64, field Field) { s.StartWith(chatID, field, "") }
+
+// StartWith remembers a field with what it is about (an outing's id).
+func (s *Store) StartWith(chatID int64, field Field, arg string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := s.Now()
@@ -44,19 +52,25 @@ func (s *Store) Start(chatID int64, field Field) {
 			delete(s.edits, id)
 		}
 	}
-	s.edits[chatID] = pending{field: field, expires: now.Add(ttl)}
+	s.edits[chatID] = pending{field: field, arg: arg, expires: now.Add(ttl)}
 }
 
 // Consume returns and forgets the chat's pending edit, if any.
 func (s *Store) Consume(chatID int64) (Field, bool) {
+	field, _, ok := s.ConsumeWith(chatID)
+	return field, ok
+}
+
+// ConsumeWith is Consume with the field's argument.
+func (s *Store) ConsumeWith(chatID int64) (Field, string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	p, ok := s.edits[chatID]
 	delete(s.edits, chatID)
 	if !ok || s.Now().After(p.expires) {
-		return "", false
+		return "", "", false
 	}
-	return p.field, true
+	return p.field, p.arg, true
 }
 
 func (s *Store) Cancel(chatID int64) {

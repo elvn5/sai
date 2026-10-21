@@ -44,6 +44,7 @@ const (
 // commands is the bot's command menu.
 var commands = []telego.BotCommand{
 	{Command: "outings", Description: "Мои выходы"},
+	{Command: "organizer", Description: "Кабинет организатора: участники, туры"},
 	{Command: "tours", Description: "Туры: избранное и ближайшие"},
 	{Command: "blog", Description: "Статьи блога"},
 	{Command: "notifications", Description: "Что присылать"},
@@ -139,6 +140,7 @@ func run(log *slog.Logger) error {
 	}
 	if content != nil {
 		h.Content, h.Subscribers = content, db
+		h.Organizer, h.Chats = content, accounts
 		feed := &blogfeed.Feed{Posts: content, Store: db, Bot: bot, Links: links, Log: log, Interval: blogFeedInterval}
 		go feed.Run(ctx)
 	}

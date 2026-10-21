@@ -134,7 +134,7 @@ func TestOutingCardActions(t *testing.T) {
 	o.Taken, o.IsOrganizer = 3, true
 	o.Participants = []api.Person{{FirstName: str("Аня")}, {Username: str("bob")}, {}}
 	own := screens.OutingCard(o, screens.FromMine, links, now)
-	if got := buttons(own); len(got) != 4 || got[0] != "✏️ Изменить→o:edit:u:o1" || got[1] != "❌ Отменить выход→o:cask:u:o1" ||
+	if got := buttons(own); len(got) != 5 || got[2] != "📋 Участники и отметка→g:r:o1" || got[0] != "✏️ Изменить→o:edit:u:o1" || got[1] != "❌ Отменить выход→o:cask:u:o1" ||
 		!strings.HasSuffix(own.Text, "👥 Идут: Аня, @bob и ещё 1\n\n⭐ Вы организатор") {
 		t.Errorf("organizer: %v\n%s", got, own.Text)
 	}
@@ -320,7 +320,7 @@ func TestMyOutingsMoreThanShown(t *testing.T) {
 		list = append(list, o)
 	}
 	s := screens.MyOutings(list, nil, screens.FromMine, now)
-	if !strings.HasSuffix(s.Text, "…и ещё 2.") || len(s.Markup.InlineKeyboard) != 8+2 {
+	if !strings.HasSuffix(s.Text, "…и ещё 2.") || len(s.Markup.InlineKeyboard) != 8+3 {
 		t.Errorf("10 outings: %d rows\n%s", len(s.Markup.InlineKeyboard), s.Text)
 	}
 	if empty := screens.MyOutings(nil, nil, screens.FromPast, now); !strings.HasSuffix(empty.Text, "Прошедших выходов пока нет.") {

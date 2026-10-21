@@ -51,6 +51,9 @@ type Handlers struct {
 	// are set.
 	Content     Content
 	Subscribers Subscribers
+	// The organizer's room (arrivals, tours); off without the sections.
+	Organizer Organizing
+	Chats     Chats
 	// Outings being put together, step by step.
 	Drafts *drafts.Store
 	Links  screens.Links
@@ -78,6 +81,10 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 		bh.HandleCallbackQuery(h.notifyPress, th.CallbackDataPrefix(keyboards.NotifyPrefix))
 		bh.HandleCallbackQuery(h.draftPress, th.CallbackDataPrefix(keyboards.DraftPrefix))
 		bh.HandleCallbackQuery(h.conditionPress, th.CallbackDataPrefix(keyboards.ConditionPrefix))
+	}
+	if h.organizing() {
+		bh.HandleMessage(h.organizerMenu, th.CommandEqual("organizer"))
+		bh.HandleCallbackQuery(h.organizerPress, th.CallbackDataPrefix(keyboards.OrganizerPrefix))
 	}
 	bh.HandleCallbackQuery(h.noop, th.CallbackDataEqual(keyboards.Noop))
 	bh.HandleCallbackQuery(h.linkMove, th.CallbackDataPrefix(keyboards.LinkMovePrefix))
@@ -322,10 +329,18 @@ func (h *Handlers) editCancel(ctx *th.Context, q telego.CallbackQuery) error {
 	return h.reply(ctx, chatID, "Редактирование отменено.", h.mainMenu())
 }
 
-// text saves the value of a profile field being edited, or answers the
-// step of an outing being put together; other text is ignored.
+// text saves the value of a profile field being edited, takes an
+// organizer's message to the participants, or answers the step of an
+// outing being put together; other text is ignored.
 func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
-	field, ok := h.Sessions.Consume(msg.Chat.ID)
+	field, arg, ok := h.Sessions.ConsumeWith(msg.Chat.ID)
+	if ok && h.organizing() && (field == session.FieldBroadcast || field == session.FieldBroadcastReady) {
+		outingID, _, _ := strings.Cut(arg, "\n")
+		return h.broadcastText(ctx, msg, outingID)
+	}
+	if ok && (field == session.FieldBroadcast || field == session.FieldBroadcastReady) {
+		ok = false
+	}
 	if !ok {
 		if h.sections() {
 			_, err := h.draftText(ctx, msg)

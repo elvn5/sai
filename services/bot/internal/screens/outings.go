@@ -166,6 +166,7 @@ func MyOutings(list []api.Outing, sum *api.OutingsSummary, tab string, now time.
 	buttons = append(buttons,
 		keyboards.Tabs(ListData(from), [2]string{"Предстоящие", ListData(FromMine)}, [2]string{"Прошедшие", ListData(FromPast)}),
 		[]telego.InlineKeyboardButton{keyboards.Button("🔎 Найти выход", FindData(0)), keyboards.Button("➕ Собрать выход", NewOutingData)},
+		[]telego.InlineKeyboardButton{keyboards.Button("🧑‍✈️ Кабинет организатора", OrgHome)},
 	)
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
@@ -345,6 +346,11 @@ func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
 			keyboards.Button("✏️ Изменить", OutingData(ActEdit, from, o.ID)),
 			keyboards.Button("❌ Отменить выход", OutingData(ActCancelAsk, from, o.ID)),
 		})
+	}
+	if o.IsOrganizer && o.Status == "open" && now.Before(o.StartsAt.Add(checkInAfter)) {
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("📋 Участники и отметка", OrgData(OrgRoster, o.ID))})
+	}
+	switch {
 	case upcoming && o.IsJoined:
 		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("🙅 Не смогу пойти", OutingData(ActAsk, from, o.ID))})
 	case upcoming && !o.IsOrganizer && !full:

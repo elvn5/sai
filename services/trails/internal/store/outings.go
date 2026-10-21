@@ -115,6 +115,45 @@ func (s *Store) ParticipantIDs(ctx context.Context, outingID string) ([]string, 
 	return pgx.CollectRows(rows, pgx.RowTo[string])
 }
 
+// Participant is one who joined: when, and when the organizer marked them
+// at the meeting point.
+type Participant struct {
+	UserID    string
+	JoinedAt  time.Time
+	ArrivedAt *time.Time
+}
+
+// Participants lists who joined, in join order.
+func (s *Store) Participants(ctx context.Context, outingID string) ([]Participant, error) {
+	rows, err := s.db.Query(ctx, `SELECT user_id::text, joined_at, arrived_at FROM outing_participants
+		WHERE outing_id::text = $1 ORDER BY joined_at`, outingID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Participant, error) {
+		var p Participant
+		return p, r.Scan(&p.UserID, &p.JoinedAt, &p.ArrivedAt)
+	})
+}
+
+// SetArrived marks a participant as arrived (at now) or not.
+func (s *Store) SetArrived(ctx context.Context, outingID, userID string, arrived bool, now time.Time) error {
+	var at *time.Time
+	if arrived {
+		at = &now
+	}
+	tag, err := s.db.Exec(ctx, `UPDATE outing_participants
+		SET arrived_at = CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE coalesce(arrived_at, $3) END
+		WHERE outing_id::text = $1 AND user_id::text = $2`, outingID, userID, at)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func (s *Store) InsertOuting(ctx context.Context, o models.Outing) (models.Outing, error) {
 	var id string
 	err := s.db.QueryRow(ctx, `INSERT INTO outings (trail_id, title, starts_at, returns_at, meeting_point,

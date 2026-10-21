@@ -45,6 +45,8 @@ const (
 	ConditionPrefix = "c:"
 	// The organizer's room: "g:<action>[:<arg>…]".
 	OrganizerPrefix = "g:"
+	// Rating an outing after it: "r:<action>:<outing id>[:<stars>]".
+	RatingPrefix = "r:"
 )
 
 // MainMenu is the persistent menu, with a Mini App button when its URL is

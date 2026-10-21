@@ -388,3 +388,57 @@ func TestOutingArrivals(t *testing.T) {
 		t.Errorf("unmark: %d %s", status, body)
 	}
 }
+
+func TestOutingRatings(t *testing.T) {
+	deps := newDeps(t)
+	c := client{t, routes.Setup(deps, users, secret)}
+	_, body := c.do("POST", "/outings", `{"title":"Хайк","startsAt":"2026-10-17T06:00:00+06:00",
+		"meetingPoint":"Ала-Арча","transport":"bus","seats":3,"level":"beginner","contact":"@hiker_kg"}`, hiker)
+	id := obj(t, body)["id"].(string)
+	c.do("POST", "/outings/"+id+"/join", "", friend)
+	c.do("POST", "/outings/"+id+"/join", "", other)
+	rating := "/outings/" + id + "/rating"
+
+	if status, body := c.do("PUT", rating, `{"rating":5}`, friend); status != 409 || !strings.Contains(body, "hasn't started") {
+		t.Errorf("before the outing: %d %s", status, body)
+	}
+	if _, body := c.do("GET", "/outings/"+id, "", friend); strings.Contains(body, `"canRate":true`) {
+		t.Errorf("can rate before: %s", body)
+	}
+
+	// The day after; the organizer marked only friend.
+	after := deps
+	after.Now = func() time.Time { return time.Date(2026, 10, 18, 6, 0, 0, 0, time.UTC) }
+	c = client{t, routes.Setup(after, users, secret)}
+	if status, _ := c.do("PUT", "/outings/"+id+"/participants/"+friend+"/arrival", "", hiker); status != 200 {
+		t.Fatalf("mark: %d", status)
+	}
+	if status, _ := c.do("PUT", rating, `{"rating":5}`, hiker); status != 403 {
+		t.Errorf("organizer rating own outing: %d", status)
+	}
+	if status, body := c.do("PUT", rating, `{"rating":4}`, other); status != 403 || !strings.Contains(body, "who came") {
+		t.Errorf("unmarked participant: %d %s", status, body)
+	}
+	if status, _ := c.do("PUT", rating, `{"rating":6}`, friend); status != 400 {
+		t.Errorf("out of range: %d", status)
+	}
+	if _, body := c.do("GET", "/outings/"+id, "", friend); !strings.Contains(body, `"canRate":true`) || strings.Contains(body, "myRating") {
+		t.Errorf("can rate: %s", body)
+	}
+	c.do("PUT", rating, `{"rating":3}`, friend)
+	status, body := c.do("PUT", rating, `{"rating":5,"text":"  Отличный темп  "}`, friend)
+	if status != 200 || !strings.Contains(body, `"myRating":{"rating":5,"text":"Отличный темп"}`) {
+		t.Errorf("rate: %d %s", status, body)
+	}
+
+	_, body = c.do("GET", "/outings/organizers/"+hiker, "", "")
+	org := obj(t, body)
+	if org["hosted"] != float64(1) || org["participants"] != float64(2) || org["rating"].(map[string]any)["average"] != float64(5) ||
+		org["rating"].(map[string]any)["count"] != float64(1) || !strings.Contains(body, `"text":"Отличный темп"`) ||
+		!strings.Contains(body, `"upcoming":[]`) || strings.Contains(body, "@hiker_kg") {
+		t.Errorf("organizer: %s", body)
+	}
+	if status, _ := c.do("GET", "/outings/organizers/nope", "", ""); status != 404 {
+		t.Errorf("bad organizer id: %d", status)
+	}
+}

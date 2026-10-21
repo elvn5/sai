@@ -105,6 +105,44 @@ type OutingsSummary struct {
 	ElevationGain int     `json:"elevationGain"`
 }
 
+// RatingMine is the visitor's own rating of an outing.
+type RatingMine struct {
+	Rating int     `json:"rating"`
+	Text   *string `json:"text"`
+}
+
+// OutingReview is a participant's rating of an outing, as the organizer's
+// public page shows it.
+type OutingReview struct {
+	Rating    int           `json:"rating"`
+	Text      *string       `json:"text"`
+	CreatedAt jsontime.Time `json:"createdAt"`
+	Author    Person        `json:"author"`
+	Outing    struct {
+		ID       string        `json:"id"`
+		Title    string        `json:"title"`
+		StartsAt jsontime.Time `json:"startsAt"`
+	} `json:"outing"`
+	UserID string `json:"-"`
+}
+
+// RatingSummary is an average of 1–5 ratings and how many there are.
+type RatingSummary struct {
+	Average float64 `json:"average"`
+	Count   int     `json:"count"`
+}
+
+// OrganizerOutings is what an organizer's public page shows about their
+// outings.
+type OrganizerOutings struct {
+	// Outings held (open, started) and the people who joined them.
+	Hosted       int            `json:"hosted"`
+	Participants int            `json:"participants"`
+	Rating       RatingSummary  `json:"rating"`
+	Upcoming     []Outing       `json:"upcoming"`
+	Reviews      []OutingReview `json:"reviews"`
+}
+
 // RosterEntry is a participant as the organizer sees them.
 type RosterEntry struct {
 	Person
@@ -135,8 +173,12 @@ type Outing struct {
 	Roster      []RosterEntry `json:"roster,omitempty"`
 	IsJoined    bool          `json:"isJoined"`
 	IsOrganizer bool          `json:"isOrganizer"`
-	CreatedAt   jsontime.Time `json:"createdAt"`
-	UserID      string        `json:"-"`
+	// For a participant, on one outing's details: whether they can rate it
+	// now, and their rating if given.
+	CanRate   bool          `json:"canRate,omitempty"`
+	MyRating  *RatingMine   `json:"myRating,omitempty"`
+	CreatedAt jsontime.Time `json:"createdAt"`
+	UserID    string        `json:"-"`
 	// When the reminder and follow-up notifications are due (see Schedule).
 	RemindAt   *time.Time `json:"-"`
 	FollowUpAt *time.Time `json:"-"`

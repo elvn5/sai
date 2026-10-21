@@ -293,6 +293,31 @@
     "foundLabel": "Found:",
     "share": "Share"
   },
+  "organizer": {
+    "kicker": "Organizer",
+    "verified": "Verified",
+    "verifiedHint": "An Ermekten partner: our team checked them before they started running tours.",
+    "since": "On Ermekten since {year}",
+    "reviewsCount": "Reviews: {count}",
+    "noRating": "No ratings yet",
+    "stats": {
+      "outings": "Outings held",
+      "people": "Participants",
+      "tours": "Tours held",
+      "reviews": "Reviews"
+    },
+    "upcomingOutings": "Upcoming outings",
+    "upcomingTours": "Upcoming tours",
+    "reviews": "Reviews from participants",
+    "noReviews": "No reviews yet. They come from people who joined this organizer's outings or tours.",
+    "aboutOuting": "About the outing",
+    "aboutTour": "About the tour",
+    "reply": "Organizer's reply",
+    "title": "{name}, organizer",
+    "meta": "{name}: mountain outings and tours in Kyrgyzstan on Ermekten.",
+    "metaRated": "{name}: rated {rating} from {count} reviews. Mountain outings and tours in Kyrgyzstan on Ermekten.",
+    "profileLink": "Organizer's profile"
+  },
   "reviews": {
     "heading": "Reviews",
     "count": "{count} reviews",
@@ -596,6 +621,15 @@
     "awardError": "Couldn't award the achievement. Please try again."
   },
   "outings": {
+    "rate": {
+      "title": "How was the outing?",
+      "hint": "Your rating and review appear on the organizer's page.",
+      "textPlaceholder": "What did you like, what could be better? (optional)",
+      "submit": "Save rating",
+      "saved": "Thanks! Your rating is saved",
+      "yours": "Your rating",
+      "error": "Couldn't save the rating"
+    },
     "title": "Outings",
     "subtitle": "Group hikes and climbs: find company, a seat in a car, or gather your own group.",
     "create": "Organize an outing",

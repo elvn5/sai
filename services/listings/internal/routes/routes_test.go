@@ -408,3 +408,34 @@ func (f fakeUsers) PartnerStatuses(_ context.Context, ids []string) (map[string]
 	}
 	return out, nil
 }
+
+func TestOrganizerTours(t *testing.T) {
+	c := setup(t)
+	tour := func(slug, start, end string) string {
+		return `{"locale":"ru","slug":"` + slug + `","title":"Тур ` + slug + `","content":"<p>Долгий текст</p>","startDate":"` + start +
+			`","endDate":"` + end + `","destination":"karakol","cancellationPolicy":"free","program":[{"title":"День 1","text":"x"}]}`
+	}
+	_, body := c.do("POST", "/tours", tour("past", "2020-06-10", "2020-06-12"), partner)
+	past := obj(t, body)["id"].(string)
+	c.do("POST", "/tours", tour("next", "2099-06-10", "2099-06-12"), partner)
+	c.do("POST", "/reviews", `{"targetType":"tour","targetId":"`+past+`","rating":4,"text":"Хорошо организовано"}`, guest)
+	c.do("POST", "/reviews", `{"targetType":"tour","targetId":"`+past+`","rating":5,"text":"Лучший гид в Караколе"}`, regular)
+
+	status, body := c.do("GET", "/tours/organizers/"+partner+"?locale=ru", "", "")
+	o := obj(t, body)
+	rating := o["rating"].(map[string]any)
+	if status != 200 || o["held"] != float64(1) || rating["average"] != 4.5 || rating["count"] != float64(2) ||
+		!strings.Contains(body, `"slug":"next"`) || strings.Contains(body, "Долгий текст") ||
+		!strings.Contains(body, `"listing":{"targetType":"tour","id":"`+past) {
+		t.Errorf("organizer: %d %s", status, body)
+	}
+	if _, body := c.do("GET", "/tours/organizers/"+partner+"?locale=en", "", ""); !strings.Contains(body, `"upcoming":[]`) {
+		t.Errorf("other language: %s", body)
+	}
+	if status, _ := c.do("GET", "/tours/organizers/x?locale=ru", "", ""); status != 404 {
+		t.Errorf("bad id: %d", status)
+	}
+	if status, _ := c.do("GET", "/tours/ru/next", "", ""); status != 200 {
+		t.Errorf("slug route still works: %d", status)
+	}
+}

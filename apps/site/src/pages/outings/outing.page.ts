@@ -11,6 +11,7 @@ import { TelegramNotice } from '@/pages/outings/telegram-notice';
 import { injectConfirm } from '@/ui/confirm-dialog';
 import { LoadError } from '@/ui/load-error';
 import { PersonAvatar } from '@/ui/person-avatar';
+import { RatingInput } from '@/ui/rating-input';
 import { SiteLink } from '@/ui/site-link';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
@@ -25,6 +26,7 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
+import { FormField, form, maxLength } from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { type Observable, firstValueFrom } from 'rxjs';
@@ -43,7 +45,16 @@ const WHEN: Intl.DateTimeFormatOptions = {
 // outings are gone in days.
 @Component({
   selector: 'app-outing-page',
-  imports: [LoadError, NotFoundPage, PersonAvatar, SiteLink, TelegramNotice, TranslocoPipe],
+  imports: [
+    FormField,
+    LoadError,
+    NotFoundPage,
+    PersonAvatar,
+    RatingInput,
+    SiteLink,
+    TelegramNotice,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (notFound()) {
@@ -112,10 +123,12 @@ const WHEN: Intl.DateTimeFormatOptions = {
               <div class="h-full rounded-full bg-brand-600 transition-all duration-500" [style.width.%]="filled()"></div>
             </div>
             <ul class="flex flex-wrap items-center gap-3">
-              <li class="flex items-center gap-2 rounded-full bg-text/5 py-1 pr-3 pl-1">
-                <app-person-avatar [person]="o.organizer" [size]="28" />
-                <span class="text-sm text-text">{{ name(o.organizer) }}</span>
-                <span class="text-xs text-brand-700 dark:text-brand-300">{{ 'outings.organizer' | transloco }}</span>
+              <li>
+                <a [appSiteLink]="'/organizers/' + o.organizer.id" class="flex items-center gap-2 rounded-full bg-text/5 py-1 pr-3 pl-1 hover:bg-brand-500/10" [attr.title]="'organizer.profileLink' | transloco">
+                  <app-person-avatar [person]="o.organizer" [size]="28" />
+                  <span class="text-sm text-text">{{ name(o.organizer) }}</span>
+                  <span class="text-xs text-brand-700 dark:text-brand-300">{{ 'outings.organizer' | transloco }}</span>
+                </a>
               </li>
               @for (person of o.participants ?? []; track person.id) {
                 <li class="flex items-center gap-2 rounded-full bg-text/5 py-1 pr-3 pl-1">
@@ -136,6 +149,7 @@ const WHEN: Intl.DateTimeFormatOptions = {
             </div>
           }
 
+          @if (!closed() || actionError()) {
           <div class="flex flex-wrap items-center gap-3 border-t border-border px-6 py-5">
             @if (o.isOrganizer) {
               @if (!closed()) {
@@ -160,6 +174,27 @@ const WHEN: Intl.DateTimeFormatOptions = {
               <p class="ui-error w-full" role="alert">{{ key | transloco }}</p>
             }
           </div>
+          }
+
+          @if (o.canRate || o.myRating) {
+            <form class="flex flex-col gap-3 border-t border-border bg-amber-500/5 px-6 py-5" novalidate (submit)="rate($event)">
+              <div>
+                <h2 class="font-semibold text-text">{{ 'outings.rate.title' | transloco }}</h2>
+                <p class="text-sm text-text-muted">{{ 'outings.rate.hint' | transloco }}</p>
+              </div>
+              <app-rating-input [label]="'outings.rate.yours' | transloco" [formField]="rateForm.rating" />
+              <textarea class="ui-input" rows="3" [placeholder]="'outings.rate.textPlaceholder' | transloco" [formField]="rateForm.text"></textarea>
+              <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" class="ui-btn-primary" [disabled]="busy() || rateModel().rating === 0 || !o.canRate">{{ 'outings.rate.submit' | transloco }}</button>
+                @if (rateSaved()) {
+                  <span class="text-sm text-emerald-700 dark:text-emerald-300" role="status">{{ 'outings.rate.saved' | transloco }}</span>
+                }
+                @if (rateError()) {
+                  <span class="ui-error" role="alert">{{ 'outings.rate.error' | transloco }}</span>
+                }
+              </div>
+            </form>
+          }
 
           @if (!closed() && (o.isJoined || o.isOrganizer)) {
             <div class="border-t border-border px-6 py-4"><app-telegram-notice /></div>
@@ -219,6 +254,17 @@ export class OutingPage {
   // Translation key of the last failed action.
   protected readonly actionError = signal<string | null>(null);
 
+  // The participant's rating, filled from their own once it is known.
+  protected readonly rateModel = linkedSignal(() => {
+    const mine = this.personal()?.myRating;
+    return { rating: mine?.rating ?? 0, text: mine?.text ?? '' };
+  });
+  protected readonly rateForm = form(this.rateModel, (path) => {
+    maxLength(path.text, 1000);
+  });
+  protected readonly rateSaved = signal(false);
+  protected readonly rateError = signal(false);
+
   constructor() {
     const seo = inject(SeoService);
     bindPageMeta(() => {
@@ -271,6 +317,29 @@ export class OutingPage {
   protected async cancel(): Promise<void> {
     if (!(await this.confirm({ title: 'outings.cancelConfirm', danger: true }))) return;
     await this.act(this.http.post<Outing>(`/outings/${this.id()}/cancel`, {}));
+  }
+
+  protected async rate(event: Event): Promise<void> {
+    event.preventDefault();
+    const { rating, text } = this.rateModel();
+    if (rating === 0) return;
+    this.busy.set(true);
+    this.rateSaved.set(false);
+    this.rateError.set(false);
+    try {
+      const outing = await firstValueFrom(
+        this.http.put<Outing>(`/outings/${this.id()}/rating`, {
+          rating,
+          text: text.trim() || null,
+        }),
+      );
+      this.personal.set(outing);
+      this.rateSaved.set(true);
+    } catch {
+      this.rateError.set(true);
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   private async loadPersonal(id: string): Promise<void> {

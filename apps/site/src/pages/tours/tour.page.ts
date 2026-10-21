@@ -196,18 +196,19 @@ import { firstValueFrom } from 'rxjs';
               <div class="flex flex-col gap-4 lg:sticky lg:top-20">
                 <!-- Online booking is paused for now: the contacts below take it. -->
                 @if (item.organizer; as organizer) {
-                  <div class="ui-card flex items-center gap-3 p-3.5">
+                  <a [appSiteLink]="'/organizers/' + organizer.id" class="ui-card group flex items-center gap-3 p-3.5 motion-lift hover:border-brand-400">
                     <app-person-avatar [person]="organizer" [size]="44" />
                     <div class="min-w-0">
                       <p class="text-xs text-text-muted">{{ 'tours.organizer' | transloco }}</p>
-                      <p class="truncate font-semibold text-text">{{ organizerName(organizer) }}</p>
+                      <p class="truncate font-semibold text-text group-hover:text-brand-700 dark:group-hover:text-brand-300">{{ organizerName(organizer) }}</p>
+                      <p class="text-xs text-brand-700 dark:text-brand-300">{{ 'organizer.profileLink' | transloco }} &rarr;</p>
                     </div>
                     @if (item.reviewCount > 0) {
                       <span class="ml-auto inline-flex items-center gap-1 text-[0.8125rem]">
                         <span class="icon-[heroicons--star-solid] size-4 text-secondary-400" aria-hidden="true"></span><b class="text-text">{{ item.ratingAverage.toFixed(1) }}</b>
                       </span>
                     }
-                  </div>
+                  </a>
                 }
                 <app-contact-card
                   [targetType]="targetType"

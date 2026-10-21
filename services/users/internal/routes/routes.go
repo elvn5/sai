@@ -55,6 +55,7 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	admin := &handlers.Admin{Deps: d}
 	r.GET("/users", requireAdmin, admin.ListUsers)
 	r.GET("/users/:id", requireAdmin, admin.GetUser)
+	r.GET("/users/:id/public", (&handlers.Profiles{Deps: d}).Public)
 	r.GET("/partners/requests", requireAdmin, admin.PartnerRequests)
 	r.POST("/partners/:userId/approve", requireAdmin, admin.ApprovePartner)
 	r.POST("/partners/:userId/reject", requireAdmin, admin.RejectPartner)

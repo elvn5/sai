@@ -32,10 +32,10 @@ func TestSchedule(t *testing.T) {
 		t.Errorf("last-minute outing reminded at %v", o.RemindAt)
 	}
 
-	// No catalog route: no follow-up.
+	// Without a catalog route there is still the request to rate it.
 	o.Trail = nil
 	o.Schedule(now)
-	if o.FollowUpAt != nil {
+	if !o.FollowUpAt.Equal(back.Add(2 * time.Hour)) {
 		t.Errorf("follow-up without a route: %v", o.FollowUpAt)
 	}
 }

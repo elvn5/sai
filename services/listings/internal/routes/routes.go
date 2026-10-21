@@ -44,6 +44,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	tours := &handlers.Tours{Deps: d}
 	r.GET("/tours", tours.List)
 	r.GET("/tours/mine", requireUser, tours.ListMine)
+	r.GET("/tours/organizers/:userId", tours.Organizer)
 	r.GET("/tours/:locale/:slug", tours.GetBySlug)
 	r.POST("/tours", requireUser, requirePartner, tours.Create)
 	r.PUT("/tours/:id", requireUser, tours.Update)

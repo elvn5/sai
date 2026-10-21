@@ -293,6 +293,31 @@
     "foundLabel": "Gefunden:",
     "share": "Teilen"
   },
+  "organizer": {
+    "kicker": "Veranstalter",
+    "verified": "Geprüft",
+    "verifiedHint": "Ein Ermekten-Partner: Unser Team hat das Profil vor den ersten Touren geprüft.",
+    "since": "Seit {year} auf Ermekten",
+    "reviewsCount": "Bewertungen: {count}",
+    "noRating": "Noch keine Bewertungen",
+    "stats": {
+      "outings": "Ausflüge geleitet",
+      "people": "Teilnehmende",
+      "tours": "Touren geleitet",
+      "reviews": "Bewertungen"
+    },
+    "upcomingOutings": "Nächste Ausflüge",
+    "upcomingTours": "Nächste Touren",
+    "reviews": "Bewertungen von Teilnehmenden",
+    "noReviews": "Noch keine Bewertungen. Sie stammen von Leuten, die mit diesem Veranstalter unterwegs waren.",
+    "aboutOuting": "Zum Ausflug",
+    "aboutTour": "Zur Tour",
+    "reply": "Antwort des Veranstalters",
+    "title": "{name}, Veranstalter",
+    "meta": "{name}: Bergausflüge und Touren in Kirgisistan auf Ermekten.",
+    "metaRated": "{name}: Bewertung {rating} aus {count} Bewertungen. Bergausflüge und Touren in Kirgisistan auf Ermekten.",
+    "profileLink": "Profil des Veranstalters"
+  },
   "reviews": {
     "heading": "Bewertungen",
     "count": "{count} Bewertungen",
@@ -596,6 +621,15 @@
     "awardError": "Der Erfolg konnte nicht verliehen werden. Bitte erneut versuchen."
   },
   "outings": {
+    "rate": {
+      "title": "Wie war der Ausflug?",
+      "hint": "Bewertung und Kommentar erscheinen auf der Seite des Veranstalters.",
+      "textPlaceholder": "Was hat gefallen, was ginge besser? (optional)",
+      "submit": "Bewertung speichern",
+      "saved": "Danke! Bewertung gespeichert",
+      "yours": "Ihre Bewertung",
+      "error": "Bewertung konnte nicht gespeichert werden"
+    },
     "title": "Gruppentouren",
     "subtitle": "Gemeinsame Wanderungen und Besteigungen: finden Sie Begleitung, einen Platz im Auto oder stellen Sie Ihre eigene Gruppe zusammen.",
     "create": "Tour organisieren",

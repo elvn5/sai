@@ -73,6 +73,15 @@ func reminderText(o models.Outing, forOrganizer bool) string {
 	return b.String()
 }
 
+// rateText asks a participant how the outing went.
+func rateText(o models.Outing) string {
+	text := fmt.Sprintf("🏔 Как прошёл выход «%s»?\n\nОцените его — так другие поймут, с кем идти в горы.", esc(o.Title))
+	if o.Trail != nil {
+		text += fmt.Sprintf(" А после оценки можно рассказать, что сейчас на маршруте «%s».", esc(o.Trail.Name))
+	}
+	return text
+}
+
 func followUpText(o models.Outing) string {
 	return fmt.Sprintf("🏔 Как прошёл выход «%s»?\n\nРасскажите, что сейчас на маршруте «%s»: снег, лёд, состояние тропы. Это поможет тем, кто пойдёт следом.",
 		esc(o.Title), esc(o.Trail.Name))

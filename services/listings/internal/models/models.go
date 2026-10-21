@@ -128,6 +128,19 @@ type PartnerReview struct {
 	Listing ListingRef `json:"listing"`
 }
 
+// OrganizerTours is what an organizer's public page shows about their
+// tours.
+type OrganizerTours struct {
+	// Published tours that already started.
+	Held     int    `json:"held"`
+	Upcoming []Tour `json:"upcoming"`
+	Rating   struct {
+		Average float64 `json:"average"`
+		Count   int     `json:"count"`
+	} `json:"rating"`
+	Reviews []PartnerReview `json:"reviews"`
+}
+
 type ReviewSummary struct {
 	Average float64 `json:"average"`
 	Count   int     `json:"count"`

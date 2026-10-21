@@ -48,6 +48,16 @@ type Deps struct {
 	// Telegram messages about new tours; nil when the bot isn't configured.
 	Alerts *alerts.Notifier
 	Log    *slog.Logger
+	// Now is overridable in tests.
+	Now func() time.Time
+}
+
+// today is the current time in Bishkek, whose calendar tours follow.
+func (d Deps) today() time.Time {
+	if d.Now != nil {
+		return d.Now().In(bishkek)
+	}
+	return time.Now().In(bishkek)
 }
 
 // fail answers a store error. Messages for "not found" and duplicates

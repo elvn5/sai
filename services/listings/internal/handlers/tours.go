@@ -147,6 +147,61 @@ func (h *Tours) ListMine(c *gin.Context) {
 	respond.JSON(c, http.StatusOK, tours)
 }
 
+// organizerReviews: reviews on an organizer's page.
+const organizerReviews = 20
+
+// Organizer is an organizer's public record in a language: tours held, the
+// upcoming ones (without their long texts), the rating of all their tours
+// and the latest reviews.
+func (h *Tours) Organizer(c *gin.Context) {
+	q := validation.NewQuery(c)
+	locale := q.RequiredEnum("locale", models.Locales)
+	if !q.OK() {
+		return
+	}
+	id := c.Param("userId")
+	if !validID(id) {
+		httperr.Abort(c, http.StatusNotFound, "Organizer not found")
+		return
+	}
+	ctx := c.Request.Context()
+	out, err := h.Store.OrganizerTours(ctx, id, locale, h.today(), organizerReviews)
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	for i := range out.Upcoming {
+		out.Upcoming[i].Content, out.Upcoming[i].Program = "", nil
+	}
+	h.withOrganizers(ctx, out.Upcoming)
+	reviews := make([]models.Review, len(out.Reviews))
+	for i := range out.Reviews {
+		reviews[i] = out.Reviews[i].Review
+	}
+	authors, err := h.Authors.Authors(ctx, reviewAuthorIDs(reviews))
+	if err != nil {
+		h.Log.WarnContext(ctx, "review authors", "error", err)
+	}
+	for i := range out.Reviews {
+		out.Reviews[i].Author = authorFor(authors, out.Reviews[i].UserID)
+	}
+	if out.Upcoming == nil {
+		out.Upcoming = []models.Tour{}
+	}
+	if out.Reviews == nil {
+		out.Reviews = []models.PartnerReview{}
+	}
+	respond.JSON(c, http.StatusOK, out)
+}
+
+func reviewAuthorIDs(reviews []models.Review) []string {
+	ids := make([]string, len(reviews))
+	for i, r := range reviews {
+		ids[i] = r.UserID
+	}
+	return ids
+}
+
 func (h *Tours) GetBySlug(c *gin.Context) {
 	ctx := c.Request.Context()
 	tour, err := h.Store.PublishedTourBySlug(ctx, c.Param("locale"), c.Param("slug"))

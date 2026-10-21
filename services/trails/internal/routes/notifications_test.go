@@ -138,12 +138,21 @@ func TestOutingNotifications(t *testing.T) {
 		}
 	}
 
-	// After the outing: a request for a condition report, answered in the bot.
+	// After the outing: the organizer reports on the route, the
+	// participant rates the outing — both answered in the bot.
 	clock = time.Date(2026, 10, 17, 14, 0, 0, 0, time.UTC) // start + 10 h + 2 h
 	notifier.Tick(ctx)
 	sent = tg.take()
-	if len(sent) != 2 || !strings.Contains(sent[0].text, "Как прошёл выход") || sent[0].button.Data != "c:s:"+id {
+	if len(sent) != 2 {
 		t.Fatalf("follow-up: %+v", sent)
+	}
+	for _, m := range sent {
+		switch {
+		case m.chat == 1001 && m.button.Data == "c:s:"+id && strings.Contains(m.text, "Как прошёл выход"):
+		case m.chat == 1002 && m.button.Data == "r:s:"+id && strings.Contains(m.text, "Оцените его"):
+		default:
+			t.Errorf("follow-up to %d: %q %+v", m.chat, m.text, m.button)
+		}
 	}
 	notifier.Tick(ctx)
 	if sent := tg.take(); len(sent) != 0 {

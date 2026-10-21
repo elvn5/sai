@@ -479,3 +479,28 @@ func TestSketchOrganizerTour(t *testing.T) {
 		"⬅️ К туру→g:t:0",
 	)
 }
+
+func TestSketchRating(t *testing.T) {
+	o := uchitel
+	o.Organizer = api.Person{FirstName: str("Айгуль")}
+	o.CanRate = true
+	checkScreen(t, screens.RateOuting(o),
+		"⭐ <b>Как прошёл выход «Пик Учитель»?</b>\nсб, 24 окт., 06:00 · организатор Айгуль\n\n"+
+			"Оцените от 1 до 5. Оценка появится на странице организатора — так другие поймут, с кем идти в горы.",
+		"1 ★→r:v:o1:1 | 2 ★→r:v:o1:2 | 3 ★→r:v:o1:3 | 4 ★→r:v:o1:4 | 5 ★→r:v:o1:5",
+	)
+	o.MyRating = &api.RatingMine{Rating: 4}
+	o.Trail = &api.TrailRef{Name: "Ала-Арча", Slug: "uchitel"}
+	checkScreen(t, screens.RateThanks(o, at(10, 25, 10, 0)),
+		"Спасибо! Ваша оценка выхода «Пик Учитель»: ★★★★☆\n\n"+
+			"Добавьте пару слов — что понравилось, что можно улучшить. Отзыв увидят на странице организатора.",
+		"✍️ Написать отзыв→r:w:o1",
+		"📝 Рассказать, как маршрут→c:s:o1",
+		"Изменить оценку→r:s:o1",
+	)
+	o.MyRating.Text = str("Отличный темп")
+	if s := screens.RateThanks(o, at(10, 25, 10, 0)); !strings.HasSuffix(s.Text, "<i>Отличный темп</i>") || layout(s)[0] != "✍️ Изменить отзыв→r:w:o1" {
+		t.Errorf("with a comment:\n%s\n%v", s.Text, layout(s))
+	}
+	checkScreen(t, screens.ReviewPrompt(o), "Напишите отзыв о выходе «Пик Учитель» одним сообщением.", "Отмена→r:v:o1:0")
+}

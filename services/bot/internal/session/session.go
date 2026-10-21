@@ -16,6 +16,8 @@ const (
 	// written (the argument is the outing), then written (outing and text).
 	FieldBroadcast      Field = "broadcast"
 	FieldBroadcastReady Field = "broadcast_ready"
+	// A participant's comment to their rating of an outing (the argument).
+	FieldReview Field = "review"
 )
 
 // ttl drops edits a user walked away from.

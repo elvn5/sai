@@ -12,20 +12,22 @@ const (
 	FollowUpDelay = 2 * time.Hour
 )
 
-// Schedule sets when the outing's reminder and follow-up are due, as of
-// now. An outing set up (or moved) inside the reminder window gets no
-// reminder; only outings on a catalog route get a follow-up.
+// Schedule sets when the outing's reminder and follow-up (a request to
+// rate it, and to report on its route) are due, as of now. An outing set
+// up (or moved) inside the reminder window gets no reminder.
 func (o *Outing) Schedule(now time.Time) {
 	o.RemindAt, o.FollowUpAt = nil, nil
 	if remind := o.StartsAt.Add(-ReminderLead); remind.After(now) {
 		o.RemindAt = &remind
 	}
-	if o.Trail != nil {
-		end := o.StartsAt.Add(AssumedLength)
-		if o.ReturnsAt != nil {
-			end = o.ReturnsAt.Time
-		}
-		followUp := end.Add(FollowUpDelay)
-		o.FollowUpAt = &followUp
+	followUp := o.EndsAt().Add(FollowUpDelay)
+	o.FollowUpAt = &followUp
+}
+
+// EndsAt is the return, or the start plus a usual day out.
+func (o Outing) EndsAt() time.Time {
+	if o.ReturnsAt != nil {
+		return o.ReturnsAt.Time
 	}
+	return o.StartsAt.Add(AssumedLength)
 }

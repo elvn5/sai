@@ -54,6 +54,8 @@ type Handlers struct {
 	// The organizer's room (arrivals, tours); off without the sections.
 	Organizer Organizing
 	Chats     Chats
+	// Participants rating outings; off without the sections.
+	Ratings Rating
 	// Outings being put together, step by step.
 	Drafts *drafts.Store
 	Links  screens.Links
@@ -81,6 +83,9 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 		bh.HandleCallbackQuery(h.notifyPress, th.CallbackDataPrefix(keyboards.NotifyPrefix))
 		bh.HandleCallbackQuery(h.draftPress, th.CallbackDataPrefix(keyboards.DraftPrefix))
 		bh.HandleCallbackQuery(h.conditionPress, th.CallbackDataPrefix(keyboards.ConditionPrefix))
+	}
+	if h.rating() {
+		bh.HandleCallbackQuery(h.ratingPress, th.CallbackDataPrefix(keyboards.RatingPrefix))
 	}
 	if h.organizing() {
 		bh.HandleMessage(h.organizerMenu, th.CommandEqual("organizer"))
@@ -338,7 +343,10 @@ func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 		outingID, _, _ := strings.Cut(arg, "\n")
 		return h.broadcastText(ctx, msg, outingID)
 	}
-	if ok && (field == session.FieldBroadcast || field == session.FieldBroadcastReady) {
+	if ok && h.rating() && field == session.FieldReview {
+		return h.reviewText(ctx, msg, arg)
+	}
+	if ok && (field == session.FieldBroadcast || field == session.FieldBroadcastReady || field == session.FieldReview) {
 		ok = false
 	}
 	if !ok {

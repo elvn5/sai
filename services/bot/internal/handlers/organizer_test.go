@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -59,6 +60,23 @@ func (f *fakeOrganizer) SetArrival(_ context.Context, _, outingID, participantID
 	return o, nil
 }
 
+func (f *fakeOrganizer) RateOuting(_ context.Context, _, outingID string, rating int, text *string) (api.Outing, error) {
+	t := "<nil>"
+	if text != nil {
+		t = *text
+	}
+	f.record("rate " + outingID + " " + strconv.Itoa(rating) + " " + t)
+	f.content.mu.Lock()
+	defer f.content.mu.Unlock()
+	o := f.content.outings[outingID]
+	if !o.CanRate {
+		return o, &api.Error{Status: 403, Message: "Only those who came can rate this outing"}
+	}
+	o.MyRating = &api.RatingMine{Rating: rating, Text: text}
+	f.content.outings[outingID] = o
+	return o, nil
+}
+
 func (f *fakeOrganizer) MyTours(context.Context, string) ([]api.Tour, error) { return f.tours, nil }
 
 func (f *fakeOrganizer) ListingStats(context.Context, string) (api.ListingStats, error) {
@@ -96,7 +114,7 @@ func newOrganizer(t *testing.T) (*harness, *fakeContent, *fakeOrganizer) {
 	}
 	h := newHarness(t, miniApp, func(hs *handlers.Handlers) {
 		hs.Content, hs.Subscribers = content, &fakeSubscribers{subs: map[int64]bool{}}
-		hs.Organizer, hs.Chats = org, org
+		hs.Organizer, hs.Chats, hs.Ratings = org, org, org
 		hs.Now = func() time.Time { return now }
 	})
 	h.users.account.ID = "u1"
@@ -225,5 +243,47 @@ func TestOrganizerTours(t *testing.T) {
 	calls := h.expect("answerCallbackQuery", "editMessageText")
 	if calls[0].params["text"] != "Этого тура больше нет" || !strings.Contains(calls[1].text(), "Кабинет организатора") {
 		t.Errorf("gone tour: %v", calls[0].params)
+	}
+}
+
+func TestRatingFlow(t *testing.T) {
+	h, content, org := newOrganizer(t)
+	content.mu.Lock()
+	o := content.outings["o9"]
+	o.IsOrganizer, o.IsJoined, o.CanRate, o.StartsAt = false, true, true, now.Add(-20*time.Hour)
+	content.outings["o9"] = o
+	content.mu.Unlock()
+
+	h.press("r:s:o9")
+	ask := h.expect("answerCallbackQuery", "editMessageText")[1]
+	if !strings.HasPrefix(ask.text(), "⭐ <b>Как прошёл выход «Пик Учитель»?</b>") || !strings.Contains(ask.markup(), `"r:v:o9:5"`) {
+		t.Errorf("ask: %q %s", ask.text(), ask.markup())
+	}
+	h.press("r:v:o9:5")
+	calls := h.expect("answerCallbackQuery", "editMessageText")
+	if calls[0].params["text"] != "Спасибо за оценку!" || !strings.Contains(calls[1].text(), "★★★★★") {
+		t.Errorf("vote: %v %q", calls[0].params, calls[1].text())
+	}
+	h.press("r:w:o9")
+	h.expect("answerCallbackQuery", "editMessageText")
+	h.message("Отличный темп")
+	if thanks := h.expect("sendMessage")[0]; !strings.Contains(thanks.text(), "<i>Отличный темп</i>") {
+		t.Errorf("review: %q", thanks.text())
+	}
+	// Changing the stars keeps the comment.
+	h.press("r:v:o9:4")
+	h.expect("answerCallbackQuery", "editMessageText")
+	if got := strings.Join(org.calls(), ","); got != "rate o9 5 <nil>,rate o9 5 Отличный темп,rate o9 4 Отличный темп" {
+		t.Errorf("rate calls: %s", got)
+	}
+
+	content.mu.Lock()
+	o = content.outings["o9"]
+	o.CanRate = false
+	content.outings["o9"] = o
+	content.mu.Unlock()
+	h.press("r:v:o9:2")
+	if calls = h.expect("answerCallbackQuery"); calls[0].params["text"] != "Оценить могут те, кого организатор отметил на сборе" {
+		t.Errorf("refused: %v", calls[0].params)
 	}
 }

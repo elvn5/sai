@@ -109,6 +109,15 @@ type Outing struct {
 	Participants []Person `json:"participants"`
 	// The organizer's view of them: when each joined and arrived.
 	Roster []RosterEntry `json:"roster"`
+	// A participant's: whether they can rate it now, and their rating.
+	CanRate  bool        `json:"canRate"`
+	MyRating *RatingMine `json:"myRating"`
+}
+
+// RatingMine is the user's own 1–5 rating of an outing.
+type RatingMine struct {
+	Rating int     `json:"rating"`
+	Text   *string `json:"text"`
 }
 
 // RosterEntry is a participant as the organizer sees them.
@@ -371,6 +380,14 @@ func (c *Client) SetArrival(ctx context.Context, userID, outingID, participantID
 	var out Outing
 	path := "/outings/" + url.PathEscape(outingID) + "/participants/" + url.PathEscape(participantID) + "/arrival"
 	return out, c.do(ctx, method, path, userID, nil, &out)
+}
+
+// RateOuting rates an outing the user went on (1–5, an optional comment);
+// rating again changes it.
+func (c *Client) RateOuting(ctx context.Context, userID, outingID string, rating int, text *string) (Outing, error) {
+	var out Outing
+	body := map[string]any{"rating": rating, "text": text}
+	return out, c.do(ctx, http.MethodPut, "/outings/"+url.PathEscape(outingID)+"/rating", userID, body, &out)
 }
 
 // MyTours lists the tours the user runs, published or not, newest first.

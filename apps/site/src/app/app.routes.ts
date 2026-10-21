@@ -54,6 +54,11 @@ const pages: Routes = [
   },
 
   {
+    path: 'organizers/:id',
+    loadComponent: () => import('@/pages/organizers/organizer.page').then((m) => m.OrganizerPage),
+  },
+
+  {
     path: 'outings',
     loadComponent: () => import('@/pages/outings/outings-list.page').then((m) => m.OutingsListPage),
   },

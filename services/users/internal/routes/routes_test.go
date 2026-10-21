@@ -347,6 +347,14 @@ func TestAdminAndPartners(t *testing.T) {
 	if r := e.do("GET", "/users/"+id, "", admin); !strings.Contains(r.body, `"partnerStatus":"approved"`) || strings.Contains(r.body, "Hash") {
 		t.Errorf("get user: %s", r.body)
 	}
+	// The public profile: verified once approved, never the contacts.
+	if r := e.do("GET", "/users/"+id+"/public", ""); r.status != 200 || !strings.Contains(r.body, `"isVerified":true`) ||
+		!strings.Contains(r.body, `"memberSince":"`) || strings.Contains(r.body, "p@x.kg") {
+		t.Errorf("public profile: %d %s", r.status, r.body)
+	}
+	if r := e.do("GET", "/users/not-a-uuid/public", ""); r.status != 404 {
+		t.Errorf("public profile of nobody: %d", r.status)
+	}
 	if r := e.do("POST", "/auth/logout", ""); r.setCookie[0] != "admin_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT" {
 		t.Errorf("admin logout: %v", r.setCookie)
 	}

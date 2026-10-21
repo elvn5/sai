@@ -213,12 +213,19 @@ func (n *Notifier) schedule(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		// A condition report, in two taps in the bot.
-		text, data := botButton("📝 Рассказать, как маршрут", "c:s:"+o.ID)
+		// Participants rate the outing (and, on a catalog route, then tell
+		// how it is) in the bot; the organizer reports on the route.
 		items := make([]store.Notification, 0, len(participants)+1)
-		for _, userID := range append([]string{o.UserID}, participants...) {
+		if o.Trail != nil {
+			text, data := botButton("📝 Рассказать, как маршрут", "c:s:"+o.ID)
 			items = append(items, once(store.Notification{
-				UserID: userID, Kind: "followup", OutingID: &o.ID, Text: followUpText(o), ButtonText: text, ButtonData: data,
+				UserID: o.UserID, Kind: "followup", OutingID: &o.ID, Text: followUpText(o), ButtonText: text, ButtonData: data,
+			}, o.FollowUpAt))
+		}
+		text, data := botButton("⭐ Оценить выход", "r:s:"+o.ID)
+		for _, userID := range participants {
+			items = append(items, once(store.Notification{
+				UserID: userID, Kind: "followup", OutingID: &o.ID, Text: rateText(o), ButtonText: text, ButtonData: data,
 			}, o.FollowUpAt))
 		}
 		if err := n.Store.Enqueue(ctx, items, n.now()); err != nil {

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -101,4 +102,47 @@ func (s *Store) SaveTour(ctx context.Context, t models.Tour) (models.Tour, error
 	}
 	saved, err := scanTour(row)
 	return saved, duplicate(notFound(err))
+}
+
+// OrganizerTours is what an organizer's public page shows about their
+// tours in a language: how many already took place, the upcoming ones, the
+// rating of all their tours and the latest reviews (authors left for the
+// handler).
+func (s *Store) OrganizerTours(ctx context.Context, userID, locale string, today time.Time, reviews int) (models.OrganizerTours, error) {
+	var out models.OrganizerTours
+	day := today.Format(time.DateOnly)
+	err := s.db.QueryRow(ctx, `SELECT count(*)::int FROM tours WHERE user_id = $1 AND is_published
+		AND locale = $2 AND start_date <= $3::date`, userID, locale, day).Scan(&out.Held)
+	if err != nil {
+		return out, err
+	}
+	out.Upcoming, err = s.collectTours(ctx, `SELECT `+tourColumns+` FROM tours WHERE user_id = $1 AND is_published
+		AND locale = $2 AND start_date >= $3::date ORDER BY start_date LIMIT 20`, userID, locale, day)
+	if err != nil {
+		return out, err
+	}
+	var avg *float64
+	if err := s.db.QueryRow(ctx, `SELECT avg(r.rating)::float8, count(*)::int FROM reviews r
+		JOIN tours t ON r.target_type = 'tour' AND t.id = r.target_id WHERE t.user_id = $1`, userID).
+		Scan(&avg, &out.Rating.Count); err != nil {
+		return out, err
+	}
+	if avg != nil {
+		out.Rating.Average = math.Round(*avg*100) / 100
+	}
+	rows, err := s.db.Query(ctx, `SELECT r.id, r.rating, r.text, r.photos, r.user_id::text, r.created_at,
+		r.reply, r.replied_at, 'tour', t.id::text, t.title, t.slug, t.locale, t.is_published
+		FROM reviews r JOIN tours t ON r.target_type = 'tour' AND t.id = r.target_id
+		WHERE t.user_id = $1 AND t.is_published ORDER BY r.created_at DESC LIMIT $2`, userID, reviews)
+	if err != nil {
+		return out, err
+	}
+	out.Reviews, err = pgx.CollectRows(rows, func(row pgx.CollectableRow) (models.PartnerReview, error) {
+		var pr models.PartnerReview
+		l := &pr.Listing
+		var err error
+		pr.Review, err = scanReview(row, &l.TargetType, &l.ID, &l.Title, &l.Slug, &l.Locale, &l.IsPublished)
+		return pr, err
+	})
+	return out, err
 }

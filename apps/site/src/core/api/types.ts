@@ -556,5 +556,46 @@ export interface Outing {
   participants?: Person[];
   isJoined: boolean;
   isOrganizer: boolean;
+  // A participant's: whether they can rate it now, and their rating.
+  canRate?: boolean;
+  myRating?: { rating: number; text: string | null } | null;
   createdAt: string;
+}
+
+// An organizer's public profile (users service).
+export interface OrganizerProfile extends Person {
+  // An approved partner.
+  isVerified: boolean;
+  memberSince: string;
+}
+
+export interface RatingSummary {
+  average: number;
+  count: number;
+}
+
+// An organizer's outings (trails service): held, people, rating, upcoming
+// outings and the latest ratings of them.
+export interface OrganizerOutings {
+  hosted: number;
+  participants: number;
+  rating: RatingSummary;
+  upcoming: Outing[];
+  reviews: {
+    rating: number;
+    text: string | null;
+    createdAt: string;
+    author: Person;
+    outing: { id: string; title: string; startsAt: string };
+  }[];
+}
+
+// An organizer's tours in a language (listings service).
+export interface OrganizerTours {
+  held: number;
+  upcoming: Tour[];
+  rating: RatingSummary;
+  reviews: (Review & {
+    listing: { id: string; title: string; slug: string; locale: string | null };
+  })[];
 }

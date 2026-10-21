@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -24,7 +25,16 @@ const (
 	// week after it.
 	checkInBefore = 24 * time.Hour
 	checkInAfter  = 7 * 24 * time.Hour
+	// Participants rate an outing from its start for this long.
+	ratingWindow = 30 * 24 * time.Hour
+	// Reviews on an organizer's page.
+	organizerReviews = 20
 )
+
+type ratingRequest struct {
+	Rating *int                     `json:"rating" binding:"required,gte=1,lte=5"`
+	Text   validation.Field[string] `json:"text" binding:"omitempty,max=1000"`
+}
 
 type outingRequest struct {
 	TrailID       validation.Field[string] `json:"trailId" binding:"omitempty,uuid"`
@@ -243,6 +253,107 @@ func (h *Outings) SetArrival(c *gin.Context) {
 	h.reload(c, outing.ID)
 }
 
+// rateRefusal says why userID can't rate the outing now ("" when they can):
+// they joined it, it took place (open, started) less than a month ago, and
+// — once the organizer marked arrivals — they were marked.
+func (h *Outings) rateRefusal(c *gin.Context, o models.Outing, userID string) (string, error) {
+	ctx := c.Request.Context()
+	joined, err := h.Store.IsParticipant(ctx, o.ID, userID)
+	if err != nil || !joined {
+		return "Only participants can rate this outing", err
+	}
+	now := h.now()
+	switch {
+	case o.Status != "open":
+		return "This outing was cancelled", nil
+	case now.Before(o.StartsAt.Time):
+		return "The outing hasn't started yet", nil
+	case now.After(o.StartsAt.Add(ratingWindow)):
+		return "Rating is closed", nil
+	}
+	marked, err := h.Store.AnyArrived(ctx, o.ID)
+	if err != nil || !marked {
+		return "", err
+	}
+	arrived, err := h.Store.Arrived(ctx, o.ID, userID)
+	if err != nil || arrived {
+		return "", err
+	}
+	return "Only those who came can rate this outing", nil
+}
+
+// Rate stores the signed-in participant's 1–5 rating of an outing (and so
+// of its organizer), with an optional comment; rating again changes it.
+func (h *Outings) Rate(c *gin.Context) {
+	var req ratingRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	outing, ok := h.load(c)
+	if !ok {
+		return
+	}
+	me := currentUserID(c)
+	refusal, err := h.rateRefusal(c, outing, me)
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	if refusal != "" {
+		status := http.StatusConflict
+		if strings.HasPrefix(refusal, "Only") {
+			status = http.StatusForbidden
+		}
+		httperr.Abort(c, status, refusal)
+		return
+	}
+	var text *string
+	if req.Text.Valid {
+		if t := strings.TrimSpace(req.Text.Value); t != "" {
+			text = &t
+		}
+	}
+	if err := h.Store.RateOuting(c.Request.Context(), outing, me, *req.Rating, text); err != nil {
+		h.internalError(c, err)
+		return
+	}
+	h.reload(c, outing.ID)
+}
+
+// Organizer is an organizer's public record: outings held, participants,
+// rating, upcoming outings and the latest reviews.
+func (h *Outings) Organizer(c *gin.Context) {
+	id := c.Param("userId")
+	if !validID(id) {
+		httperr.Abort(c, http.StatusNotFound, "Organizer not found")
+		return
+	}
+	ctx := c.Request.Context()
+	out, err := h.Store.OrganizerOutings(ctx, id, organizerReviews, h.now())
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	ids := []string{id}
+	for _, r := range out.Reviews {
+		ids = append(ids, r.UserID)
+	}
+	people := h.people(ctx, ids)
+	for i := range out.Upcoming {
+		out.Upcoming[i].Organizer, out.Upcoming[i].Contact = people[id], nil
+	}
+	for i := range out.Reviews {
+		out.Reviews[i].Author = people[out.Reviews[i].UserID]
+	}
+	if out.Upcoming == nil {
+		out.Upcoming = []models.Outing{}
+	}
+	if out.Reviews == nil {
+		out.Reviews = []models.OutingReview{}
+	}
+	respond.JSON(c, http.StatusOK, out)
+}
+
 // apply validates req against the outing being created or edited (taken:
 // seats already filled) and copies it over.
 func (h *Outings) apply(c *gin.Context, req outingRequest, o *models.Outing, taken int) bool {
@@ -416,6 +527,17 @@ func (h *Outings) respondDetail(c *gin.Context, o models.Outing, status int) {
 	}
 	if !o.IsOrganizer && !o.IsJoined && !isAdmin(c) {
 		o.Contact = nil
+	}
+	if o.IsJoined {
+		refusal, err := h.rateRefusal(c, o, me)
+		if err == nil {
+			o.MyRating, err = h.Store.MyRating(ctx, o.ID, me)
+		}
+		if err != nil {
+			h.internalError(c, err)
+			return
+		}
+		o.CanRate = refusal == ""
 	}
 	respond.JSON(c, status, o)
 }

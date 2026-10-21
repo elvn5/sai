@@ -128,7 +128,7 @@ func (f *Feed) Pass(ctx context.Context) error {
 }
 
 func (f *Feed) send(ctx context.Context, chat int64, p api.BlogPost) error {
-	caption, markup := screens.BlogPost(p, f.Links)
+	caption, markup := screens.BlogPost(p)
 	if picture := f.Links.Picture(p.CoverImageURL); picture != "" {
 		_, err := f.Bot.SendPhoto(ctx, tu.Photo(tu.ID(chat), tu.FileFromURL(picture)).
 			WithCaption(caption).WithParseMode(telego.ModeHTML).WithReplyMarkup(markup))

@@ -39,12 +39,11 @@ type Users interface {
 }
 
 type Notifier struct {
-	Store   *store.Store
-	Users   Users
-	Sender  Sender
-	SiteURL string
-	Log     *slog.Logger
-	Now     func() time.Time
+	Store  *store.Store
+	Users  Users
+	Sender Sender
+	Log    *slog.Logger
+	Now    func() time.Time
 	// Interval between worker passes.
 	Interval time.Duration
 }
@@ -56,16 +55,18 @@ func (n *Notifier) now() time.Time {
 	return time.Now()
 }
 
-func (n *Notifier) outingURL(o models.Outing) string { return n.SiteURL + "/outings/" + o.ID }
+// Buttons press back to the bot (services/bot answers this callback data):
+// everything is done in the chat.
+func botButton(text, data string) (*string, *string) { return &text, &data }
 
-func (n *Notifier) outingButton(o models.Outing) (*string, *string) {
-	text, url := "Открыть выход", n.outingURL(o)
-	return &text, &url
+// outingButton opens the outing's card in the bot, as a new message.
+func outingButton(o models.Outing) (*string, *string) {
+	return botButton("Открыть выход", "o:view:n:"+o.ID)
 }
 
 func (n *Notifier) message(userID, kind string, o models.Outing, text string) store.Notification {
-	btnText, btnURL := n.outingButton(o)
-	return store.Notification{UserID: userID, Kind: kind, OutingID: &o.ID, Text: text, ButtonText: btnText, ButtonURL: btnURL}
+	btnText, btnData := outingButton(o)
+	return store.Notification{UserID: userID, Kind: kind, OutingID: &o.ID, Text: text, ButtonText: btnText, ButtonData: btnData}
 }
 
 // enqueue queues notifications, logging rather than failing the request.
@@ -202,11 +203,12 @@ func (n *Notifier) schedule(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		text, url := "Оставить сводку", n.SiteURL+"/trails/"+o.Trail.Slug
+		// A condition report, in two taps in the bot.
+		text, data := botButton("📝 Рассказать, как маршрут", "c:s:"+o.ID)
 		items := make([]store.Notification, 0, len(participants)+1)
 		for _, userID := range append([]string{o.UserID}, participants...) {
 			items = append(items, once(store.Notification{
-				UserID: userID, Kind: "followup", OutingID: &o.ID, Text: followUpText(o), ButtonText: &text, ButtonURL: &url,
+				UserID: userID, Kind: "followup", OutingID: &o.ID, Text: followUpText(o), ButtonText: text, ButtonData: data,
 			}, o.FollowUpAt))
 		}
 		if err := n.Store.Enqueue(ctx, items, n.now()); err != nil {
@@ -268,7 +270,11 @@ func (n *Notifier) deliverOne(ctx context.Context, item store.Notification, chat
 		return n.Store.MarkNotification(ctx, item.ID, "skipped", item.Attempts, &reason, n.now())
 	}
 	var button *telegram.Button
-	if item.ButtonText != nil && item.ButtonURL != nil {
+	switch {
+	case item.ButtonText != nil && item.ButtonData != nil:
+		button = &telegram.Button{Text: *item.ButtonText, Data: *item.ButtonData}
+	case item.ButtonText != nil && item.ButtonURL != nil:
+		// Queued before buttons pressed back to the bot.
 		button = &telegram.Button{Text: *item.ButtonText, URL: *item.ButtonURL}
 	}
 	err := n.Sender.SendMessage(ctx, chat, item.Text, button)

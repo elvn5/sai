@@ -22,6 +22,7 @@ import (
 	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/blogfeed"
 	"github.com/elvn5/sai/services/bot/internal/config"
+	"github.com/elvn5/sai/services/bot/internal/drafts"
 	"github.com/elvn5/sai/services/bot/internal/handlers"
 	"github.com/elvn5/sai/services/bot/internal/migrations"
 	"github.com/elvn5/sai/services/bot/internal/screens"
@@ -88,10 +89,7 @@ func run(log *slog.Logger) error {
 	} else {
 		log.Warn("API_URL or JWT_SECRET unset: outings, tours and blog sections are off")
 	}
-	links := screens.Links{
-		Site: strings.TrimRight(cfg.Site(), "/"), MiniApp: strings.TrimRight(cfg.MiniAppURL, "/"),
-		PublicAPI: strings.TrimRight(cfg.PublicAPIURL, "/"),
-	}
+	links := screens.Links{PublicAPI: strings.TrimRight(cfg.PublicAPIURL, "/")}
 
 	options := []telego.BotOption{telego.WithLogger(botLogger{log: log, token: cfg.BotToken})}
 	if cfg.TelegramAPIURL != "" {
@@ -100,6 +98,13 @@ func run(log *slog.Logger) error {
 	bot, err := telego.NewBot(cfg.BotToken, options...)
 	if err != nil {
 		return fmt.Errorf("telegram bot: %w", err)
+	}
+
+	// The bot's @username, for the deep links it shares.
+	if me, err := bot.GetMe(ctx); err == nil {
+		links.Bot = me.Username
+	} else {
+		log.Warn("could not read the bot's username", slog.Any("error", err))
 	}
 
 	if cfg.MiniAppURL != "" {
@@ -129,7 +134,9 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("bot handler: %w", err)
 	}
-	h := &handlers.Handlers{Users: accounts, Sessions: session.New(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links}
+	h := &handlers.Handlers{
+		Users: accounts, Sessions: session.New(), Drafts: drafts.NewStore(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links,
+	}
 	if content != nil {
 		h.Content, h.Subscribers = content, db
 		feed := &blogfeed.Feed{Posts: content, Store: db, Bot: bot, Links: links, Log: log, Interval: blogFeedInterval}

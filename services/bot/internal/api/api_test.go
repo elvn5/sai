@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -152,10 +153,14 @@ func TestDeleteAlert(t *testing.T) {
 
 func TestOtherErrors(t *testing.T) {
 	// Validation errors carry an object, not a message string.
-	c, _ := newClient(t, http.StatusBadRequest, `{"formErrors":[],"fieldErrors":{"destination":["Invalid"]}}`)
+	c, _ := newClient(t, http.StatusBadRequest, `{"formErrors":[],"fieldErrors":{"destination":["Invalid","Other"],"x":[]}}`)
 	err := c.SetAllToursAlert(context.Background(), "u1", true)
-	if api.StatusOf(err) != http.StatusBadRequest || api.MessageOf(err) != "" || err.Error() != "api: 400 " {
-		t.Errorf("400: %v", err)
+	if api.StatusOf(err) != http.StatusBadRequest || api.MessageOf(err) != "" || err.Error() != "api: 400 " ||
+		len(api.FieldsOf(err)) != 1 || api.FieldsOf(err)["destination"] != "Invalid" {
+		t.Errorf("400: %v %v", err, api.FieldsOf(err))
+	}
+	if api.FieldsOf(context.Canceled) != nil {
+		t.Error("fields of another error")
 	}
 
 	c, _ = newClient(t, http.StatusOK, `not json`)
@@ -185,5 +190,69 @@ func TestPersonName(t *testing.T) {
 		if got := tc.p.Name(); got != tc.want {
 			t.Errorf("Name() = %q, want %q", got, tc.want)
 		}
+	}
+}
+
+func TestOutingWrites(t *testing.T) {
+	c, got := newClient(t, http.StatusOK, `{"id":"o9","title":"Пик","isOrganizer":true}`)
+	ctx := context.Background()
+	trail := "t1"
+	in := api.OutingInput{TrailID: &trail, Title: "Пик", StartsAt: "2026-10-24T06:00:00+06:00", MeetingPoint: "Вефа",
+		Transport: "car", Seats: 4, Level: "beginner"}
+	if o, err := c.CreateOuting(ctx, "u1", in); err != nil || o.ID != "o9" || !o.IsOrganizer {
+		t.Fatalf("create: %+v %v", o, err)
+	}
+	in.TrailID = nil
+	if _, err := c.UpdateOuting(ctx, "u1", "o9", in); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.CancelOuting(ctx, "u1", "o9"); err != nil {
+		t.Fatal(err)
+	}
+	if err := c.ReportCondition(ctx, "u1", "ala-kol", api.ConditionInput{ObservedOn: "2026-10-18", TrailState: "wet", Traction: "none"}); err != nil {
+		t.Fatal(err)
+	}
+	body := `{"trailId":"t1","title":"Пик","startsAt":"2026-10-24T06:00:00+06:00","returnsAt":null,"meetingPoint":"Вефа",` +
+		`"transport":"car","seats":4,"costPerPerson":null,"level":"beginner","description":null,"contact":null}`
+	want := []request{
+		{http.MethodPost, "/outings", body, "u1"},
+		{http.MethodPut, "/outings/o9", strings.Replace(body, `"trailId":"t1"`, `"trailId":null`, 1), "u1"},
+		{http.MethodPost, "/outings/o9/cancel", "", "u1"},
+		{http.MethodPost, "/trails/ala-kol/conditions", `{"observedOn":"2026-10-18","trailState":"wet","traction":"none"}`, "u1"},
+	}
+	for i, w := range want {
+		if (*got)[i] != w {
+			t.Errorf("request %d:\n%+v\nwant\n%+v", i, (*got)[i], w)
+		}
+	}
+}
+
+func TestDetailReads(t *testing.T) {
+	ctx := context.Background()
+	c, got := newClient(t, http.StatusOK, `[{"id":"t1","slug":"uchitel","name":"Пик Учитель","description":"…"}]`)
+	trails, err := c.Trails(ctx, "пик у")
+	if err != nil || len(trails) != 1 || trails[0].ID != "t1" || trails[0].Name != "Пик Учитель" {
+		t.Errorf("trails: %+v %v", trails, err)
+	}
+	if _, err := c.Trails(ctx, ""); err != nil {
+		t.Fatal(err)
+	}
+	if (*got)[0].uri != "/trails?search=%D0%BF%D0%B8%D0%BA+%D1%83&sort=popular" || (*got)[1].uri != "/trails?sort=popular" {
+		t.Errorf("trails requests: %+v", *got)
+	}
+
+	c, got = newClient(t, http.StatusOK, `{"id":"t1","content":"<p>x</p>","program":[{"title":"День","text":"Т"}],"capacity":12,"telegram":"@a"}`)
+	tour, err := c.Tour(ctx, "ru", "son-kol")
+	if err != nil || tour.Content != "<p>x</p>" || tour.Program[0].Title != "День" || *tour.Capacity != 12 || *tour.Telegram != "@a" {
+		t.Errorf("tour: %+v %v", tour, err)
+	}
+	if (*got)[0].uri != "/tours/ru/son-kol" {
+		t.Errorf("tour request: %+v", (*got)[0])
+	}
+
+	c, got = newClient(t, http.StatusOK, `{"id":"p1","content":"<p>y</p>"}`)
+	post, err := c.BlogPost(ctx, "ru", "checklist")
+	if err != nil || post.Content != "<p>y</p>" || (*got)[0].uri != "/blog/ru/checklist" {
+		t.Errorf("post: %+v %v %+v", post, err, *got)
 	}
 }

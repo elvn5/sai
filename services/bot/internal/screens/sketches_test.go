@@ -5,11 +5,13 @@ package screens_test
 // match the sketch exactly. Changing a screen means changing its sketch.
 
 import (
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/drafts"
 	"github.com/elvn5/sai/services/bot/internal/screens"
 )
 
@@ -18,7 +20,8 @@ func at(month time.Month, day, hour, minute int) time.Time {
 	return time.Date(2026, month, day, hour-6, minute, 0, 0, time.UTC)
 }
 
-// layout is the keyboard row by row, "text→data|url" joined with " | ".
+// layout is the keyboard row by row, "text→data|url" joined with " | "; a
+// share dialog shows as "share:<the link shared>".
 func layout(s screens.Screen) []string {
 	var out []string
 	if s.Markup == nil {
@@ -30,6 +33,10 @@ func layout(s screens.Screen) []string {
 			target := b.CallbackData + b.URL
 			if b.WebApp != nil {
 				target = "webapp:" + b.WebApp.URL
+			}
+			if q, ok := strings.CutPrefix(b.URL, "https://t.me/share/url?"); ok {
+				v, _ := url.ParseQuery(q)
+				target = "share:" + v.Get("url")
 			}
 			cells = append(cells, b.Text+"→"+target)
 		}
@@ -90,7 +97,7 @@ func TestSketchMyOutings(t *testing.T) {
 		"2 · Водопад Барскоон→o:view:u:o2",
 		"3 · Озеро Ала-Кёль→o:view:u:o3",
 		"• Предстоящие •→o:list:u | Прошедшие→o:list:p",
-		"🔎 Найти выход→o:find:0",
+		"🔎 Найти выход→o:find:0 | ➕ Собрать выход→d:new",
 	)
 }
 
@@ -100,7 +107,7 @@ func TestSketchFindOutings(t *testing.T) {
 	komsomolets := api.Outing{ID: "o4", Title: "Пик Комсомолец", StartsAt: at(11, 7, 7, 0), Status: "open",
 		Seats: 8, Taken: 2, Trail: &api.TrailRef{Name: "Ала-Арча"}}
 	more := api.Outing{ID: "o5", Title: "Кёль-Тор", StartsAt: at(11, 8, 8, 0), Status: "open", Seats: 15, Taken: 9}
-	s := screens.FindOutings([]api.Outing{uchitel, barskoon, alaKolFull, komsomolets, more}, 0, links)
+	s := screens.FindOutings([]api.Outing{uchitel, barskoon, alaKolFull, komsomolets, more}, 0)
 	checkScreen(t, s,
 		"🔎 <b>Ближайшие выходы</b>\n\n"+
 			"<b>1. Пик Учитель</b>\nсб, 24 окт., 06:00 · 👥 свободно 3 из 10 · 🏔 Ала-Арча · вы идёте\n\n"+
@@ -112,7 +119,7 @@ func TestSketchFindOutings(t *testing.T) {
 		"3 · Озеро Ала-Кёль→o:view:f:o3",
 		"4 · Пик Комсомолец→o:view:f:o4",
 		"◀️→o:find:1 | 1 / 2→noop | ▶️→o:find:1",
-		"⬅️ Мои выходы→o:list:u",
+		"➕ Собрать выход→d:new | ⬅️ Мои выходы→o:list:u",
 	)
 }
 
@@ -132,8 +139,8 @@ func TestSketchOutingCard(t *testing.T) {
 			"🧑 Организатор: Айгуль\n"+
 			"💬 Связь: @aigul_trek\n\n"+
 			"✅ Вы идёте",
-		"🌐 Открыть в Ermekten→https://ermekten.kg/outings/o1",
 		"🙅 Не смогу пойти→o:ask:u:o1",
+		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=outing_o1",
 		"⬅️ К моим выходам→o:list:u",
 	)
 	checkScreen(t, screens.LeaveConfirm(o, screens.FromMine),
@@ -160,7 +167,7 @@ func TestSketchTours(t *testing.T) {
 			"⭐ 4.8 · 23 отзыва\n\n"+
 			"<i>Перевал Калмак-Ашуу, табуны на джайлоо и звёзды над озером на высоте 3 016 м.</i>",
 		"◀️→t:f:0 | 2 / 5→noop | ▶️→t:f:2",
-		"🌐 Подробнее→https://ermekten.kg/tours/son-kol | 💔 Из избранного→t:drop:f:1:t2",
+		"📖 Подробнее→t:more:f:1:0 | 💔 Из избранного→t:drop:f:1:t2",
 		"• ❤️ Избранное •→t:f:0 | 🆕 Ближайшие→t:n:0",
 		"🔔 Сообщать о новых турах→t:alert:f:1",
 	)
@@ -185,7 +192,7 @@ func TestSketchBlog(t *testing.T) {
 			"<i>18 окт. 2026</i>\n\n"+
 			"Рюкзак на 30 литров, треккинговые палки и термос — разбираем, без чего не стоит выходить в горы осенью и что можно оставить дома.",
 		"◀️→b:7 | 1 / 8→noop | ▶️→b:1",
-		"📖 Читать статью→https://ermekten.kg/blog/first-hike-checklist",
+		"📖 Читать статью→b:read:p1:0",
 		"🔔 Присылать новые статьи→b:sub:0",
 	)
 	if p := s.Preview; p == nil || !p.ShowAboveText || p.URL != "https://api.ermekten.kg/images/1280/uploads/blog/checklist.jpg" {
@@ -207,11 +214,146 @@ func TestSketchNotifications(t *testing.T) {
 func TestSketchBlogNotification(t *testing.T) {
 	post := api.BlogPost{ID: "p9", Slug: "autumn-ala-archa", Title: "Осенняя Ала-Арча: 5 маршрутов на один день",
 		Excerpt: str("От лёгкой прогулки к водопаду до подъёма на Рацек — с перепадами высот и временем в пути.")}
-	caption, markup := screens.BlogPost(post, links)
+	caption, markup := screens.BlogPost(post)
 	checkScreen(t, screens.Screen{Text: caption, Markup: markup},
 		"📰 <b>Новая статья в блоге</b>\n\n"+
 			"<b>Осенняя Ала-Арча: 5 маршрутов на один день</b>\n"+
 			"От лёгкой прогулки к водопаду до подъёма на Рацек — с перепадами высот и временем в пути.",
-		"📖 Читать→https://ermekten.kg/blog/autumn-ala-archa | 🔕 Не присылать→n:blog_off",
+		"📖 Читать→b:read:p9:0 | 🔕 Не присылать→n:blog_off",
+	)
+}
+
+func TestSketchOrganizerCard(t *testing.T) {
+	o := barskoon
+	o.MeetingPoint, o.Transport, o.Level, o.CostPerPerson = "Южные ворота", "arranged", "beginner", num(800)
+	o.Participants = []api.Person{{FirstName: str("Айбек")}, {FirstName: str("Нурлан")}, {Username: str("aidai_kg")}, {FirstName: str("Мээрим")}}
+	checkScreen(t, screens.OutingCard(o, screens.FromMine, links, at(10, 20, 10, 6)),
+		"🥾 <b>Водопад Барскоон</b>\n🏔 Барскоон · для новичков\n\n"+
+			"📅 вс, 1 нояб., 07:30\n"+
+			"📍 Сбор: Южные ворота\n"+
+			"🚗 Заказной транспорт\n"+
+			"💳 800 сом с человека\n"+
+			"👥 ▰▰▰▱▱▱▱▱▱▱ 4 из 12 мест\n\n"+
+			"👥 Идут: Айбек, Нурлан, @aidai_kg, Мээрим\n\n"+
+			"⭐ Вы организатор",
+		"✏️ Изменить→o:edit:u:o2 | ❌ Отменить выход→o:cask:u:o2",
+		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=outing_o2",
+		"⬅️ К моим выходам→o:list:u",
+	)
+	checkScreen(t, screens.CancelConfirm(o, screens.FromMine),
+		"Отменить выход «Водопад Барскоон»?\n\nУчастников: 4 — бот сообщит им об отмене.\n\nВернуть выход после отмены не получится.",
+		"Да, отменить→o:cancel:u:o2 | Нет, оставить→o:view:u:o2",
+	)
+}
+
+// The new outing's steps drawn on the sketches: the route, the day, the
+// review.
+func TestSketchNewOuting(t *testing.T) {
+	now := at(10, 20, 10, 5)
+	d := drafts.New("aibek", now)
+	d.Trails = []api.TrailRef{{ID: "a", Name: "Пик Учитель"}, {ID: "b", Name: "Водопад Барскоон"}, {ID: "c", Name: "Озеро Ала-Кёль"},
+		{ID: "d", Name: "Кёль-Тор"}, {ID: "e", Name: "Пик Комсомолец"}, {ID: "f", Name: "Сон-Кёль"}}
+	checkScreen(t, screens.DraftScreen(d, now),
+		"➕ <b>Новый выход</b> · шаг 1 из 12\n\n"+
+			"🏔 <b>Куда идём?</b>\nВыберите маршрут из каталога или напишите его название — я поищу.",
+		"Пик Учитель→d:trail:0 | Водопад Барскоон→d:trail:1",
+		"Озеро Ала-Кёль→d:trail:2 | Кёль-Тор→d:trail:3",
+		"Пик Комсомолец→d:trail:4 | Сон-Кёль→d:trail:5",
+		"Без маршрута из каталога→d:trail:none",
+		"✖️ Отмена→d:cancel",
+	)
+
+	d.TrailID, d.TrailName, d.Title, d.Step = "a", "Пик Учитель", "Пик Учитель за один день", drafts.StepDate
+	checkScreen(t, screens.DraftScreen(d, now),
+		"➕ <b>Новый выход</b> · шаг 3 из 12\n\n"+
+			"📅 <b>Когда выходим?</b>\nВыберите день в календаре или напишите дату, например 24.10.",
+		" →noop | Октябрь 2026→noop | ▶️→d:month:2026-11",
+		"Пн→noop | Вт→noop | Ср→noop | Чт→noop | Пт→noop | Сб→noop | Вс→noop",
+		"·→noop | 20→d:date:2026-10-20 | 21→d:date:2026-10-21 | 22→d:date:2026-10-22 | 23→d:date:2026-10-23 | 24→d:date:2026-10-24 | 25→d:date:2026-10-25",
+		"26→d:date:2026-10-26 | 27→d:date:2026-10-27 | 28→d:date:2026-10-28 | 29→d:date:2026-10-29 | 30→d:date:2026-10-30 | 31→d:date:2026-10-31 |  →noop",
+		"⬅️ Назад→d:back | ✖️ Отмена→d:cancel",
+	)
+
+	d.Date, d.Time, d.Returns = "2026-10-24", "06:00", "2026-10-24T19:00"
+	d.MeetingPoint, d.Contact, d.Step, d.Reviewing = "ТЦ «Вефа», парковка", "@aibek", drafts.StepReview, true
+	checkScreen(t, screens.DraftScreen(d, now),
+		"👀 <b>Проверьте выход</b>\n\n"+
+			"🥾 <b>Пик Учитель за один день</b>\n🏔 Пик Учитель · для новичков\n\n"+
+			"📅 сб, 24 окт., 06:00 → 19:00\n"+
+			"📍 Сбор: ТЦ «Вефа», парковка\n"+
+			"🚗 На машине организатора\n"+
+			"👥 Мест: 3\n"+
+			"💬 Связь: @aibek\n\n"+
+			"Всё верно? Выход появится в ближайших — в боте и на сайте, а бот будет сообщать вам о каждом, кто запишется.",
+		"✅ Опубликовать→d:save",
+		"✏️ Изменить→d:fields | ✖️ Отмена→d:cancel",
+	)
+}
+
+func TestSketchTourMore(t *testing.T) {
+	tour := api.Tour{ID: "t2", Slug: "son-kol", Title: "Сон-Кёль: ночь в юрте", Location: str("Нарын"), DurationDays: num(3),
+		StartDate: "2027-06-12", EndDate: "2027-06-14", Price: num(18000), Capacity: num(12),
+		Content: `<p>Три дня на высокогорном озере: перевал <strong>Калмак-Ашуу</strong>, табуны на джайлоо и ночь в юрте.</p>` +
+			`<h3>Что включено</h3><ul><li>Транспорт из Бишкека</li><li>Юрта и питание</li></ul>`,
+		Program: []api.ProgramDay{
+			{Title: "Бишкек — Кочкор", Text: "Выезд в 8:00, обед в Кочкоре."},
+			{Title: "Сон-Кёль", Text: "Конная прогулка, закат."},
+		},
+		Telegram: str("@sonkol_tours"), Phone: str("+996 555 123 456")}
+	checkScreen(t, screens.TourMore(tour, screens.TabFavorites, 1, 0, true, links),
+		"🧭 <b>Сон-Кёль: ночь в юрте</b>\n"+
+			"📍 Нарын · 3 дня\n📅 12 — 14 июня\n💳 18 000 сом с человека\n\n"+
+			"👥 В группе до 12 человек\n\n"+
+			"Три дня на высокогорном озере: перевал <b>Калмак-Ашуу</b>, табуны на джайлоо и ночь в юрте.\n\n"+
+			"<b>Что включено</b>\n\n"+
+			"• Транспорт из Бишкека\n• Юрта и питание\n\n"+
+			"🗓 <b>Программа</b>\n\n"+
+			"<b>День 1. Бишкек — Кочкор</b>\nВыезд в 8:00, обед в Кочкоре.\n\n"+
+			"<b>День 2. Сон-Кёль</b>\nКонная прогулка, закат.\n\n"+
+			"📞 <b>Записаться и спросить</b>\nTelegram: @sonkol_tours\nТелефон: +996 555 123 456",
+		"💔 Из избранного→t:drop:f:1:t2:more | ⬅️ К турам→t:f:1",
+	)
+}
+
+func TestSketchArticle(t *testing.T) {
+	published := at(10, 18, 9, 0)
+	long := strings.Repeat("Литров на 30, с поясным ремнём и чехлом от дождя. ", 70)
+	post := api.BlogPost{ID: "p1", Title: "Что взять в первый поход", PublishedAt: &published,
+		Content: `<h2>Рюкзак</h2><p>` + long + `</p><h2>Одежда</h2><ul><li>Мембранная куртка</li><li>Флиска</li></ul>`}
+	first := screens.Article(post, 0, 0, links)
+	if !strings.HasPrefix(first.Text, "📰 <b>Что взять в первый поход</b> · 1/2\n<i>18 окт. 2026</i>\n\n<b>Рюкзак</b>\n\nЛитров на 30,") {
+		t.Errorf("first page:\n%s", first.Text)
+	}
+	if got := strings.Join(layout(first), "\n"); got != "Дальше ▶️→b:read:p1:1\n⬅️ К статьям→b:0" {
+		t.Errorf("first page buttons:\n%s", got)
+	}
+	second := screens.Article(post, 0, 1, links)
+	if !strings.HasPrefix(second.Text, "📰 <b>Что взять в первый поход</b> · 2/2\n\nЛитров на 30,") ||
+		!strings.HasSuffix(second.Text, "от дождя.\n\n<b>Одежда</b>\n\n• Мембранная куртка\n• Флиска") {
+		t.Errorf("second page:\n%s", second.Text)
+	}
+	if got := strings.Join(layout(second), "\n"); got != "◀️ Назад→b:read:p1:0\n⬅️ К статьям→b:0" {
+		t.Errorf("second page buttons:\n%s", got)
+	}
+}
+
+func TestSketchCondition(t *testing.T) {
+	o := alaKol
+	o.Trail = &api.TrailRef{Slug: "ala-kol", Name: "Ала-Кёль"}
+	checkScreen(t, screens.ConditionState(o),
+		"📝 <b>Как маршрут «Ала-Кёль»?</b>\n\n"+
+			"Расскажите в два нажатия — сводка появится на странице маршрута и поможет тем, кто пойдёт следом.\n\n"+
+			"<b>Какой была тропа?</b>",
+		"☀️ Сухо, тропа чистая→c:t:o3:0 | 💧 Мокро, грязь→c:t:o3:1",
+		"🌨 Местами снег→c:t:o3:2 | ❄️ Снег→c:t:o3:3",
+		"⛄ Глубокий снег→c:t:o3:4 | 🧊 Лёд→c:t:o3:5",
+		"⬅️ К выходу→o:view:p:o3",
+	)
+	checkScreen(t, screens.ConditionTraction(o, 2),
+		"📝 <b>Как маршрут «Ала-Кёль»?</b>\n\nТропа: 🌨 Местами снег\n\n<b>Что понадобилось на ноги?</b>",
+		"👟 Хватило обычной обуви→c:d:o3:2:0",
+		"🦶 Пригодились микрошипы→c:d:o3:2:1",
+		"⛓ Нужны кошки→c:d:o3:2:2",
+		"⬅️ Назад→c:s:o3",
 	)
 }

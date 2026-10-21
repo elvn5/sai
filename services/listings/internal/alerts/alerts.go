@@ -29,11 +29,10 @@ type Chats interface {
 }
 
 type Notifier struct {
-	Store   *store.Store
-	Chats   Chats
-	Sender  Sender
-	SiteURL string
-	Log     *slog.Logger
+	Store  *store.Store
+	Chats  Chats
+	Sender Sender
+	Log    *slog.Logger
 }
 
 // Linked reports whether a user has a Telegram chat to write to.
@@ -83,9 +82,6 @@ func (n *Notifier) message(tour models.Tour) (string, *telegram.Button) {
 	if tour.Price != nil {
 		lines = append(lines, fmt.Sprintf("💳 %d сом за человека", *tour.Price))
 	}
-	path := "/tours/" + tour.Slug
-	if tour.Locale != "ru" {
-		path = "/" + tour.Locale + path
-	}
-	return strings.Join(lines, "\n"), &telegram.Button{Text: "Открыть тур", URL: n.SiteURL + path}
+	// Opens the tour in the bot (services/bot answers this callback data).
+	return strings.Join(lines, "\n"), &telegram.Button{Text: "Открыть тур", Data: "t:open:" + tour.ID}
 }

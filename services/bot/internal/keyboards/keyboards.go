@@ -39,6 +39,10 @@ const (
 	BlogPrefix = "b:"
 	// Notification settings: "n:tours", "n:blog", "n:blog_off" (from a post).
 	NotifyPrefix = "n:"
+	// An outing being put together: "d:<action>[:<arg>]".
+	DraftPrefix = "d:"
+	// A trail condition report: "c:<step>:<outing id>[:<answers>]".
+	ConditionPrefix = "c:"
 )
 
 // MainMenu is the persistent menu, with a Mini App button when its URL is
@@ -87,12 +91,6 @@ func Button(text, data string) telego.InlineKeyboardButton {
 // Link is an inline button opening a URL.
 func Link(text, url string) telego.InlineKeyboardButton {
 	return tu.InlineKeyboardButton(text).WithURL(url)
-}
-
-// WebApp is an inline button opening a page of the Mini App inside
-// Telegram (private chats only).
-func WebApp(text, url string) telego.InlineKeyboardButton {
-	return tu.InlineKeyboardButton(text).WithWebApp(tu.WebAppInfo(url))
 }
 
 // Pager is "◀️ i / n ▶️" for page index of n, wrapping around; data makes

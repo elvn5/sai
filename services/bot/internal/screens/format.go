@@ -7,6 +7,7 @@ package screens
 import (
 	"fmt"
 	"html"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -25,24 +26,24 @@ type Screen struct {
 	Preview *telego.LinkPreviewOptions
 }
 
-// Links builds absolute URLs for messages.
+// Links builds absolute URLs for messages. Everything is done inside the
+// bot: links only show pictures and share the bot's own deep links.
 type Links struct {
-	// The public site, no trailing slash.
-	Site string
-	// The Mini App (the same site inside Telegram), no trailing slash;
-	// when set, buttons open pages there instead of the browser.
-	MiniApp string
 	// The gateway's public address, for /uploads/… pictures.
 	PublicAPI string
+	// The bot's @username, for t.me deep links ("" leaves them out).
+	Bot string
 }
 
-// Open is a button opening a page of the site: in the Mini App when there
-// is one, else in the browser.
-func (l Links) Open(text, path string) telego.InlineKeyboardButton {
-	if l.MiniApp != "" {
-		return keyboards.WebApp(text, l.MiniApp+path)
+// Share is a button opening Telegram's "share to a chat" dialog with a
+// deep link into the bot (start payload), nil without the bot's name.
+func (l Links) Share(text, payload, message string) *telego.InlineKeyboardButton {
+	if l.Bot == "" {
+		return nil
 	}
-	return keyboards.Link(text, l.Site+path)
+	link := "https://t.me/" + l.Bot + "?start=" + payload
+	b := keyboards.Link(text, "https://t.me/share/url?url="+url.QueryEscape(link)+"&text="+url.QueryEscape(message))
+	return &b
 }
 
 // Picture is an absolute URL of a cover Telegram can fetch, "" if none.

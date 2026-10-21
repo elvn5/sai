@@ -100,7 +100,6 @@ services:
       LEGACY_DB_NAME: ${POSTGRES_DB:-parcel_bot}
       USERS_GRPC_ADDR: users:9083
       BOT_TOKEN: ${BOT_TOKEN:-}
-      SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
     depends_on:
       postgres:
         condition: service_healthy
@@ -122,7 +121,6 @@ services:
       USERS_GRPC_ADDR: users:9083
       # Telegram notifications about outings, sent as the bot.
       BOT_TOKEN: ${BOT_TOKEN:-}
-      SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
     depends_on:
       postgres:
         condition: service_healthy
@@ -198,7 +196,6 @@ services:
       # with sessions signed with JWT_SECRET.
       API_URL: http://gateway:8080
       JWT_SECRET: ${JWT_SECRET}
-      SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
       # Cover pictures Telegram fetches itself.
       PUBLIC_API_URL: ${PUBLIC_API_BASE_URL:-http://localhost:3001}
       # Its own database: blog subscribers.

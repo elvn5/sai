@@ -16,6 +16,8 @@ type Notification struct {
 	Text       string
 	ButtonText *string
 	ButtonURL  *string
+	// Callback data for the bot, instead of a URL.
+	ButtonData *string
 	DedupKey   *string
 	Attempts   int
 }
@@ -28,9 +30,9 @@ func (s *Store) Enqueue(ctx context.Context, items []Notification, sendAfter tim
 	}
 	batch := &pgx.Batch{}
 	for _, n := range items {
-		batch.Queue(`INSERT INTO notifications (user_id, kind, outing_id, text, button_text, button_url, dedup_key, send_after)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (dedup_key) DO NOTHING`,
-			n.UserID, n.Kind, n.OutingID, n.Text, n.ButtonText, n.ButtonURL, n.DedupKey, sendAfter)
+		batch.Queue(`INSERT INTO notifications (user_id, kind, outing_id, text, button_text, button_url, button_data, dedup_key, send_after)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (dedup_key) DO NOTHING`,
+			n.UserID, n.Kind, n.OutingID, n.Text, n.ButtonText, n.ButtonURL, n.ButtonData, n.DedupKey, sendAfter)
 	}
 	return s.db.SendBatch(ctx, batch).Close()
 }
@@ -38,14 +40,14 @@ func (s *Store) Enqueue(ctx context.Context, items []Notification, sendAfter tim
 // DueNotifications returns up to limit pending notifications ready to send.
 func (s *Store) DueNotifications(ctx context.Context, now time.Time, limit int) ([]Notification, error) {
 	rows, err := s.db.Query(ctx, `SELECT id::text, user_id::text, kind, outing_id::text, text, button_text,
-		button_url, dedup_key, attempts FROM notifications
+		button_url, button_data, dedup_key, attempts FROM notifications
 		WHERE status = 'pending' AND send_after <= $1 ORDER BY created_at LIMIT $2`, now, limit)
 	if err != nil {
 		return nil, err
 	}
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Notification, error) {
 		var n Notification
-		err := r.Scan(&n.ID, &n.UserID, &n.Kind, &n.OutingID, &n.Text, &n.ButtonText, &n.ButtonURL, &n.DedupKey, &n.Attempts)
+		err := r.Scan(&n.ID, &n.UserID, &n.Kind, &n.OutingID, &n.Text, &n.ButtonText, &n.ButtonURL, &n.ButtonData, &n.DedupKey, &n.Attempts)
 		return n, err
 	})
 }

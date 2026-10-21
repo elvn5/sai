@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -79,8 +78,7 @@ func run(log *slog.Logger) error {
 	deps := handlers.Deps{Store: st, Authors: users, Log: log}
 	if cfg.BotToken != "" {
 		deps.Alerts = &alerts.Notifier{
-			Store: st, Chats: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL),
-			SiteURL: strings.TrimRight(cfg.SiteURL, "/"), Log: log,
+			Store: st, Chats: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL), Log: log,
 		}
 	}
 	grpcSrv := grpc.NewServer()

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
@@ -64,8 +63,7 @@ func run(log *slog.Logger) error {
 	deps := handlers.Deps{Store: st, Authors: users, Log: log}
 	if cfg.BotToken != "" {
 		notifier := &notify.Notifier{
-			Store: st, Users: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL),
-			SiteURL: strings.TrimRight(cfg.SiteURL, "/"), Log: log,
+			Store: st, Users: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL), Log: log,
 		}
 		deps.Notify = notifier
 		go notifier.Run(ctx)

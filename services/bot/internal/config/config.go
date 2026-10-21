@@ -12,12 +12,10 @@ type Config struct {
 	UsersGRPCAddr string `env:"USERS_GRPC_ADDR,required"`
 
 	// URL of the Ermekten Mini App (the public site). When set, the bot
-	// exposes it via the chat menu button and a keyboard button.
+	// exposes it via the chat menu button and the "Открыть Ermekten"
+	// keyboard button — the only ways into it: everything else is done in
+	// the chat.
 	MiniAppURL string `env:"MINI_APP_URL"`
-
-	// The public site, for links (no trailing slash); MINI_APP_URL when
-	// unset.
-	SiteURL string `env:"SITE_URL"`
 
 	// The gateway the bot calls on a user's behalf (outings, tours,
 	// favorites, the blog), e.g. http://gateway:8080 on the Docker network,
@@ -40,12 +38,4 @@ type Config struct {
 
 func (c Config) DSN() string {
 	return database.DSN(c.PostgresHost, c.PostgresPort, c.PostgresUser, c.PostgresPassword, c.Database)
-}
-
-// Site is the public site's address, for links in messages.
-func (c Config) Site() string {
-	if c.SiteURL != "" {
-		return c.SiteURL
-	}
-	return c.MiniAppURL
 }

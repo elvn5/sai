@@ -21,8 +21,6 @@ type Config struct {
 	// without a token.
 	BotToken       string `env:"BOT_TOKEN"`
 	TelegramAPIURL string `env:"TELEGRAM_API_URL"`
-	// The public site, for links in notifications (no trailing slash).
-	SiteURL string `env:"SITE_URL" envDefault:"http://localhost:3011"`
 }
 
 func (c Config) DSN() string {

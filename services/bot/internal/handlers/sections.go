@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -27,12 +28,19 @@ type Content interface {
 	Outing(ctx context.Context, userID, id string) (api.Outing, error)
 	JoinOuting(ctx context.Context, userID, id string) error
 	LeaveOuting(ctx context.Context, userID, id string) error
+	CreateOuting(ctx context.Context, userID string, in api.OutingInput) (api.Outing, error)
+	UpdateOuting(ctx context.Context, userID, id string, in api.OutingInput) (api.Outing, error)
+	CancelOuting(ctx context.Context, userID, id string) error
+	Trails(ctx context.Context, search string) ([]api.TrailRef, error)
+	ReportCondition(ctx context.Context, userID, trail string, in api.ConditionInput) error
 	UpcomingTours(ctx context.Context) ([]api.Tour, error)
+	Tour(ctx context.Context, locale, slug string) (api.Tour, error)
 	FavoriteTours(ctx context.Context, userID string) ([]api.Tour, error)
 	SetFavoriteTour(ctx context.Context, userID, tourID string, saved bool) error
 	TourAlerts(ctx context.Context, userID string) ([]string, error)
 	SetAllToursAlert(ctx context.Context, userID string, on bool) error
 	BlogPosts(ctx context.Context) ([]api.BlogPost, error)
+	BlogPost(ctx context.Context, locale, slug string) (api.BlogPost, error)
 }
 
 // Subscribers keeps who reads the blog in Telegram (store.Store).
@@ -194,7 +202,7 @@ func (h *Handlers) outingPress(ctx *th.Context, q telego.CallbackQuery) error {
 		if err := h.answer(ctx, q, ""); err != nil {
 			return err
 		}
-		return h.show(ctx, q, screens.FindOutings(list, page, h.Links))
+		return h.show(ctx, q, screens.FindOutings(list, page))
 
 	case len(parts) == 3:
 		return h.outingAction(ctx, q, userID, parts[0], parts[1], parts[2])
@@ -220,8 +228,23 @@ func (h *Handlers) markJoined(ctx context.Context, userID string, list []api.Out
 }
 
 func (h *Handlers) outingAction(ctx *th.Context, q telego.CallbackQuery, userID, action, from, id string) error {
+	// A button under a notification opens the card as a message of its
+	// own, keeping the notification.
+	notice := from == screens.FromNotice
+	if notice {
+		from = screens.FromMine
+	}
 	toast := ""
 	switch action {
+	case screens.ActCancel:
+		err := h.Content.CancelOuting(ctx, userID, id)
+		if msg, known := organizerErrors[api.MessageOf(err)]; known {
+			toast = msg
+		} else if err != nil && api.StatusOf(err) != http.StatusNotFound {
+			return h.failedPress(ctx, q, err)
+		} else if err == nil {
+			toast = "Выход отменён. Участники получат уведомление."
+		}
 	case screens.ActJoin:
 		err := h.Content.JoinOuting(ctx, userID, id)
 		if msg, known := joinErrors[api.MessageOf(err)]; known {
@@ -258,8 +281,15 @@ func (h *Handlers) outingAction(ctx *th.Context, q telego.CallbackQuery, userID,
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}
-	if action == screens.ActAsk && o.IsJoined {
+	switch {
+	case action == screens.ActAsk && o.IsJoined:
 		return h.show(ctx, q, screens.LeaveConfirm(o, from))
+	case action == screens.ActCancelAsk && o.IsOrganizer && o.Status == "open":
+		return h.show(ctx, q, screens.CancelConfirm(o, from))
+	case action == screens.ActEdit && o.IsOrganizer && o.Status == "open" && o.StartsAt.After(h.now()):
+		return h.editDraft(ctx, q, o)
+	case notice:
+		return h.send(ctx, chatOf(q), screens.OutingCard(o, from, h.Links, h.now()))
 	}
 	return h.show(ctx, q, screens.OutingCard(o, from, h.Links, h.now()))
 }
@@ -319,55 +349,110 @@ func (h *Handlers) tourPress(ctx *th.Context, q telego.CallbackQuery) error {
 	if err != nil {
 		return err
 	}
-	// "<tab>:<index>", or "<action>:<tab>:<index>[:<id>]".
-	tab := parts[0]
+	if len(parts) == 2 && parts[0] == screens.ActOpen {
+		return h.openTour(ctx, q, userID, parts[1])
+	}
+	// "<tab>:<index>", or "<action>:<tab>:<index>[:<id>[:more]]", or
+	// "more:<tab>:<index>:<page>".
+	tab, action := parts[0], ""
 	if len(parts) >= 3 {
-		tab = parts[1]
+		action, tab = parts[0], parts[1]
 	}
 	if len(parts) < 2 || (tab != screens.TabFavorites && tab != screens.TabUpcoming) {
 		return h.answer(ctx, q, "")
 	}
-	toast := ""
-	if len(parts) >= 3 {
-		switch action := parts[0]; action {
-		case screens.ActSave, screens.ActDrop:
-			if len(parts) != 4 {
-				return h.answer(ctx, q, "")
-			}
-			saved := action == screens.ActSave
-			if err := h.Content.SetFavoriteTour(ctx, userID, parts[3], saved); err != nil && api.StatusOf(err) != http.StatusNotFound {
-				return h.failedPress(ctx, q, err)
-			}
-			toast = "❤️ Добавлено в избранное"
-			if !saved {
-				toast = "Убрано из избранного"
-			}
-		case screens.ActAlert:
-			v, err := h.toursView(ctx, userID, parts[1], 0)
-			if err != nil {
-				return h.failedPress(ctx, q, err)
-			}
-			if err := h.Content.SetAllToursAlert(ctx, userID, !v.AlertOn); err != nil {
-				return h.failedPress(ctx, q, err)
-			}
-			toast = "🔔 Сообщим о новых турах"
-			if v.AlertOn {
-				toast = "Больше не сообщаем о новых турах"
-			}
-		}
-	}
 	index, _ := strconv.Atoi(parts[len(parts)-1])
-	if len(parts) >= 3 {
+	if action != "" {
 		index, _ = strconv.Atoi(parts[2])
+	}
+	toast, more, page := "", false, 0
+	switch action {
+	case screens.ActMore:
+		more = true
+		if len(parts) == 4 {
+			page, _ = strconv.Atoi(parts[3])
+		}
+	case screens.ActSave, screens.ActDrop:
+		if len(parts) != 4 && len(parts) != 5 {
+			return h.answer(ctx, q, "")
+		}
+		more = len(parts) == 5 && parts[4] == screens.ActMore
+		saved := action == screens.ActSave
+		if err := h.Content.SetFavoriteTour(ctx, userID, parts[3], saved); err != nil && api.StatusOf(err) != http.StatusNotFound {
+			return h.failedPress(ctx, q, err)
+		}
+		toast = "❤️ Добавлено в избранное"
+		if !saved {
+			toast = "Убрано из избранного"
+		}
+	case screens.ActAlert:
+		v, err := h.toursView(ctx, userID, tab, 0)
+		if err != nil {
+			return h.failedPress(ctx, q, err)
+		}
+		if err := h.Content.SetAllToursAlert(ctx, userID, !v.AlertOn); err != nil {
+			return h.failedPress(ctx, q, err)
+		}
+		toast = "🔔 Сообщим о новых турах"
+		if v.AlertOn {
+			toast = "Больше не сообщаем о новых турах"
+		}
 	}
 	v, err := h.toursView(ctx, userID, tab, index)
 	if err != nil {
 		return h.failedPress(ctx, q, err)
 	}
+	if more && index >= 0 && index < len(v.Tours) {
+		t := v.Tours[index]
+		locale := t.Locale
+		if locale == "" {
+			locale = "ru"
+		}
+		full, err := h.Content.Tour(ctx, locale, t.Slug)
+		if err != nil && api.StatusOf(err) != http.StatusNotFound {
+			return h.failedPress(ctx, q, err)
+		}
+		if err == nil {
+			if err := h.answer(ctx, q, toast); err != nil {
+				return err
+			}
+			return h.show(ctx, q, screens.TourMore(full, tab, index, page, v.Favorites[full.ID], h.Links))
+		}
+		toast = "Этот тур больше не опубликован"
+	}
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}
 	return h.show(ctx, q, screens.Tours(v, h.Links))
+}
+
+// openTour shows a new tour's description, from a new-tour alert, as a
+// message of its own (the alert stays).
+func (h *Handlers) openTour(ctx *th.Context, q telego.CallbackQuery, userID, id string) error {
+	v, err := h.toursView(ctx, userID, screens.TabUpcoming, 0)
+	if err != nil {
+		return h.failedPress(ctx, q, err)
+	}
+	index := slices.IndexFunc(v.Tours, func(t api.Tour) bool { return t.ID == id })
+	if index < 0 {
+		return h.answer(ctx, q, "Этого тура уже нет среди ближайших")
+	}
+	t := v.Tours[index]
+	locale := t.Locale
+	if locale == "" {
+		locale = "ru"
+	}
+	full, err := h.Content.Tour(ctx, locale, t.Slug)
+	if api.StatusOf(err) == http.StatusNotFound {
+		return h.answer(ctx, q, "Этот тур больше не опубликован")
+	}
+	if err != nil {
+		return h.failedPress(ctx, q, err)
+	}
+	if err := h.answer(ctx, q, ""); err != nil {
+		return err
+	}
+	return h.send(ctx, chatOf(q), screens.TourMore(full, screens.TabUpcoming, index, 0, v.Favorites[full.ID], h.Links))
 }
 
 // --- Blog ---
@@ -395,6 +480,10 @@ func (h *Handlers) blogMenu(ctx *th.Context, msg telego.Message) error {
 func (h *Handlers) blogPress(ctx *th.Context, q telego.CallbackQuery) error {
 	parts := strings.Split(strings.TrimPrefix(q.Data, keyboards.BlogPrefix), ":")
 	chatID := chatOf(q)
+	if len(parts) == 3 && parts[0] == screens.ActRead {
+		page, _ := strconv.Atoi(parts[2])
+		return h.readPost(ctx, q, parts[1], page)
+	}
 	toast := ""
 	if len(parts) == 2 {
 		on := parts[0] == screens.ActSubscribe
@@ -416,6 +505,34 @@ func (h *Handlers) blogPress(ctx *th.Context, q telego.CallbackQuery) error {
 		return err
 	}
 	return h.show(ctx, q, s)
+}
+
+// readPost shows a page of a post (found among the published by id).
+func (h *Handlers) readPost(ctx *th.Context, q telego.CallbackQuery, id string, page int) error {
+	posts, err := h.Content.BlogPosts(ctx)
+	if err != nil {
+		return h.failedPress(ctx, q, err)
+	}
+	index := slices.IndexFunc(posts, func(p api.BlogPost) bool { return p.ID == id })
+	if index < 0 {
+		return h.answer(ctx, q, "Эта статья больше не опубликована")
+	}
+	p := posts[index]
+	locale := p.Locale
+	if locale == "" {
+		locale = "ru"
+	}
+	full, err := h.Content.BlogPost(ctx, locale, p.Slug)
+	if api.StatusOf(err) == http.StatusNotFound {
+		return h.answer(ctx, q, "Эта статья больше не опубликована")
+	}
+	if err != nil {
+		return h.failedPress(ctx, q, err)
+	}
+	if err := h.answer(ctx, q, ""); err != nil {
+		return err
+	}
+	return h.show(ctx, q, screens.Article(full, index, page, h.Links))
 }
 
 // --- Notification settings ---

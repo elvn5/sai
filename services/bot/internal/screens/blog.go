@@ -12,10 +12,12 @@ import (
 )
 
 // Blog callback actions: "b:<index>" shows a post, "b:sub:<index>" and
-// "b:unsub:<index>" change the subscription and show it again.
+// "b:unsub:<index>" change the subscription and show it again,
+// "b:read:<post id>:<page>" reads a post.
 const (
 	ActSubscribe   = "sub"
 	ActUnsubscribe = "unsub"
+	ActRead        = "read"
 )
 
 // Notification settings callbacks.
@@ -32,12 +34,9 @@ func blogAction(action string, index int) string {
 	return keyboards.BlogPrefix + action + ":" + strconv.Itoa(index)
 }
 
-func postPath(p api.BlogPost) string {
-	path := "/blog/" + p.Slug
-	if p.Locale != "" && p.Locale != "ru" {
-		path = "/" + p.Locale + path
-	}
-	return path
+// ReadData opens a page of a post.
+func ReadData(postID string, page int) string {
+	return keyboards.BlogPrefix + ActRead + ":" + postID + ":" + strconv.Itoa(page)
 }
 
 // Blog shows one post of the blog, newest first, with its cover.
@@ -64,7 +63,7 @@ func Blog(posts []api.BlogPost, index int, subscribed bool, links Links) Screen 
 		if n > 1 {
 			buttons = append(buttons, keyboards.Pager(index, n, BlogData))
 		}
-		buttons = append(buttons, []telego.InlineKeyboardButton{links.Open("📖 Читать статью", postPath(p))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("📖 Читать статью", ReadData(p.ID, 0))})
 	}
 	sub := keyboards.Button("🔔 Присылать новые статьи", blogAction(ActSubscribe, index))
 	if subscribed {
@@ -76,7 +75,7 @@ func Blog(posts []api.BlogPost, index int, subscribed bool, links Links) Screen 
 
 // BlogPost is a new post as a notification: the caption of its cover
 // photo (or a message with a preview when it has none) and its buttons.
-func BlogPost(p api.BlogPost, links Links) (caption string, markup *telego.InlineKeyboardMarkup) {
+func BlogPost(p api.BlogPost) (caption string, markup *telego.InlineKeyboardMarkup) {
 	var b strings.Builder
 	b.WriteString("📰 <b>Новая статья в блоге</b>\n\n<b>" + esc(p.Title) + "</b>")
 	if p.Excerpt != nil && *p.Excerpt != "" {
@@ -84,9 +83,53 @@ func BlogPost(p api.BlogPost, links Links) (caption string, markup *telego.Inlin
 		b.WriteString("\n" + esc(clip(*p.Excerpt, 600)))
 	}
 	return b.String(), rows([]telego.InlineKeyboardButton{
-		links.Open("📖 Читать", postPath(p)),
+		keyboards.Button("📖 Читать", ReadData(p.ID, 0)),
 		keyboards.Button("🔕 Не присылать", NotifyBlogOff),
 	})
+}
+
+// Article is a page of a post, read in the chat: the cover above the
+// first page, pages turned with buttons. index is the post's place in the
+// blog, for the way back.
+func Article(p api.BlogPost, index, page int, links Links) Screen {
+	pages := Pages(Paragraphs(p.Content), pageLimit)
+	if len(pages) == 0 && p.Excerpt != nil {
+		pages = Pages(PlainParagraphs(*p.Excerpt), pageLimit)
+	}
+	n := max(len(pages), 1)
+	page = min(max(page, 0), n-1)
+
+	var b strings.Builder
+	b.WriteString("📰 <b>" + esc(p.Title) + "</b>")
+	if n > 1 {
+		fmt.Fprintf(&b, " · %d/%d", page+1, n)
+	}
+	picture := ""
+	if page == 0 {
+		picture = links.Picture(p.CoverImageURL)
+		if p.PublishedAt != nil {
+			b.WriteString("\n<i>" + day(*p.PublishedAt) + "</i>")
+		}
+	}
+	if len(pages) > 0 {
+		b.WriteString("\n\n" + pages[page])
+	} else {
+		b.WriteString("\n\nУ статьи пока нет текста.")
+	}
+
+	var buttons [][]telego.InlineKeyboardButton
+	if n > 1 {
+		var row []telego.InlineKeyboardButton
+		if page > 0 {
+			row = append(row, keyboards.Button("◀️ Назад", ReadData(p.ID, page-1)))
+		}
+		if page < n-1 {
+			row = append(row, keyboards.Button("Дальше ▶️", ReadData(p.ID, page+1)))
+		}
+		buttons = append(buttons, row)
+	}
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("⬅️ К статьям", BlogData(index))})
+	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: coverPreview(picture)}
 }
 
 // NotifySettings is what the notification settings show.

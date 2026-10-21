@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"sync"
@@ -27,7 +28,10 @@ type fakeContent struct {
 	favorites map[string]bool
 	alerts    []string
 	posts     []api.BlogPost
+	trails    []api.TrailRef
 	joinErr   error
+	// saveErr refuses creating or changing an outing.
+	saveErr error
 	// down fails every read, as an unreachable gateway would.
 	down bool
 }
@@ -112,7 +116,72 @@ func (f *fakeContent) LeaveOuting(_ context.Context, userID, id string) error {
 	return nil
 }
 
+func (f *fakeContent) CreateOuting(_ context.Context, userID string, in api.OutingInput) (api.Outing, error) {
+	raw, _ := json.Marshal(in)
+	f.record("create " + userID + " " + string(raw))
+	if f.saveErr != nil {
+		return api.Outing{}, f.saveErr
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	starts, _ := time.Parse(time.RFC3339, in.StartsAt)
+	o := api.Outing{ID: "new", Title: in.Title, StartsAt: starts, MeetingPoint: in.MeetingPoint, Transport: in.Transport,
+		Seats: in.Seats, Level: in.Level, Status: "open", IsOrganizer: true}
+	f.outings["new"] = o
+	return o, nil
+}
+
+func (f *fakeContent) UpdateOuting(_ context.Context, userID, id string, in api.OutingInput) (api.Outing, error) {
+	raw, _ := json.Marshal(in)
+	f.record("update " + userID + " " + id + " " + string(raw))
+	if f.saveErr != nil {
+		return api.Outing{}, f.saveErr
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	o := f.outings[id]
+	o.Title, o.Seats = in.Title, in.Seats
+	f.outings[id] = o
+	return o, nil
+}
+
+func (f *fakeContent) CancelOuting(_ context.Context, userID, id string) error {
+	f.record("cancel " + userID + " " + id)
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	o := f.outings[id]
+	o.Status = "cancelled"
+	f.outings[id] = o
+	return nil
+}
+
+func (f *fakeContent) Trails(_ context.Context, search string) ([]api.TrailRef, error) {
+	f.record("trails " + search)
+	var out []api.TrailRef
+	for _, t := range f.trails {
+		if search == "" || strings.Contains(strings.ToLower(t.Name), strings.ToLower(search)) {
+			out = append(out, t)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeContent) ReportCondition(_ context.Context, userID, trail string, in api.ConditionInput) error {
+	f.record("condition " + userID + " " + trail + " " + in.ObservedOn + " " + in.TrailState + " " + in.Traction)
+	return nil
+}
+
 func (f *fakeContent) UpcomingTours(context.Context) ([]api.Tour, error) { return f.tours, nil }
+
+func (f *fakeContent) Tour(_ context.Context, locale, slug string) (api.Tour, error) {
+	for _, t := range f.tours {
+		if t.Slug == slug {
+			t.Content = "<p>Описание тура " + t.Title + "</p>"
+			return t, nil
+		}
+	}
+	return api.Tour{}, &api.Error{Status: 404}
+}
 
 func (f *fakeContent) FavoriteTours(context.Context, string) ([]api.Tour, error) {
 	if f.down {
@@ -162,6 +231,16 @@ func (f *fakeContent) BlogPosts(context.Context) ([]api.BlogPost, error) {
 	return f.posts, nil
 }
 
+func (f *fakeContent) BlogPost(_ context.Context, locale, slug string) (api.BlogPost, error) {
+	for _, p := range f.posts {
+		if p.Slug == slug {
+			p.Content = "<h2>Рюкзак</h2><p>Литров на 30.</p>"
+			return p, nil
+		}
+	}
+	return api.BlogPost{}, &api.Error{Status: 404}
+}
+
 type fakeSubscribers struct {
 	mu   sync.Mutex
 	subs map[int64]bool
@@ -190,11 +269,12 @@ func newSections(t *testing.T) (*harness, *fakeContent, *fakeSubscribers) {
 		tours:     []api.Tour{{ID: "t1", Slug: "son-kol", Title: "Сон-Кёль"}, {ID: "t2", Slug: "ala-kol", Title: "Ала-Кёль"}},
 		favorites: map[string]bool{},
 		posts:     []api.BlogPost{{ID: "p1", Slug: "checklist", Title: "Чек-лист"}},
+		trails:    []api.TrailRef{{ID: "tr1", Slug: "uchitel", Name: "Пик Учитель"}, {ID: "tr2", Slug: "ala-kol", Name: "Ала-Кёль"}},
 	}
 	subs := &fakeSubscribers{subs: map[int64]bool{}}
 	h := newHarness(t, miniApp, func(hs *handlers.Handlers) {
 		hs.Content, hs.Subscribers = content, subs
-		hs.Links = screens.Links{Site: "https://ermekten.kg", MiniApp: miniApp}
+		hs.Links = screens.Links{Bot: "ermekten_bot"}
 		hs.Now = func() time.Time { return now }
 	})
 	h.users.account = users.Account{ID: "u1"}
@@ -513,15 +593,4 @@ func TestSectionsUsersDown(t *testing.T) {
 	h.message("🥾 Мои выходы")
 	h.message("/start outing_o1")
 	h.quiet()
-}
-
-// "Собрать выход" opens the Mini App, not the browser (as Telegram gets it).
-func TestCreateOutingOpensMiniApp(t *testing.T) {
-	h, content, _ := newSections(t)
-	content.outings = map[string]api.Outing{}
-	h.press("o:find:0")
-	m := h.expect("answerCallbackQuery", "editMessageText")[1].markup()
-	if !strings.Contains(m, `{"text":"➕ Собрать выход","web_app":{"url":"https://ermekten.com/outings/new"}}`) || strings.Contains(m, `"url":"https://ermekten.kg`) {
-		t.Errorf("create button: %s", m)
-	}
 }

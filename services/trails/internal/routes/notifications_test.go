@@ -74,7 +74,7 @@ func TestOutingNotifications(t *testing.T) {
 	deps.Now = func() time.Time { return clock }
 	tg := &fakeTelegram{blocked: map[int64]bool{}}
 	notifier := &notify.Notifier{Store: deps.Store, Users: usersWithChats{users}, Sender: tg,
-		SiteURL: "https://ermekten.kg", Log: slog.New(slog.DiscardHandler), Now: func() time.Time { return clock }}
+		Log: slog.New(slog.DiscardHandler), Now: func() time.Time { return clock }}
 	deps.Notify = notifier
 	gin.SetMode(gin.TestMode)
 	c := client{t, routes.Setup(deps, users, secret)}
@@ -95,7 +95,7 @@ func TestOutingNotifications(t *testing.T) {
 	sent := tg.take()
 	if len(sent) != 3 || sent[0].chat != 1001 || !strings.Contains(sent[0].text, "<b>User 1111</b> присоединяется") ||
 		!strings.Contains(sent[0].text, "«Комсомолец &lt;тест&gt;» (сб, 17 окт., 06:00)") || !strings.Contains(sent[0].text, "Занято мест: 1 из 3") ||
-		!strings.Contains(sent[2].text, "не сможет пойти") || sent[0].button.URL != "https://ermekten.kg/outings/"+id {
+		!strings.Contains(sent[2].text, "не сможет пойти") || sent[0].button.Data != "o:view:n:"+id || sent[0].button.URL != "" {
 		t.Fatalf("join/leave: %+v", sent)
 	}
 
@@ -138,11 +138,11 @@ func TestOutingNotifications(t *testing.T) {
 		}
 	}
 
-	// After the outing: a request for a condition report, linking the route.
+	// After the outing: a request for a condition report, answered in the bot.
 	clock = time.Date(2026, 10, 17, 14, 0, 0, 0, time.UTC) // start + 10 h + 2 h
 	notifier.Tick(ctx)
 	sent = tg.take()
-	if len(sent) != 2 || !strings.Contains(sent[0].text, "Как прошёл выход") || sent[0].button.URL != "https://ermekten.kg/trails/komsomolets" {
+	if len(sent) != 2 || !strings.Contains(sent[0].text, "Как прошёл выход") || sent[0].button.Data != "c:s:"+id {
 		t.Fatalf("follow-up: %+v", sent)
 	}
 	notifier.Tick(ctx)
@@ -157,7 +157,7 @@ func TestNotificationDelivery(t *testing.T) {
 	deps.Now = func() time.Time { return clock }
 	tg := &fakeTelegram{blocked: map[int64]bool{1003: true}}
 	notifier := &notify.Notifier{Store: deps.Store, Users: usersWithChats{users}, Sender: tg,
-		SiteURL: "https://ermekten.kg", Log: slog.New(slog.DiscardHandler), Now: func() time.Time { return clock }}
+		Log: slog.New(slog.DiscardHandler), Now: func() time.Time { return clock }}
 	deps.Notify = notifier
 	gin.SetMode(gin.TestMode)
 	c := client{t, routes.Setup(deps, users, secret)}
@@ -199,7 +199,7 @@ func TestMovedOutingIsRemindedAgain(t *testing.T) {
 	deps.Now = func() time.Time { return clock }
 	tg := &fakeTelegram{blocked: map[int64]bool{}}
 	notifier := &notify.Notifier{Store: deps.Store, Users: usersWithChats{users}, Sender: tg,
-		SiteURL: "https://ermekten.kg", Log: slog.New(slog.DiscardHandler), Now: func() time.Time { return clock }}
+		Log: slog.New(slog.DiscardHandler), Now: func() time.Time { return clock }}
 	deps.Notify = notifier
 	gin.SetMode(gin.TestMode)
 	c := client{t, routes.Setup(deps, users, secret)}

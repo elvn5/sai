@@ -26,10 +26,12 @@ func (e *RateLimitedError) Error() string {
 	return fmt.Sprintf("telegram rate limit, retry after %s", e.After)
 }
 
-// Button is an inline keyboard button that opens a URL.
+// Button is an inline keyboard button that opens a URL, or — with Data —
+// presses back to the bot (callback data the bot's own handlers answer).
 type Button struct {
 	Text string
 	URL  string
+	Data string
 }
 
 type Client struct {
@@ -60,8 +62,9 @@ type inlineKeyboard struct {
 }
 
 type inlineButton struct {
-	Text string `json:"text"`
-	URL  string `json:"url"`
+	Text         string `json:"text"`
+	URL          string `json:"url,omitempty"`
+	CallbackData string `json:"callback_data,omitempty"`
 }
 
 type apiResponse struct {
@@ -81,7 +84,7 @@ func (c *Client) SendMessage(ctx context.Context, chatID int64, text string, but
 		LinkPreviewOptions: map[string]bool{"is_disabled": true},
 	}
 	if button != nil {
-		req.ReplyMarkup = &inlineKeyboard{InlineKeyboard: [][]inlineButton{{{Text: button.Text, URL: button.URL}}}}
+		req.ReplyMarkup = &inlineKeyboard{InlineKeyboard: [][]inlineButton{{{Text: button.Text, URL: button.URL, CallbackData: button.Data}}}}
 	}
 	body, err := json.Marshal(req)
 	if err != nil {

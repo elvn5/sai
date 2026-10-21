@@ -101,7 +101,7 @@ func TestFeed(t *testing.T) {
 	store := &fakeStore{seen: map[string]bool{}, subs: map[int64]bool{42: true, 13: true}}
 	bot := &fakeBot{}
 	feed := &blogfeed.Feed{Posts: posts, Store: store, Bot: bot, Log: slog.New(slog.DiscardHandler),
-		Links: screens.Links{Site: "https://ermekten.kg"}}
+		Links: screens.Links{}}
 	ctx := context.Background()
 
 	// The first pass only remembers what is there.
@@ -155,7 +155,7 @@ func newFeed(posts *fakePosts, subs ...int64) (*blogfeed.Feed, *fakeStore, *fake
 	}
 	bot := &fakeBot{}
 	return &blogfeed.Feed{Posts: posts, Store: store, Bot: bot, Log: slog.New(slog.DiscardHandler),
-		Links: screens.Links{Site: "https://ermekten.kg"}, Interval: time.Hour}, store, bot
+		Links: screens.Links{}, Interval: time.Hour}, store, bot
 }
 
 // Telegram couldn't fetch the cover: the post goes as text.

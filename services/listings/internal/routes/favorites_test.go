@@ -50,7 +50,7 @@ func setupWithAlerts(t *testing.T) (client, fakeSender) {
 	log := slog.New(slog.DiscardHandler)
 	gin.SetMode(gin.TestMode)
 	return client{t, routes.Setup(handlers.Deps{Store: st, Authors: testUsers, Log: log, Alerts: &alerts.Notifier{
-		Store: st, Chats: fakeChats{}, Sender: sent, SiteURL: "https://ermekten.com", Log: log,
+		Store: st, Chats: fakeChats{}, Sender: sent, Log: log,
 	}}, testUsers, secret)}, sent
 }
 
@@ -147,7 +147,8 @@ func TestTourAlerts(t *testing.T) {
 	c.do("POST", "/tours", detailedTour, partner)
 	select {
 	case m := <-sent:
-		if m.chat != 42 || !strings.Contains(m.text, "Сон-Куль") || m.button == nil || m.button.URL != "https://ermekten.com/tours/son-kul" {
+		if m.chat != 42 || !strings.Contains(m.text, "Сон-Куль") || m.button == nil ||
+			!strings.HasPrefix(m.button.Data, "t:open:") || m.button.URL != "" {
 			t.Errorf("message: %+v", m)
 		}
 	case <-time.After(3 * time.Second):

@@ -17,6 +17,7 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/drafts"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 	"github.com/elvn5/sai/services/bot/internal/screens"
 	"github.com/elvn5/sai/services/bot/internal/session"
@@ -50,7 +51,9 @@ type Handlers struct {
 	// are set.
 	Content     Content
 	Subscribers Subscribers
-	Links       screens.Links
+	// Outings being put together, step by step.
+	Drafts *drafts.Store
+	Links  screens.Links
 	// Now is overridable in tests.
 	Now func() time.Time
 }
@@ -58,6 +61,9 @@ type Handlers struct {
 // Register routes updates to the handlers. The first matching route wins,
 // so free text (a value being edited) comes last.
 func (h *Handlers) Register(bh *th.BotHandler) {
+	if h.Drafts == nil {
+		h.Drafts = drafts.NewStore()
+	}
 	bh.HandleMessage(h.start, th.CommandEqual("start"))
 	bh.HandleMessage(h.profile, th.Or(th.TextEqual(keyboards.Profile), th.CommandEqual("profile")))
 	bh.HandleMessage(h.support, th.Or(th.TextEqual(keyboards.Support), th.CommandEqual("support")))
@@ -70,6 +76,8 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 		bh.HandleCallbackQuery(h.tourPress, th.CallbackDataPrefix(keyboards.ToursPrefix))
 		bh.HandleCallbackQuery(h.blogPress, th.CallbackDataPrefix(keyboards.BlogPrefix))
 		bh.HandleCallbackQuery(h.notifyPress, th.CallbackDataPrefix(keyboards.NotifyPrefix))
+		bh.HandleCallbackQuery(h.draftPress, th.CallbackDataPrefix(keyboards.DraftPrefix))
+		bh.HandleCallbackQuery(h.conditionPress, th.CallbackDataPrefix(keyboards.ConditionPrefix))
 	}
 	bh.HandleCallbackQuery(h.noop, th.CallbackDataEqual(keyboards.Noop))
 	bh.HandleCallbackQuery(h.linkMove, th.CallbackDataPrefix(keyboards.LinkMovePrefix))
@@ -314,11 +322,15 @@ func (h *Handlers) editCancel(ctx *th.Context, q telego.CallbackQuery) error {
 	return h.reply(ctx, chatID, "Редактирование отменено.", h.mainMenu())
 }
 
-// text saves the value of a profile field being edited; other text is
-// ignored.
+// text saves the value of a profile field being edited, or answers the
+// step of an outing being put together; other text is ignored.
 func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 	field, ok := h.Sessions.Consume(msg.Chat.ID)
 	if !ok {
+		if h.sections() {
+			_, err := h.draftText(ctx, msg)
+			return err
+		}
 		return nil
 	}
 	if msg.From == nil {

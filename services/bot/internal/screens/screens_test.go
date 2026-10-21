@@ -2,6 +2,8 @@ package screens_test
 
 import (
 	"encoding/json"
+	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +14,7 @@ import (
 
 var (
 	now   = time.Date(2026, 10, 20, 4, 0, 0, 0, time.UTC) // 10:00 in Bishkek
-	links = screens.Links{Site: "https://ermekten.kg", PublicAPI: "https://api.ermekten.kg"}
+	links = screens.Links{PublicAPI: "https://api.ermekten.kg", Bot: "ermekten_bot"}
 )
 
 func str(s string) *string { return &s }
@@ -112,8 +114,10 @@ func TestOutingCardActions(t *testing.T) {
 	if s.Text != want {
 		t.Errorf("card:\n%s\nwant:\n%s", s.Text, want)
 	}
-	if got := buttons(s); strings.Join(got, ",") != "🌐 Открыть в Ermekten→https://ermekten.kg/outings/o1,"+
-		"🙅 Не смогу пойти→o:ask:f:o1,⬅️ К ближайшим выходам→o:find:0" {
+	if got := buttons(s); strings.Join(got, ",") != "🙅 Не смогу пойти→o:ask:f:o1,"+
+		"📤 Позвать друзей→https://t.me/share/url?url="+url.QueryEscape("https://t.me/ermekten_bot?start=outing_o1")+
+		"&text="+url.QueryEscape("Пойдём в горы: «Пик Учитель», сб, 24 окт., 10:00")+","+
+		"⬅️ К ближайшим выходам→o:find:0" {
 		t.Errorf("joined buttons: %v", got)
 	}
 
@@ -123,16 +127,24 @@ func TestOutingCardActions(t *testing.T) {
 	}
 	o.Taken = 10
 	full := screens.OutingCard(o, screens.FromMine, links, now)
-	if strings.Contains(strings.Join(buttons(full), ","), "o:join") || !strings.HasSuffix(full.Text, "Мест больше нет") {
+	if got := strings.Join(buttons(full), ","); strings.Contains(got, "o:join") || strings.Contains(got, "Позвать") ||
+		!strings.HasSuffix(full.Text, "Мест больше нет") {
 		t.Errorf("full: %v\n%s", buttons(full), full.Text)
 	}
 	o.Taken, o.IsOrganizer = 3, true
+	o.Participants = []api.Person{{FirstName: str("Аня")}, {Username: str("bob")}, {}}
 	own := screens.OutingCard(o, screens.FromMine, links, now)
-	if len(buttons(own)) != 2 || !strings.HasSuffix(own.Text, "⭐ Вы организатор") {
-		t.Errorf("organizer: %v", buttons(own))
+	if got := buttons(own); len(got) != 4 || got[0] != "✏️ Изменить→o:edit:u:o1" || got[1] != "❌ Отменить выход→o:cask:u:o1" ||
+		!strings.HasSuffix(own.Text, "👥 Идут: Аня, @bob и ещё 1\n\n⭐ Вы организатор") {
+		t.Errorf("organizer: %v\n%s", got, own.Text)
+	}
+	cancel := screens.CancelConfirm(o, screens.FromMine)
+	if got := buttons(cancel); strings.Join(got, ",") != "Да, отменить→o:cancel:u:o1,Нет, оставить→o:view:u:o1" ||
+		!strings.Contains(cancel.Text, "Участников: 3 — бот сообщит им об отмене.") {
+		t.Errorf("cancel confirm: %v\n%s", got, cancel.Text)
 	}
 	o.IsOrganizer, o.Status = false, "cancelled"
-	if gone := screens.OutingCard(o, screens.FromPast, links, now); len(buttons(gone)) != 2 ||
+	if gone := screens.OutingCard(o, screens.FromPast, links, now); len(buttons(gone)) != 1 ||
 		!strings.HasSuffix(gone.Text, "❌ Выход отменён организатором") {
 		t.Errorf("cancelled: %v", buttons(gone))
 	}
@@ -148,7 +160,7 @@ func TestFindOutingsPages(t *testing.T) {
 	for i := range 7 {
 		list = append(list, outing("id"+string(rune('a'+i)), "Выход", now.Add(time.Duration(i+1)*24*time.Hour), "open"))
 	}
-	s := screens.FindOutings(list, 1, links)
+	s := screens.FindOutings(list, 1)
 	got := buttons(s)
 	if !has(got, "6 · Выход→o:view:f:idf") || !has(got, "2 / 2→noop") || !has(got, "◀️→o:find:0") ||
 		!has(got, "▶️→o:find:0") || has(got, "1 · Выход→o:view:f:ida") {
@@ -157,8 +169,8 @@ func TestFindOutingsPages(t *testing.T) {
 	if !strings.Contains(s.Text, "👥 свободно 3 из 10") {
 		t.Errorf("text:\n%s", s.Text)
 	}
-	empty := screens.FindOutings(nil, 0, links)
-	if !has(buttons(empty), "➕ Собрать выход→https://ermekten.kg/outings/new") {
+	empty := screens.FindOutings(nil, 0)
+	if !has(buttons(empty), "➕ Собрать выход→d:new") {
 		t.Errorf("empty: %v", buttons(empty))
 	}
 }
@@ -181,7 +193,7 @@ func TestToursCarousel(t *testing.T) {
 	}
 	got := buttons(s)
 	for _, w := range []string{
-		"◀️→t:f:0", "2 / 2→noop", "🌐 Подробнее→https://ermekten.kg/en/tours/son-kol", "💔 Из избранного→t:drop:f:1:t2",
+		"◀️→t:f:0", "2 / 2→noop", "📖 Подробнее→t:more:f:1:0", "💔 Из избранного→t:drop:f:1:t2",
 		"• ❤️ Избранное •→t:f:0", "🆕 Ближайшие→t:n:0", "🔔 Сообщать о новых турах→t:alert:f:1",
 	} {
 		if !has(got, w) {
@@ -213,14 +225,14 @@ func TestBlog(t *testing.T) {
 	if s.Preview.URL != "https://cdn.example.com/a.jpg" {
 		t.Errorf("preview: %+v", s.Preview)
 	}
-	if got := buttons(s); strings.Join(got, ",") != "📖 Читать статью→https://ermekten.kg/blog/checklist,🔔 Присылать новые статьи→b:sub:0" {
+	if got := buttons(s); strings.Join(got, ",") != "📖 Читать статью→b:read:p1:0,🔔 Присылать новые статьи→b:sub:0" {
 		t.Errorf("buttons: %v", got)
 	}
 	if !has(buttons(screens.Blog(posts, 0, true, links)), "🔕 Не присылать новые статьи→b:unsub:0") {
 		t.Error("no unsubscribe button")
 	}
 
-	caption, markup := screens.BlogPost(posts[0], links)
+	caption, markup := screens.BlogPost(posts[0])
 	raw, _ := json.Marshal(markup)
 	if caption != "📰 <b>Новая статья в блоге</b>\n\n<b>Что взять в поход</b>\nРюкзак &amp; палки" ||
 		!strings.Contains(string(raw), `"callback_data":"n:blog_off"`) {
@@ -283,8 +295,16 @@ func TestOutingCardDetails(t *testing.T) {
 	if !strings.HasSuffix(ps.Text, "🏁 Выход уже прошёл") || strings.Contains(ps.Text, "Организатор") {
 		t.Errorf("past:\n%s", ps.Text)
 	}
-	if got := buttons(ps); strings.Join(got, ",") != "🌐 Открыть в Ermekten→https://ermekten.kg/outings/o2,⬅️ К моим выходам→o:list:p" {
+	if got := buttons(ps); strings.Join(got, ",") != "⬅️ К моим выходам→o:list:p" {
 		t.Errorf("past buttons: %v", got)
+	}
+	// Along a catalog route: tell how the route was, for a month.
+	past.Trail = &api.TrailRef{Slug: "ala-kol", Name: "Ала-Кёль"}
+	if got := buttons(screens.OutingCard(past, screens.FromPast, links, now)); !has(got, "📝 Рассказать, как маршрут→c:s:o2") {
+		t.Errorf("report button: %v", got)
+	}
+	if got := buttons(screens.OutingCard(past, screens.FromPast, links, now.Add(31*24*time.Hour))); has(got, "📝 Рассказать, как маршрут→c:s:o2") {
+		t.Errorf("report button after a month: %v", got)
 	}
 	// Started less than 3 hours ago: still upcoming, as on the site.
 	if late := screens.OutingCard(outing("o3", "X", now.Add(-2*time.Hour), "open"), screens.FromMine, links, now); !has(buttons(late), "✋ Пойду→o:join:u:o3") {
@@ -300,7 +320,7 @@ func TestMyOutingsMoreThanShown(t *testing.T) {
 		list = append(list, o)
 	}
 	s := screens.MyOutings(list, nil, screens.FromMine, now)
-	if !strings.HasSuffix(s.Text, "…и ещё 2 — все на сайте.") || len(s.Markup.InlineKeyboard) != 8+2 {
+	if !strings.HasSuffix(s.Text, "…и ещё 2.") || len(s.Markup.InlineKeyboard) != 8+2 {
 		t.Errorf("10 outings: %d rows\n%s", len(s.Markup.InlineKeyboard), s.Text)
 	}
 	if empty := screens.MyOutings(nil, nil, screens.FromPast, now); !strings.HasSuffix(empty.Text, "Прошедших выходов пока нет.") {
@@ -327,39 +347,66 @@ func TestBlogEdges(t *testing.T) {
 		t.Errorf("empty blog: %v\n%s", buttons(s), s.Text)
 	}
 	en := api.BlogPost{ID: "p", Slug: "x", Locale: "en", Title: "T"}
-	if caption, _ := screens.BlogPost(en, links); caption != "📰 <b>Новая статья в блоге</b>\n\n<b>T</b>" {
+	if caption, _ := screens.BlogPost(en); caption != "📰 <b>Новая статья в блоге</b>\n\n<b>T</b>" {
 		t.Errorf("no excerpt: %q", caption)
 	}
-	if !has(buttons(screens.Blog([]api.BlogPost{en}, 0, false, links)), "📖 Читать статью→https://ermekten.kg/en/blog/x") {
-		t.Error("locale prefix in the post link")
+	if !has(buttons(screens.Blog([]api.BlogPost{en}, 0, false, links)), "📖 Читать статью→b:read:p:0") {
+		t.Error("no read button")
 	}
 }
 
-// With a Mini App every site button opens the page inside Telegram.
-func TestMiniAppButtons(t *testing.T) {
-	app := screens.Links{Site: "https://ermekten.kg", MiniApp: "https://app.ermekten.kg"}
+// Everything is done in the chat: no section button opens the Mini App
+// or the site — only Telegram's own share dialog.
+func TestNoMiniAppButtons(t *testing.T) {
 	o := outing("o1", "Пик", now.Add(48*time.Hour), "open")
-	tour := api.Tour{ID: "t1", Slug: "son-kol", Locale: "ky", Title: "Сон-Кёль"}
-	post := api.BlogPost{ID: "p1", Slug: "checklist", Title: "Чек-лист"}
-	_, pushMarkup := screens.BlogPost(post, app)
+	own := o
+	own.IsOrganizer = true
+	tour := api.Tour{ID: "t1", Slug: "son-kol", Locale: "ky", Title: "Сон-Кёль", Content: `<p>Текст</p>`}
+	post := api.BlogPost{ID: "p1", Slug: "checklist", Title: "Чек-лист", Content: `<p>Текст</p>`}
+	_, pushMarkup := screens.BlogPost(post)
 
-	for _, tc := range []struct {
-		s    screens.Screen
-		want string
-	}{
-		{screens.FindOutings(nil, 0, app), "➕ Собрать выход→webapp:https://app.ermekten.kg/outings/new"},
-		{screens.OutingCard(o, screens.FromMine, app, now), "🌐 Открыть в Ermekten→webapp:https://app.ermekten.kg/outings/o1"},
-		{screens.Tours(screens.ToursView{Tab: screens.TabUpcoming, Tours: []api.Tour{tour}}, app), "🌐 Подробнее→webapp:https://app.ermekten.kg/ky/tours/son-kol"},
-		{screens.Blog([]api.BlogPost{post}, 0, false, app), "📖 Читать статью→webapp:https://app.ermekten.kg/blog/checklist"},
-		{screens.Screen{Markup: pushMarkup}, "📖 Читать→webapp:https://app.ermekten.kg/blog/checklist"},
+	for _, s := range []screens.Screen{
+		screens.MyOutings([]api.Outing{o}, nil, screens.FromMine, now), screens.FindOutings(nil, 0),
+		screens.OutingCard(o, screens.FromMine, links, now), screens.OutingCard(own, screens.FromMine, links, now),
+		screens.Tours(screens.ToursView{Tab: screens.TabUpcoming, Tours: []api.Tour{tour}}, links),
+		screens.TourMore(tour, screens.TabUpcoming, 0, 0, false, links),
+		screens.Blog([]api.BlogPost{post}, 0, false, links), screens.Article(post, 0, 0, links),
+		{Markup: pushMarkup},
 	} {
-		got := buttons(tc.s)
-		if !has(got, tc.want) {
-			t.Errorf("no %q in %v", tc.want, got)
+		for _, row := range s.Markup.InlineKeyboard {
+			for _, b := range row {
+				if b.WebApp != nil || (b.URL != "" && !strings.HasPrefix(b.URL, "https://t.me/share/url?")) {
+					t.Errorf("%q leaves the chat: %+v", b.Text, b)
+				}
+			}
 		}
-		for _, b := range got {
-			if strings.Contains(b, "→https://") {
-				t.Errorf("a button still opens the browser: %q", b)
+	}
+}
+
+// Telegram takes up to 64 bytes of callback data; ids are UUIDs.
+func TestCallbackDataFits(t *testing.T) {
+	const id = "0f8fad5b-d9cb-469f-a165-70867728950e"
+	o := outing(id, "Пик", now.Add(48*time.Hour), "open")
+	o.IsOrganizer = true
+	past := outing(id, "Пик", now.Add(-48*time.Hour), "open")
+	past.IsJoined, past.Trail = true, &api.TrailRef{Slug: "x", Name: "X"}
+	tours := []api.Tour{{ID: id, Slug: "x"}}
+	for i := range 20 {
+		tours = append(tours, api.Tour{ID: id, Slug: "x", Title: strconv.Itoa(i)})
+	}
+	post := api.BlogPost{ID: id, Content: strings.Repeat("<p>"+strings.Repeat("слово ", 600)+"</p>", 5)}
+	for _, s := range []screens.Screen{
+		screens.OutingCard(o, screens.FromFind, links, now), screens.CancelConfirm(o, screens.FromFind),
+		screens.OutingCard(past, screens.FromPast, links, now), screens.ConditionState(past), screens.ConditionTraction(past, 5),
+		screens.Tours(screens.ToursView{Tab: screens.TabFavorites, Index: 19, Tours: tours, Favorites: map[string]bool{id: true}}, links),
+		screens.TourMore(tours[19], screens.TabFavorites, 19, 0, true, links),
+		screens.Article(post, 99, 3, links),
+	} {
+		for _, row := range s.Markup.InlineKeyboard {
+			for _, b := range row {
+				if len(b.CallbackData) > 64 {
+					t.Errorf("%q: %d bytes: %s", b.Text, len(b.CallbackData), b.CallbackData)
+				}
 			}
 		}
 	}

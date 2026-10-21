@@ -25,10 +25,12 @@ const (
 	sessionTTL = "5m"
 )
 
-// Error is a failed API call: its HTTP status and the error body's message.
+// Error is a failed API call: its HTTP status, the error body's message
+// and, for a rejected form, the first error of each field.
 type Error struct {
 	Status  int
 	Message string
+	Fields  map[string]string
 }
 
 func (e *Error) Error() string { return fmt.Sprintf("api: %d %s", e.Status, e.Message) }
@@ -51,6 +53,15 @@ func MessageOf(err error) string {
 	return ""
 }
 
+// FieldsOf is a rejected form's errors by field, nil for other errors.
+func FieldsOf(err error) map[string]string {
+	var apiErr *Error
+	if errors.As(err, &apiErr) {
+		return apiErr.Fields
+	}
+	return nil
+}
+
 type Person struct {
 	ID        string  `json:"id"`
 	FirstName *string `json:"firstName"`
@@ -70,6 +81,7 @@ func (p Person) Name() string {
 }
 
 type TrailRef struct {
+	ID   string `json:"id"`
 	Slug string `json:"slug"`
 	Name string `json:"name"`
 	Area string `json:"area"`
@@ -93,6 +105,31 @@ type Outing struct {
 	Organizer     Person     `json:"organizer"`
 	IsJoined      bool       `json:"isJoined"`
 	IsOrganizer   bool       `json:"isOrganizer"`
+	// Who joined: on one outing's details only.
+	Participants []Person `json:"participants"`
+}
+
+// OutingInput creates an outing or replaces an outing's fields. Times are
+// RFC 3339; nil clears an optional field.
+type OutingInput struct {
+	TrailID       *string `json:"trailId"`
+	Title         string  `json:"title"`
+	StartsAt      string  `json:"startsAt"`
+	ReturnsAt     *string `json:"returnsAt"`
+	MeetingPoint  string  `json:"meetingPoint"`
+	Transport     string  `json:"transport"`
+	Seats         int     `json:"seats"`
+	CostPerPerson *int    `json:"costPerPerson"`
+	Level         string  `json:"level"`
+	Description   *string `json:"description"`
+	Contact       *string `json:"contact"`
+}
+
+// ConditionInput is a trail condition report.
+type ConditionInput struct {
+	ObservedOn string `json:"observedOn"` // YYYY-MM-DD
+	TrailState string `json:"trailState"`
+	Traction   string `json:"traction"`
 }
 
 type OutingsSummary struct {
@@ -115,6 +152,20 @@ type Tour struct {
 	CoverImageURL *string `json:"coverImageUrl"`
 	RatingAverage float32 `json:"ratingAverage"`
 	ReviewCount   int     `json:"reviewCount"`
+
+	// On one tour's details only.
+	Content  string       `json:"content"` // HTML
+	Program  []ProgramDay `json:"program"`
+	Capacity *int         `json:"capacity"`
+	Phone    *string      `json:"phone"`
+	Whatsapp *string      `json:"whatsapp"`
+	Telegram *string      `json:"telegram"`
+}
+
+// ProgramDay is a day of a tour's program (plain text).
+type ProgramDay struct {
+	Title string `json:"title"`
+	Text  string `json:"text"`
 }
 
 type BlogPost struct {
@@ -125,6 +176,8 @@ type BlogPost struct {
 	Excerpt       *string    `json:"excerpt"`
 	CoverImageURL *string    `json:"coverImageUrl"`
 	PublishedAt   *time.Time `json:"publishedAt"`
+	// On one post only.
+	Content string `json:"content"` // HTML
 }
 
 type Client struct {
@@ -182,11 +235,21 @@ func (c *Client) do(ctx context.Context, method, path, userID string, body, out 
 	defer func() { _ = res.Body.Close() }()
 	if res.StatusCode >= http.StatusBadRequest {
 		var e struct {
-			Message any `json:"message"`
+			Message     any                 `json:"message"`
+			FieldErrors map[string][]string `json:"fieldErrors"`
 		}
 		_ = json.NewDecoder(res.Body).Decode(&e)
 		msg, _ := e.Message.(string)
-		return &Error{Status: res.StatusCode, Message: msg}
+		apiErr := &Error{Status: res.StatusCode, Message: msg}
+		for field, errs := range e.FieldErrors {
+			if len(errs) > 0 {
+				if apiErr.Fields == nil {
+					apiErr.Fields = map[string]string{}
+				}
+				apiErr.Fields[field] = errs[0]
+			}
+		}
+		return apiErr
 	}
 	if out == nil {
 		return nil
@@ -227,6 +290,39 @@ func (c *Client) Outing(ctx context.Context, userID, id string) (Outing, error) 
 	return out, c.do(ctx, http.MethodGet, "/outings/"+url.PathEscape(id), userID, nil, &out)
 }
 
+// CreateOuting organizes an outing.
+func (c *Client) CreateOuting(ctx context.Context, userID string, in OutingInput) (Outing, error) {
+	var out Outing
+	return out, c.do(ctx, http.MethodPost, "/outings", userID, in, &out)
+}
+
+// UpdateOuting changes an outing the user organizes.
+func (c *Client) UpdateOuting(ctx context.Context, userID, id string, in OutingInput) (Outing, error) {
+	var out Outing
+	return out, c.do(ctx, http.MethodPut, "/outings/"+url.PathEscape(id), userID, in, &out)
+}
+
+// CancelOuting calls off an outing the user organizes.
+func (c *Client) CancelOuting(ctx context.Context, userID, id string) error {
+	return c.do(ctx, http.MethodPost, "/outings/"+url.PathEscape(id)+"/cancel", userID, nil, nil)
+}
+
+// Trails lists published routes, most popular first; search narrows them
+// by name.
+func (c *Client) Trails(ctx context.Context, search string) ([]TrailRef, error) {
+	q := url.Values{"sort": {"popular"}}
+	if search != "" {
+		q.Set("search", search)
+	}
+	var out []TrailRef
+	return out, c.do(ctx, http.MethodGet, "/trails?"+q.Encode(), "", nil, &out)
+}
+
+// ReportCondition posts what a route looked like.
+func (c *Client) ReportCondition(ctx context.Context, userID, trail string, in ConditionInput) error {
+	return c.do(ctx, http.MethodPost, "/trails/"+url.PathEscape(trail)+"/conditions", userID, in, nil)
+}
+
 func (c *Client) JoinOuting(ctx context.Context, userID, id string) error {
 	return c.do(ctx, http.MethodPost, "/outings/"+url.PathEscape(id)+"/join", userID, nil, nil)
 }
@@ -240,6 +336,12 @@ func (c *Client) UpcomingTours(ctx context.Context) ([]Tour, error) {
 	var out []Tour
 	q := url.Values{"locale": {"ru"}, "from": {c.Now().Format(time.DateOnly)}}
 	return out, c.do(ctx, http.MethodGet, "/tours?"+q.Encode(), "", nil, &out)
+}
+
+// Tour is one published tour with its description and program.
+func (c *Client) Tour(ctx context.Context, locale, slug string) (Tour, error) {
+	var out Tour
+	return out, c.do(ctx, http.MethodGet, "/tours/"+url.PathEscape(locale)+"/"+url.PathEscape(slug), "", nil, &out)
 }
 
 func (c *Client) FavoriteTours(ctx context.Context, userID string) ([]Tour, error) {
@@ -279,4 +381,10 @@ func (c *Client) SetAllToursAlert(ctx context.Context, userID string, on bool) e
 func (c *Client) BlogPosts(ctx context.Context) ([]BlogPost, error) {
 	var out []BlogPost
 	return out, c.do(ctx, http.MethodGet, "/blog?locale=ru", "", nil, &out)
+}
+
+// BlogPost is one published post with its text.
+func (c *Client) BlogPost(ctx context.Context, locale, slug string) (BlogPost, error) {
+	var out BlogPost
+	return out, c.do(ctx, http.MethodGet, "/blog/"+url.PathEscape(locale)+"/"+url.PathEscape(slug), "", nil, &out)
 }

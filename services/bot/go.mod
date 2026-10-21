@@ -11,6 +11,7 @@ require (
 	github.com/elvn5/sai/services/proto v0.0.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/mymmrac/telego v1.12.1
+	golang.org/x/net v0.61.0
 	google.golang.org/grpc v1.84.0
 )
 
@@ -38,7 +39,6 @@ require (
 	github.com/valyala/fastjson v1.6.10 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/arch v0.22.0 // indirect
-	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect

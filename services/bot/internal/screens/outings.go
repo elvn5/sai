@@ -19,6 +19,8 @@ const (
 	FromMine = "u" // my upcoming outings
 	FromPast = "p" // my past outings
 	FromFind = "f" // all upcoming outings
+	// A notification's button: the card comes as a new message.
+	FromNotice = "n"
 )
 
 // Outing callback actions: "o:<action>:<from>:<id>", plus "o:list:<tab>"
@@ -30,7 +32,18 @@ const (
 	ActJoin  = "join"
 	ActAsk   = "ask"
 	ActLeave = "leave"
+	// The organizer's: change the outing, ask to cancel it, cancel it.
+	ActEdit      = "edit"
+	ActCancelAsk = "cask"
+	ActCancel    = "cancel"
 )
+
+// NewOutingData starts putting an outing together.
+const NewOutingData = keyboards.DraftPrefix + "new"
+
+// conditionWindow is how long after an outing its route can be reported
+// on (as the trails service takes reports).
+const conditionWindow = 30 * 24 * time.Hour
 
 const (
 	myOutingsShown = 8
@@ -138,7 +151,7 @@ func MyOutings(list []api.Outing, sum *api.OutingsSummary, tab string, now time.
 	}
 	for i, o := range shown {
 		if i == myOutingsShown {
-			fmt.Fprintf(&b, "\n\n…и ещё %d — все на сайте.", len(shown)-myOutingsShown)
+			fmt.Fprintf(&b, "\n\n…и ещё %d.", len(shown)-myOutingsShown)
 			break
 		}
 		meta := []string{}
@@ -152,13 +165,13 @@ func MyOutings(list []api.Outing, sum *api.OutingsSummary, tab string, now time.
 
 	buttons = append(buttons,
 		keyboards.Tabs(ListData(from), [2]string{"Предстоящие", ListData(FromMine)}, [2]string{"Прошедшие", ListData(FromPast)}),
-		[]telego.InlineKeyboardButton{keyboards.Button("🔎 Найти выход", FindData(0))},
+		[]telego.InlineKeyboardButton{keyboards.Button("🔎 Найти выход", FindData(0)), keyboards.Button("➕ Собрать выход", NewOutingData)},
 	)
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
 
 // FindOutings is a page of all upcoming outings.
-func FindOutings(list []api.Outing, page int, links Links) Screen {
+func FindOutings(list []api.Outing, page int) Screen {
 	pages := max(1, (len(list)+findPageSize-1)/findPageSize)
 	page = min(max(page, 0), pages-1)
 
@@ -166,8 +179,7 @@ func FindOutings(list []api.Outing, page int, links Links) Screen {
 	b.WriteString("🔎 <b>Ближайшие выходы</b>")
 	var buttons [][]telego.InlineKeyboardButton
 	if len(list) == 0 {
-		b.WriteString("\n\nБлижайших выходов пока нет. Загляните позже — или соберите свою компанию на сайте.")
-		buttons = append(buttons, []telego.InlineKeyboardButton{links.Open("➕ Собрать выход", "/outings/new")})
+		b.WriteString("\n\nБлижайших выходов пока нет. Загляните позже — или соберите свою компанию.")
 	}
 	start := page * findPageSize
 	for i := start; i < min(start+findPageSize, len(list)); i++ {
@@ -186,7 +198,9 @@ func FindOutings(list []api.Outing, page int, links Links) Screen {
 	if pages > 1 {
 		buttons = append(buttons, keyboards.Pager(page, pages, FindData))
 	}
-	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("⬅️ Мои выходы", ListData(FromMine))})
+	buttons = append(buttons, []telego.InlineKeyboardButton{
+		keyboards.Button("➕ Собрать выход", NewOutingData), keyboards.Button("⬅️ Мои выходы", ListData(FromMine)),
+	})
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
 
@@ -213,10 +227,21 @@ func seatsBar(taken, seats int) string {
 	return strings.Repeat("▰", filled) + strings.Repeat("▱", marks-filled)
 }
 
-func outingPath(id string) string { return "/outings/" + id }
+// Levels and transports as the bot names them, in the order offered.
+var (
+	LevelNames = map[string]string{
+		"beginner": "🌱 Для новичков", "intermediate": "🥾 Нужен опыт", "advanced": "🧗 Для опытных",
+	}
+	TransportNames = map[string]string{
+		"car": "🚗 На машине организатора", "bus": "🚌 Общественным транспортом", "arranged": "🚐 Заказной транспорт",
+	}
+)
 
-// OutingCard is one outing with what the user can do about it.
-func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
+// Participants shown by name on a card; the rest are counted.
+const namesShown = 15
+
+// outingDetails is an outing's description: what, when, where, how much.
+func outingDetails(o api.Outing) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "🥾 <b>%s</b>", esc(o.Title))
 	var sub []string
@@ -249,7 +274,12 @@ func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
 			b.WriteString("\n💳 " + money(*o.CostPerPerson) + " сом с человека")
 		}
 	}
-	fmt.Fprintf(&b, "\n👥 %s %d из %d мест", seatsBar(o.Taken, o.Seats), o.Taken, o.Seats)
+	if o.ID == "" {
+		// Not published yet: nobody could join.
+		fmt.Fprintf(&b, "\n👥 Мест: %d", o.Seats)
+	} else {
+		fmt.Fprintf(&b, "\n👥 %s %d из %d мест", seatsBar(o.Taken, o.Seats), o.Taken, o.Seats)
+	}
 	if name := o.Organizer.Name(); name != "" {
 		b.WriteString("\n🧑 Организатор: " + esc(name))
 	}
@@ -257,7 +287,38 @@ func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
 		b.WriteString("\n💬 Связь: " + esc(*o.Contact))
 	}
 	if o.Description != nil && *o.Description != "" {
-		b.WriteString("\n\n<i>" + esc(clip(*o.Description, 280)) + "</i>")
+		b.WriteString("\n\n<i>" + esc(clip(*o.Description, 1500)) + "</i>")
+	}
+	return b.String()
+}
+
+// participantNames lists who joined: "Аня, @bob и ещё 3".
+func participantNames(people []api.Person) string {
+	var names []string
+	others := 0
+	for _, p := range people {
+		if name := p.Name(); name != "" && len(names) < namesShown {
+			names = append(names, esc(name))
+		} else {
+			others++
+		}
+	}
+	text := strings.Join(names, ", ")
+	switch {
+	case others > 0 && len(names) > 0:
+		text += fmt.Sprintf(" и ещё %d", others)
+	case others > 0:
+		text = fmt.Sprintf("%d %s", others, plural(others, "человек", "человека", "человек"))
+	}
+	return text
+}
+
+// OutingCard is one outing with what the user can do about it.
+func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
+	var b strings.Builder
+	b.WriteString(outingDetails(o))
+	if (o.IsOrganizer || o.IsJoined) && len(o.Participants) > 0 {
+		b.WriteString("\n\n👥 Идут: " + participantNames(o.Participants))
 	}
 
 	upcoming := isUpcoming(o, now)
@@ -277,17 +338,38 @@ func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
 		b.WriteString("\n\nЕсть свободные места — присоединяйтесь!")
 	}
 
-	buttons := [][]telego.InlineKeyboardButton{{links.Open("🌐 Открыть в Ermekten", outingPath(o.ID))}}
-	if upcoming && !o.IsOrganizer {
-		switch {
-		case o.IsJoined:
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("🙅 Не смогу пойти", OutingData(ActAsk, from, o.ID))})
-		case !full:
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("✋ Пойду", OutingData(ActJoin, from, o.ID))})
+	var buttons [][]telego.InlineKeyboardButton
+	switch {
+	case upcoming && o.IsOrganizer && o.StartsAt.After(now):
+		buttons = append(buttons, []telego.InlineKeyboardButton{
+			keyboards.Button("✏️ Изменить", OutingData(ActEdit, from, o.ID)),
+			keyboards.Button("❌ Отменить выход", OutingData(ActCancelAsk, from, o.ID)),
+		})
+	case upcoming && o.IsJoined:
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("🙅 Не смогу пойти", OutingData(ActAsk, from, o.ID))})
+	case upcoming && !o.IsOrganizer && !full:
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("✋ Пойду", OutingData(ActJoin, from, o.ID))})
+	}
+	if upcoming && !full {
+		if share := links.Share("📤 Позвать друзей", OutingDeepLink(o.ID), "Пойдём в горы: «"+o.Title+"», "+When(o.StartsAt)); share != nil {
+			buttons = append(buttons, []telego.InlineKeyboardButton{*share})
 		}
+	}
+	if CanReport(o, now) {
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("📝 Рассказать, как маршрут", ConditionStart(o.ID))})
 	}
 	buttons = append(buttons, []telego.InlineKeyboardButton{backButton(from)})
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
+}
+
+// OutingDeepLink is the /start payload opening an outing's card.
+func OutingDeepLink(id string) string { return "outing_" + id }
+
+// CanReport: someone who went on a finished outing along a catalog route
+// can say what the route looked like.
+func CanReport(o api.Outing, now time.Time) bool {
+	return o.Trail != nil && o.Trail.Slug != "" && o.Status == "open" && (o.IsOrganizer || o.IsJoined) &&
+		o.StartsAt.Before(now) && now.Sub(o.StartsAt) < conditionWindow
 }
 
 func backButton(from string) telego.InlineKeyboardButton {
@@ -299,6 +381,19 @@ func backButton(from string) telego.InlineKeyboardButton {
 	default:
 		return keyboards.Button("⬅️ К моим выходам", ListData(FromMine))
 	}
+}
+
+// CancelConfirm asks the organizer before calling an outing off.
+func CancelConfirm(o api.Outing, from string) Screen {
+	text := fmt.Sprintf("Отменить выход «%s»?", esc(o.Title))
+	if o.Taken > 0 {
+		text += fmt.Sprintf("\n\nУчастников: %d — бот сообщит им об отмене.", o.Taken)
+	}
+	text += "\n\nВернуть выход после отмены не получится."
+	return Screen{Text: text, Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{
+		keyboards.Button("Да, отменить", OutingData(ActCancel, from, o.ID)),
+		keyboards.Button("Нет, оставить", OutingData(ActView, from, o.ID)),
+	})}
 }
 
 // LeaveConfirm asks before dropping out of an outing.

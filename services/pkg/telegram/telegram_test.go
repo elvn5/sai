@@ -32,8 +32,16 @@ func TestSendMessage(t *testing.T) {
 	if got["chat_id"] != float64(42) || got["text"] != "<b>Hi</b> a&lt;b&gt;&amp;c" || got["parse_mode"] != "HTML" {
 		t.Errorf("request: %v", got)
 	}
-	if kb := got["reply_markup"].(map[string]any)["inline_keyboard"].([]any)[0].([]any)[0].(map[string]any); kb["url"] != "https://x.kg/o/1" {
+	if kb := got["reply_markup"].(map[string]any)["inline_keyboard"].([]any)[0].([]any)[0].(map[string]any); kb["url"] != "https://x.kg/o/1" || kb["callback_data"] != nil {
 		t.Errorf("button: %v", kb)
+	}
+
+	// A button pressing back to the bot carries callback data, no URL.
+	if err := c.SendMessage(ctx, 42, "x", &telegram.Button{Text: "Open", Data: "o:view:n:1"}); err != nil {
+		t.Fatal(err)
+	}
+	if kb := got["reply_markup"].(map[string]any)["inline_keyboard"].([]any)[0].([]any)[0].(map[string]any); kb["callback_data"] != "o:view:n:1" || kb["url"] != nil {
+		t.Errorf("callback button: %v", kb)
 	}
 
 	reply = `{"ok":false,"error_code":403,"description":"Forbidden: bot was blocked by the user"}`

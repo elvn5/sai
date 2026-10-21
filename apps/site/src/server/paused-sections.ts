@@ -10,6 +10,9 @@ const PAUSED_SECTIONS: Record<string, string> = {
   guides: '/tours',
   trails: '/outings',
   payments: '/tours',
+  // The hiking hub only linked to outings and tours, which the menu now
+  // has itself.
+  hikes: '/outings',
 };
 
 // Where an address in a paused section goes, in the same language; null

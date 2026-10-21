@@ -24,11 +24,10 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-// The sections, as in the sketches: the hiking hub, then each catalog.
-// Hotels, local guides, trails and travel guides are paused for now
+// The sections: outings and tours (the focus), then the blog. Hotels,
+// local guides, trails and travel guides are paused for now
 // (server/paused-sections.ts).
 const NAV_LINKS = [
-  { path: '/hikes', label: 'nav.hikes', icon: 'icon-[heroicons--fire]' },
   { path: '/outings', label: 'nav.outings', icon: 'icon-[heroicons--user-group]' },
   { path: '/tours', label: 'nav.tours', icon: 'icon-[heroicons--map]' },
   { path: '/blog', label: 'nav.blog', icon: 'icon-[heroicons--newspaper]' },

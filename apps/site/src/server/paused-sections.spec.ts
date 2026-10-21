@@ -7,6 +7,7 @@ describe('pausedSectionRedirect', () => {
     expect(pausedSectionRedirect('/ky/trails/ala-archa')).toBe('/ky/outings');
     expect(pausedSectionRedirect('/de/local-guides')).toBe('/de/tours');
     expect(pausedSectionRedirect('/payments/return?order=1')).toBe('/tours');
+    expect(pausedSectionRedirect('/en/hikes')).toBe('/en/outings');
   });
 
   it('leaves the other addresses alone', () => {

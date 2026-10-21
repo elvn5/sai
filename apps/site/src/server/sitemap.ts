@@ -18,7 +18,6 @@ export function isSitemapType(value: string): value is SitemapType {
 // documents).
 const SECTION_PATHS = [
   '/',
-  '/hikes',
   '/tours',
   '/outings',
   '/blog',

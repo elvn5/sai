@@ -52,7 +52,6 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
           <h2 class="text-xs font-semibold tracking-wider text-text-muted uppercase">{{ 'footer.sections.nav' | transloco }}</h2>
           <ul class="mt-4 space-y-3 text-sm text-text-muted">
             <li><a appSiteLink="/" class="hover:text-text">{{ 'nav.feed' | transloco }}</a></li>
-            <li><a appSiteLink="/hikes" class="hover:text-text">{{ 'nav.hikes' | transloco }}</a></li>
             <li><a appSiteLink="/gallery" class="hover:text-text">{{ 'nav.gallery' | transloco }}</a></li>
             <li><a appSiteLink="/blog" class="hover:text-text">{{ 'nav.blog' | transloco }}</a></li>
           </ul>

@@ -2,7 +2,6 @@
   "brand": { "name": "Ermekten" },
   "nav": {
     "feed": "Feed",
-    "hikes": "Wandern",
     "gallery": "Galerie",
     "tours": "Touren",
     "blog": "Blog",
@@ -830,15 +829,6 @@
       "privacy": "Datenschutzerklärung",
       "refunds": "Erstattungsbedingungen",
       "and": "und die"
-    }
-  },
-  "hikes": {
-    "title": "Wandern",
-    "subtitle": "Alles für eine Reise in die Berge: Gruppenausflüge und fertige Touren.",
-    "open": "Öffnen",
-    "sections": {
-      "outings": "Gruppentouren: Finden Sie eine Gruppe oder einen freien Platz im Auto.",
-      "tours": "Fertige Touren von Veranstaltern mit Terminen und Preisen."
     }
   },
   "notify": {

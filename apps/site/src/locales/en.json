@@ -2,7 +2,6 @@
   "brand": { "name": "Ermekten" },
   "nav": {
     "feed": "Feed",
-    "hikes": "Hikes",
     "gallery": "Gallery",
     "tours": "Tours",
     "blog": "Blog",
@@ -830,15 +829,6 @@
       "privacy": "privacy policy",
       "refunds": "refund policy",
       "and": "and the"
-    }
-  },
-  "hikes": {
-    "title": "Hikes",
-    "subtitle": "Everything for a trip to the mountains: group outings and ready-made tours.",
-    "open": "Open",
-    "sections": {
-      "outings": "Group outings: find a group or a free seat in a car.",
-      "tours": "Ready-made tours from organizers, with dates and prices."
     }
   },
   "notify": {

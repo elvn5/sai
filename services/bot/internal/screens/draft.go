@@ -1,7 +1,6 @@
 package screens
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/mymmrac/telego"
 
 	"github.com/elvn5/sai/services/bot/internal/drafts"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 )
 
@@ -41,10 +41,6 @@ func draftData(action string, arg ...string) string {
 }
 
 var (
-	monthsNominative = []string{
-		"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-		"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
-	}
 	startTimes  = []string{"05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "09:00", "10:00", "11:00", "12:00"}
 	returnTimes = []string{"14:00", "16:00", "18:00", "19:00", "20:00", "22:00"}
 	seatChoices = []int{2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30}
@@ -63,13 +59,12 @@ var (
 )
 
 // longDate is "суббота, 24 октября".
-func longDate(date string) string {
+func longDate(l i18n.Lang, date string) string {
 	t, err := time.Parse(time.DateOnly, date)
 	if err != nil {
 		return ""
 	}
-	names := []string{"воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"}
-	return fmt.Sprintf("%s, %d %s", names[t.Weekday()], t.Day(), monthsFull[t.Month()-1])
+	return l.LongDate(t)
 }
 
 // marked puts a check on the chosen option.
@@ -81,44 +76,44 @@ func marked(label string, chosen bool) string {
 }
 
 // DraftScreen is the draft's current step (or its review).
-func DraftScreen(d drafts.Draft, now time.Time) Screen {
+func DraftScreen(l i18n.Lang, d drafts.Draft, now time.Time) Screen {
 	switch d.Step {
 	case drafts.StepReview:
-		return draftReview(d)
+		return draftReview(l, d)
 	case drafts.StepFields:
-		return draftFieldList(d)
+		return draftFieldList(l, d)
 	}
 
 	var b strings.Builder
 	switch {
 	case d.OutingID != "":
-		b.WriteString("✏️ <b>Изменение выхода</b>")
+		b.WriteString(l.T("✏️ <b>Изменение выхода</b>"))
 	case d.Reviewing:
-		b.WriteString("➕ <b>Новый выход</b>")
+		b.WriteString(l.T("➕ <b>Новый выход</b>"))
 	default:
-		fmt.Fprintf(&b, "➕ <b>Новый выход</b> · шаг %d из %d", drafts.Number(d.Step), len(drafts.Steps))
+		b.WriteString(l.T("➕ <b>Новый выход</b>") + " · " + l.F("шаг %d из %d", drafts.Number(d.Step), len(drafts.Steps)))
 	}
 	b.WriteString("\n\n")
 	var buttons [][]telego.InlineKeyboardButton
 	current := func(value string) {
 		if value != "" && d.Reviewing {
-			b.WriteString("\n\nСейчас: <b>" + esc(clip(value, 200)) + "</b>")
+			b.WriteString("\n\n" + l.F("Сейчас: <b>%s</b>", esc(clip(value, 200))))
 		}
 	}
 	keep := func(value string) {
 		if value != "" && !d.Reviewing {
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("➡️ Оставить «"+clip(value, 30)+"»", draftData(DraftSkip))})
+			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.F("➡️ Оставить «%s»", clip(value, 30)), draftData(DraftSkip))})
 		}
 	}
 
 	switch d.Step {
 	case drafts.StepTrail:
-		b.WriteString("🏔 <b>Куда идём?</b>\nВыберите маршрут из каталога или напишите его название — я поищу.")
+		b.WriteString(l.T("🏔 <b>Куда идём?</b>\nВыберите маршрут из каталога или напишите его название — я поищу."))
 		switch {
 		case d.Search != "" && len(d.Trails) == 0:
-			b.WriteString("\n\nПо «" + esc(d.Search) + "» ничего не нашлось. Попробуйте другое название — или идите без маршрута из каталога.")
+			b.WriteString("\n\n" + l.F("По «%s» ничего не нашлось. Попробуйте другое название — или идите без маршрута из каталога.", esc(d.Search)))
 		case d.Search != "":
-			b.WriteString("\n\nНашлось по «" + esc(d.Search) + "»:")
+			b.WriteString("\n\n" + l.F("Нашлось по «%s»:", esc(d.Search)))
 		}
 		current(d.TrailName)
 		for i := 0; i < len(d.Trails); i += 2 {
@@ -128,10 +123,10 @@ func DraftScreen(d drafts.Draft, now time.Time) Screen {
 			}
 			buttons = append(buttons, row)
 		}
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(marked("Без маршрута из каталога", d.TrailID == "" && d.Reviewing), draftData(DraftTrail, DraftNone))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(marked(l.T("Без маршрута из каталога"), d.TrailID == "" && d.Reviewing), draftData(DraftTrail, DraftNone))})
 
 	case drafts.StepTitle:
-		b.WriteString("✏️ <b>Как назовём выход?</b>\nНапишите название, например «Пик Учитель за один день».")
+		b.WriteString(l.T("✏️ <b>Как назовём выход?</b>\nНапишите название, например «Пик Учитель за один день»."))
 		current(d.Title)
 		if d.TrailName != "" && d.TrailName != d.Title {
 			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("«"+clip(d.TrailName, 40)+"»", draftData(DraftTitle, DraftTrail))})
@@ -139,21 +134,21 @@ func DraftScreen(d drafts.Draft, now time.Time) Screen {
 		keep(d.Title)
 
 	case drafts.StepDate:
-		b.WriteString("📅 <b>Когда выходим?</b>\nВыберите день в календаре или напишите дату, например 24.10.")
-		current(longDate(d.Date))
-		buttons = append(buttons, calendar(d, now)...)
+		b.WriteString(l.T("📅 <b>Когда выходим?</b>\nВыберите день в календаре или напишите дату, например 24.10."))
+		current(longDate(l, d.Date))
+		buttons = append(buttons, calendar(l, d, now)...)
 
 	case drafts.StepTime:
-		b.WriteString("🕕 <b>Во сколько сбор?</b>\n" + upperFirst(longDate(d.Date)) + ". Выберите время или напишите своё, например 06:45.")
+		b.WriteString(l.T("🕕 <b>Во сколько сбор?</b>") + "\n" + upperFirst(longDate(l, d.Date)) + ". " + l.T("Выберите время или напишите своё, например 06:45."))
 		current(d.Time)
 		buttons = append(buttons, grid(startTimes, 4, func(t string) telego.InlineKeyboardButton {
 			return keyboards.Button(marked(t, t == d.Time), draftData(DraftTime, strings.ReplaceAll(t, ":", "")))
 		})...)
 
 	case drafts.StepReturn:
-		b.WriteString("🏁 <b>Когда вернётесь?</b>\nНе обязательно, но так участникам проще планировать день. Выберите или напишите, например «19:00» или «25.10 18:00».")
+		b.WriteString(l.T("🏁 <b>Когда вернётесь?</b>\nНе обязательно, но так участникам проще планировать день. Выберите или напишите, например «19:00» или «25.10 18:00»."))
 		if back, ok := d.Return(); ok {
-			current(When(back))
+			current(When(l, back))
 		}
 		var options []string
 		for _, t := range returnTimes {
@@ -165,25 +160,25 @@ func DraftScreen(d drafts.Draft, now time.Time) Screen {
 			return keyboards.Button(marked(t, d.Returns == d.Date+"T"+t), draftData(DraftReturn, strings.ReplaceAll(t, ":", "")))
 		})...)
 		buttons = append(buttons, []telego.InlineKeyboardButton{
-			keyboards.Button("Завтра 12:00", draftData(DraftReturn, "+1200")),
-			keyboards.Button("Завтра 18:00", draftData(DraftReturn, "+1800")),
-		}, []telego.InlineKeyboardButton{keyboards.Button(marked("Не указывать", d.Returns == "" && d.Reviewing), draftData(DraftReturn, DraftNone))})
+			keyboards.Button(l.F("Завтра %s", "12:00"), draftData(DraftReturn, "+1200")),
+			keyboards.Button(l.F("Завтра %s", "18:00"), draftData(DraftReturn, "+1800")),
+		}, []telego.InlineKeyboardButton{keyboards.Button(marked(l.T("Не указывать"), d.Returns == "" && d.Reviewing), draftData(DraftReturn, DraftNone))})
 
 	case drafts.StepMeeting:
-		b.WriteString("📍 <b>Где сбор?</b>\nНапишите место, например «ТЦ Вефа, парковка у входа».")
+		b.WriteString(l.T("📍 <b>Где сбор?</b>\nНапишите место, например «ТЦ Вефа, парковка у входа»."))
 		current(d.MeetingPoint)
 		keep(d.MeetingPoint)
 
 	case drafts.StepTransport:
-		b.WriteString("🚗 <b>Как добираемся?</b>")
+		b.WriteString(l.T("🚗 <b>Как добираемся?</b>"))
 		for _, v := range drafts.Transports {
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(marked(TransportNames[v], v == d.Transport), draftData(DraftMove, v))})
+			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(marked(l.T(TransportNames[v]), v == d.Transport), draftData(DraftMove, v))})
 		}
 
 	case drafts.StepSeats:
-		b.WriteString("👥 <b>Сколько человек возьмёте?</b>\nНе считая вас. Выберите или напишите число до 50.")
+		b.WriteString(l.T("👥 <b>Сколько человек возьмёте?</b>\nНе считая вас. Выберите или напишите число до 50."))
 		if d.Taken > 0 {
-			fmt.Fprintf(&b, "\nУже записались: %d.", d.Taken)
+			b.WriteString("\n" + l.F("Уже записались: %d.", d.Taken))
 		}
 		labels := make([]string, len(seatChoices))
 		for i, n := range seatChoices {
@@ -194,60 +189,60 @@ func DraftScreen(d drafts.Draft, now time.Time) Screen {
 		})...)
 
 	case drafts.StepCost:
-		b.WriteString("💳 <b>Сколько с человека?</b>\nНа бензин, транспорт, общее снаряжение. Напишите сумму в сомах или выберите.")
+		b.WriteString(l.T("💳 <b>Сколько с человека?</b>\nНа бензин, транспорт, общее снаряжение. Напишите сумму в сомах или выберите."))
 		switch {
 		case d.Cost != nil && *d.Cost > 0:
-			current(money(*d.Cost) + " сом")
+			current(som(l, *d.Cost))
 		case d.Cost != nil:
-			current("бесплатно")
+			current(l.T("бесплатно"))
 		}
 		buttons = append(buttons, []telego.InlineKeyboardButton{
-			keyboards.Button(marked("Бесплатно", d.Cost != nil && *d.Cost == 0), draftData(DraftCost, "0")),
-			keyboards.Button(marked("Не указывать", d.Cost == nil && d.Reviewing), draftData(DraftCost, DraftNone)),
+			keyboards.Button(marked(l.T("Бесплатно"), d.Cost != nil && *d.Cost == 0), draftData(DraftCost, "0")),
+			keyboards.Button(marked(l.T("Не указывать"), d.Cost == nil && d.Reviewing), draftData(DraftCost, DraftNone)),
 		})
 
 	case drafts.StepLevel:
-		b.WriteString("📊 <b>Для кого выход?</b>")
+		b.WriteString(l.T("📊 <b>Для кого выход?</b>"))
 		for _, v := range drafts.Levels {
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(marked(LevelNames[v], v == d.Level), draftData(DraftLevel, v))})
+			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(marked(l.T(LevelNames[v]), v == d.Level), draftData(DraftLevel, v))})
 		}
 
 	case drafts.StepDescription:
-		b.WriteString("📝 <b>Пара слов о выходе</b>\nМаршрут, темп, что взять с собой. До 2000 символов.")
+		b.WriteString(l.T("📝 <b>Пара слов о выходе</b>\nМаршрут, темп, что взять с собой. До 2000 символов."))
 		current(d.Description)
 		if d.Description == "" {
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("Пропустить", draftData(DraftSkip))})
+			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("Пропустить"), draftData(DraftSkip))})
 		} else {
 			keep(d.Description)
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("🗑 Без описания", draftData(DraftClear))})
+			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🗑 Без описания"), draftData(DraftClear))})
 		}
 
 	case drafts.StepContact:
-		b.WriteString("💬 <b>Как с вами связаться?</b>\nКонтакт увидят только записавшиеся. Напишите @username или телефон.")
+		b.WriteString(l.T("💬 <b>Как с вами связаться?</b>\nКонтакт увидят только записавшиеся. Напишите @username или телефон."))
 		current(d.Contact)
 		if d.Username != "" && d.Contact != "@"+d.Username {
 			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("@"+d.Username, draftData(DraftContact, "me"))})
 		}
 		if d.Contact == "" {
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("Пропустить", draftData(DraftSkip))})
+			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("Пропустить"), draftData(DraftSkip))})
 		} else {
 			keep(d.Contact)
-			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("🗑 Без контакта", draftData(DraftClear))})
+			buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🗑 Без контакта"), draftData(DraftClear))})
 		}
 	}
 
-	buttons = append(buttons, draftNav(d))
+	buttons = append(buttons, draftNav(l, d))
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
 
 // draftNav is the way back and out.
-func draftNav(d drafts.Draft) []telego.InlineKeyboardButton {
-	cancel := keyboards.Button("✖️ Отмена", draftData(DraftCancel))
+func draftNav(l i18n.Lang, d drafts.Draft) []telego.InlineKeyboardButton {
+	cancel := keyboards.Button(l.T("✖️ Отмена"), draftData(DraftCancel))
 	switch {
 	case d.Reviewing:
-		return []telego.InlineKeyboardButton{keyboards.Button("⬅️ Назад", draftData(DraftFields)), cancel}
+		return []telego.InlineKeyboardButton{keyboards.Button(l.T("⬅️ Назад"), draftData(DraftFields)), cancel}
 	case drafts.Number(d.Step) > 1:
-		return []telego.InlineKeyboardButton{keyboards.Button("⬅️ Назад", draftData(DraftBack)), cancel}
+		return []telego.InlineKeyboardButton{keyboards.Button(l.T("⬅️ Назад"), draftData(DraftBack)), cancel}
 	default:
 		return []telego.InlineKeyboardButton{cancel}
 	}
@@ -268,7 +263,7 @@ func grid(items []string, cols int, button func(string) telego.InlineKeyboardBut
 
 // calendar is the draft's month, Monday first; days an outing can't start
 // on show as dots.
-func calendar(d drafts.Draft, now time.Time) [][]telego.InlineKeyboardButton {
+func calendar(l i18n.Lang, d drafts.Draft, now time.Time) [][]telego.InlineKeyboardButton {
 	month, err := time.Parse("2006-01", d.Month)
 	if err != nil {
 		month, _ = time.Parse("2006-01", now.In(bishkek).Format("2006-01"))
@@ -284,10 +279,10 @@ func calendar(d drafts.Draft, now time.Time) [][]telego.InlineKeyboardButton {
 		next = keyboards.Button("▶️", draftData(DraftMonth, n.Format("2006-01")))
 	}
 	out := [][]telego.InlineKeyboardButton{
-		{prev, noop(fmt.Sprintf("%s %d", monthsNominative[month.Month()-1], month.Year())), next},
+		{prev, noop(l.MonthYear(month)), next},
 	}
 	var header []telego.InlineKeyboardButton
-	for _, w := range []string{"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"} {
+	for _, w := range l.Weekdays() {
 		header = append(header, noop(w))
 	}
 	out = append(out, header)
@@ -335,38 +330,38 @@ func upperFirst(s string) string {
 }
 
 // draftReview shows the whole outing before it is published (or saved).
-func draftReview(d drafts.Draft) Screen {
+func draftReview(l i18n.Lang, d drafts.Draft) Screen {
 	var b strings.Builder
 	if d.OutingID != "" {
-		b.WriteString("✏️ <b>Изменение выхода</b>\n\n")
+		b.WriteString(l.T("✏️ <b>Изменение выхода</b>") + "\n\n")
 	} else {
-		b.WriteString("👀 <b>Проверьте выход</b>\n\n")
+		b.WriteString(l.T("👀 <b>Проверьте выход</b>") + "\n\n")
 	}
-	b.WriteString(outingDetails(d.Outing()))
-	save := "✅ Опубликовать"
+	b.WriteString(outingDetails(l, d.Outing()))
+	save := l.T("✅ Опубликовать")
 	if d.OutingID != "" {
-		save = "✅ Сохранить"
-		b.WriteString("\n\nЕсли поменяются время, место сбора или маршрут, бот сообщит участникам.")
+		save = l.T("✅ Сохранить")
+		b.WriteString("\n\n" + l.T("Если поменяются время, место сбора или маршрут, бот сообщит участникам."))
 	} else {
-		b.WriteString("\n\nВсё верно? Выход появится в ближайших — в боте и на сайте, а бот будет сообщать вам о каждом, кто запишется.")
+		b.WriteString("\n\n" + l.T("Всё верно? Выход появится в ближайших — в боте и на сайте, а бот будет сообщать вам о каждом, кто запишется."))
 	}
 	return Screen{Text: b.String(), Preview: noPreview(), Markup: rows(
 		[]telego.InlineKeyboardButton{keyboards.Button(save, draftData(DraftSave))},
-		[]telego.InlineKeyboardButton{keyboards.Button("✏️ Изменить", draftData(DraftFields)), keyboards.Button("✖️ Отмена", draftData(DraftCancel))},
+		[]telego.InlineKeyboardButton{keyboards.Button(l.T("✏️ Изменить"), draftData(DraftFields)), keyboards.Button(l.T("✖️ Отмена"), draftData(DraftCancel))},
 	)}
 }
 
 // draftFieldList asks which field to change.
-func draftFieldList(d drafts.Draft) Screen {
-	text := "✏️ <b>Что изменить?</b>\n\n" + outingDetails(d.Outing())
+func draftFieldList(l i18n.Lang, d drafts.Draft) Screen {
+	text := l.T("✏️ <b>Что изменить?</b>") + "\n\n" + outingDetails(l, d.Outing())
 	var buttons [][]telego.InlineKeyboardButton
 	for i := 0; i < len(draftFields); i += 2 {
 		buttons = append(buttons, []telego.InlineKeyboardButton{
-			keyboards.Button(draftFields[i].label, draftData(DraftGo, string(draftFields[i].step))),
-			keyboards.Button(draftFields[i+1].label, draftData(DraftGo, string(draftFields[i+1].step))),
+			keyboards.Button(l.T(draftFields[i].label), draftData(DraftGo, string(draftFields[i].step))),
+			keyboards.Button(l.T(draftFields[i+1].label), draftData(DraftGo, string(draftFields[i+1].step))),
 		})
 	}
-	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("⬅️ К проверке", draftData(DraftReview))})
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("⬅️ К проверке"), draftData(DraftReview))})
 	return Screen{Text: text, Markup: rows(buttons...), Preview: noPreview()}
 }
 
@@ -374,12 +369,12 @@ func draftFieldList(d drafts.Draft) Screen {
 const DraftGone = "Черновик устарел — начните заново в «🥾 Мои выходы»"
 
 // DraftCancelled replaces a new outing's draft once dropped.
-func DraftCancelled() Screen {
+func DraftCancelled(l i18n.Lang) Screen {
 	return Screen{
-		Text:    "Выход не создан. Собрать новый можно в любой момент.",
+		Text:    l.T("Выход не создан. Собрать новый можно в любой момент."),
 		Preview: noPreview(),
 		Markup: rows([]telego.InlineKeyboardButton{
-			keyboards.Button("➕ Собрать выход", NewOutingData), keyboards.Button("🥾 Мои выходы", ListData(FromMine)),
+			keyboards.Button(l.T("➕ Собрать выход"), NewOutingData), keyboards.Button(l.T("🥾 Мои выходы"), ListData(FromMine)),
 		}),
 	}
 }

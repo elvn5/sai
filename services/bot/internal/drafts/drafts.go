@@ -9,9 +9,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 )
 
 // Step is what the draft asks next.
@@ -263,15 +265,15 @@ func Earliest(now time.Time) string { return now.In(bishkek).Format(time.DateOnl
 func Latest(now time.Time) string { return now.Add(planAhead).In(bishkek).Format(time.DateOnly) }
 
 // SetDate picks the day; a return on the old day moves along.
-func (d *Draft) SetDate(date string, now time.Time) string {
+func (d *Draft) SetDate(date string, now time.Time) i18n.Msg {
 	if _, err := time.Parse(time.DateOnly, date); err != nil {
-		return "Не понял дату. Напишите, например, 24.10"
+		return i18n.M("Не понял дату. Напишите, например, 24.10")
 	}
 	if date < Earliest(now) {
-		return "Этот день уже прошёл"
+		return i18n.M("Этот день уже прошёл")
 	}
 	if date > Latest(now) {
-		return "Выход можно запланировать на полгода вперёд"
+		return i18n.M("Выход можно запланировать на полгода вперёд")
 	}
 	if d.Returns != "" && d.Date != "" && strings.HasPrefix(d.Returns, d.Date) {
 		d.Returns = date + d.Returns[len(d.Date):]
@@ -280,47 +282,47 @@ func (d *Draft) SetDate(date string, now time.Time) string {
 	if start, ok := d.Start(); ok && !start.After(now) {
 		// Today, but that hour is gone: ask the time again.
 		d.Step = StepTime
-		return ""
+		return i18n.Msg{}
 	}
 	d.dropStaleReturn()
 	d.Next()
-	return ""
+	return i18n.Msg{}
 }
 
 // SetTime picks the hour of the start ("06:00").
-func (d *Draft) SetTime(clock string, now time.Time) string {
+func (d *Draft) SetTime(clock string, now time.Time) i18n.Msg {
 	if _, err := time.Parse("15:04", clock); err != nil {
-		return "Не понял время. Напишите, например, 06:30"
+		return i18n.M("Не понял время. Напишите, например, 06:30")
 	}
 	old := d.Time
 	d.Time = clock
 	start, _ := d.Start()
 	if !start.After(now) {
 		d.Time = old
-		return "Это время уже прошло — выберите другое"
+		return i18n.M("Это время уже прошло — выберите другое")
 	}
 	d.dropStaleReturn()
 	d.Next()
-	return ""
+	return i18n.Msg{}
 }
 
 // SetReturn sets when the group is back, "" for not saying.
-func (d *Draft) SetReturn(returns string) string {
+func (d *Draft) SetReturn(returns string) i18n.Msg {
 	if returns == "" {
 		d.Returns = ""
 		d.Next()
-		return ""
+		return i18n.Msg{}
 	}
 	t, err := time.ParseInLocation("2006-01-02T15:04", returns, bishkek)
 	if err != nil {
-		return "Не понял время. Напишите, например, 19:00 или 25.10 18:00"
+		return i18n.M("Не понял время. Напишите, например, 19:00 или 25.10 18:00")
 	}
 	if start, ok := d.Start(); ok && !t.After(start) {
-		return "Возвращение должно быть позже сбора"
+		return i18n.M("Возвращение должно быть позже сбора")
 	}
 	d.Returns = returns
 	d.Next()
-	return ""
+	return i18n.Msg{}
 }
 
 // dropStaleReturn forgets a return that is no longer after the start.
@@ -333,77 +335,78 @@ func (d *Draft) dropStaleReturn() {
 }
 
 // SetSeats sets how many can join.
-func (d *Draft) SetSeats(n int) string {
+func (d *Draft) SetSeats(n int) i18n.Msg {
 	switch {
 	case n < 1 || n > maxSeats:
-		return fmt.Sprintf("Можно от 1 до %d человек", maxSeats)
+		return i18n.M("Можно от 1 до %d человек", maxSeats)
 	case n < d.Taken:
-		return fmt.Sprintf("Уже записались %d — мест не может быть меньше", d.Taken)
+		return i18n.M("Уже записались %d — мест не может быть меньше", d.Taken)
 	}
 	d.Seats = n
 	d.Next()
-	return ""
+	return i18n.Msg{}
 }
 
 // Text applies a typed answer to the current step; the route step's text
 // is a search, done by the caller.
-func (d *Draft) Text(text string, now time.Time) string {
+func (d *Draft) Text(text string, now time.Time) i18n.Msg {
 	text = strings.TrimSpace(text)
 	switch d.Step {
 	case StepTitle:
-		return d.setText(&d.Title, text, maxTitle, "Название")
+		return d.setText(&d.Title, text, maxTitle, "Название не может быть пустым", "Название — не длиннее %d символов (сейчас %d)")
 	case StepMeeting:
-		return d.setText(&d.MeetingPoint, text, maxMeeting, "Место сбора")
+		return d.setText(&d.MeetingPoint, text, maxMeeting, "Место сбора не может быть пустым", "Место сбора — не длиннее %d символов (сейчас %d)")
 	case StepDescription:
-		return d.setText(&d.Description, text, maxDescription, "Описание")
+		return d.setText(&d.Description, text, maxDescription, "Описание не может быть пустым", "Описание — не длиннее %d символов (сейчас %d)")
 	case StepContact:
-		return d.setText(&d.Contact, text, maxContact, "Контакт")
+		return d.setText(&d.Contact, text, maxContact, "Контакт не может быть пустым", "Контакт — не длиннее %d символов (сейчас %d)")
 	case StepDate:
 		date, ok := ParseDate(text, now)
 		if !ok {
-			return "Не понял дату. Напишите, например, 24.10"
+			return i18n.M("Не понял дату. Напишите, например, 24.10")
 		}
 		return d.SetDate(date, now)
 	case StepTime:
 		clock, ok := ParseClock(text)
 		if !ok {
-			return "Не понял время. Напишите, например, 06:30"
+			return i18n.M("Не понял время. Напишите, например, 06:30")
 		}
 		return d.SetTime(clock, now)
 	case StepReturn:
 		returns, ok := d.parseReturn(text, now)
 		if !ok {
-			return "Не понял время. Напишите, например, 19:00 или 25.10 18:00"
+			return i18n.M("Не понял время. Напишите, например, 19:00 или 25.10 18:00")
 		}
 		return d.SetReturn(returns)
 	case StepSeats:
-		n, err := strconv.Atoi(strings.TrimSpace(strings.TrimSuffix(text, "чел")))
+		// "6", "6 чел", "6 people": the number is what counts.
+		n, err := strconv.Atoi(strings.TrimRightFunc(text, func(r rune) bool { return !unicode.IsDigit(r) }))
 		if err != nil {
-			return "Напишите число, например 6"
+			return i18n.M("Напишите число, например 6")
 		}
 		return d.SetSeats(n)
 	case StepCost:
 		n, ok := parseMoney(text)
 		if !ok {
-			return "Напишите сумму в сомах, например 500"
+			return i18n.M("Напишите сумму в сомах, например 500")
 		}
 		d.Cost = &n
 		d.Next()
-		return ""
+		return i18n.Msg{}
 	}
-	return "Выберите вариант кнопкой выше"
+	return i18n.M("Выберите вариант кнопкой выше")
 }
 
-func (d *Draft) setText(field *string, text string, limit int, name string) string {
+func (d *Draft) setText(field *string, text string, limit int, empty, long string) i18n.Msg {
 	switch n := utf8.RuneCountInString(text); {
 	case n == 0:
-		return name + " не может быть пустым"
+		return i18n.M(empty)
 	case n > limit:
-		return fmt.Sprintf("%s — не длиннее %d символов (сейчас %d)", name, limit, n)
+		return i18n.M(long, limit, n)
 	}
 	*field = text
 	d.Next()
-	return ""
+	return i18n.Msg{}
 }
 
 // ParseDate reads "24.10", "24.10.2026" or "24/10"; a day without a year
@@ -486,13 +489,19 @@ func (d Draft) parseReturn(text string, now time.Time) (string, bool) {
 	return "", false
 }
 
-// parseMoney reads "500", "1 500 сом", "бесплатно".
+// parseMoney reads "500", "1 500 сом", "бесплатно" (or "free" in the
+// bot's other languages).
 func parseMoney(text string) (int, bool) {
 	text = strings.ToLower(strings.TrimSpace(text))
-	if text == "0" || strings.HasPrefix(text, "бесплат") {
+	for _, free := range []string{"бесплат", "акысыз", "free", "kostenlos", "gratis"} {
+		if strings.HasPrefix(text, free) {
+			return 0, true
+		}
+	}
+	if text == "0" {
 		return 0, true
 	}
-	digits := strings.NewReplacer(" ", "", " ", "", "сом", "", "с", "", ".", "", ",", "").Replace(text)
+	digits := strings.NewReplacer(" ", "", " ", "", "сом", "", "som", "", "с", "", ".", "", ",", "").Replace(text)
 	n, err := strconv.Atoi(digits)
 	return n, err == nil && n >= 0 && n <= maxCost
 }

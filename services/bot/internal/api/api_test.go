@@ -64,7 +64,7 @@ func TestWrites(t *testing.T) {
 		func() error { return c.SetFavoriteTour(ctx, "u1", "t1", true) },
 		func() error { return c.SetFavoriteTour(ctx, "u1", "t1", false) },
 		func() error { return c.SetAllToursAlert(ctx, "u1", true) },
-		func() error { _, err := c.UpcomingTours(ctx); return err },
+		func() error { _, err := c.UpcomingTours(ctx, "ru"); return err },
 	} {
 		if err := call(); err != nil {
 			t.Fatal(err)
@@ -127,7 +127,7 @@ func TestReads(t *testing.T) {
 			func(c *api.Client) (any, error) { return c.TourAlerts(ctx, "u1") },
 			func(v any) bool { d := v.([]string); return len(d) == 2 && d[0] == "" }},
 		{`[{"id":"p1","publishedAt":"2026-10-18T03:00:00.000Z"}]`, "/blog?locale=ru", "",
-			func(c *api.Client) (any, error) { return c.BlogPosts(ctx) },
+			func(c *api.Client) (any, error) { return c.BlogPosts(ctx, "ru") },
 			func(v any) bool { p := v.([]api.BlogPost); return p[0].PublishedAt.Hour() == 3 }},
 	} {
 		c, got := newClient(t, http.StatusOK, tc.answer)
@@ -164,7 +164,7 @@ func TestOtherErrors(t *testing.T) {
 	}
 
 	c, _ = newClient(t, http.StatusOK, `not json`)
-	if _, err := c.BlogPosts(context.Background()); err == nil || api.StatusOf(err) != 0 || api.MessageOf(err) != "" {
+	if _, err := c.BlogPosts(context.Background(), "ru"); err == nil || api.StatusOf(err) != 0 || api.MessageOf(err) != "" {
 		t.Errorf("bad JSON: %v", err)
 	}
 
@@ -172,7 +172,7 @@ func TestOtherErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := unreachable.BlogPosts(context.Background()); err == nil || api.StatusOf(err) != 0 {
+	if _, err := unreachable.BlogPosts(context.Background(), "ru"); err == nil || api.StatusOf(err) != 0 {
 		t.Errorf("unreachable: %v", err)
 	}
 }

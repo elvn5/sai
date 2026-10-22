@@ -32,7 +32,7 @@ func TestNewOutingStepByStep(t *testing.T) {
 		if d.Step != answer.step {
 			t.Fatalf("at %s, want %s", d.Step, answer.step)
 		}
-		if problem := d.Text(answer.text, now); problem != "" {
+		if problem := d.Text(answer.text, now).String(); problem != "" {
 			t.Fatalf("%s %q: %s", answer.step, answer.text, problem)
 		}
 	}
@@ -40,17 +40,17 @@ func TestNewOutingStepByStep(t *testing.T) {
 		t.Fatalf("after the meeting point: %s", d.Step)
 	}
 	d.Next() // transport kept
-	if d.SetSeats(6) != "" || d.Step != drafts.StepCost {
+	if d.SetSeats(6).String() != "" || d.Step != drafts.StepCost {
 		t.Fatalf("seats: %+v", d)
 	}
-	if d.Text("1 500 сом", now) != "" || *d.Cost != 1500 {
+	if d.Text("1 500 сом", now).String() != "" || *d.Cost != 1500 {
 		t.Fatalf("cost: %v", d.Cost)
 	}
 	d.Next() // level
-	if d.Text("Темп спокойный", now) != "" || d.Step != drafts.StepContact {
+	if d.Text("Темп спокойный", now).String() != "" || d.Step != drafts.StepContact {
 		t.Fatalf("description: %+v", d)
 	}
-	if d.Text("@aibek", now) != "" || d.Step != drafts.StepReview || !d.Reviewing {
+	if d.Text("@aibek", now).String() != "" || d.Step != drafts.StepReview || !d.Reviewing {
 		t.Fatalf("contact: %+v", d)
 	}
 	if d.Missing() != "" {
@@ -67,7 +67,7 @@ func TestNewOutingStepByStep(t *testing.T) {
 
 	// Changing a field from the review comes back to it.
 	d.Go(drafts.StepSeats)
-	if d.SetSeats(8) != "" || d.Step != drafts.StepReview {
+	if d.SetSeats(8).String() != "" || d.Step != drafts.StepReview {
 		t.Errorf("change from the review: %s", d.Step)
 	}
 	d.Go(drafts.StepTime)
@@ -86,7 +86,7 @@ func TestDatesAndTimes(t *testing.T) {
 		"19.10.2026": "Этот день уже прошёл",
 		"01.06.2027": "Выход можно запланировать на полгода вперёд",
 	} {
-		if got := d.Text(text, now); got != problem {
+		if got := d.Text(text, now).String(); got != problem {
 			t.Errorf("date %q: %q", text, got)
 		}
 	}
@@ -96,32 +96,32 @@ func TestDatesAndTimes(t *testing.T) {
 	}
 
 	// Today, an hour already gone: the time is asked again.
-	if d.SetDate("2026-10-20", now) != "" || d.Step != drafts.StepTime {
+	if d.SetDate("2026-10-20", now).String() != "" || d.Step != drafts.StepTime {
 		t.Fatalf("today: %s", d.Step)
 	}
-	if got := d.SetTime("09:00", now); got != "Это время уже прошло — выберите другое" || d.Time != "" {
+	if got := d.SetTime("09:00", now).String(); got != "Это время уже прошло — выберите другое" || d.Time != "" {
 		t.Errorf("past hour: %q %q", got, d.Time)
 	}
-	if d.SetTime("18:00", now) != "" || d.Step != drafts.StepReturn {
+	if d.SetTime("18:00", now).String() != "" || d.Step != drafts.StepReturn {
 		t.Fatalf("evening: %s", d.Step)
 	}
 	// Back before the start: the next day.
-	if d.Text("02:00", now) != "" || d.Returns != "2026-10-21T02:00" {
+	if d.Text("02:00", now).String() != "" || d.Returns != "2026-10-21T02:00" {
 		t.Errorf("overnight: %s", d.Returns)
 	}
-	if got := d.SetReturn("2026-10-20T17:00"); got != "Возвращение должно быть позже сбора" {
+	if got := d.SetReturn("2026-10-20T17:00").String(); got != "Возвращение должно быть позже сбора" {
 		t.Errorf("return before start: %q", got)
 	}
 
 	// Moving the day moves a same-day return along.
 	d.Returns = "2026-10-20T22:00"
 	d.Reviewing = true
-	if d.SetDate("2026-10-25", now) != "" || d.Returns != "2026-10-25T22:00" || d.Step != drafts.StepReview {
+	if d.SetDate("2026-10-25", now).String() != "" || d.Returns != "2026-10-25T22:00" || d.Step != drafts.StepReview {
 		t.Errorf("moved: %+v", d)
 	}
 	// A start after the return drops the return.
 	d.Returns = "2026-10-25T19:00"
-	if d.SetTime("20:00", now) != "" || d.Returns != "" {
+	if d.SetTime("20:00", now).String() != "" || d.Returns != "" {
 		t.Errorf("stale return kept: %s", d.Returns)
 	}
 
@@ -140,36 +140,36 @@ func TestDatesAndTimes(t *testing.T) {
 func TestLimits(t *testing.T) {
 	d := drafts.New("", now)
 	d.Step = drafts.StepTitle
-	if got := d.Text("   ", now); got != "Название не может быть пустым" {
+	if got := d.Text("   ", now).String(); got != "Название не может быть пустым" {
 		t.Errorf("empty title: %q", got)
 	}
 	long := make([]rune, 161)
 	for i := range long {
 		long[i] = 'а'
 	}
-	if got := d.Text(string(long), now); got != "Название — не длиннее 160 символов (сейчас 161)" {
+	if got := d.Text(string(long), now).String(); got != "Название — не длиннее 160 символов (сейчас 161)" {
 		t.Errorf("long title: %q", got)
 	}
 	d.Step = drafts.StepSeats
 	for text, want := range map[string]string{"0": "Можно от 1 до 50 человек", "51": "Можно от 1 до 50 человек", "много": "Напишите число, например 6"} {
-		if got := d.Text(text, now); got != want {
+		if got := d.Text(text, now).String(); got != want {
 			t.Errorf("seats %q: %q", text, got)
 		}
 	}
 	d.Taken = 4
-	if got := d.SetSeats(3); got != "Уже записались 4 — мест не может быть меньше" {
+	if got := d.SetSeats(3).String(); got != "Уже записались 4 — мест не может быть меньше" {
 		t.Errorf("below taken: %q", got)
 	}
 	d.Step = drafts.StepCost
-	if d.Text("Бесплатно", now) != "" || d.Cost == nil || *d.Cost != 0 {
+	if d.Text("Бесплатно", now).String() != "" || d.Cost == nil || *d.Cost != 0 {
 		t.Errorf("free: %v", d.Cost)
 	}
 	d.Step = drafts.StepCost
-	if got := d.Text("дорого", now); got != "Напишите сумму в сомах, например 500" {
+	if got := d.Text("дорого", now).String(); got != "Напишите сумму в сомах, например 500" {
 		t.Errorf("cost: %q", got)
 	}
 	d.Step = drafts.StepTransport
-	if got := d.Text("машина", now); got != "Выберите вариант кнопкой выше" {
+	if got := d.Text("машина", now).String(); got != "Выберите вариант кнопкой выше" {
 		t.Errorf("buttons-only step: %q", got)
 	}
 }

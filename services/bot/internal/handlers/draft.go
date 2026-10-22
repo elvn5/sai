@@ -15,6 +15,7 @@ import (
 
 	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/drafts"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 	"github.com/elvn5/sai/services/bot/internal/screens"
 )
@@ -65,8 +66,8 @@ func (h *Handlers) prepare(ctx *th.Context, d *drafts.Draft) {
 // showDraft shows the draft's step: in the pressed message, or — after a
 // typed answer — as a new message under it (the old one loses its
 // buttons, so only the latest step can be answered).
-func (h *Handlers) showDraft(ctx *th.Context, chatID int64, q *telego.CallbackQuery, d drafts.Draft) error {
-	s := screens.DraftScreen(d, h.now())
+func (h *Handlers) showDraft(ctx *th.Context, l i18n.Lang, chatID int64, q *telego.CallbackQuery, d drafts.Draft) error {
+	s := screens.DraftScreen(l, d, h.now())
 	if q != nil && q.Message != nil && q.Message.IsAccessible() && q.Message.Message().Photo == nil {
 		_, err := ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID: tu.ID(chatID), MessageID: q.Message.GetMessageID(),
@@ -102,7 +103,7 @@ func (h *Handlers) dropButtonsOf(ctx *th.Context, chatID int64, messageID int) {
 }
 
 // startDraft begins a new outing in the pressed message.
-func (h *Handlers) startDraft(ctx *th.Context, q telego.CallbackQuery) error {
+func (h *Handlers) startDraft(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery) error {
 	chatID := chatOf(q)
 	h.Sessions.Cancel(chatID)
 	if old, ok := h.Drafts.Get(chatID); ok && old.MessageID != 0 && (q.Message == nil || old.MessageID != q.Message.GetMessageID()) {
@@ -113,33 +114,34 @@ func (h *Handlers) startDraft(ctx *th.Context, q telego.CallbackQuery) error {
 	if err := h.answer(ctx, q, ""); err != nil {
 		return err
 	}
-	return h.showDraft(ctx, chatID, &q, d)
+	return h.showDraft(ctx, l, chatID, &q, d)
 }
 
 // editDraft begins changing an outing the user organizes (the press is
 // already answered).
-func (h *Handlers) editDraft(ctx *th.Context, q telego.CallbackQuery, o api.Outing) error {
+func (h *Handlers) editDraft(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, o api.Outing) error {
 	chatID := chatOf(q)
 	defer h.Drafts.Lock(chatID)()
 	h.Sessions.Cancel(chatID)
 	if old, ok := h.Drafts.Get(chatID); ok && old.MessageID != 0 && (q.Message == nil || old.MessageID != q.Message.GetMessageID()) {
 		h.dropButtonsOf(ctx, chatID, old.MessageID)
 	}
-	return h.showDraft(ctx, chatID, &q, drafts.FromOuting(o, q.From.Username))
+	return h.showDraft(ctx, l, chatID, &q, drafts.FromOuting(o, q.From.Username))
 }
 
 // draftPress answers the draft's buttons.
 func (h *Handlers) draftPress(ctx *th.Context, q telego.CallbackQuery) error {
 	action, arg, _ := strings.Cut(strings.TrimPrefix(q.Data, keyboards.DraftPrefix), ":")
 	chatID := chatOf(q)
+	l := h.lang(ctx, &q.From)
 	defer h.Drafts.Lock(chatID)()
 	if action == "new" {
-		return h.startDraft(ctx, q)
+		return h.startDraft(ctx, l, q)
 	}
 	d, ok := h.Drafts.Get(chatID)
 	if !ok || (q.Message != nil && d.MessageID != 0 && q.Message.GetMessageID() != d.MessageID) {
 		h.dropButtons(ctx, q)
-		return h.answer(ctx, q, screens.DraftGone)
+		return h.answer(ctx, q, l.T(screens.DraftGone))
 	}
 	now := h.now()
 	toast := ""
@@ -148,18 +150,18 @@ func (h *Handlers) draftPress(ctx *th.Context, q telego.CallbackQuery) error {
 	case screens.DraftBack:
 		d.Back()
 	case screens.DraftCancel:
-		return h.cancelDraft(ctx, q, d)
+		return h.cancelDraft(ctx, l, q, d)
 	case screens.DraftReview:
 		d.Step = drafts.StepReview
 	case screens.DraftFields:
 		d.Step = drafts.StepFields
 	case screens.DraftSave:
-		return h.saveDraft(ctx, q, d)
+		return h.saveDraft(ctx, l, q, d)
 	case screens.DraftGo:
 		d.Go(drafts.Step(arg))
 	case screens.DraftSkip:
 		if (d.Step == drafts.StepTitle && d.Title == "") || (d.Step == drafts.StepMeeting && d.MeetingPoint == "") {
-			toast = requiredText
+			toast = l.T(requiredText)
 		} else {
 			d.Next()
 		}
@@ -189,13 +191,13 @@ func (h *Handlers) draftPress(ctx *th.Context, q telego.CallbackQuery) error {
 			d.Month = arg
 		}
 	case screens.DraftDate:
-		toast = d.SetDate(arg, now)
+		toast = l.Say(d.SetDate(arg, now))
 	case screens.DraftTime:
 		if len(arg) == 4 {
-			toast = d.SetTime(arg[:2]+":"+arg[2:], now)
+			toast = l.Say(d.SetTime(arg[:2]+":"+arg[2:], now))
 		}
 	case screens.DraftReturn:
-		toast = h.pickReturn(&d, arg)
+		toast = l.Say(h.pickReturn(&d, arg))
 	case screens.DraftMove:
 		if slices.Contains(drafts.Transports, arg) {
 			d.Transport = arg
@@ -203,7 +205,7 @@ func (h *Handlers) draftPress(ctx *th.Context, q telego.CallbackQuery) error {
 		}
 	case screens.DraftSeats:
 		if n, err := strconv.Atoi(arg); err == nil {
-			toast = d.SetSeats(n)
+			toast = l.Say(d.SetSeats(n))
 		}
 	case screens.DraftCost:
 		if arg == screens.DraftNone {
@@ -228,12 +230,12 @@ func (h *Handlers) draftPress(ctx *th.Context, q telego.CallbackQuery) error {
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}
-	return h.showDraft(ctx, chatID, &q, d)
+	return h.showDraft(ctx, l, chatID, &q, d)
 }
 
 // pickReturn applies a return button: "1900" on the start's day, "+1800"
 // the day after, "none".
-func (h *Handlers) pickReturn(d *drafts.Draft, arg string) string {
+func (h *Handlers) pickReturn(d *drafts.Draft, arg string) i18n.Msg {
 	if arg == screens.DraftNone {
 		return d.SetReturn("")
 	}
@@ -245,21 +247,21 @@ func (h *Handlers) pickReturn(d *drafts.Draft, arg string) string {
 		}
 	}
 	if len(arg) != 4 {
-		return ""
+		return i18n.Msg{}
 	}
 	return d.SetReturn(date + "T" + arg[:2] + ":" + arg[2:])
 }
 
 // cancelDraft drops the draft: a new outing isn't created, an edited one
 // shows its card again.
-func (h *Handlers) cancelDraft(ctx *th.Context, q telego.CallbackQuery, d drafts.Draft) error {
+func (h *Handlers) cancelDraft(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, d drafts.Draft) error {
 	chatID := chatOf(q)
 	h.Drafts.Drop(chatID)
 	if d.OutingID == "" {
 		if err := h.answer(ctx, q, ""); err != nil {
 			return err
 		}
-		return h.show(ctx, q, screens.DraftCancelled())
+		return h.show(ctx, q, screens.DraftCancelled(l))
 	}
 	userID, err := h.userOf(ctx, &q.From)
 	if err != nil {
@@ -267,62 +269,62 @@ func (h *Handlers) cancelDraft(ctx *th.Context, q telego.CallbackQuery, d drafts
 	}
 	o, err := h.Content.Outing(ctx, userID, d.OutingID)
 	if err != nil {
-		return h.failedPress(ctx, q, err)
+		return h.failedPress(ctx, l, q, err)
 	}
-	if err := h.answer(ctx, q, "Изменения отменены"); err != nil {
+	if err := h.answer(ctx, q, l.T("Изменения отменены")); err != nil {
 		return err
 	}
-	return h.show(ctx, q, screens.OutingCard(o, screens.FromMine, h.Links, h.now()))
+	return h.show(ctx, q, screens.OutingCard(l, o, screens.FromMine, h.Links, h.now()))
 }
 
 // saveDraft publishes the outing (or saves the changes) and shows its card.
-func (h *Handlers) saveDraft(ctx *th.Context, q telego.CallbackQuery, d drafts.Draft) error {
+func (h *Handlers) saveDraft(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, d drafts.Draft) error {
 	chatID := chatOf(q)
 	if missing := d.Missing(); missing != "" {
 		d.Go(missing)
-		if err := h.answer(ctx, q, "Осталось заполнить этот шаг"); err != nil {
+		if err := h.answer(ctx, q, l.T("Осталось заполнить этот шаг")); err != nil {
 			return err
 		}
-		return h.showDraft(ctx, chatID, &q, d)
+		return h.showDraft(ctx, l, chatID, &q, d)
 	}
 	userID, err := h.userOf(ctx, &q.From)
 	if err != nil {
 		return err
 	}
 	var o api.Outing
-	toast := "🎉 Выход опубликован!"
+	toast := l.T("🎉 Выход опубликован!")
 	if d.OutingID == "" {
 		o, err = h.Content.CreateOuting(ctx, userID, d.Input())
 	} else {
 		o, err = h.Content.UpdateOuting(ctx, userID, d.OutingID, d.Input())
-		toast = "✅ Изменения сохранены"
+		toast = l.T("✅ Изменения сохранены")
 	}
 	if err != nil {
-		return h.draftRefused(ctx, q, d, err)
+		return h.draftRefused(ctx, l, q, d, err)
 	}
 	h.Drafts.Drop(chatID)
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}
-	return h.show(ctx, q, screens.OutingCard(o, screens.FromMine, h.Links, h.now()))
+	return h.show(ctx, q, screens.OutingCard(l, o, screens.FromMine, h.Links, h.now()))
 }
 
 // draftRefused explains why the API didn't take the draft and returns to
 // the step to fix.
-func (h *Handlers) draftRefused(ctx *th.Context, q telego.CallbackQuery, d drafts.Draft, err error) error {
+func (h *Handlers) draftRefused(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, d drafts.Draft, err error) error {
 	status := api.StatusOf(err)
 	if status != http.StatusBadRequest && status != http.StatusForbidden && status != http.StatusConflict {
-		return h.failedPress(ctx, q, err)
+		return h.failedPress(ctx, l, q, err)
 	}
 	if msg, ok := organizerErrors[api.MessageOf(err)]; ok {
 		h.Drafts.Drop(chatOf(q))
 		h.dropButtons(ctx, q)
-		return h.answer(ctx, q, msg)
+		return h.answer(ctx, q, l.T(msg))
 	}
-	toast := "Проверьте выход — что-то заполнено не так"
+	toast := l.T("Проверьте выход — что-то заполнено не так")
 	for field, problem := range api.FieldsOf(err) {
 		if known, ok := draftErrors[field]; ok {
-			toast = known.text
+			toast = l.T(known.text)
 			d.Go(known.step)
 			break
 		}
@@ -331,12 +333,12 @@ func (h *Handlers) draftRefused(ctx *th.Context, q telego.CallbackQuery, d draft
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}
-	return h.showDraft(ctx, chatOf(q), &q, d)
+	return h.showDraft(ctx, l, chatOf(q), &q, d)
 }
 
 // draftText takes a typed answer to the draft's step; reports whether the
 // chat has a draft (otherwise the text isn't for it).
-func (h *Handlers) draftText(ctx *th.Context, msg telego.Message) (bool, error) {
+func (h *Handlers) draftText(ctx *th.Context, l i18n.Lang, msg telego.Message) (bool, error) {
 	if h.Drafts == nil {
 		return false, nil
 	}
@@ -350,16 +352,16 @@ func (h *Handlers) draftText(ctx *th.Context, msg telego.Message) (bool, error) 
 	case drafts.StepTrail:
 		trails, err := h.Content.Trails(ctx, text)
 		if err != nil {
-			return true, h.failed(ctx, msg.Chat.ID, err)
+			return true, h.failed(ctx, l, msg.Chat.ID, err)
 		}
 		d.Search, d.Trails = text, trails[:min(len(trails), trailsOffered)]
 	case drafts.StepReview, drafts.StepFields:
-		return true, h.reply(ctx, msg.Chat.ID, "Выберите, что сделать, кнопкой под выходом 👆", nil)
+		return true, h.reply(ctx, msg.Chat.ID, l.T("Выберите, что сделать, кнопкой под выходом 👆"), nil)
 	default:
-		if problem := d.Text(text, h.now()); problem != "" {
-			return true, h.reply(ctx, msg.Chat.ID, problem, nil)
+		if problem := d.Text(text, h.now()); problem.Format != "" {
+			return true, h.reply(ctx, msg.Chat.ID, l.Say(problem), nil)
 		}
 	}
 	h.prepare(ctx, &d)
-	return true, h.showDraft(ctx, msg.Chat.ID, nil, d)
+	return true, h.showDraft(ctx, l, msg.Chat.ID, nil, d)
 }

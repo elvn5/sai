@@ -434,10 +434,11 @@ func (c *Client) LeaveOuting(ctx context.Context, userID, id string) error {
 	return c.do(ctx, http.MethodDelete, "/outings/"+url.PathEscape(id)+"/join", userID, nil, nil)
 }
 
-// UpcomingTours lists published Russian tours departing from today on.
-func (c *Client) UpcomingTours(ctx context.Context) ([]Tour, error) {
+// UpcomingTours lists published tours in a language departing from today
+// on.
+func (c *Client) UpcomingTours(ctx context.Context, locale string) ([]Tour, error) {
 	var out []Tour
-	q := url.Values{"locale": {"ru"}, "from": {c.Now().Format(time.DateOnly)}}
+	q := url.Values{"locale": {locale}, "from": {c.Now().Format(time.DateOnly)}}
 	return out, c.do(ctx, http.MethodGet, "/tours?"+q.Encode(), "", nil, &out)
 }
 
@@ -480,10 +481,10 @@ func (c *Client) SetAllToursAlert(ctx context.Context, userID string, on bool) e
 	return c.do(ctx, method, "/tour-alerts", userID, map[string]string{"destination": ""}, nil)
 }
 
-// BlogPosts lists published Russian posts, newest first.
-func (c *Client) BlogPosts(ctx context.Context) ([]BlogPost, error) {
+// BlogPosts lists published posts in a language, newest first.
+func (c *Client) BlogPosts(ctx context.Context, locale string) ([]BlogPost, error) {
 	var out []BlogPost
-	return out, c.do(ctx, http.MethodGet, "/blog?locale=ru", "", nil, &out)
+	return out, c.do(ctx, http.MethodGet, "/blog?locale="+url.QueryEscape(locale), "", nil, &out)
 }
 
 // BlogPost is one published post with its text.

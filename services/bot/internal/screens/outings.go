@@ -11,6 +11,7 @@ import (
 	"github.com/mymmrac/telego"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 )
 
@@ -80,21 +81,21 @@ func SplitOutings(list []api.Outing, now time.Time) (upcoming, past []api.Outing
 	return upcoming, past
 }
 
-func role(o api.Outing) string {
+func role(l i18n.Lang, o api.Outing) string {
 	switch {
 	case o.Status == "cancelled":
-		return "❌ отменён"
+		return l.T("❌ отменён")
 	case o.IsOrganizer:
-		return "⭐ вы организатор"
+		return l.T("⭐ вы организатор")
 	case o.IsJoined:
-		return "вы идёте"
+		return l.T("вы идёте")
 	default:
 		return ""
 	}
 }
 
-func outingLine(n int, o api.Outing, meta ...string) string {
-	parts := append([]string{When(o.StartsAt)}, meta...)
+func outingLine(l i18n.Lang, n int, o api.Outing, meta ...string) string {
+	parts := append([]string{When(l, o.StartsAt)}, meta...)
 	var kept []string
 	for _, p := range parts {
 		if p != "" {
@@ -108,23 +109,23 @@ func outingButton(n int, o api.Outing, from string) []telego.InlineKeyboardButto
 	return []telego.InlineKeyboardButton{keyboards.Button(fmt.Sprintf("%d · %s", n, clip(o.Title, 40)), OutingData(ActView, from, o.ID))}
 }
 
-func summaryLine(sum *api.OutingsSummary) string {
+func summaryLine(l i18n.Lang, sum *api.OutingsSummary) string {
 	if sum == nil || sum.Outings == 0 {
 		return ""
 	}
-	parts := []string{fmt.Sprintf("%d %s", sum.Outings, plural(sum.Outings, "выход", "выхода", "выходов"))}
+	parts := []string{fmt.Sprintf("%d %s", sum.Outings, l.N(sum.Outings, "выход", "выхода", "выходов"))}
 	if km := math.Round(sum.DistanceKm); km > 0 {
-		parts = append(parts, money(int(km))+" км")
+		parts = append(parts, money(int(km))+" "+l.T("км"))
 	}
 	if sum.ElevationGain > 0 {
-		parts = append(parts, "↗ "+money(sum.ElevationGain)+" м")
+		parts = append(parts, "↗ "+money(sum.ElevationGain)+" "+l.T("м"))
 	}
-	return "За всё время: " + strings.Join(parts, " · ")
+	return l.F("За всё время: %s", strings.Join(parts, " · "))
 }
 
 // MyOutings lists the user's upcoming (tab FromMine) or past (FromPast)
 // outings; sum adds the profile's numbers when known.
-func MyOutings(list []api.Outing, sum *api.OutingsSummary, tab string, now time.Time) Screen {
+func MyOutings(l i18n.Lang, list []api.Outing, sum *api.OutingsSummary, tab string, now time.Time) Screen {
 	upcoming, past := SplitOutings(list, now)
 	shown, from := upcoming, FromMine
 	if tab == FromPast {
@@ -132,75 +133,75 @@ func MyOutings(list []api.Outing, sum *api.OutingsSummary, tab string, now time.
 	}
 
 	var b strings.Builder
-	b.WriteString("🥾 <b>Мои выходы</b>")
-	if line := summaryLine(sum); line != "" {
+	b.WriteString(l.T("🥾 <b>Мои выходы</b>"))
+	if line := summaryLine(l, sum); line != "" {
 		b.WriteString("\n" + line)
 	}
 	if from == FromMine {
-		b.WriteString("\n\n<b>Предстоящие</b>")
+		b.WriteString("\n\n<b>" + l.T("Предстоящие") + "</b>")
 	} else {
-		b.WriteString("\n\n<b>Прошедшие</b>")
+		b.WriteString("\n\n<b>" + l.T("Прошедшие") + "</b>")
 	}
 
 	var buttons [][]telego.InlineKeyboardButton
 	switch {
 	case len(shown) == 0 && from == FromMine:
-		b.WriteString("\n\nВы пока не записаны ни на один выход.\nЗагляните в ближайшие — может, найдётся компания на выходные.")
+		b.WriteString("\n\n" + l.T("Вы пока не записаны ни на один выход.\nЗагляните в ближайшие — может, найдётся компания на выходные."))
 	case len(shown) == 0:
-		b.WriteString("\n\nПрошедших выходов пока нет.")
+		b.WriteString("\n\n" + l.T("Прошедших выходов пока нет."))
 	}
 	for i, o := range shown {
 		if i == myOutingsShown {
-			fmt.Fprintf(&b, "\n\n…и ещё %d.", len(shown)-myOutingsShown)
+			b.WriteString("\n\n" + l.F("…и ещё %d.", len(shown)-myOutingsShown))
 			break
 		}
 		meta := []string{}
 		if o.Status == "open" {
 			meta = append(meta, fmt.Sprintf("👥 %d/%d", o.Taken, o.Seats))
 		}
-		meta = append(meta, role(o))
-		b.WriteString("\n\n" + outingLine(i+1, o, meta...))
+		meta = append(meta, role(l, o))
+		b.WriteString("\n\n" + outingLine(l, i+1, o, meta...))
 		buttons = append(buttons, outingButton(i+1, o, from))
 	}
 
 	buttons = append(buttons,
-		keyboards.Tabs(ListData(from), [2]string{"Предстоящие", ListData(FromMine)}, [2]string{"Прошедшие", ListData(FromPast)}),
-		[]telego.InlineKeyboardButton{keyboards.Button("🔎 Найти выход", FindData(0)), keyboards.Button("➕ Собрать выход", NewOutingData)},
-		[]telego.InlineKeyboardButton{keyboards.Button("🧑‍✈️ Кабинет организатора", OrgHome)},
+		keyboards.Tabs(ListData(from), [2]string{l.T("Предстоящие"), ListData(FromMine)}, [2]string{l.T("Прошедшие"), ListData(FromPast)}),
+		[]telego.InlineKeyboardButton{keyboards.Button(l.T("🔎 Найти выход"), FindData(0)), keyboards.Button(l.T("➕ Собрать выход"), NewOutingData)},
+		[]telego.InlineKeyboardButton{keyboards.Button(l.T("🧑‍✈️ Кабинет организатора"), OrgHome)},
 	)
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
 
 // FindOutings is a page of all upcoming outings.
-func FindOutings(list []api.Outing, page int) Screen {
+func FindOutings(l i18n.Lang, list []api.Outing, page int) Screen {
 	pages := max(1, (len(list)+findPageSize-1)/findPageSize)
 	page = min(max(page, 0), pages-1)
 
 	var b strings.Builder
-	b.WriteString("🔎 <b>Ближайшие выходы</b>")
+	b.WriteString(l.T("🔎 <b>Ближайшие выходы</b>"))
 	var buttons [][]telego.InlineKeyboardButton
 	if len(list) == 0 {
-		b.WriteString("\n\nБлижайших выходов пока нет. Загляните позже — или соберите свою компанию.")
+		b.WriteString("\n\n" + l.T("Ближайших выходов пока нет. Загляните позже — или соберите свою компанию."))
 	}
 	start := page * findPageSize
 	for i := start; i < min(start+findPageSize, len(list)); i++ {
 		o := list[i]
-		seats := "мест нет"
+		seats := l.T("мест нет")
 		if free := o.Seats - o.Taken; free > 0 {
-			seats = fmt.Sprintf("👥 свободно %d из %d", free, o.Seats)
+			seats = l.F("👥 свободно %d из %d", free, o.Seats)
 		}
 		place := ""
 		if o.Trail != nil {
 			place = "🏔 " + esc(o.Trail.Name)
 		}
-		b.WriteString("\n\n" + outingLine(i+1, o, seats, place, role(o)))
+		b.WriteString("\n\n" + outingLine(l, i+1, o, seats, place, role(l, o)))
 		buttons = append(buttons, outingButton(i+1, o, FromFind))
 	}
 	if pages > 1 {
 		buttons = append(buttons, keyboards.Pager(page, pages, FindData))
 	}
 	buttons = append(buttons, []telego.InlineKeyboardButton{
-		keyboards.Button("➕ Собрать выход", NewOutingData), keyboards.Button("⬅️ Мои выходы", ListData(FromMine)),
+		keyboards.Button(l.T("➕ Собрать выход"), NewOutingData), keyboards.Button(l.T("⬅️ Мои выходы"), ListData(FromMine)),
 	})
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
@@ -242,7 +243,7 @@ var (
 const namesShown = 15
 
 // outingDetails is an outing's description: what, when, where, how much.
-func outingDetails(o api.Outing) string {
+func outingDetails(l i18n.Lang, o api.Outing) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "🥾 <b>%s</b>", esc(o.Title))
 	var sub []string
@@ -250,42 +251,42 @@ func outingDetails(o api.Outing) string {
 		sub = append(sub, "🏔 "+esc(o.Trail.Name))
 	}
 	if level, ok := levels[o.Level]; ok {
-		sub = append(sub, level)
+		sub = append(sub, l.T(level))
 	}
 	if len(sub) > 0 {
 		b.WriteString("\n" + strings.Join(sub, " · "))
 	}
 
-	b.WriteString("\n\n📅 " + When(o.StartsAt))
+	b.WriteString("\n\n📅 " + When(l, o.StartsAt))
 	if o.ReturnsAt != nil {
 		if sameDay(o.StartsAt, *o.ReturnsAt) {
 			b.WriteString(" → " + o.ReturnsAt.In(bishkek).Format("15:04"))
 		} else {
-			b.WriteString(" → " + When(*o.ReturnsAt))
+			b.WriteString(" → " + When(l, *o.ReturnsAt))
 		}
 	}
-	b.WriteString("\n📍 Сбор: " + esc(o.MeetingPoint))
+	b.WriteString("\n📍 " + l.F("Сбор: %s", esc(o.MeetingPoint)))
 	if t, ok := transports[o.Transport]; ok {
-		b.WriteString("\n🚗 " + t)
+		b.WriteString("\n🚗 " + l.T(t))
 	}
 	if o.CostPerPerson != nil {
 		if *o.CostPerPerson == 0 {
-			b.WriteString("\n💳 Бесплатно")
+			b.WriteString("\n💳 " + l.T("Бесплатно"))
 		} else {
-			b.WriteString("\n💳 " + money(*o.CostPerPerson) + " сом с человека")
+			b.WriteString("\n💳 " + l.F("%s сом с человека", money(*o.CostPerPerson)))
 		}
 	}
 	if o.ID == "" {
 		// Not published yet: nobody could join.
-		fmt.Fprintf(&b, "\n👥 Мест: %d", o.Seats)
+		b.WriteString("\n👥 " + l.F("Мест: %d", o.Seats))
 	} else {
-		fmt.Fprintf(&b, "\n👥 %s %d из %d мест", seatsBar(o.Taken, o.Seats), o.Taken, o.Seats)
+		b.WriteString("\n👥 " + seatsBar(o.Taken, o.Seats) + " " + l.F("%d из %d мест", o.Taken, o.Seats))
 	}
 	if name := o.Organizer.Name(); name != "" {
-		b.WriteString("\n🧑 Организатор: " + esc(name))
+		b.WriteString("\n🧑 " + l.F("Организатор: %s", esc(name)))
 	}
 	if o.Contact != nil && *o.Contact != "" {
-		b.WriteString("\n💬 Связь: " + esc(*o.Contact))
+		b.WriteString("\n💬 " + l.F("Связь: %s", esc(*o.Contact)))
 	}
 	if o.Description != nil && *o.Description != "" {
 		b.WriteString("\n\n<i>" + esc(clip(*o.Description, 1500)) + "</i>")
@@ -294,10 +295,10 @@ func outingDetails(o api.Outing) string {
 }
 
 // participantNames lists who joined: "Аня, @bob и ещё 3".
-func participantNames(people []api.Person) string {
+func participantNames(l i18n.Lang, joined []api.Person) string {
 	var names []string
 	others := 0
-	for _, p := range people {
+	for _, p := range joined {
 		if name := p.Name(); name != "" && len(names) < namesShown {
 			names = append(names, esc(name))
 		} else {
@@ -307,65 +308,70 @@ func participantNames(people []api.Person) string {
 	text := strings.Join(names, ", ")
 	switch {
 	case others > 0 && len(names) > 0:
-		text += fmt.Sprintf(" и ещё %d", others)
+		text += " " + l.F("и ещё %d", others)
 	case others > 0:
-		text = fmt.Sprintf("%d %s", others, plural(others, "человек", "человека", "человек"))
+		text = people(l, others)
 	}
 	return text
 }
 
 // OutingCard is one outing with what the user can do about it.
-func OutingCard(o api.Outing, from string, links Links, now time.Time) Screen {
+func OutingCard(l i18n.Lang, o api.Outing, from string, links Links, now time.Time) Screen {
 	var b strings.Builder
-	b.WriteString(outingDetails(o))
+	b.WriteString(outingDetails(l, o))
 	if (o.IsOrganizer || o.IsJoined) && len(o.Participants) > 0 {
-		b.WriteString("\n\n👥 Идут: " + participantNames(o.Participants))
+		b.WriteString("\n\n👥 " + l.F("Идут: %s", participantNames(l, o.Participants)))
 	}
 
 	upcoming := isUpcoming(o, now)
 	full := o.Taken >= o.Seats
 	switch {
 	case o.Status == "cancelled":
-		b.WriteString("\n\n❌ Выход отменён организатором")
+		b.WriteString("\n\n" + l.T("❌ Выход отменён организатором"))
 	case !upcoming:
-		b.WriteString("\n\n🏁 Выход уже прошёл")
+		b.WriteString("\n\n" + l.T("🏁 Выход уже прошёл"))
 	case o.IsOrganizer:
-		b.WriteString("\n\n⭐ Вы организатор")
+		b.WriteString("\n\n" + l.T("⭐ Вы организатор"))
 	case o.IsJoined:
-		b.WriteString("\n\n✅ Вы идёте")
+		b.WriteString("\n\n" + l.T("✅ Вы идёте"))
 	case full:
-		b.WriteString("\n\nМест больше нет")
+		b.WriteString("\n\n" + l.T("Мест больше нет"))
 	default:
-		b.WriteString("\n\nЕсть свободные места — присоединяйтесь!")
+		b.WriteString("\n\n" + l.T("Есть свободные места — присоединяйтесь!"))
 	}
 
 	var buttons [][]telego.InlineKeyboardButton
 	switch {
 	case upcoming && o.IsOrganizer && o.StartsAt.After(now):
 		buttons = append(buttons, []telego.InlineKeyboardButton{
-			keyboards.Button("✏️ Изменить", OutingData(ActEdit, from, o.ID)),
-			keyboards.Button("❌ Отменить выход", OutingData(ActCancelAsk, from, o.ID)),
+			keyboards.Button(l.T("✏️ Изменить"), OutingData(ActEdit, from, o.ID)),
+			keyboards.Button(l.T("❌ Отменить выход"), OutingData(ActCancelAsk, from, o.ID)),
 		})
 	}
 	if o.IsOrganizer && o.Status == "open" && now.Before(o.StartsAt.Add(checkInAfter)) {
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("📋 Участники и отметка", OrgData(OrgRoster, o.ID))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("📋 Участники и отметка"), OrgData(OrgRoster, o.ID))})
 	}
 	switch {
 	case upcoming && o.IsJoined:
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("🙅 Не смогу пойти", OutingData(ActAsk, from, o.ID))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🙅 Не смогу пойти"), OutingData(ActAsk, from, o.ID))})
 	case upcoming && !o.IsOrganizer && !full:
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("✋ Пойду", OutingData(ActJoin, from, o.ID))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("✋ Пойду"), OutingData(ActJoin, from, o.ID))})
 	}
 	if upcoming && !full {
-		if share := links.Share("📤 Позвать друзей", OutingDeepLink(o.ID), "Пойдём в горы: «"+o.Title+"», "+When(o.StartsAt)); share != nil {
+		if share := inviteFriends(l, o, links); share != nil {
 			buttons = append(buttons, []telego.InlineKeyboardButton{*share})
 		}
 	}
 	if CanReport(o, now) {
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("📝 Рассказать, как маршрут", ConditionStart(o.ID))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("📝 Рассказать, как маршрут"), ConditionStart(o.ID))})
 	}
-	buttons = append(buttons, []telego.InlineKeyboardButton{backButton(from)})
+	buttons = append(buttons, []telego.InlineKeyboardButton{backButton(l, from)})
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
+}
+
+// inviteFriends shares an outing with Telegram's share dialog.
+func inviteFriends(l i18n.Lang, o api.Outing, links Links) *telego.InlineKeyboardButton {
+	return links.Share(l.T("📤 Позвать друзей"), OutingDeepLink(o.ID), l.F("Пойдём в горы: «%s», %s", o.Title, When(l, o.StartsAt)))
 }
 
 // OutingDeepLink is the /start payload opening an outing's card.
@@ -378,35 +384,35 @@ func CanReport(o api.Outing, now time.Time) bool {
 		o.StartsAt.Before(now) && now.Sub(o.StartsAt) < conditionWindow
 }
 
-func backButton(from string) telego.InlineKeyboardButton {
+func backButton(l i18n.Lang, from string) telego.InlineKeyboardButton {
 	switch from {
 	case FromFind:
-		return keyboards.Button("⬅️ К ближайшим выходам", FindData(0))
+		return keyboards.Button(l.T("⬅️ К ближайшим выходам"), FindData(0))
 	case FromPast:
-		return keyboards.Button("⬅️ К моим выходам", ListData(FromPast))
+		return keyboards.Button(l.T("⬅️ К моим выходам"), ListData(FromPast))
 	default:
-		return keyboards.Button("⬅️ К моим выходам", ListData(FromMine))
+		return keyboards.Button(l.T("⬅️ К моим выходам"), ListData(FromMine))
 	}
 }
 
 // CancelConfirm asks the organizer before calling an outing off.
-func CancelConfirm(o api.Outing, from string) Screen {
-	text := fmt.Sprintf("Отменить выход «%s»?", esc(o.Title))
+func CancelConfirm(l i18n.Lang, o api.Outing, from string) Screen {
+	text := l.F("Отменить выход «%s»?", esc(o.Title))
 	if o.Taken > 0 {
-		text += fmt.Sprintf("\n\nУчастников: %d — бот сообщит им об отмене.", o.Taken)
+		text += "\n\n" + l.F("Участников: %d — бот сообщит им об отмене.", o.Taken)
 	}
-	text += "\n\nВернуть выход после отмены не получится."
+	text += "\n\n" + l.T("Вернуть выход после отмены не получится.")
 	return Screen{Text: text, Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{
-		keyboards.Button("Да, отменить", OutingData(ActCancel, from, o.ID)),
-		keyboards.Button("Нет, оставить", OutingData(ActView, from, o.ID)),
+		keyboards.Button(l.T("Да, отменить"), OutingData(ActCancel, from, o.ID)),
+		keyboards.Button(l.T("Нет, оставить"), OutingData(ActView, from, o.ID)),
 	})}
 }
 
 // LeaveConfirm asks before dropping out of an outing.
-func LeaveConfirm(o api.Outing, from string) Screen {
-	text := fmt.Sprintf("Точно не пойдёте на «%s»?\n\nМесто освободится, организатор получит уведомление.", esc(o.Title))
+func LeaveConfirm(l i18n.Lang, o api.Outing, from string) Screen {
+	text := l.F("Точно не пойдёте на «%s»?\n\nМесто освободится, организатор получит уведомление.", esc(o.Title))
 	return Screen{Text: text, Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{
-		keyboards.Button("Да, не пойду", OutingData(ActLeave, from, o.ID)),
-		keyboards.Button("Нет, иду", OutingData(ActView, from, o.ID)),
+		keyboards.Button(l.T("Да, не пойду"), OutingData(ActLeave, from, o.ID)),
+		keyboards.Button(l.T("Нет, иду"), OutingData(ActView, from, o.ID)),
 	})}
 }

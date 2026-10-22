@@ -6,6 +6,7 @@ import (
 	"github.com/mymmrac/telego"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 )
 
@@ -53,39 +54,39 @@ func trailName(o api.Outing) string {
 }
 
 // ConditionState asks what the trail was like.
-func ConditionState(o api.Outing) Screen {
-	text := "📝 <b>Как маршрут «" + esc(trailName(o)) + "»?</b>\n\n" +
-		"Расскажите в два нажатия — сводка появится на странице маршрута и поможет тем, кто пойдёт следом.\n\n" +
-		"<b>Какой была тропа?</b>"
+func ConditionState(l i18n.Lang, o api.Outing) Screen {
+	text := l.F("📝 <b>Как маршрут «%s»?</b>", esc(trailName(o))) + "\n\n" +
+		l.T("Расскажите в два нажатия — сводка появится на странице маршрута и поможет тем, кто пойдёт следом.") + "\n\n" +
+		l.T("<b>Какой была тропа?</b>")
 	var buttons [][]telego.InlineKeyboardButton
 	for i := 0; i < len(TrailStates); i += 2 {
-		row := []telego.InlineKeyboardButton{keyboards.Button(TrailStates[i].Label, conditionData(CondTraction, o.ID, i))}
+		row := []telego.InlineKeyboardButton{keyboards.Button(l.T(TrailStates[i].Label), conditionData(CondTraction, o.ID, i))}
 		if i+1 < len(TrailStates) {
-			row = append(row, keyboards.Button(TrailStates[i+1].Label, conditionData(CondTraction, o.ID, i+1)))
+			row = append(row, keyboards.Button(l.T(TrailStates[i+1].Label), conditionData(CondTraction, o.ID, i+1)))
 		}
 		buttons = append(buttons, row)
 	}
-	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("⬅️ К выходу", OutingData(ActView, FromPast, o.ID))})
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("⬅️ К выходу"), OutingData(ActView, FromPast, o.ID))})
 	return Screen{Text: text, Markup: rows(buttons...), Preview: noPreview()}
 }
 
 // ConditionTraction asks what was needed on the feet.
-func ConditionTraction(o api.Outing, state int) Screen {
-	text := "📝 <b>Как маршрут «" + esc(trailName(o)) + "»?</b>\n\nТропа: " + TrailStates[state].Label +
-		"\n\n<b>Что понадобилось на ноги?</b>"
+func ConditionTraction(l i18n.Lang, o api.Outing, state int) Screen {
+	text := l.F("📝 <b>Как маршрут «%s»?</b>", esc(trailName(o))) + "\n\n" + l.F("Тропа: %s", l.T(TrailStates[state].Label)) +
+		"\n\n" + l.T("<b>Что понадобилось на ноги?</b>")
 	var buttons [][]telego.InlineKeyboardButton
 	for i, t := range Tractions {
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(t.Label, conditionData(CondDone, o.ID, state, i))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T(t.Label), conditionData(CondDone, o.ID, state, i))})
 	}
-	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("⬅️ Назад", ConditionStart(o.ID))})
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("⬅️ Назад"), ConditionStart(o.ID))})
 	return Screen{Text: text, Markup: rows(buttons...), Preview: noPreview()}
 }
 
 // ConditionThanks closes a sent report.
-func ConditionThanks(o api.Outing, state, traction int) Screen {
-	text := "🙏 <b>Спасибо!</b>\n\nСводка по маршруту «" + esc(trailName(o)) + "» опубликована:\n" +
-		TrailStates[state].Label + "\n" + Tractions[traction].Label
+func ConditionThanks(l i18n.Lang, o api.Outing, state, traction int) Screen {
+	text := l.T("🙏 <b>Спасибо!</b>") + "\n\n" + l.F("Сводка по маршруту «%s» опубликована:", esc(trailName(o))) + "\n" +
+		l.T(TrailStates[state].Label) + "\n" + l.T(Tractions[traction].Label)
 	return Screen{Text: text, Preview: noPreview(), Markup: rows(
-		[]telego.InlineKeyboardButton{keyboards.Button("⬅️ К выходу", OutingData(ActView, FromPast, o.ID))},
+		[]telego.InlineKeyboardButton{keyboards.Button(l.T("⬅️ К выходу"), OutingData(ActView, FromPast, o.ID))},
 	)}
 }

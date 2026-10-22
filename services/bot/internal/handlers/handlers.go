@@ -1,7 +1,8 @@
 // Package handlers holds the bot's update handlers: account linking and
 // the profile (texts, buttons and callback data as in the former NestJS
-// bot: the site links into the bot with t.me deep links), and the outings,
-// tours, blog and notification sections (sections.go).
+// bot: the site links into the bot with t.me deep links), the language
+// picker, and the outings, tours, blog and notification sections
+// (sections.go). Every answer is in the chat's language (lang).
 package handlers
 
 import (
@@ -9,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,6 +20,7 @@ import (
 
 	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/drafts"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 	"github.com/elvn5/sai/services/bot/internal/screens"
 	"github.com/elvn5/sai/services/bot/internal/session"
@@ -41,11 +44,21 @@ type Accounts interface {
 	Support(ctx context.Context) (users.Support, error)
 }
 
+// Languages keeps the language of each chat (store.Store).
+type Languages interface {
+	Language(ctx context.Context, chatID int64, fallback string) (string, error)
+	KnownLanguage(ctx context.Context, chatID int64) (string, error)
+	SetLanguage(ctx context.Context, chatID int64, lang string) error
+}
+
 type Handlers struct {
 	Users      Accounts
 	Sessions   *session.Store
 	MiniAppURL string
 	Log        *slog.Logger
+	// The chats' languages; without it the bot speaks the language of
+	// each user's Telegram app.
+	Languages Languages
 
 	// The outings, tours, blog and notification sections; off unless both
 	// are set.
@@ -70,13 +83,15 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 		h.Drafts = drafts.NewStore()
 	}
 	bh.HandleMessage(h.start, th.CommandEqual("start"))
-	bh.HandleMessage(h.profile, th.Or(th.TextEqual(keyboards.Profile), th.CommandEqual("profile")))
-	bh.HandleMessage(h.support, th.Or(th.TextEqual(keyboards.Support), th.CommandEqual("support")))
+	bh.HandleMessage(h.profile, menuButton(keyboards.Profile, "profile"))
+	bh.HandleMessage(h.support, menuButton(keyboards.Support, "support"))
+	bh.HandleMessage(h.languageMenu, th.CommandEqual("language"))
+	bh.HandleCallbackQuery(h.languagePress, th.CallbackDataPrefix(keyboards.LanguagePrefix))
 	if h.sections() {
-		bh.HandleMessage(h.outingsMenu, th.Or(th.TextEqual(keyboards.Outings), th.CommandEqual("outings")))
-		bh.HandleMessage(h.toursMenu, th.Or(th.TextEqual(keyboards.Tours), th.CommandEqual("tours")))
-		bh.HandleMessage(h.blogMenu, th.Or(th.TextEqual(keyboards.Blog), th.CommandEqual("blog")))
-		bh.HandleMessage(h.notifyMenu, th.Or(th.TextEqual(keyboards.Notifications), th.CommandEqual("notifications")))
+		bh.HandleMessage(h.outingsMenu, menuButton(keyboards.Outings, "outings"))
+		bh.HandleMessage(h.toursMenu, menuButton(keyboards.Tours, "tours"))
+		bh.HandleMessage(h.blogMenu, menuButton(keyboards.Blog, "blog"))
+		bh.HandleMessage(h.notifyMenu, menuButton(keyboards.Notifications, "notifications"))
 		bh.HandleCallbackQuery(h.outingPress, th.CallbackDataPrefix(keyboards.OutingsPrefix))
 		bh.HandleCallbackQuery(h.tourPress, th.CallbackDataPrefix(keyboards.ToursPrefix))
 		bh.HandleCallbackQuery(h.blogPress, th.CallbackDataPrefix(keyboards.BlogPrefix))
@@ -94,10 +109,55 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 	bh.HandleCallbackQuery(h.noop, th.CallbackDataEqual(keyboards.Noop))
 	bh.HandleCallbackQuery(h.linkMove, th.CallbackDataPrefix(keyboards.LinkMovePrefix))
 	bh.HandleCallbackQuery(h.linkCancel, th.CallbackDataEqual(keyboards.LinkCancel))
-	bh.HandleCallbackQuery(h.editField(session.FieldName, "Введите новое имя:"), th.CallbackDataEqual(keyboards.EditName))
-	bh.HandleCallbackQuery(h.editField(session.FieldPhone, "Введите новый номер телефона:"), th.CallbackDataEqual(keyboards.EditPhone))
+	bh.HandleCallbackQuery(h.editField(session.FieldName, i18n.M("Введите новое имя:")), th.CallbackDataEqual(keyboards.EditName))
+	bh.HandleCallbackQuery(h.editField(session.FieldPhone, i18n.M("Введите новый номер телефона:")), th.CallbackDataEqual(keyboards.EditPhone))
 	bh.HandleCallbackQuery(h.editCancel, th.CallbackDataEqual(keyboards.EditCancel))
 	bh.HandleMessage(h.text, th.AnyMessageWithText())
+}
+
+// menuButton matches a main menu button, in any language, or its command.
+func menuButton(button, command string) th.Predicate {
+	texts := keyboards.Texts(button)
+	return th.Or(th.CommandEqual(command), func(_ context.Context, update telego.Update) bool {
+		return update.Message != nil && slices.Contains(texts, update.Message.Text)
+	})
+}
+
+// lang is the language to answer a user in: the one kept for their chat,
+// else their Telegram app's (kept from then on).
+func (h *Handlers) lang(ctx context.Context, from *telego.User) i18n.Lang {
+	if from == nil {
+		return i18n.RU
+	}
+	detected := i18n.Parse(from.LanguageCode)
+	if h.Languages == nil {
+		return detected
+	}
+	kept, err := h.Languages.Language(ctx, from.ID, string(detected))
+	if err != nil {
+		h.Log.WarnContext(ctx, "chat language", slog.Any("error", err))
+		return detected
+	}
+	if l := i18n.Lang(kept); l.Valid() {
+		return l
+	}
+	return detected
+}
+
+// chatLang is the language of someone else's chat (a participant getting
+// the organizer's message): Russian when the bot doesn't know it yet.
+func (h *Handlers) chatLang(ctx context.Context, chatID int64) i18n.Lang {
+	if h.Languages == nil {
+		return i18n.RU
+	}
+	kept, err := h.Languages.KnownLanguage(ctx, chatID)
+	if err != nil {
+		h.Log.WarnContext(ctx, "chat language", slog.Any("error", err))
+	}
+	if l := i18n.Lang(kept); l.Valid() {
+		return l
+	}
+	return i18n.RU
 }
 
 func (h *Handlers) reply(ctx *th.Context, chatID int64, text string, markup telego.ReplyMarkup) error {
@@ -111,8 +171,8 @@ func (h *Handlers) reply(ctx *th.Context, chatID int64, text string, markup tele
 	return nil
 }
 
-func (h *Handlers) mainMenu() telego.ReplyMarkup {
-	return keyboards.MainMenu(h.MiniAppURL, h.sections())
+func (h *Handlers) mainMenu(l i18n.Lang) telego.ReplyMarkup {
+	return keyboards.MainMenu(l, h.MiniAppURL, h.sections())
 }
 
 func profileOf(u *telego.User) users.Profile {
@@ -132,14 +192,15 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 	if from == nil {
 		return nil
 	}
+	l := h.lang(ctx, from)
 	_, _, payload := tu.ParseCommandPayload(msg.Text)
 	if token, ok := strings.CutPrefix(payload, verifyPrefix); ok {
-		return h.verify(ctx, msg.Chat.ID, token)
+		return h.verify(ctx, l, msg.Chat.ID, token)
 	}
 	// Before FindOrCreate: that would give this Telegram user an account of
 	// its own, which is exactly what linking avoids.
 	if token, ok := strings.CutPrefix(payload, linkPrefix); ok {
-		return h.link(ctx, msg.Chat.ID, from, token, false)
+		return h.link(ctx, l, msg.Chat.ID, from, token, false)
 	}
 
 	account, err := h.Users.FindOrCreate(ctx, profileOf(from))
@@ -148,19 +209,19 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 	}
 	if h.sections() {
 		if id, ok := strings.CutPrefix(payload, outingPrefix); ok && id != "" {
-			return h.outingCard(ctx, msg.Chat.ID, from, id)
+			return h.outingCard(ctx, l, msg.Chat.ID, from, id)
 		}
 	}
 	name := from.FirstName
 	if name == "" {
-		name = "гость"
+		name = l.T("гость")
 	}
 	if !h.sections() {
-		return h.reply(ctx, msg.Chat.ID, "Здравствуйте, "+name+
-			"! Я помогу с гайдами и маршрутами по Кыргызстану и отвечу на вопросы. Выберите раздел в меню ниже.", h.mainMenu())
+		return h.reply(ctx, msg.Chat.ID, l.F("Здравствуйте, %s! Я помогу с гайдами и маршрутами по Кыргызстану и отвечу на вопросы. Выберите раздел в меню ниже.", name),
+			h.mainMenu(l))
 	}
-	greeting := tu.Message(tu.ID(msg.Chat.ID), h.welcome(ctx, account.ID, name)).
-		WithParseMode(telego.ModeHTML).WithReplyMarkup(h.mainMenu())
+	greeting := tu.Message(tu.ID(msg.Chat.ID), h.welcome(ctx, l, account.ID, name)).
+		WithParseMode(telego.ModeHTML).WithReplyMarkup(h.mainMenu(l))
 	if _, err := ctx.Bot().SendMessage(ctx, greeting); err != nil {
 		return fmt.Errorf("send message: %w", err)
 	}
@@ -168,7 +229,7 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 }
 
 // welcome greets the user with the main menu and their nearest outing.
-func (h *Handlers) welcome(ctx context.Context, userID, name string) string {
+func (h *Handlers) welcome(ctx context.Context, l i18n.Lang, userID, name string) string {
 	var next *api.Outing
 	if list, err := h.Content.MyOutings(ctx, userID); err == nil {
 		if upcoming, _ := screens.SplitOutings(list, h.now()); len(upcoming) > 0 {
@@ -177,41 +238,41 @@ func (h *Handlers) welcome(ctx context.Context, userID, name string) string {
 	} else {
 		h.Log.WarnContext(ctx, "nearest outing", slog.Any("error", err))
 	}
-	return screens.Welcome(name, next)
+	return screens.Welcome(l, name, next)
 }
 
-func (h *Handlers) verify(ctx *th.Context, chatID int64, token string) error {
+func (h *Handlers) verify(ctx *th.Context, l i18n.Lang, chatID int64, token string) error {
 	account, err := h.Users.ConfirmVerification(ctx, token)
 	if err != nil {
 		return err
 	}
 	if account == nil {
-		return h.reply(ctx, chatID, "❌ Ссылка недействительна или истекла. Запросите новую ссылку на сайте Ermekten.", nil)
+		return h.reply(ctx, chatID, l.T("❌ Ссылка недействительна или истекла. Запросите новую ссылку на сайте Ermekten."), nil)
 	}
-	return h.reply(ctx, chatID, "✅ Аккаунт Ermekten подтверждён"+withName(*account)+
-		"! Возвращайтесь на сайт — вход выполнится автоматически.", nil)
+	return h.reply(ctx, chatID, l.F("✅ Аккаунт Ermekten подтверждён%s! Возвращайтесь на сайт — вход выполнится автоматически.",
+		withName(*account)), nil)
 }
 
 // link links this Telegram user to the site account behind the deep link.
-func (h *Handlers) link(ctx *th.Context, chatID int64, from *telego.User, token string, move bool) error {
+func (h *Handlers) link(ctx *th.Context, l i18n.Lang, chatID int64, from *telego.User, token string, move bool) error {
 	res, err := h.Users.Link(ctx, token, from.ID, from.Username, move)
 	if err != nil {
 		return err
 	}
 	switch res.Status {
 	case users.Linked:
-		return h.reply(ctx, chatID, "✅ Telegram привязан к вашему аккаунту Ermekten"+withName(res.Account)+
-			"! Теперь сюда будут приходить уведомления о выходах, а войти на сайт можно через Telegram.", h.mainMenu())
+		return h.reply(ctx, chatID, l.F("✅ Telegram привязан к вашему аккаунту Ermekten%s! Теперь сюда будут приходить уведомления о выходах, а войти на сайт можно через Telegram.",
+			withName(res.Account)), h.mainMenu(l))
 	case users.LinkInvalid:
 		return h.reply(ctx, chatID,
-			"❌ Ссылка недействительна или истекла. Нажмите «Привязать Telegram» в профиле на сайте ещё раз.", nil)
+			l.T("❌ Ссылка недействительна или истекла. Нажмите «Привязать Telegram» в профиле на сайте ещё раз."), nil)
 	case users.LinkTaken:
-		return h.reply(ctx, chatID, "Этот Telegram уже привязан к другому аккаунту Ermekten (с почтой или телефоном). "+
-			"Войдите на сайт через Telegram, чтобы пользоваться тем аккаунтом, или отвяжите Telegram в его профиле.", nil)
+		return h.reply(ctx, chatID, l.T("Этот Telegram уже привязан к другому аккаунту Ermekten (с почтой или телефоном). "+
+			"Войдите на сайт через Telegram, чтобы пользоваться тем аккаунтом, или отвяжите Telegram в его профиле."), nil)
 	default: // LinkNeedsMove
-		return h.reply(ctx, chatID, "У этого Telegram уже есть свой аккаунт Ermekten, созданный через бота. "+
-			"Привязать Telegram к аккаунту с сайта? Войти в старый Telegram-аккаунт после этого будет нельзя.",
-			keyboards.LinkMove(token))
+		return h.reply(ctx, chatID, l.T("У этого Telegram уже есть свой аккаунт Ermekten, созданный через бота. "+
+			"Привязать Telegram к аккаунту с сайта? Войти в старый Telegram-аккаунт после этого будет нельзя."),
+			keyboards.LinkMove(l, token))
 	}
 }
 
@@ -257,15 +318,16 @@ func (h *Handlers) linkMove(ctx *th.Context, q telego.CallbackQuery) error {
 		return err
 	}
 	h.dropButtons(ctx, q)
-	return h.link(ctx, chatOf(q), &q.From, token, true)
+	return h.link(ctx, h.lang(ctx, &q.From), chatOf(q), &q.From, token, true)
 }
 
 func (h *Handlers) linkCancel(ctx *th.Context, q telego.CallbackQuery) error {
-	if err := h.answer(ctx, q, "Отменено"); err != nil {
+	l := h.lang(ctx, &q.From)
+	if err := h.answer(ctx, q, l.T("Отменено")); err != nil {
 		return err
 	}
 	h.dropButtons(ctx, q)
-	return h.reply(ctx, chatOf(q), "Хорошо, Telegram не привязан. Ссылка на сайте действует 15 минут.", nil)
+	return h.reply(ctx, chatOf(q), l.T("Хорошо, Telegram не привязан. Ссылка на сайте действует 15 минут."), nil)
 }
 
 func (h *Handlers) profile(ctx *th.Context, msg telego.Message) error {
@@ -273,11 +335,12 @@ func (h *Handlers) profile(ctx *th.Context, msg telego.Message) error {
 		h.Log.WarnContext(ctx, "message without a sender")
 		return nil
 	}
+	l := h.lang(ctx, msg.From)
 	user, err := h.Users.FindOrCreate(ctx, profileOf(msg.From))
 	if err != nil {
 		return err
 	}
-	firstName, username, phone := "не указано", "не указан", "не указан"
+	firstName, username, phone := l.T("не указано"), l.T("не указан"), l.T("не указан")
 	if user.FirstName != nil {
 		firstName = *user.FirstName
 	}
@@ -287,11 +350,12 @@ func (h *Handlers) profile(ctx *th.Context, msg telego.Message) error {
 	if user.Phone != nil {
 		phone = *user.Phone
 	}
-	return h.reply(ctx, msg.Chat.ID, "Ваш профиль:\n\nИмя: "+firstName+"\nUsername: "+username+"\nТелефон: "+phone,
-		keyboards.ProfileEdit())
+	return h.reply(ctx, msg.Chat.ID, l.F("Ваш профиль:\n\nИмя: %s\nUsername: %s\nТелефон: %s", firstName, username, phone),
+		keyboards.ProfileEdit(l))
 }
 
 func (h *Handlers) support(ctx *th.Context, msg telego.Message) error {
+	l := h.lang(ctx, msg.From)
 	s, err := h.Users.Support(ctx)
 	if err != nil {
 		return err
@@ -301,10 +365,10 @@ func (h *Handlers) support(ctx *th.Context, msg telego.Message) error {
 		label string
 		value *string
 	}{
-		{"Телефон", s.Phone},
+		{l.T("Телефон"), s.Phone},
 		{"Telegram", s.TelegramContact},
 		{"Email", s.Email},
-		{"Часы работы", s.WorkingHours},
+		{l.T("Часы работы"), s.WorkingHours},
 	} {
 		if field.value != nil && *field.value != "" {
 			lines = append(lines, field.label+": "+*field.value)
@@ -314,44 +378,47 @@ func (h *Handlers) support(ctx *th.Context, msg telego.Message) error {
 }
 
 // editField starts editing a profile field: the next text is its value.
-func (h *Handlers) editField(field session.Field, prompt string) th.CallbackQueryHandler {
+func (h *Handlers) editField(field session.Field, prompt i18n.Msg) th.CallbackQueryHandler {
 	return func(ctx *th.Context, q telego.CallbackQuery) error {
 		chatID := chatOf(q)
+		l := h.lang(ctx, &q.From)
 		h.Sessions.Start(chatID, field)
 		if err := h.answer(ctx, q, ""); err != nil {
 			return err
 		}
-		return h.reply(ctx, chatID, prompt, keyboards.CancelEdit())
+		return h.reply(ctx, chatID, l.Say(prompt), keyboards.CancelEdit(l))
 	}
 }
 
 func (h *Handlers) editCancel(ctx *th.Context, q telego.CallbackQuery) error {
 	chatID := chatOf(q)
+	l := h.lang(ctx, &q.From)
 	h.Sessions.Cancel(chatID)
-	if err := h.answer(ctx, q, "Отменено"); err != nil {
+	if err := h.answer(ctx, q, l.T("Отменено")); err != nil {
 		return err
 	}
-	return h.reply(ctx, chatID, "Редактирование отменено.", h.mainMenu())
+	return h.reply(ctx, chatID, l.T("Редактирование отменено."), h.mainMenu(l))
 }
 
 // text saves the value of a profile field being edited, takes an
 // organizer's message to the participants, or answers the step of an
 // outing being put together; other text is ignored.
 func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
+	l := h.lang(ctx, msg.From)
 	field, arg, ok := h.Sessions.ConsumeWith(msg.Chat.ID)
 	if ok && h.organizing() && (field == session.FieldBroadcast || field == session.FieldBroadcastReady) {
 		outingID, _, _ := strings.Cut(arg, "\n")
-		return h.broadcastText(ctx, msg, outingID)
+		return h.broadcastText(ctx, l, msg, outingID)
 	}
 	if ok && h.rating() && field == session.FieldReview {
-		return h.reviewText(ctx, msg, arg)
+		return h.reviewText(ctx, l, msg, arg)
 	}
 	if ok && (field == session.FieldBroadcast || field == session.FieldBroadcastReady || field == session.FieldReview) {
 		ok = false
 	}
 	if !ok {
 		if h.sections() {
-			_, err := h.draftText(ctx, msg)
+			_, err := h.draftText(ctx, l, msg)
 			return err
 		}
 		return nil
@@ -366,21 +433,21 @@ func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 	}
 	value := strings.TrimSpace(msg.Text)
 	if value == "" {
-		return h.reply(ctx, msg.Chat.ID, "Пустое значение не сохранено.", nil)
+		return h.reply(ctx, msg.Chat.ID, l.T("Пустое значение не сохранено."), nil)
 	}
 
 	if field == session.FieldName {
 		if err := h.Users.UpdateFirstName(ctx, user.ID, value); err != nil {
 			return err
 		}
-		return h.reply(ctx, msg.Chat.ID, "Имя обновлено.", h.mainMenu())
+		return h.reply(ctx, msg.Chat.ID, l.T("Имя обновлено."), h.mainMenu(l))
 	}
 	err = h.Users.UpdatePhone(ctx, user.ID, value)
 	if errors.Is(err, users.ErrPhoneTaken) {
-		return h.reply(ctx, msg.Chat.ID, "Этот номер уже привязан к другому аккаунту.", h.mainMenu())
+		return h.reply(ctx, msg.Chat.ID, l.T("Этот номер уже привязан к другому аккаунту."), h.mainMenu(l))
 	}
 	if err != nil {
 		return err
 	}
-	return h.reply(ctx, msg.Chat.ID, "Телефон обновлен.", h.mainMenu())
+	return h.reply(ctx, msg.Chat.ID, l.T("Телефон обновлен."), h.mainMenu(l))
 }

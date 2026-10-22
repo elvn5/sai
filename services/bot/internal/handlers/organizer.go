@@ -12,6 +12,7 @@ import (
 	th "github.com/mymmrac/telego/telegohandler"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 	"github.com/elvn5/sai/services/bot/internal/screens"
 	"github.com/elvn5/sai/services/bot/internal/session"
@@ -47,7 +48,7 @@ const notOrganizer = "Это может только организатор вы
 func (h *Handlers) organizing() bool { return h.sections() && h.Organizer != nil }
 
 // orgHome gathers the organizer's room: the outings they run, their tours.
-func (h *Handlers) orgHome(ctx context.Context, userID string) (screens.Screen, error) {
+func (h *Handlers) orgHome(ctx context.Context, l i18n.Lang, userID string) (screens.Screen, error) {
 	list, err := h.Content.MyOutings(ctx, userID)
 	if err != nil {
 		return screens.Screen{}, err
@@ -61,7 +62,7 @@ func (h *Handlers) orgHome(ctx context.Context, userID string) (screens.Screen, 
 			}
 		}
 	}
-	return screens.OrganizerHome(outings, h.myTours(ctx, userID), h.now()), nil
+	return screens.OrganizerHome(l, outings, h.myTours(ctx, userID), h.now()), nil
 }
 
 // myTours are the tours the user runs; none when they aren't a partner or
@@ -79,64 +80,66 @@ func (h *Handlers) organizerMenu(ctx *th.Context, msg telego.Message) error {
 	if msg.From == nil {
 		return nil
 	}
+	l := h.lang(ctx, msg.From)
 	userID, err := h.userOf(ctx, msg.From)
 	if err != nil {
 		return err
 	}
-	s, err := h.orgHome(ctx, userID)
+	s, err := h.orgHome(ctx, l, userID)
 	if err != nil {
-		return h.failed(ctx, msg.Chat.ID, err)
+		return h.failed(ctx, l, msg.Chat.ID, err)
 	}
 	return h.send(ctx, msg.Chat.ID, s)
 }
 
 func (h *Handlers) organizerPress(ctx *th.Context, q telego.CallbackQuery) error {
 	parts := strings.Split(strings.TrimPrefix(q.Data, keyboards.OrganizerPrefix), ":")
+	l := h.lang(ctx, &q.From)
 	userID, err := h.userOf(ctx, &q.From)
 	if err != nil {
 		return err
 	}
 	switch {
 	case q.Data == screens.OrgHome:
-		s, err := h.orgHome(ctx, userID)
+		s, err := h.orgHome(ctx, l, userID)
 		if err != nil {
-			return h.failedPress(ctx, q, err)
+			return h.failedPress(ctx, l, q, err)
 		}
 		if err := h.answer(ctx, q, ""); err != nil {
 			return err
 		}
 		return h.show(ctx, q, s)
 	case len(parts) == 2 && (parts[0] == screens.OrgRoster || parts[0] == screens.OrgRosterNotice):
-		return h.roster(ctx, q, userID, parts[1], "", parts[0] == screens.OrgRosterNotice)
+		return h.roster(ctx, l, q, userID, parts[1], "", parts[0] == screens.OrgRosterNotice)
 	case len(parts) == 3 && parts[0] == screens.OrgArrival:
-		return h.markArrival(ctx, q, userID, parts[1], parts[2])
+		return h.markArrival(ctx, l, q, userID, parts[1], parts[2])
 	case len(parts) == 2 && parts[0] == screens.OrgArrivedAll:
-		return h.markAllArrived(ctx, q, userID, parts[1])
+		return h.markAllArrived(ctx, l, q, userID, parts[1])
 	case len(parts) == 2 && parts[0] == screens.OrgWrite:
-		return h.startBroadcast(ctx, q, userID, parts[1])
+		return h.startBroadcast(ctx, l, q, userID, parts[1])
 	case len(parts) == 2 && parts[0] == screens.OrgSend:
-		return h.sendBroadcast(ctx, q, userID, parts[1])
+		return h.sendBroadcast(ctx, l, q, userID, parts[1])
 	case len(parts) == 2 && parts[0] == screens.OrgWriteAbort:
 		h.Sessions.Cancel(chatOf(q))
-		return h.roster(ctx, q, userID, parts[1], "Сообщение не отправлено", false)
+		return h.roster(ctx, l, q, userID, parts[1], l.T("Сообщение не отправлено"), false)
 	case len(parts) >= 2 && (parts[0] == screens.OrgTour || parts[0] == screens.OrgProgram || parts[0] == screens.OrgBookings):
-		return h.orgTour(ctx, q, userID, parts)
+		return h.orgTour(ctx, l, q, userID, parts)
 	}
 	return h.answer(ctx, q, "")
 }
 
 // organized loads an outing the user organizes, with its roster; false
 // (the press answered) when it is gone or not theirs.
-func (h *Handlers) organized(ctx *th.Context, q telego.CallbackQuery, userID, id string) (api.Outing, bool, error) {
+func (h *Handlers) organized(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id string) (api.Outing, bool, error) {
 	o, err := h.Content.Outing(ctx, userID, id)
 	if api.StatusOf(err) == http.StatusNotFound || api.StatusOf(err) == http.StatusBadRequest {
-		return o, false, h.answer(ctx, q, "Этого выхода больше нет")
+		return o, false, h.answer(ctx, q, l.T("Этого выхода больше нет"))
 	}
 	if err != nil {
-		return o, false, h.failedPress(ctx, q, err)
+		return o, false, h.failedPress(ctx, l, q, err)
 	}
 	if !o.IsOrganizer {
-		return o, false, h.answer(ctx, q, notOrganizer)
+		return o, false, h.answer(ctx, q, l.T(notOrganizer))
 	}
 	return o, true, nil
 }
@@ -157,27 +160,27 @@ func (h *Handlers) chatsOf(ctx context.Context, o api.Outing) map[string]int64 {
 	return chats
 }
 
-func (h *Handlers) showRoster(ctx *th.Context, q telego.CallbackQuery, o api.Outing, toast string, notice bool) error {
+func (h *Handlers) showRoster(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, o api.Outing, toast string, notice bool) error {
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}
-	s := screens.Roster(o, h.chatsOf(ctx, o), h.Links, h.now())
+	s := screens.Roster(l, o, h.chatsOf(ctx, o), h.Links, h.now())
 	if notice {
 		return h.send(ctx, chatOf(q), s)
 	}
 	return h.show(ctx, q, s)
 }
 
-func (h *Handlers) roster(ctx *th.Context, q telego.CallbackQuery, userID, id, toast string, notice bool) error {
-	o, ok, err := h.organized(ctx, q, userID, id)
+func (h *Handlers) roster(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id, toast string, notice bool) error {
+	o, ok, err := h.organized(ctx, l, q, userID, id)
 	if !ok {
 		return err
 	}
-	return h.showRoster(ctx, q, o, toast, notice)
+	return h.showRoster(ctx, l, q, o, toast, notice)
 }
 
-func (h *Handlers) markArrival(ctx *th.Context, q telego.CallbackQuery, userID, id, key string) error {
-	o, ok, err := h.organized(ctx, q, userID, id)
+func (h *Handlers) markArrival(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id, key string) error {
+	o, ok, err := h.organized(ctx, l, q, userID, id)
 	if !ok {
 		return err
 	}
@@ -188,26 +191,26 @@ func (h *Handlers) markArrival(ctx *th.Context, q telego.CallbackQuery, userID, 
 		arrived := p.ArrivedAt == nil
 		updated, err := h.Organizer.SetArrival(ctx, userID, o.ID, p.ID, arrived)
 		if msg, known := arrivalErrors[api.MessageOf(err)]; known {
-			return h.showRoster(ctx, q, o, msg, false)
+			return h.showRoster(ctx, l, q, o, l.T(msg), false)
 		}
 		if err != nil {
-			return h.failedPress(ctx, q, err)
+			return h.failedPress(ctx, l, q, err)
 		}
 		name := p.Name()
 		if name == "" {
-			name = "Участник " + strconv.Itoa(i+1)
+			name = l.F("Участник %d", i+1)
 		}
-		toast := "✅ " + name + " на месте"
+		toast := l.F("✅ %s на месте", name)
 		if !arrived {
-			toast = name + ": отметка снята"
+			toast = l.F("%s: отметка снята", name)
 		}
-		return h.showRoster(ctx, q, updated, toast, false)
+		return h.showRoster(ctx, l, q, updated, toast, false)
 	}
-	return h.showRoster(ctx, q, o, "Этот участник уже не записан", false)
+	return h.showRoster(ctx, l, q, o, l.T("Этот участник уже не записан"), false)
 }
 
-func (h *Handlers) markAllArrived(ctx *th.Context, q telego.CallbackQuery, userID, id string) error {
-	o, ok, err := h.organized(ctx, q, userID, id)
+func (h *Handlers) markAllArrived(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id string) error {
+	o, ok, err := h.organized(ctx, l, q, userID, id)
 	if !ok {
 		return err
 	}
@@ -217,46 +220,45 @@ func (h *Handlers) markAllArrived(ctx *th.Context, q telego.CallbackQuery, userI
 		}
 		updated, err := h.Organizer.SetArrival(ctx, userID, o.ID, p.ID, true)
 		if msg, known := arrivalErrors[api.MessageOf(err)]; known && api.MessageOf(err) != "Participant not found" {
-			return h.showRoster(ctx, q, o, msg, false)
+			return h.showRoster(ctx, l, q, o, l.T(msg), false)
 		}
 		if err != nil && api.StatusOf(err) != http.StatusNotFound {
-			return h.failedPress(ctx, q, err)
+			return h.failedPress(ctx, l, q, err)
 		}
 		if err == nil {
 			o = updated
 		}
 	}
-	return h.showRoster(ctx, q, o, "✅ Все на месте — хорошего похода!", false)
+	return h.showRoster(ctx, l, q, o, l.T("✅ Все на месте — хорошего похода!"), false)
 }
 
 // startBroadcast asks the organizer for a message: the next text is it.
-func (h *Handlers) startBroadcast(ctx *th.Context, q telego.CallbackQuery, userID, id string) error {
-	o, ok, err := h.organized(ctx, q, userID, id)
+func (h *Handlers) startBroadcast(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id string) error {
+	o, ok, err := h.organized(ctx, l, q, userID, id)
 	if !ok {
 		return err
 	}
 	if o.Status != "open" || len(o.Participants) == 0 {
-		return h.showRoster(ctx, q, o, "Некому писать: на выход никто не записан", false)
+		return h.showRoster(ctx, l, q, o, l.T("Некому писать: на выход никто не записан"), false)
 	}
 	h.Sessions.StartWith(chatOf(q), session.FieldBroadcast, o.ID)
 	if err := h.answer(ctx, q, ""); err != nil {
 		return err
 	}
-	return h.show(ctx, q, screens.BroadcastPrompt(o))
+	return h.show(ctx, q, screens.BroadcastPrompt(l, o))
 }
 
 // broadcastText takes the organizer's typed message and shows it before
 // sending; typing again replaces it.
-func (h *Handlers) broadcastText(ctx *th.Context, msg telego.Message, outingID string) error {
+func (h *Handlers) broadcastText(ctx *th.Context, l i18n.Lang, msg telego.Message, outingID string) error {
 	text := strings.TrimSpace(msg.Text)
 	if text == "" || msg.From == nil {
 		h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcast, outingID)
-		return h.reply(ctx, msg.Chat.ID, "Напишите сообщение текстом.", nil)
+		return h.reply(ctx, msg.Chat.ID, l.T("Напишите сообщение текстом."), nil)
 	}
 	if utf8.RuneCountInString(text) > screens.BroadcastMaxLen {
 		h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcast, outingID)
-		return h.reply(ctx, msg.Chat.ID, "Слишком длинно: не больше "+strconv.Itoa(screens.BroadcastMaxLen)+
-			" символов. Сократите и отправьте ещё раз.", nil)
+		return h.reply(ctx, msg.Chat.ID, l.F("Слишком длинно: не больше %d символов. Сократите и отправьте ещё раз.", screens.BroadcastMaxLen), nil)
 	}
 	userID, err := h.userOf(ctx, msg.From)
 	if err != nil {
@@ -264,18 +266,18 @@ func (h *Handlers) broadcastText(ctx *th.Context, msg telego.Message, outingID s
 	}
 	o, err := h.Content.Outing(ctx, userID, outingID)
 	if err != nil {
-		return h.failed(ctx, msg.Chat.ID, err)
+		return h.failed(ctx, l, msg.Chat.ID, err)
 	}
 	if !o.IsOrganizer {
-		return h.reply(ctx, msg.Chat.ID, notOrganizer, nil)
+		return h.reply(ctx, msg.Chat.ID, l.T(notOrganizer), nil)
 	}
 	h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcastReady, outingID+"\n"+text)
-	return h.send(ctx, msg.Chat.ID, screens.BroadcastPreview(o, text))
+	return h.send(ctx, msg.Chat.ID, screens.BroadcastPreview(l, o, text))
 }
 
 // sendBroadcast sends the written message to every participant with a
 // Telegram chat and reports how many got it.
-func (h *Handlers) sendBroadcast(ctx *th.Context, q telego.CallbackQuery, userID, id string) error {
+func (h *Handlers) sendBroadcast(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id string) error {
 	chatID := chatOf(q)
 	field, arg, ok := h.Sessions.ConsumeWith(chatID)
 	outingID, text, _ := strings.Cut(arg, "\n")
@@ -283,13 +285,13 @@ func (h *Handlers) sendBroadcast(ctx *th.Context, q telego.CallbackQuery, userID
 		if ok {
 			h.Sessions.StartWith(chatID, field, arg)
 		}
-		if err := h.answer(ctx, q, "Сообщение устарело — напишите его заново"); err != nil {
+		if err := h.answer(ctx, q, l.T("Сообщение устарело — напишите его заново")); err != nil {
 			return err
 		}
 		h.dropButtons(ctx, q)
 		return nil
 	}
-	o, ok, err := h.organized(ctx, q, userID, id)
+	o, ok, err := h.organized(ctx, l, q, userID, id)
 	if !ok {
 		return err
 	}
@@ -300,46 +302,47 @@ func (h *Handlers) sendBroadcast(ctx *th.Context, q telego.CallbackQuery, userID
 	chats := map[string]int64{}
 	if h.Chats != nil && len(ids) > 0 {
 		if chats, err = h.Chats.TelegramChats(ctx, ids); err != nil {
-			return h.failedPress(ctx, q, err)
+			return h.failedPress(ctx, l, q, err)
 		}
 	}
-	if err := h.answer(ctx, q, "Отправляем…"); err != nil {
+	if err := h.answer(ctx, q, l.T("Отправляем…")); err != nil {
 		return err
 	}
-	message := screens.BroadcastMessage(o, text)
 	sent := 0
 	for _, id := range ids {
 		chat, ok := chats[id]
 		if !ok {
 			continue
 		}
+		// Each participant reads it in their own language.
+		message := screens.BroadcastMessage(h.chatLang(ctx, chat), o, text)
 		if err := h.send(ctx, chat, message); err != nil {
 			h.Log.WarnContext(ctx, "organizer's message not delivered", slog.String("user", id), slog.Any("error", err))
 			continue
 		}
 		sent++
 	}
-	return h.show(ctx, q, screens.BroadcastSent(o, sent, len(ids)))
+	return h.show(ctx, q, screens.BroadcastSent(l, o, sent, len(ids)))
 }
 
 // orgTour shows one of the organizer's tours ("t:<index>"), a day of its
 // program ("tp:<index>:<day>") or its bookings ("tb:<index>").
-func (h *Handlers) orgTour(ctx *th.Context, q telego.CallbackQuery, userID string, parts []string) error {
+func (h *Handlers) orgTour(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID string, parts []string) error {
 	index, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return h.answer(ctx, q, "")
 	}
 	tours, err := h.Organizer.MyTours(ctx, userID)
 	if err != nil {
-		return h.failedPress(ctx, q, err)
+		return h.failedPress(ctx, l, q, err)
 	}
 	if index < 0 || index >= len(tours) {
-		if err := h.answer(ctx, q, "Этого тура больше нет"); err != nil {
+		if err := h.answer(ctx, q, l.T("Этого тура больше нет")); err != nil {
 			return err
 		}
-		s, err := h.orgHome(ctx, userID)
+		s, err := h.orgHome(ctx, l, userID)
 		if err != nil {
-			return h.failed(ctx, chatOf(q), err)
+			return h.failed(ctx, l, chatOf(q), err)
 		}
 		return h.show(ctx, q, s)
 	}
@@ -352,7 +355,7 @@ func (h *Handlers) orgTour(ctx *th.Context, q telego.CallbackQuery, userID strin
 		if err := h.answer(ctx, q, ""); err != nil {
 			return err
 		}
-		return h.show(ctx, q, screens.OrganizerProgram(t, index, day))
+		return h.show(ctx, q, screens.OrganizerProgram(l, t, index, day))
 	}
 
 	var bookings []api.Order
@@ -365,7 +368,7 @@ func (h *Handlers) orgTour(ctx *th.Context, q telego.CallbackQuery, userID strin
 		return err
 	}
 	if parts[0] == screens.OrgBookings {
-		return h.show(ctx, q, screens.OrganizerBookings(t, index, bookings))
+		return h.show(ctx, q, screens.OrganizerBookings(l, t, index, bookings))
 	}
 	var stats *api.StatCounts
 	if all, err := h.Organizer.ListingStats(ctx, userID); err == nil {
@@ -374,5 +377,5 @@ func (h *Handlers) orgTour(ctx *th.Context, q telego.CallbackQuery, userID strin
 	} else {
 		h.Log.WarnContext(ctx, "tour stats", slog.Any("error", err))
 	}
-	return h.show(ctx, q, screens.OrganizerTour(t, index, stats, bookings, h.Links))
+	return h.show(ctx, q, screens.OrganizerTour(l, t, index, stats, bookings, h.Links))
 }

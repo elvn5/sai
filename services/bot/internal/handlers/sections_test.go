@@ -171,7 +171,7 @@ func (f *fakeContent) ReportCondition(_ context.Context, userID, trail string, i
 	return nil
 }
 
-func (f *fakeContent) UpcomingTours(context.Context) ([]api.Tour, error) { return f.tours, nil }
+func (f *fakeContent) UpcomingTours(context.Context, string) ([]api.Tour, error) { return f.tours, nil }
 
 func (f *fakeContent) Tour(_ context.Context, locale, slug string) (api.Tour, error) {
 	for _, t := range f.tours {
@@ -224,7 +224,7 @@ func (f *fakeContent) SetAllToursAlert(_ context.Context, _ string, on bool) err
 	return nil
 }
 
-func (f *fakeContent) BlogPosts(context.Context) ([]api.BlogPost, error) {
+func (f *fakeContent) BlogPosts(context.Context, string) ([]api.BlogPost, error) {
 	if f.down {
 		return nil, errDown
 	}

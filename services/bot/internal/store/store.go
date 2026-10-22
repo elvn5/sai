@@ -1,9 +1,10 @@
-// Package store is the bot's database: blog subscribers and the posts the
-// blog feed has seen.
+// Package store is the bot's database: blog subscribers, the posts the
+// blog feed has seen and the language of each chat.
 package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -39,12 +40,61 @@ func (s *Store) SetBlogSubscriber(ctx context.Context, chatID int64, on bool) er
 	return nil
 }
 
-func (s *Store) BlogSubscribers(ctx context.Context) ([]int64, error) {
-	rows, err := s.db.Query(ctx, `SELECT chat_id FROM blog_subscribers ORDER BY created_at`)
+// Subscriber is a chat that gets new blog posts, in its language.
+type Subscriber struct {
+	ChatID int64
+	Lang   string
+}
+
+// BlogSubscribers lists the subscribed chats with their languages
+// (Russian for a chat that has none yet).
+func (s *Store) BlogSubscribers(ctx context.Context) ([]Subscriber, error) {
+	rows, err := s.db.Query(ctx, `
+		SELECT b.chat_id, COALESCE(l.lang, 'ru') FROM blog_subscribers b
+		LEFT JOIN chat_languages l ON l.chat_id = b.chat_id
+		ORDER BY b.created_at`)
 	if err != nil {
 		return nil, fmt.Errorf("blog subscribers: %w", err)
 	}
-	return pgx.CollectRows(rows, pgx.RowTo[int64])
+	return pgx.CollectRows(rows, pgx.RowToStructByPos[Subscriber])
+}
+
+// Language is the chat's language; a chat without one gets fallback (and
+// keeps it).
+func (s *Store) Language(ctx context.Context, chatID int64, fallback string) (string, error) {
+	var lang string
+	err := s.db.QueryRow(ctx, `
+		INSERT INTO chat_languages (chat_id, lang) VALUES ($1, $2)
+		ON CONFLICT (chat_id) DO UPDATE SET chat_id = EXCLUDED.chat_id
+		RETURNING lang`, chatID, fallback).Scan(&lang)
+	if err != nil {
+		return "", fmt.Errorf("chat language: %w", err)
+	}
+	return lang, nil
+}
+
+// KnownLanguage is the chat's language, "" if it has none yet.
+func (s *Store) KnownLanguage(ctx context.Context, chatID int64) (string, error) {
+	var lang string
+	err := s.db.QueryRow(ctx, `SELECT lang FROM chat_languages WHERE chat_id = $1`, chatID).Scan(&lang)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("chat language: %w", err)
+	}
+	return lang, nil
+}
+
+// SetLanguage keeps the language the user picked.
+func (s *Store) SetLanguage(ctx context.Context, chatID int64, lang string) error {
+	_, err := s.db.Exec(ctx, `
+		INSERT INTO chat_languages (chat_id, lang) VALUES ($1, $2)
+		ON CONFLICT (chat_id) DO UPDATE SET lang = EXCLUDED.lang, updated_at = now()`, chatID, lang)
+	if err != nil {
+		return fmt.Errorf("set chat language: %w", err)
+	}
+	return nil
 }
 
 // SeenPosts returns the posts the feed has seen; empty before its first pass.

@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/elvn5/sai/services/pkg/middleware"
+	"github.com/elvn5/sai/services/pkg/telegram"
 	usersv1 "github.com/elvn5/sai/services/proto/gen/go/users/v1"
 )
 
@@ -114,4 +115,30 @@ func (c *Client) TelegramChats(ctx context.Context, ids []string) (map[string]in
 		return nil, fmt.Errorf("get telegram chats: %w", err)
 	}
 	return res.GetChatIds(), nil
+}
+
+// TelegramChat is a user's private chat with the bot and the language it
+// reads the bot in (Russian until the bot reports one).
+type TelegramChat struct {
+	ID   int64
+	Lang telegram.Lang
+}
+
+// TelegramRecipients returns the Telegram chat of each user who has a
+// linked Telegram account, with its language; others are absent.
+func (c *Client) TelegramRecipients(ctx context.Context, ids []string) (map[string]TelegramChat, error) {
+	out := make(map[string]TelegramChat, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	res, err := c.client.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{UserIds: ids})
+	if err != nil {
+		return nil, fmt.Errorf("get telegram chats: %w", err)
+	}
+	for id, chat := range res.GetChatIds() {
+		out[id] = TelegramChat{ID: chat, Lang: telegram.ParseLang(res.GetLanguages()[id])}
+	}
+	return out, nil
 }

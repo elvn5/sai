@@ -27,6 +27,7 @@ const (
 	UsersService_LinkTelegram_FullMethodName                = "/users.v1.UsersService/LinkTelegram"
 	UsersService_UpdateProfile_FullMethodName               = "/users.v1.UsersService/UpdateProfile"
 	UsersService_GetSupportInfo_FullMethodName              = "/users.v1.UsersService/GetSupportInfo"
+	UsersService_SetTelegramLanguage_FullMethodName         = "/users.v1.UsersService/SetTelegramLanguage"
 )
 
 // UsersServiceClient is the client API for UsersService service.
@@ -61,6 +62,11 @@ type UsersServiceClient interface {
 	UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error)
 	// Support contacts shown by the bot (edited in the admin panel).
 	GetSupportInfo(ctx context.Context, in *GetSupportInfoRequest, opts ...grpc.CallOption) (*GetSupportInfoResponse, error)
+	// Keeps the language a Telegram chat reads the bot in (picked in the bot,
+	// or taken from the user's Telegram app on first contact), so the other
+	// services' notifications come in it. Keyed by Telegram id: it may
+	// arrive before the account exists and follows the id when it moves.
+	SetTelegramLanguage(ctx context.Context, in *SetTelegramLanguageRequest, opts ...grpc.CallOption) (*SetTelegramLanguageResponse, error)
 }
 
 type usersServiceClient struct {
@@ -151,6 +157,16 @@ func (c *usersServiceClient) GetSupportInfo(ctx context.Context, in *GetSupportI
 	return out, nil
 }
 
+func (c *usersServiceClient) SetTelegramLanguage(ctx context.Context, in *SetTelegramLanguageRequest, opts ...grpc.CallOption) (*SetTelegramLanguageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetTelegramLanguageResponse)
+	err := c.cc.Invoke(ctx, UsersService_SetTelegramLanguage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServiceServer is the server API for UsersService service.
 // All implementations must embed UnimplementedUsersServiceServer
 // for forward compatibility.
@@ -183,6 +199,11 @@ type UsersServiceServer interface {
 	UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error)
 	// Support contacts shown by the bot (edited in the admin panel).
 	GetSupportInfo(context.Context, *GetSupportInfoRequest) (*GetSupportInfoResponse, error)
+	// Keeps the language a Telegram chat reads the bot in (picked in the bot,
+	// or taken from the user's Telegram app on first contact), so the other
+	// services' notifications come in it. Keyed by Telegram id: it may
+	// arrive before the account exists and follows the id when it moves.
+	SetTelegramLanguage(context.Context, *SetTelegramLanguageRequest) (*SetTelegramLanguageResponse, error)
 	mustEmbedUnimplementedUsersServiceServer()
 }
 
@@ -216,6 +237,9 @@ func (UnimplementedUsersServiceServer) UpdateProfile(context.Context, *UpdatePro
 }
 func (UnimplementedUsersServiceServer) GetSupportInfo(context.Context, *GetSupportInfoRequest) (*GetSupportInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSupportInfo not implemented")
+}
+func (UnimplementedUsersServiceServer) SetTelegramLanguage(context.Context, *SetTelegramLanguageRequest) (*SetTelegramLanguageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetTelegramLanguage not implemented")
 }
 func (UnimplementedUsersServiceServer) mustEmbedUnimplementedUsersServiceServer() {}
 func (UnimplementedUsersServiceServer) testEmbeddedByValue()                      {}
@@ -382,6 +406,24 @@ func _UsersService_GetSupportInfo_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UsersService_SetTelegramLanguage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTelegramLanguageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).SetTelegramLanguage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_SetTelegramLanguage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).SetTelegramLanguage(ctx, req.(*SetTelegramLanguageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UsersService_ServiceDesc is the grpc.ServiceDesc for UsersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -420,6 +462,10 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSupportInfo",
 			Handler:    _UsersService_GetSupportInfo_Handler,
+		},
+		{
+			MethodName: "SetTelegramLanguage",
+			Handler:    _UsersService_SetTelegramLanguage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

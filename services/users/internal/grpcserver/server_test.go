@@ -192,8 +192,54 @@ func TestGetTelegramChats(t *testing.T) {
 	if got := res.GetChatIds(); len(got) != 1 || got[tg.GetAccount().GetId()] != 777000123 {
 		t.Errorf("chats: %v", got)
 	}
+	if got := res.GetLanguages(); len(got) != 0 {
+		t.Errorf("languages before the bot reports one: %v", got)
+	}
 	if res, err := c.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{}); err != nil || len(res.GetChatIds()) != 0 {
 		t.Errorf("empty: %v %v", res, err)
+	}
+
+	for _, lang := range []string{"en", "de"} {
+		if _, err := c.SetTelegramLanguage(ctx, &usersv1.SetTelegramLanguageRequest{TelegramId: "777000123", Language: lang}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	res, err = c.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{UserIds: []string{tg.GetAccount().GetId()}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := res.GetLanguages()[tg.GetAccount().GetId()]; got != "de" {
+		t.Errorf("language: %q", got)
+	}
+}
+
+func TestSetTelegramLanguage(t *testing.T) {
+	db, _ := testdb.New(t, true)
+	c := client(t, store.New(db))
+	ctx := context.Background()
+
+	// Before the account exists: kept, and used once it does.
+	if _, err := c.SetTelegramLanguage(ctx, &usersv1.SetTelegramLanguageRequest{TelegramId: "900", Language: "ky"}); err != nil {
+		t.Fatal(err)
+	}
+	u, err := c.UpsertTelegramUser(ctx, &usersv1.UpsertTelegramUserRequest{TelegramId: "900"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := c.GetTelegramChats(ctx, &usersv1.GetTelegramChatsRequest{UserIds: []string{u.GetAccount().GetId()}})
+	if err != nil || res.GetLanguages()[u.GetAccount().GetId()] != "ky" {
+		t.Errorf("languages: %v %v", res, err)
+	}
+
+	for _, req := range []*usersv1.SetTelegramLanguageRequest{
+		{TelegramId: "900", Language: "fr"},
+		{TelegramId: "900"},
+		{Language: "en"},
+		{TelegramId: "@someone", Language: "en"},
+	} {
+		if _, err := c.SetTelegramLanguage(ctx, req); status.Code(err) != codes.InvalidArgument {
+			t.Errorf("%v: %v", req, err)
+		}
 	}
 }
 

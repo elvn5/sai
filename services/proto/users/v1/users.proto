@@ -35,6 +35,11 @@ service UsersService {
   rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
   // Support contacts shown by the bot (edited in the admin panel).
   rpc GetSupportInfo(GetSupportInfoRequest) returns (GetSupportInfoResponse);
+  // Keeps the language a Telegram chat reads the bot in (picked in the bot,
+  // or taken from the user's Telegram app on first contact), so the other
+  // services' notifications come in it. Keyed by Telegram id: it may
+  // arrive before the account exists and follows the id when it moves.
+  rpc SetTelegramLanguage(SetTelegramLanguageRequest) returns (SetTelegramLanguageResponse);
 }
 
 enum PartnerStatus {
@@ -78,7 +83,18 @@ message GetTelegramChatsRequest {
 message GetTelegramChatsResponse {
   // user id → Telegram chat id (for a private chat, the Telegram user id).
   map<string, int64> chat_ids = 1;
+  // user id → the chat's language ("ru", "ky", "en", "de"); absent when the
+  // bot hasn't told it yet (write in Russian then).
+  map<string, string> languages = 2;
 }
+
+message SetTelegramLanguageRequest {
+  string telegram_id = 1;
+  // "ru", "ky", "en" or "de"; anything else is INVALID_ARGUMENT.
+  string language = 2;
+}
+
+message SetTelegramLanguageResponse {}
 
 // What the bot shows a user about their own account.
 message TelegramAccount {

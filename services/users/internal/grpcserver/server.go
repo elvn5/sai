@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -64,14 +65,38 @@ func (s *Server) GetTelegramChats(ctx context.Context, req *usersv1.GetTelegramC
 	if len(req.GetUserIds()) > maxBatch {
 		return nil, status.Errorf(codes.InvalidArgument, "at most %d ids per call", maxBatch)
 	}
-	chats := map[string]int64{}
-	if len(req.GetUserIds()) > 0 {
-		var err error
-		if chats, err = s.Store.TelegramChats(ctx, req.GetUserIds()); err != nil {
-			return nil, s.storeError(ctx, err, "")
+	res := &usersv1.GetTelegramChatsResponse{ChatIds: map[string]int64{}, Languages: map[string]string{}}
+	if len(req.GetUserIds()) == 0 {
+		return res, nil
+	}
+	chats, err := s.Store.TelegramChats(ctx, req.GetUserIds())
+	if err != nil {
+		return nil, s.storeError(ctx, err, "")
+	}
+	for id, chat := range chats {
+		res.ChatIds[id] = chat.ID
+		if chat.Lang != "" {
+			res.Languages[id] = chat.Lang
 		}
 	}
-	return &usersv1.GetTelegramChatsResponse{ChatIds: chats}, nil
+	return res, nil
+}
+
+// telegramLanguages are the bot's languages.
+var telegramLanguages = map[string]bool{"ru": true, "ky": true, "en": true, "de": true}
+
+func (s *Server) SetTelegramLanguage(ctx context.Context, req *usersv1.SetTelegramLanguageRequest) (*usersv1.SetTelegramLanguageResponse, error) {
+	telegramID, err := strconv.ParseInt(req.GetTelegramId(), 10, 64)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "telegram_id must be a Telegram user id")
+	}
+	if !telegramLanguages[req.GetLanguage()] {
+		return nil, status.Error(codes.InvalidArgument, "language must be ru, ky, en or de")
+	}
+	if err := s.Store.SetTelegramLanguage(ctx, telegramID, req.GetLanguage()); err != nil {
+		return nil, s.storeError(ctx, err, "")
+	}
+	return &usersv1.SetTelegramLanguageResponse{}, nil
 }
 
 func (s *Server) UpsertTelegramUser(ctx context.Context, req *usersv1.UpsertTelegramUserRequest) (*usersv1.UpsertTelegramUserResponse, error) {

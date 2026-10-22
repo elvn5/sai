@@ -1,7 +1,7 @@
 package notify
 
 import (
-	"fmt"
+	"embed"
 	"strings"
 	"time"
 
@@ -9,80 +9,91 @@ import (
 	"github.com/elvn5/sai/services/trails/internal/models"
 )
 
-// Messages are in Russian, the bot's language.
+// Messages are written in Russian and translated with the catalogs in
+// locales/ (keyed by the Russian text, worded as the bot words it) into
+// the recipient's language.
 
-var (
-	bishkek  = time.FixedZone("Asia/Bishkek", 6*60*60)
-	weekdays = []string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
-	months   = []string{"янв.", "фев.", "мар.", "апр.", "мая", "июн.", "июл.", "авг.", "сен.", "окт.", "нояб.", "дек."}
-)
+//go:embed locales/*.json
+var locales embed.FS
+
+var texts = telegram.MustLoadCatalog(locales, "locales")
+
+var bishkek = time.FixedZone("Asia/Bishkek", 6*60*60)
 
 // when formats a time in Bishkek, e.g. "сб, 17 окт., 06:00".
-func when(t time.Time) string {
-	t = t.In(bishkek)
-	return fmt.Sprintf("%s, %d %s, %s", weekdays[t.Weekday()], t.Day(), months[t.Month()-1], t.Format("15:04"))
-}
+func when(l telegram.Lang, t time.Time) string { return l.When(t.In(bishkek)) }
 
 func esc(s string) string { return telegram.EscapeHTML(s) }
 
-func personName(p models.Person) string {
+func personName(l telegram.Lang, p models.Person) string {
 	switch {
 	case p.FirstName != nil && *p.FirstName != "":
 		return *p.FirstName
 	case p.Username != nil && *p.Username != "":
 		return "@" + *p.Username
 	default:
-		return "Кто-то"
+		return texts.T(l, "Кто-то")
 	}
 }
 
-func outingLine(o models.Outing) string {
-	return fmt.Sprintf("«%s» (%s)", esc(o.Title), when(o.StartsAt.Time))
+func joinedText(l telegram.Lang, o models.Outing, who models.Person) string {
+	return texts.F(l, "🙋 <b>%s</b> присоединяется к выходу «%s» (%s).\nЗанято мест: %d из %d.",
+		esc(personName(l, who)), esc(o.Title), when(l, o.StartsAt.Time), o.Taken, o.Seats)
 }
 
-func joinedText(o models.Outing, who models.Person) string {
-	return fmt.Sprintf("🙋 <b>%s</b> присоединяется к выходу %s.\nЗанято мест: %d из %d.",
-		esc(personName(who)), outingLine(o), o.Taken, o.Seats)
+func leftText(l telegram.Lang, o models.Outing, who models.Person) string {
+	return texts.F(l, "👋 <b>%s</b> не сможет пойти на выход «%s» (%s).\nСвободно мест: %d из %d.",
+		esc(personName(l, who)), esc(o.Title), when(l, o.StartsAt.Time), o.Seats-o.Taken, o.Seats)
 }
 
-func leftText(o models.Outing, who models.Person) string {
-	return fmt.Sprintf("👋 <b>%s</b> не сможет пойти на выход %s.\nСвободно мест: %d из %d.",
-		esc(personName(who)), outingLine(o), o.Seats-o.Taken, o.Seats)
+// changedText lists what changed between before and after; "" when
+// nothing participants need to know did.
+func changedText(l telegram.Lang, before, after models.Outing) string {
+	var changes []string
+	if !before.StartsAt.Equal(after.StartsAt.Time) {
+		changes = append(changes, texts.F(l, "🕕 Сбор: <b>%s</b> (было %s)", when(l, after.StartsAt.Time), when(l, before.StartsAt.Time)))
+	}
+	if before.MeetingPoint != after.MeetingPoint {
+		changes = append(changes, texts.F(l, "📍 Место сбора: <b>%s</b>", esc(after.MeetingPoint)))
+	}
+	if trailName(before) != trailName(after) {
+		changes = append(changes, texts.F(l, "🏔 Маршрут: <b>%s</b>", esc(orDash(trailName(after)))))
+	}
+	if len(changes) == 0 {
+		return ""
+	}
+	return texts.F(l, "✏️ Организатор изменил выход «%s»:\n%s", esc(after.Title), strings.Join(changes, "\n"))
 }
 
-func changedText(o models.Outing, changes []string) string {
-	return fmt.Sprintf("✏️ Организатор изменил выход «%s»:\n%s", esc(o.Title), strings.Join(changes, "\n"))
+func cancelledText(l telegram.Lang, o models.Outing) string {
+	return texts.F(l, "❌ Выход «%s» (%s) отменён организатором.", esc(o.Title), when(l, o.StartsAt.Time))
 }
 
-func cancelledText(o models.Outing) string {
-	return fmt.Sprintf("❌ Выход %s отменён организатором.", outingLine(o))
-}
-
-func reminderText(o models.Outing, forOrganizer bool) string {
+func reminderText(l telegram.Lang, o models.Outing, forOrganizer bool) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "⏰ Скоро выход «%s»\n\n🕕 Сбор: %s\n📍 %s", esc(o.Title), when(o.StartsAt.Time), esc(o.MeetingPoint))
+	b.WriteString(texts.F(l, "⏰ Скоро выход «%s»\n\n🕕 Сбор: %s\n📍 %s", esc(o.Title), when(l, o.StartsAt.Time), esc(o.MeetingPoint)))
 	if o.Trail != nil {
-		fmt.Fprintf(&b, "\n🏔 Маршрут: %s", esc(o.Trail.Name))
+		b.WriteString("\n" + texts.F(l, "🏔 Маршрут: %s", esc(o.Trail.Name)))
 	}
 	if forOrganizer {
-		fmt.Fprintf(&b, "\n👥 Участников: %d", o.Taken)
+		b.WriteString("\n" + texts.F(l, "👥 Участников: %d", o.Taken))
 	} else if o.Contact != nil {
-		fmt.Fprintf(&b, "\n💬 Организатор: %s", esc(*o.Contact))
+		b.WriteString("\n" + texts.F(l, "💬 Организатор: %s", esc(*o.Contact)))
 	}
-	b.WriteString("\n\nПроверьте прогноз и сводки о состоянии маршрута перед выходом.")
+	b.WriteString("\n\n" + texts.T(l, "Проверьте прогноз и сводки о состоянии маршрута перед выходом."))
 	return b.String()
 }
 
 // rateText asks a participant how the outing went.
-func rateText(o models.Outing) string {
-	text := fmt.Sprintf("🏔 Как прошёл выход «%s»?\n\nОцените его — так другие поймут, с кем идти в горы.", esc(o.Title))
+func rateText(l telegram.Lang, o models.Outing) string {
+	text := texts.F(l, "🏔 Как прошёл выход «%s»?\n\nОцените его — так другие поймут, с кем идти в горы.", esc(o.Title))
 	if o.Trail != nil {
-		text += fmt.Sprintf(" А после оценки можно рассказать, что сейчас на маршруте «%s».", esc(o.Trail.Name))
+		text += " " + texts.F(l, "А после оценки можно рассказать, что сейчас на маршруте «%s».", esc(o.Trail.Name))
 	}
 	return text
 }
 
-func followUpText(o models.Outing) string {
-	return fmt.Sprintf("🏔 Как прошёл выход «%s»?\n\nРасскажите, что сейчас на маршруте «%s»: снег, лёд, состояние тропы. Это поможет тем, кто пойдёт следом.",
+func followUpText(l telegram.Lang, o models.Outing) string {
+	return texts.F(l, "🏔 Как прошёл выход «%s»?\n\nРасскажите, что сейчас на маршруте «%s»: снег, лёд, состояние тропы. Это поможет тем, кто пойдёт следом.",
 		esc(o.Title), esc(o.Trail.Name))
 }

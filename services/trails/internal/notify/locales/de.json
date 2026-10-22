@@ -1,0 +1,22 @@
+{
+  "А после оценки можно рассказать, что сейчас на маршруте «%s».": "Nach der Bewertung können Sie erzählen, wie es gerade auf der Route „%s“ aussieht.",
+  "Кто-то": "Jemand",
+  "Открыть выход": "Ausflug öffnen",
+  "Проверьте прогноз и сводки о состоянии маршрута перед выходом.": "Prüfen Sie vor dem Aufbruch die Wettervorhersage und die Berichte zum Zustand der Route.",
+  "⏰ Скоро выход «%s»\n\n🕕 Сбор: %s\n📍 %s": "⏰ Bald geht es los: „%s“\n\n🕕 Treffen: %s\n📍 %s",
+  "✏️ Организатор изменил выход «%s»:\n%s": "✏️ Der Organisator hat den Ausflug „%s“ geändert:\n%s",
+  "❌ Выход «%s» (%s) отменён организатором.": "❌ Der Ausflug „%s“ (%s) wurde vom Organisator abgesagt.",
+  "⭐ Оценить выход": "⭐ Ausflug bewerten",
+  "🏔 Как прошёл выход «%s»?\n\nОцените его — так другие поймут, с кем идти в горы.": "🏔 Wie war der Ausflug „%s“?\n\nBewerten Sie ihn — so sehen andere, mit wem sie in die Berge gehen können.",
+  "🏔 Как прошёл выход «%s»?\n\nРасскажите, что сейчас на маршруте «%s»: снег, лёд, состояние тропы. Это поможет тем, кто пойдёт следом.": "🏔 Wie war der Ausflug „%s“?\n\nErzählen Sie, wie es gerade auf der Route „%s“ aussieht: Schnee, Eis, Zustand des Weges. Das hilft denen, die als Nächstes gehen.",
+  "🏔 Маршрут: %s": "🏔 Route: %s",
+  "🏔 Маршрут: <b>%s</b>": "🏔 Route: <b>%s</b>",
+  "👋 <b>%s</b> не сможет пойти на выход «%s» (%s).\nСвободно мест: %d из %d.": "👋 <b>%s</b> kann beim Ausflug „%s“ (%s) nicht dabei sein.\nFreie Plätze: %d von %d.",
+  "👥 Участников: %d": "👥 Teilnehmende: %d",
+  "💬 Организатор: %s": "💬 Organisator: %s",
+  "📋 Отметить прибывших": "📋 Anwesenheit erfassen",
+  "📍 Место сбора: <b>%s</b>": "📍 Treffpunkt: <b>%s</b>",
+  "📝 Рассказать, как маршрут": "📝 Route bewerten",
+  "🕕 Сбор: <b>%s</b> (было %s)": "🕕 Treffen: <b>%s</b> (vorher %s)",
+  "🙋 <b>%s</b> присоединяется к выходу «%s» (%s).\nЗанято мест: %d из %d.": "🙋 <b>%s</b> nimmt am Ausflug „%s“ (%s) teil.\nBelegte Plätze: %d von %d."
+}

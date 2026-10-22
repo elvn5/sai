@@ -160,23 +160,40 @@ func SetVerification(u *models.User, hash string, ttl time.Duration, now time.Ti
 	u.VerificationAttempts = 0
 }
 
+// TelegramChat is a user's private chat with the bot.
+type TelegramChat struct {
+	ID int64
+	// The chat's language, "" until the bot reports one.
+	Lang string
+}
+
 // TelegramChats maps the given users that have a Telegram account to
-// their Telegram id (the chat id of their private chat with the bot).
-func (s *Store) TelegramChats(ctx context.Context, ids []string) (map[string]int64, error) {
-	rows, err := s.db.Query(ctx, `SELECT id::text, telegram_id FROM users
-		WHERE id::text = ANY($1) AND telegram_id IS NOT NULL`, ids)
+// their Telegram id (the chat id of their private chat with the bot) and
+// the chat's language.
+func (s *Store) TelegramChats(ctx context.Context, ids []string) (map[string]TelegramChat, error) {
+	rows, err := s.db.Query(ctx, `SELECT u.id::text, u.telegram_id, COALESCE(l.lang, '') FROM users u
+		LEFT JOIN telegram_languages l ON l.telegram_id = u.telegram_id
+		WHERE u.id::text = ANY($1) AND u.telegram_id IS NOT NULL`, ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	out := map[string]int64{}
+	out := map[string]TelegramChat{}
 	for rows.Next() {
 		var id string
-		var chat int64
-		if err := rows.Scan(&id, &chat); err != nil {
+		var chat TelegramChat
+		if err := rows.Scan(&id, &chat.ID, &chat.Lang); err != nil {
 			return nil, err
 		}
 		out[id] = chat
 	}
 	return out, rows.Err()
+}
+
+// SetTelegramLanguage keeps the language of a Telegram chat.
+func (s *Store) SetTelegramLanguage(ctx context.Context, telegramID int64, lang string) error {
+	_, err := s.db.Exec(ctx, `
+		INSERT INTO telegram_languages (telegram_id, lang) VALUES ($1, $2)
+		ON CONFLICT (telegram_id) DO UPDATE SET lang = EXCLUDED.lang, updated_at = now()`, telegramID, lang)
+	return err
 }

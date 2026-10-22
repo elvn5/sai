@@ -21,7 +21,24 @@ describe('configFromEnv', () => {
       indexable: true,
       version: '',
       devMenuPasswordHash: '',
+      firebase: null,
     });
+  });
+
+  it('turns analytics on only with the whole Firebase web app config', () => {
+    const env = {
+      FIREBASE_API_KEY: 'key',
+      FIREBASE_PROJECT_ID: 'ermekten',
+      FIREBASE_WEB_APP_ID: '1:123:web:abc',
+      FIREBASE_MEASUREMENT_ID: 'G-TEST',
+    };
+    expect(configFromEnv(env).firebase).toEqual({
+      apiKey: 'key',
+      projectId: 'ermekten',
+      appId: '1:123:web:abc',
+      measurementId: 'G-TEST',
+    });
+    expect(configFromEnv({ ...env, FIREBASE_API_KEY: ' ' }).firebase).toBeNull();
   });
 
   it('reads the version and the developer menu password hash', () => {

@@ -19,6 +19,7 @@ import (
 	"github.com/mymmrac/telego"
 	th "github.com/mymmrac/telego/telegohandler"
 
+	"github.com/elvn5/sai/services/bot/internal/analytics"
 	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/blogfeed"
 	"github.com/elvn5/sai/services/bot/internal/config"
@@ -147,9 +148,24 @@ func run(log *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("bot handler: %w", err)
 	}
+	tracker := analytics.New(analytics.Config{
+		MeasurementID: cfg.AnalyticsMeasurementID, APISecret: cfg.AnalyticsAPISecret, Salt: cfg.AnalyticsSalt,
+	}, log)
+	if tracker == nil {
+		log.Info("FIREBASE_MEASUREMENT_ID or GA_API_SECRET unset: analytics is off")
+	}
+	// Stopped after the handlers, so their last events still go out.
+	trackCtx, stopTracking := context.WithCancel(context.Background())
+	defer stopTracking()
+	if tracker != nil {
+		go tracker.Run(trackCtx)
+	}
 	h := &handlers.Handlers{
 		Users: accounts, Sessions: session.New(), Drafts: drafts.NewStore(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links,
 		Languages: &users.Languages{Store: db, Users: accounts, Log: log},
+	}
+	if tracker != nil { // not a nil *Client inside the interface
+		h.Analytics = tracker
 	}
 	if content != nil {
 		h.Content, h.Subscribers = content, db
@@ -175,6 +191,13 @@ func run(log *slog.Logger) error {
 	defer cancel()
 	if err := bh.StopWithContext(stopCtx); err != nil && !errors.Is(err, context.DeadlineExceeded) {
 		return err
+	}
+	stopTracking()
+	if tracker != nil {
+		select {
+		case <-tracker.Done():
+		case <-stopCtx.Done():
+		}
 	}
 	return nil
 }

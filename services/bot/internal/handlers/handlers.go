@@ -74,6 +74,8 @@ type Handlers struct {
 	Links  screens.Links
 	// Now is overridable in tests.
 	Now func() time.Time
+	// Where events go (analytics.Client); nil: not reported.
+	Analytics Tracker
 }
 
 // Register routes updates to the handlers. The first matching route wins,
@@ -83,15 +85,15 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 		h.Drafts = drafts.NewStore()
 	}
 	bh.HandleMessage(h.start, th.CommandEqual("start"))
-	bh.HandleMessage(h.profile, menuButton(keyboards.Profile, "profile"))
-	bh.HandleMessage(h.support, menuButton(keyboards.Support, "support"))
-	bh.HandleMessage(h.languageMenu, th.CommandEqual("language"))
+	bh.HandleMessage(h.menu("profile", h.profile), menuButton(keyboards.Profile, "profile"))
+	bh.HandleMessage(h.menu("support", h.support), menuButton(keyboards.Support, "support"))
+	bh.HandleMessage(h.menu("language", h.languageMenu), th.CommandEqual("language"))
 	bh.HandleCallbackQuery(h.languagePress, th.CallbackDataPrefix(keyboards.LanguagePrefix))
 	if h.sections() {
-		bh.HandleMessage(h.outingsMenu, menuButton(keyboards.Outings, "outings"))
-		bh.HandleMessage(h.toursMenu, menuButton(keyboards.Tours, "tours"))
-		bh.HandleMessage(h.blogMenu, menuButton(keyboards.Blog, "blog"))
-		bh.HandleMessage(h.notifyMenu, menuButton(keyboards.Notifications, "notifications"))
+		bh.HandleMessage(h.menu("outings", h.outingsMenu), menuButton(keyboards.Outings, "outings"))
+		bh.HandleMessage(h.menu("tours", h.toursMenu), menuButton(keyboards.Tours, "tours"))
+		bh.HandleMessage(h.menu("blog", h.blogMenu), menuButton(keyboards.Blog, "blog"))
+		bh.HandleMessage(h.menu("notifications", h.notifyMenu), menuButton(keyboards.Notifications, "notifications"))
 		bh.HandleCallbackQuery(h.outingPress, th.CallbackDataPrefix(keyboards.OutingsPrefix))
 		bh.HandleCallbackQuery(h.tourPress, th.CallbackDataPrefix(keyboards.ToursPrefix))
 		bh.HandleCallbackQuery(h.blogPress, th.CallbackDataPrefix(keyboards.BlogPrefix))
@@ -103,7 +105,7 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 		bh.HandleCallbackQuery(h.ratingPress, th.CallbackDataPrefix(keyboards.RatingPrefix))
 	}
 	if h.organizing() {
-		bh.HandleMessage(h.organizerMenu, th.CommandEqual("organizer"))
+		bh.HandleMessage(h.menu("organizer", h.organizerMenu), th.CommandEqual("organizer"))
 		bh.HandleCallbackQuery(h.organizerPress, th.CallbackDataPrefix(keyboards.OrganizerPrefix))
 	}
 	bh.HandleCallbackQuery(h.noop, th.CallbackDataEqual(keyboards.Noop))
@@ -194,6 +196,7 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 	}
 	l := h.lang(ctx, from)
 	_, _, payload := tu.ParseCommandPayload(msg.Text)
+	h.track(from, l, eventStart, startParams(payload))
 	if token, ok := strings.CutPrefix(payload, verifyPrefix); ok {
 		return h.verify(ctx, l, msg.Chat.ID, token)
 	}

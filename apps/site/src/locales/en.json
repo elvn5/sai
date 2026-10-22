@@ -557,7 +557,12 @@
   "cookieConsent": {
     "title": "Cookie notice",
     "message": "We use cookies required for signing in and remembering your preferences.",
-    "accept": "Got it"
+    "accept": "Got it",
+    "analyticsMessage": "We use cookies the site needs to work and, with your consent, Google Analytics (Firebase) to learn which pages are useful.",
+    "privacy": "Learn more",
+    "acceptAll": "Allow",
+    "necessaryOnly": "Necessary only",
+    "settings": "Cookie settings"
   },
   "hallOfFame": {
     "title": "Hall of fame",

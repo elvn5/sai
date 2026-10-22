@@ -1,3 +1,4 @@
+import { trackItemView } from '@/core/analytics/analytics';
 import { type PublicAuthor, ReviewTargetType, type Tour } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
@@ -356,6 +357,10 @@ export class TourPage {
     });
     trackListingView(
       this.targetType,
+      computed(() => this.item()?.id),
+    );
+    trackItemView(
+      'view_tour',
       computed(() => this.item()?.id),
     );
   }

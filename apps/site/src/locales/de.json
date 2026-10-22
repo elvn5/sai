@@ -557,7 +557,12 @@
   "cookieConsent": {
     "title": "Cookie-Hinweis",
     "message": "Wir verwenden Cookies, die für die Anmeldung und das Speichern Ihrer Einstellungen erforderlich sind.",
-    "accept": "Verstanden"
+    "accept": "Verstanden",
+    "analyticsMessage": "Wir verwenden Cookies, die für den Betrieb der Website nötig sind, und mit Ihrer Zustimmung Google Analytics (Firebase), um zu verstehen, welche Seiten hilfreich sind.",
+    "privacy": "Mehr erfahren",
+    "acceptAll": "Erlauben",
+    "necessaryOnly": "Nur notwendige",
+    "settings": "Cookie-Einstellungen"
   },
   "hallOfFame": {
     "title": "Ruhmeshalle",

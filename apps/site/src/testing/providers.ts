@@ -14,6 +14,7 @@ export const TEST_CONFIG: AppConfig = {
   indexable: true,
   version: '',
   devMenuPasswordHash: '',
+  firebase: null,
 };
 
 // What page specs need: a fake API (HttpTestingController), a router, the

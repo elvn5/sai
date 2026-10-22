@@ -19,7 +19,8 @@ func (h *harness) pressAt(id int, data string) {
 // typed answer brings the next step as a new message (the fake Bot API
 // numbers it 7) and takes the buttons off the old one.
 func TestNewOutingInTheChat(t *testing.T) {
-	h, content, _ := newSections(t)
+	events := &fakeTracker{}
+	h, content, _ := newSections(t, withTracker(events))
 	h.press("d:new")
 	calls := h.expect("answerCallbackQuery", "editMessageText")
 	if !strings.HasPrefix(calls[1].text(), "➕ <b>Новый выход</b> · шаг 1 из 12") || calls[1].params["message_id"] != float64(5) ||
@@ -108,6 +109,9 @@ func TestNewOutingInTheChat(t *testing.T) {
 		`"level":"intermediate","description":null,"contact":"@aigerim"}`
 	if got[len(got)-1] != want {
 		t.Errorf("created:\n%s\nwant:\n%s", got[len(got)-1], want)
+	}
+	if got := events.names(); got != "create_outing new ru" {
+		t.Errorf("events: %s", got)
 	}
 	// Published: the draft is gone.
 	h.pressAt(7, "d:review")

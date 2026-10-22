@@ -1,3 +1,4 @@
+import { Analytics } from '@/core/analytics/analytics';
 import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
 import { splitLang } from '@/core/i18n/langs';
@@ -87,11 +88,13 @@ export class App {
     const colorMode = inject(ColorModeStore);
     const colorTheme = inject(ColorThemeStore);
     const auth = inject(AuthStore);
+    const analytics = inject(Analytics);
     afterNextRender(() => {
       colorMode.init();
       colorTheme.init();
       void this.telegram.init();
       void auth.ensureSession();
+      analytics.init();
     });
 
     const url = injectCurrentUrl();

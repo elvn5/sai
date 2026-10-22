@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -80,6 +81,8 @@ func (f *fakeContent) UpcomingOutings(context.Context, string) ([]api.Outing, er
 		o.IsJoined = false
 		out = append(out, o)
 	}
+	// The API's order: soonest first.
+	slices.SortFunc(out, func(a, b api.Outing) int { return a.StartsAt.Compare(b.StartsAt) })
 	return out, nil
 }
 
@@ -259,7 +262,7 @@ func (f *fakeSubscribers) SetBlogSubscriber(_ context.Context, chatID int64, on 
 	return nil
 }
 
-func newSections(t *testing.T) (*harness, *fakeContent, *fakeSubscribers) {
+func newSections(t *testing.T, configure ...func(*handlers.Handlers)) (*harness, *fakeContent, *fakeSubscribers) {
 	t.Helper()
 	content := &fakeContent{
 		outings: map[string]api.Outing{
@@ -276,6 +279,9 @@ func newSections(t *testing.T) (*harness, *fakeContent, *fakeSubscribers) {
 		hs.Content, hs.Subscribers = content, subs
 		hs.Links = screens.Links{Bot: "ermekten_bot"}
 		hs.Now = func() time.Time { return now }
+		for _, c := range configure {
+			c(hs)
+		}
 	})
 	h.users.account = users.Account{ID: "u1"}
 	return h, content, subs

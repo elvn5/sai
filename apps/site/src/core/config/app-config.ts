@@ -27,6 +27,16 @@ export interface AppConfig {
   version: string;
   // SHA-256 (hex) of the developer menu's password ('' — no menu).
   devMenuPasswordHash: string;
+  // Firebase web app for Analytics (core/analytics); null — analytics off.
+  firebase: FirebaseWebConfig | null;
+}
+
+// The public part of a Firebase web app's config that Analytics needs.
+export interface FirebaseWebConfig {
+  apiKey: string;
+  projectId: string;
+  appId: string;
+  measurementId: string;
 }
 
 // What the SSR server passes to Angular as the request context.
@@ -48,6 +58,7 @@ const FALLBACK: AppConfig = {
   indexable: false,
   version: '',
   devMenuPasswordHash: '',
+  firebase: null,
 };
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG', {
@@ -108,5 +119,17 @@ export function configFromEnv(env: Record<string, string | undefined>): AppConfi
     indexable: siteUrl === 'https://ermekten.com',
     version: env['APP_VERSION'] ?? '',
     devMenuPasswordHash: normalizeHash(env['DEV_MENU_PASSWORD_HASH']),
+    firebase: firebaseFromEnv(env),
   };
+}
+
+// The Firebase web app, when all of its settings are there.
+function firebaseFromEnv(env: Record<string, string | undefined>): FirebaseWebConfig | null {
+  const config = {
+    apiKey: env['FIREBASE_API_KEY']?.trim() ?? '',
+    projectId: env['FIREBASE_PROJECT_ID']?.trim() ?? '',
+    appId: env['FIREBASE_WEB_APP_ID']?.trim() ?? '',
+    measurementId: env['FIREBASE_MEASUREMENT_ID']?.trim() ?? '',
+  };
+  return Object.values(config).every(Boolean) ? config : null;
 }

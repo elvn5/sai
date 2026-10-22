@@ -303,6 +303,9 @@ func (h *Handlers) saveDraft(ctx *th.Context, l i18n.Lang, q telego.CallbackQuer
 		return h.draftRefused(ctx, l, q, d, err)
 	}
 	h.Drafts.Drop(chatID)
+	if d.OutingID == "" {
+		h.track(&q.From, l, eventCreateOuting, map[string]any{"outing_id": o.ID})
+	}
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}

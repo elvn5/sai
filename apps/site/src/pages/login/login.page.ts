@@ -1,3 +1,4 @@
+import { Analytics } from '@/core/analytics/analytics';
 import type { TelegramWidgetPayload } from '@/core/api/types';
 import { AuthStore, type PendingVerification } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
@@ -333,6 +334,8 @@ export class LoginPage {
   readonly redirect = input<string | undefined>(undefined);
 
   private readonly auth = inject(AuthStore);
+
+  private readonly analytics = inject(Analytics);
   protected readonly flags = inject(FeatureFlags);
   protected readonly telegram = inject(TelegramWebAppStore);
   private readonly transloco = inject(TranslocoService);
@@ -527,6 +530,7 @@ export class LoginPage {
           this.pendingPassword = password;
           this.startVerification(verification);
         } else {
+          this.analytics.track('login', { method: 'password' });
           await this.leave();
         }
       } catch (error) {
@@ -550,6 +554,7 @@ export class LoginPage {
           password,
           firstName: firstName.trim() || undefined,
         });
+        this.analytics.track('sign_up', { method: email ? 'email' : 'phone' });
         this.pendingPassword = password;
         this.startVerification(verification);
       } catch (error) {
@@ -576,6 +581,7 @@ export class LoginPage {
           identifier: verification.identifier,
           code: this.verifyModel().code,
         });
+        this.analytics.track('login', { method: 'code' });
         await this.leave();
       } catch (error) {
         this.error.set(this.isRejected(error) ? 'login.verify.invalidCode' : 'login.networkError');
@@ -608,6 +614,7 @@ export class LoginPage {
   protected async withTelegram(payload: TelegramWidgetPayload): Promise<void> {
     try {
       await this.auth.loginWithTelegramWidget(payload);
+      this.analytics.track('login', { method: 'telegram' });
       await this.leave();
     } catch {
       this.error.set('login.error');
@@ -646,7 +653,10 @@ export class LoginPage {
         identifier: verification.identifier,
         password: this.pendingPassword,
       });
-      if (!again) await this.leave();
+      if (!again) {
+        this.analytics.track('login', { method: 'telegram_confirmation' });
+        await this.leave();
+      }
     } catch {
       // A network hiccup: keep waiting.
     }

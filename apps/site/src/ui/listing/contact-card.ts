@@ -1,3 +1,4 @@
+import { Analytics } from '@/core/analytics/analytics';
 import type { CancellationPolicy, ListingStatEvent, ReviewTargetType } from '@/core/api/types';
 import { phoneLink, telegramLink, whatsappLink } from '@/core/lib/contact-links';
 import { ListingStats } from '@/core/lib/listing-stats';
@@ -83,6 +84,7 @@ export class ContactCard {
   readonly website = input<string | null>(null);
 
   private readonly stats = inject(ListingStats);
+  private readonly analytics = inject(Analytics);
   private readonly transloco = inject(TranslocoService);
   protected readonly telegramHref = telegramLink;
   protected readonly phoneHref = phoneLink;
@@ -101,5 +103,10 @@ export class ContactCard {
 
   protected track(event: ListingStatEvent): void {
     this.stats.track(this.targetType(), this.targetId(), event);
+    this.analytics.track('contact_organizer', {
+      item_type: this.targetType(),
+      item_id: this.targetId(),
+      method: event,
+    });
   }
 }

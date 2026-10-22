@@ -1,3 +1,5 @@
+import { Analytics } from '@/core/analytics/analytics';
+import { CookieConsentStore } from '@/core/analytics/consent';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { COMPANY } from '@/core/legal/company';
@@ -110,6 +112,12 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
           </div>
           <nav [attr.aria-label]="'footer.sections.legal' | transloco">
             <app-legal-links class="[&_ul]:justify-center sm:[&_ul]:justify-end" linkClass="text-text-muted hover:text-text hover:underline" />
+            @if (analytics) {
+              <!-- Asks about analytics cookies again (layout/cookie-consent.ts). -->
+              <button type="button" class="mt-1 text-text-muted hover:text-text hover:underline" (click)="consent.reopen()">
+                {{ 'cookieConsent.settings' | transloco }}
+              </button>
+            }
           </nav>
         </div>
       </div>
@@ -124,6 +132,8 @@ export class Footer {
   protected readonly year = new Date().getFullYear();
   protected readonly company = COMPANY;
   protected readonly version = inject(APP_CONFIG).version;
+  protected readonly analytics = inject(Analytics).available;
+  protected readonly consent = inject(CookieConsentStore);
   // The developer menu exists only with a password in the config.
   private readonly devMenu = Boolean(inject(APP_CONFIG).devMenuPasswordHash);
   private readonly injector = inject(Injector);

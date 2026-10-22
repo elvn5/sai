@@ -38,6 +38,7 @@ func (h *Handlers) languagePress(ctx *th.Context, q telego.CallbackQuery) error 
 			return h.failedPress(ctx, h.lang(ctx, &q.From), q, err)
 		}
 	}
+	h.track(&q.From, l, eventLanguage, nil)
 	if err := h.answer(ctx, q, l.Name()); err != nil {
 		return err
 	}

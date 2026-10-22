@@ -27,6 +27,15 @@ type Config struct {
 	// itself (/uploads/… paths).
 	PublicAPIURL string `env:"PUBLIC_API_URL"`
 
+	// Analytics: events go to the Firebase project's Google Analytics 4
+	// property through the Measurement Protocol — its web data stream
+	// (FIREBASE_MEASUREMENT_ID, "G-…", the site's) with the stream's
+	// Measurement Protocol API secret. Off without both. ANALYTICS_SALT
+	// keys the hash that stands for a chat id there.
+	AnalyticsMeasurementID string `env:"FIREBASE_MEASUREMENT_ID"`
+	AnalyticsAPISecret     string `env:"GA_API_SECRET"`
+	AnalyticsSalt          string `env:"ANALYTICS_SALT"`
+
 	// The bot's own database: who reads the blog in Telegram and which
 	// posts went out.
 	PostgresHost     string `env:"POSTGRES_HOST" envDefault:"localhost"`

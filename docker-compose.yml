@@ -204,6 +204,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       BOT_DB_NAME: bot
+      # Analytics (GA4 Measurement Protocol); unset — off.
+      FIREBASE_MEASUREMENT_ID: ${FIREBASE_MEASUREMENT_ID:-}
+      GA_API_SECRET: ${GA_API_SECRET:-}
+      ANALYTICS_SALT: ${ANALYTICS_SALT:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -228,6 +232,11 @@ services:
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
       # SHA-256 (hex) of the developer menu password; unset — no menu.
       DEV_MENU_PASSWORD_HASH: ${DEV_MENU_PASSWORD_HASH:-}
+      # Firebase Analytics in the browser; unset — off.
+      FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_WEB_APP_ID: ${FIREBASE_WEB_APP_ID:-}
+      FIREBASE_MEASUREMENT_ID: ${FIREBASE_MEASUREMENT_ID:-}
     ports:
       - "${CLIENT_PORT:-3002}:3000"
     depends_on:

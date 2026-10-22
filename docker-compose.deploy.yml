@@ -189,6 +189,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       BOT_DB_NAME: bot
+      # Analytics (GA4 Measurement Protocol); unset — off.
+      FIREBASE_MEASUREMENT_ID: ${FIREBASE_MEASUREMENT_ID:-}
+      GA_API_SECRET: ${GA_API_SECRET:-}
+      ANALYTICS_SALT: ${ANALYTICS_SALT:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -212,6 +216,11 @@ services:
       # Shown in the footer: the deployed image's tag.
       APP_VERSION: ${IMAGE_TAG}
       DEV_MENU_PASSWORD_HASH: ${DEV_MENU_PASSWORD_HASH:-}
+      # Firebase Analytics in the browser; unset — off.
+      FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_WEB_APP_ID: ${FIREBASE_WEB_APP_ID:-}
+      FIREBASE_MEASUREMENT_ID: ${FIREBASE_MEASUREMENT_ID:-}
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:${CLIENT_PORT}:3000"
     depends_on:

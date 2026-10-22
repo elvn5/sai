@@ -14,6 +14,7 @@ const CONFIG: AppConfig = {
   indexable: true,
   version: '',
   devMenuPasswordHash: '',
+  firebase: null,
 };
 
 function setup(

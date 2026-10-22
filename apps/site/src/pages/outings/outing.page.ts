@@ -1,3 +1,4 @@
+import { Analytics, trackItemView } from '@/core/analytics/analytics';
 import type { Outing } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
@@ -208,6 +209,7 @@ export class OutingPage {
   readonly id = input.required<string>();
 
   private readonly auth = inject(AuthStore);
+  private readonly analytics = inject(Analytics);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
@@ -284,6 +286,11 @@ export class OutingPage {
       };
     });
 
+    trackItemView(
+      'view_outing',
+      computed(() => this.item()?.id),
+    );
+
     // Signed in (now or later): read the visitor's own view.
     if (isPlatformBrowser(inject(PLATFORM_ID))) {
       void this.auth.ensureSession();
@@ -307,11 +314,17 @@ export class OutingPage {
       await this.navigate(`/login?redirect=${encodeURIComponent(this.router.url)}`);
       return;
     }
-    await this.act(this.http.post<Outing>(`/outings/${this.id()}/join`, {}));
+    const id = this.id();
+    if (await this.act(this.http.post<Outing>(`/outings/${id}/join`, {}))) {
+      this.analytics.track('join_outing', { outing_id: id });
+    }
   }
 
-  protected leave(): Promise<void> {
-    return this.act(this.http.delete<Outing>(`/outings/${this.id()}/join`));
+  protected async leave(): Promise<void> {
+    const id = this.id();
+    if (await this.act(this.http.delete<Outing>(`/outings/${id}/join`))) {
+      this.analytics.track('leave_outing', { outing_id: id });
+    }
   }
 
   protected async cancel(): Promise<void> {
@@ -355,11 +368,13 @@ export class OutingPage {
   }
 
   // Join, leave or cancel: the API answers with the updated outing.
-  private async act(request: Observable<Outing>): Promise<void> {
+  // Whether the API took it.
+  private async act(request: Observable<Outing>): Promise<boolean> {
     this.busy.set(true);
     this.actionError.set(null);
     try {
       this.personal.set(await firstValueFrom(request));
+      return true;
     } catch (error) {
       this.actionError.set(
         error instanceof HttpErrorResponse && error.status === 409
@@ -367,6 +382,7 @@ export class OutingPage {
           : 'outings.errors.generic',
       );
       void this.loadPersonal(this.id());
+      return false;
     } finally {
       this.busy.set(false);
     }

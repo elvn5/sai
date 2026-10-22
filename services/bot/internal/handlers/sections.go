@@ -256,6 +256,7 @@ func (h *Handlers) outingAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQ
 			return h.failedPress(ctx, l, q, err)
 		} else if err == nil {
 			toast = l.T("✅ Вы записаны! Организатор получит уведомление.")
+			h.track(&q.From, l, eventJoinOuting, map[string]any{"outing_id": id})
 		}
 	case screens.ActLeave:
 		err := h.Content.LeaveOuting(ctx, userID, id)
@@ -264,6 +265,7 @@ func (h *Handlers) outingAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQ
 		}
 		if err == nil {
 			toast = l.T("Вы больше не идёте на этот выход")
+			h.track(&q.From, l, eventLeaveOuting, map[string]any{"outing_id": id})
 		}
 	}
 
@@ -414,6 +416,9 @@ func (h *Handlers) tourPress(ctx *th.Context, q telego.CallbackQuery) error {
 			return h.failedPress(ctx, l, q, err)
 		}
 		if err == nil {
+			if action == screens.ActMore && page == 0 {
+				h.track(&q.From, l, eventViewTour, map[string]any{"tour_id": t.ID, "source": "list"})
+			}
 			if err := h.answer(ctx, q, toast); err != nil {
 				return err
 			}
@@ -446,6 +451,7 @@ func (h *Handlers) openTour(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery
 	if err != nil {
 		return h.failedPress(ctx, l, q, err)
 	}
+	h.track(&q.From, l, eventViewTour, map[string]any{"tour_id": id, "source": "alert"})
 	if err := h.answer(ctx, q, ""); err != nil {
 		return err
 	}
@@ -532,6 +538,9 @@ func (h *Handlers) readPost(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery
 	}
 	if err != nil {
 		return h.failedPress(ctx, l, q, err)
+	}
+	if page == 0 {
+		h.track(&q.From, l, eventViewArticle, map[string]any{"post_id": id})
 	}
 	if err := h.answer(ctx, q, ""); err != nil {
 		return err

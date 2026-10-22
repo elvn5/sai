@@ -15,16 +15,28 @@ import (
 	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/blogfeed"
 	"github.com/elvn5/sai/services/bot/internal/screens"
+	"github.com/elvn5/sai/services/bot/internal/store"
 )
 
-type fakePosts struct{ posts []api.BlogPost }
+// fakePosts has Russian posts and, by language, the others.
+type fakePosts struct {
+	posts  []api.BlogPost
+	byLang map[string][]api.BlogPost
+}
 
-func (f *fakePosts) BlogPosts(context.Context) ([]api.BlogPost, error) { return f.posts, nil }
+func (f *fakePosts) BlogPosts(_ context.Context, locale string) ([]api.BlogPost, error) {
+	if locale == "ru" {
+		return f.posts, nil
+	}
+	return f.byLang[locale], nil
+}
 
 type fakeStore struct {
 	mu   sync.Mutex
 	seen map[string]bool
 	subs map[int64]bool
+	// Chats' languages (Russian when not set).
+	langs map[int64]string
 }
 
 func (s *fakeStore) SeenPosts(context.Context) (map[string]bool, error) {
@@ -42,10 +54,14 @@ func (s *fakeStore) MarkSeen(_ context.Context, ids []string) error {
 	return nil
 }
 
-func (s *fakeStore) BlogSubscribers(context.Context) ([]int64, error) {
-	var out []int64
+func (s *fakeStore) BlogSubscribers(context.Context) ([]store.Subscriber, error) {
+	var out []store.Subscriber
 	for id := range s.subs {
-		out = append(out, id)
+		lang := s.langs[id]
+		if lang == "" {
+			lang = "ru"
+		}
+		out = append(out, store.Subscriber{ChatID: id, Lang: lang})
 	}
 	return out, nil
 }
@@ -65,6 +81,7 @@ func (s *fakeStore) SetBlogSubscriber(_ context.Context, chatID int64, on bool) 
 type fakeBot struct {
 	mu        sync.Mutex
 	sent      []string
+	chats     []int64
 	badPhotos bool
 }
 
@@ -78,6 +95,7 @@ func (b *fakeBot) SendMessage(_ context.Context, p *telego.SendMessageParams) (*
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.sent = append(b.sent, "text "+p.Text)
+	b.chats = append(b.chats, p.ChatID.ID)
 	return &telego.Message{}, nil
 }
 
@@ -91,6 +109,7 @@ func (b *fakeBot) SendPhoto(_ context.Context, p *telego.SendPhotoParams) (*tele
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.sent = append(b.sent, "photo "+p.Photo.URL+" "+p.Caption)
+	b.chats = append(b.chats, p.ChatID.ID)
 	return &telego.Message{}, nil
 }
 
@@ -149,13 +168,37 @@ func TestFeedOnEmptyBlog(t *testing.T) {
 }
 
 func newFeed(posts *fakePosts, subs ...int64) (*blogfeed.Feed, *fakeStore, *fakeBot) {
-	store := &fakeStore{seen: map[string]bool{"__start__": true}, subs: map[int64]bool{}}
+	store := &fakeStore{seen: map[string]bool{"__start__": true, "__start__:ky": true, "__start__:en": true, "__start__:de": true},
+		subs: map[int64]bool{}}
 	for _, id := range subs {
 		store.subs[id] = true
 	}
 	bot := &fakeBot{}
 	return &blogfeed.Feed{Posts: posts, Store: store, Bot: bot, Log: slog.New(slog.DiscardHandler),
 		Links: screens.Links{}, Interval: time.Hour}, store, bot
+}
+
+// Posts in each language go to the chats reading the bot in it; a language
+// the feed meets for the first time (it learnt languages later) starts
+// quietly.
+func TestFeedLanguages(t *testing.T) {
+	posts := &fakePosts{
+		posts:  []api.BlogPost{{ID: "ru1", Title: "Новая"}},
+		byLang: map[string][]api.BlogPost{"en": {{ID: "en1", Title: "Fresh"}}, "de": {{ID: "de-old", Title: "Alt"}}},
+	}
+	feed, store, bot := newFeed(posts, 42, 8, 9)
+	delete(store.seen, "__start__:de")
+	store.langs = map[int64]string{8: "en", 9: "de"}
+	if err := feed.Pass(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(bot.sent) != 2 || bot.chats[0] != 42 || bot.chats[1] != 8 ||
+		!strings.HasPrefix(bot.sent[1], "text 📰 <b>New blog post</b>\n\n<b>Fresh</b>") {
+		t.Errorf("sent %q to %v", bot.sent, bot.chats)
+	}
+	if !store.seen["de-old"] || !store.seen["__start__:de"] {
+		t.Errorf("German posts not remembered: %v", store.seen)
+	}
 }
 
 // Telegram couldn't fetch the cover: the post goes as text.
@@ -202,7 +245,7 @@ func TestFeedKeepsFlakyChats(t *testing.T) {
 
 type failingPosts struct{}
 
-func (failingPosts) BlogPosts(context.Context) ([]api.BlogPost, error) {
+func (failingPosts) BlogPosts(context.Context, string) ([]api.BlogPost, error) {
 	return nil, errors.New("gateway down")
 }
 

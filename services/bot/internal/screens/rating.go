@@ -1,7 +1,6 @@
 package screens
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/mymmrac/telego"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 )
 
@@ -37,15 +37,15 @@ func StarLine(n int) string {
 }
 
 // RateOuting asks a participant for 1–5 stars.
-func RateOuting(o api.Outing) Screen {
+func RateOuting(l i18n.Lang, o api.Outing) Screen {
 	var b strings.Builder
-	fmt.Fprintf(&b, "⭐ <b>Как прошёл выход «%s»?</b>\n%s", esc(o.Title), When(o.StartsAt))
+	b.WriteString(l.F("⭐ <b>Как прошёл выход «%s»?</b>", esc(o.Title)) + "\n" + When(l, o.StartsAt))
 	if name := o.Organizer.Name(); name != "" {
-		b.WriteString(" · организатор " + esc(name))
+		b.WriteString(" · " + l.F("организатор %s", esc(name)))
 	}
-	b.WriteString("\n\nОцените от 1 до 5. Оценка появится на странице организатора — так другие поймут, с кем идти в горы.")
+	b.WriteString("\n\n" + l.T("Оцените от 1 до 5. Оценка появится на странице организатора — так другие поймут, с кем идти в горы."))
 	if o.MyRating != nil {
-		b.WriteString("\n\nВаша оценка сейчас: " + StarLine(o.MyRating.Rating))
+		b.WriteString("\n\n" + l.F("Ваша оценка сейчас: %s", StarLine(o.MyRating.Rating)))
 	}
 	stars := make([]telego.InlineKeyboardButton, 0, 5)
 	for n := 1; n <= 5; n++ {
@@ -56,36 +56,36 @@ func RateOuting(o api.Outing) Screen {
 
 // RateThanks thanks for a rating and offers a comment and, on a catalog
 // route, a condition report.
-func RateThanks(o api.Outing, now time.Time) Screen {
+func RateThanks(l i18n.Lang, o api.Outing, now time.Time) Screen {
 	rating := 0
 	hasText := false
 	if o.MyRating != nil {
 		rating = o.MyRating.Rating
 		hasText = o.MyRating.Text != nil && *o.MyRating.Text != ""
 	}
-	text := fmt.Sprintf("Спасибо! Ваша оценка выхода «%s»: %s", esc(o.Title), StarLine(rating))
+	text := l.F("Спасибо! Ваша оценка выхода «%s»: %s", esc(o.Title), StarLine(rating))
 	if hasText {
 		text += "\n\n<i>" + esc(clip(*o.MyRating.Text, 500)) + "</i>"
 	} else {
-		text += "\n\nДобавьте пару слов — что понравилось, что можно улучшить. Отзыв увидят на странице организатора."
+		text += "\n\n" + l.T("Добавьте пару слов — что понравилось, что можно улучшить. Отзыв увидят на странице организатора.")
 	}
-	write := "✍️ Написать отзыв"
+	write := l.T("✍️ Написать отзыв")
 	if hasText {
-		write = "✍️ Изменить отзыв"
+		write = l.T("✍️ Изменить отзыв")
 	}
 	buttons := [][]telego.InlineKeyboardButton{{keyboards.Button(write, RateData(RateWrite, o.ID))}}
 	if CanReport(o, now) {
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("📝 Рассказать, как маршрут", ConditionStart(o.ID))})
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("📝 Рассказать, как маршрут"), ConditionStart(o.ID))})
 	}
-	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button("Изменить оценку", RateData(RateAsk, o.ID))})
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("Изменить оценку"), RateData(RateAsk, o.ID))})
 	return Screen{Text: text, Markup: rows(buttons...), Preview: noPreview()}
 }
 
 // ReviewPrompt asks for the comment.
-func ReviewPrompt(o api.Outing) Screen {
+func ReviewPrompt(l i18n.Lang, o api.Outing) Screen {
 	return Screen{
-		Text:    fmt.Sprintf("Напишите отзыв о выходе «%s» одним сообщением.", esc(o.Title)),
-		Markup:  rows([]telego.InlineKeyboardButton{keyboards.Button("Отмена", RateData(RateVote, o.ID, 0))}),
+		Text:    l.F("Напишите отзыв о выходе «%s» одним сообщением.", esc(o.Title)),
+		Markup:  rows([]telego.InlineKeyboardButton{keyboards.Button(l.T("Отмена"), RateData(RateVote, o.ID, 0))}),
 		Preview: noPreview(),
 	}
 }

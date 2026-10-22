@@ -312,7 +312,7 @@ func TestProfileAndSupport(t *testing.T) {
 	h.message("👤 Профиль")
 	msg := h.expect("sendMessage")[0]
 	if msg.text() != "Ваш профиль:\n\nИмя: Айгерим\nUsername: @aigerim\nТелефон: не указан" ||
-		msg.markup() != `{"inline_keyboard":[[{"callback_data":"profile_edit_name","text":"✏️ Изменить имя"}],[{"callback_data":"profile_edit_phone","text":"✏️ Изменить телефон"}]]}` {
+		msg.markup() != `{"inline_keyboard":[[{"callback_data":"profile_edit_name","text":"✏️ Изменить имя"}],[{"callback_data":"profile_edit_phone","text":"✏️ Изменить телефон"}],[{"callback_data":"l:menu","text":"🌐 Язык · 🇷🇺 Русский"}]]}` {
 		t.Errorf("profile: %q %s", msg.text(), msg.markup())
 	}
 

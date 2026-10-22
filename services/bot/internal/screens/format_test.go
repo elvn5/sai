@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 )
 
 func TestDateRange(t *testing.T) {
@@ -15,7 +17,7 @@ func TestDateRange(t *testing.T) {
 		{"2027-06-12", "", "12 июня"},
 		{"", "2027-06-12", ""},
 	} {
-		if got := dateRange(tc.start, tc.end); got != tc.want {
+		if got := dateRange(i18n.RU, tc.start, tc.end); got != tc.want {
 			t.Errorf("dateRange(%q, %q) = %q, want %q", tc.start, tc.end, got, tc.want)
 		}
 	}
@@ -24,10 +26,10 @@ func TestDateRange(t *testing.T) {
 func TestWhenAndDay(t *testing.T) {
 	// 23:30 UTC is already the next day in Bishkek.
 	ts := time.Date(2026, 12, 31, 23, 30, 0, 0, time.UTC)
-	if got := When(ts); got != "пт, 1 янв., 05:30" {
+	if got := When(i18n.RU, ts); got != "пт, 1 янв., 05:30" {
 		t.Errorf("When = %q", got)
 	}
-	if got := day(ts); got != "1 янв. 2027" {
+	if got := day(i18n.RU, ts); got != "1 янв. 2027" {
 		t.Errorf("day = %q", got)
 	}
 	if !sameDay(ts, ts.Add(10*time.Hour)) || sameDay(ts, ts.Add(20*time.Hour)) {
@@ -35,17 +37,18 @@ func TestWhenAndDay(t *testing.T) {
 	}
 }
 
-func TestPlural(t *testing.T) {
-	for n, want := range map[int]string{
-		0: "выходов", 1: "выход", 2: "выхода", 4: "выхода", 5: "выходов", 11: "выходов", 12: "выходов",
-		14: "выходов", 21: "выход", 22: "выхода", 101: "выход", 111: "выходов", 112: "выходов",
+func TestDays(t *testing.T) {
+	for _, tc := range []struct {
+		l    i18n.Lang
+		n    int
+		want string
+	}{
+		{i18n.RU, 1, "1 день"}, {i18n.RU, 3, "3 дня"}, {i18n.RU, 7, "7 дней"},
+		{i18n.EN, 1, "1 day"}, {i18n.EN, 3, "3 days"}, {i18n.DE, 2, "2 Tage"}, {i18n.KY, 5, "5 күн"},
 	} {
-		if got := plural(n, "выход", "выхода", "выходов"); got != want {
-			t.Errorf("plural(%d) = %q, want %q", n, got, want)
+		if got := days(tc.l, tc.n); got != tc.want {
+			t.Errorf("days(%s, %d) = %q, want %q", tc.l, tc.n, got, tc.want)
 		}
-	}
-	if days(1) != "1 день" || days(3) != "3 дня" || days(7) != "7 дней" {
-		t.Errorf("days: %s, %s, %s", days(1), days(3), days(7))
 	}
 }
 

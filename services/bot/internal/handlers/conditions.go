@@ -35,19 +35,20 @@ func (h *Handlers) conditionPress(ctx *th.Context, q telego.CallbackQuery) error
 		return h.answer(ctx, q, "")
 	}
 
+	l := h.lang(ctx, &q.From)
 	userID, err := h.userOf(ctx, &q.From)
 	if err != nil {
 		return err
 	}
 	o, err := h.Content.Outing(ctx, userID, parts[1])
 	if api.StatusOf(err) == http.StatusNotFound || api.StatusOf(err) == http.StatusBadRequest {
-		return h.answer(ctx, q, "Этого выхода больше нет")
+		return h.answer(ctx, q, l.T("Этого выхода больше нет"))
 	}
 	if err != nil {
-		return h.failedPress(ctx, q, err)
+		return h.failedPress(ctx, l, q, err)
 	}
 	if !screens.CanReport(o, h.now()) {
-		return h.answer(ctx, q, "Сводку можно оставить в течение 30 дней после выхода")
+		return h.answer(ctx, q, l.T("Сводку можно оставить в течение 30 дней после выхода"))
 	}
 
 	switch {
@@ -55,12 +56,12 @@ func (h *Handlers) conditionPress(ctx *th.Context, q telego.CallbackQuery) error
 		if err := h.answer(ctx, q, ""); err != nil {
 			return err
 		}
-		return h.show(ctx, q, screens.ConditionState(o))
+		return h.show(ctx, q, screens.ConditionState(l, o))
 	case parts[0] == screens.CondTraction && len(answers) == 1:
 		if err := h.answer(ctx, q, ""); err != nil {
 			return err
 		}
-		return h.show(ctx, q, screens.ConditionTraction(o, answers[0]))
+		return h.show(ctx, q, screens.ConditionTraction(l, o, answers[0]))
 	case parts[0] == screens.CondDone && len(answers) == 2:
 		// The day of the outing (it may have gone on overnight: never
 		// later than today).
@@ -72,15 +73,15 @@ func (h *Handlers) conditionPress(ctx *th.Context, q telego.CallbackQuery) error
 			ObservedOn: day, TrailState: screens.TrailStates[answers[0]].Value, Traction: screens.Tractions[answers[1]].Value,
 		})
 		if api.StatusOf(err) == http.StatusBadRequest {
-			return h.answer(ctx, q, "Сводку можно оставить в течение 30 дней после выхода")
+			return h.answer(ctx, q, l.T("Сводку можно оставить в течение 30 дней после выхода"))
 		}
 		if err != nil {
-			return h.failedPress(ctx, q, err)
+			return h.failedPress(ctx, l, q, err)
 		}
-		if err := h.answer(ctx, q, "🙏 Спасибо за сводку!"); err != nil {
+		if err := h.answer(ctx, q, l.T("🙏 Спасибо за сводку!")); err != nil {
 			return err
 		}
-		return h.show(ctx, q, screens.ConditionThanks(o, answers[0], answers[1]))
+		return h.show(ctx, q, screens.ConditionThanks(l, o, answers[0], answers[1]))
 	}
 	return h.answer(ctx, q, "")
 }

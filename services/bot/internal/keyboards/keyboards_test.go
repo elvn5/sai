@@ -8,6 +8,7 @@ import (
 
 	"github.com/mymmrac/telego"
 
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 )
 
@@ -18,7 +19,7 @@ func asJSON(v any) string {
 
 // The menu as drawn on the "Старт и главное меню" sketch.
 func TestMainMenu(t *testing.T) {
-	m := keyboards.MainMenu("https://ermekten.kg", true)
+	m := keyboards.MainMenu(i18n.RU, "https://ermekten.kg", true)
 	var rows []string
 	for _, row := range m.Keyboard {
 		var cells []string
@@ -37,8 +38,31 @@ func TestMainMenu(t *testing.T) {
 	}
 
 	// Without the API: only the profile and support; without a Mini App, no web app button.
-	if got := asJSON(keyboards.MainMenu("", false).Keyboard); got != `[[{"text":"👤 Профиль"},{"text":"🆘 Поддержка"}]]` {
+	if got := asJSON(keyboards.MainMenu(i18n.RU, "", false).Keyboard); got != `[[{"text":"👤 Профиль"},{"text":"🆘 Поддержка"}]]` {
 		t.Errorf("minimal menu: %s", got)
+	}
+}
+
+// In English the buttons are English, and the Mini App opens the English
+// site; a pressed button is recognized in any language.
+func TestMainMenuInEnglish(t *testing.T) {
+	m := keyboards.MainMenu(i18n.EN, "https://ermekten.kg/", true)
+	if got := m.Keyboard[0][0].Text; got != "🥾 My outings" {
+		t.Errorf("outings button: %q", got)
+	}
+	if got := m.Keyboard[3][0].WebApp.URL; got != "https://ermekten.kg/en" {
+		t.Errorf("Mini App: %q", got)
+	}
+	if got := keyboards.Texts(keyboards.Outings); len(got) != 4 || got[0] != keyboards.Outings || got[2] != "🥾 My outings" {
+		t.Errorf("texts: %q", got)
+	}
+}
+
+func TestLanguages(t *testing.T) {
+	if got := asJSON(keyboards.Languages(i18n.KY)); got != `{"inline_keyboard":[[{"text":"🇷🇺 Русский","callback_data":"l:ru"},`+
+		`{"text":"✅ 🇰🇬 Кыргызча","callback_data":"l:ky"}],[{"text":"🇬🇧 English","callback_data":"l:en"},`+
+		`{"text":"🇩🇪 Deutsch","callback_data":"l:de"}]]}` {
+		t.Errorf("languages: %s", got)
 	}
 }
 
@@ -75,7 +99,7 @@ func TestButtons(t *testing.T) {
 		`[{"text":"x","callback_data":"d"},{"text":"y","url":"https://e.kg"}]` {
 		t.Errorf("buttons: %s", got)
 	}
-	if got := asJSON(keyboards.LinkMove("tok")); got !=
+	if got := asJSON(keyboards.LinkMove(i18n.RU, "tok")); got !=
 		`{"inline_keyboard":[[{"text":"Привязать","callback_data":"link_move:tok"},{"text":"Отмена","callback_data":"link_cancel"}]]}` {
 		t.Errorf("link move: %s", got)
 	}

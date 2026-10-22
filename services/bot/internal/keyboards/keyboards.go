@@ -4,12 +4,16 @@ package keyboards
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/mymmrac/telego"
 	tu "github.com/mymmrac/telego/telegoutil"
+
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 )
 
-// Main menu buttons (matched by text when pressed).
+// Main menu buttons, in Russian: they show in the user's language and are
+// matched by text in any language when pressed (see Texts).
 const (
 	Outings       = "🥾 Мои выходы"
 	Tours         = "🧭 Туры"
@@ -27,6 +31,9 @@ const (
 	EditCancel     = "profile_edit_cancel"
 	LinkMovePrefix = "link_move:"
 	LinkCancel     = "link_cancel"
+	// The language picker: "l:menu" shows it, "l:<lang>" picks.
+	LanguagePrefix = "l:"
+	LanguageMenu   = LanguagePrefix + "menu"
 
 	// Buttons that only show something (a page counter).
 	Noop = "noop"
@@ -52,39 +59,76 @@ const (
 // MainMenu is the persistent menu, with a Mini App button when its URL is
 // set; sections reaches the outings, tours and blog buttons (they need the
 // API).
-func MainMenu(miniAppURL string, sections bool) *telego.ReplyKeyboardMarkup {
+func MainMenu(l i18n.Lang, miniAppURL string, sections bool) *telego.ReplyKeyboardMarkup {
+	button := func(text string) telego.KeyboardButton { return tu.KeyboardButton(l.T(text)) }
 	var rows [][]telego.KeyboardButton
 	if sections {
 		rows = append(rows,
-			tu.KeyboardRow(tu.KeyboardButton(Outings), tu.KeyboardButton(Tours)),
-			tu.KeyboardRow(tu.KeyboardButton(Blog), tu.KeyboardButton(Notifications)),
+			tu.KeyboardRow(button(Outings), button(Tours)),
+			tu.KeyboardRow(button(Blog), button(Notifications)),
 		)
 	}
-	rows = append(rows, tu.KeyboardRow(tu.KeyboardButton(Profile), tu.KeyboardButton(Support)))
+	rows = append(rows, tu.KeyboardRow(button(Profile), button(Support)))
 	if miniAppURL != "" {
-		rows = append(rows, tu.KeyboardRow(tu.KeyboardButton(MiniApp).WithWebApp(tu.WebAppInfo(miniAppURL))))
+		rows = append(rows, tu.KeyboardRow(button(MiniApp).WithWebApp(tu.WebAppInfo(SiteURL(miniAppURL, l)))))
 	}
-	return tu.Keyboard(rows...).WithResizeKeyboard().WithInputFieldPlaceholder("Выберите раздел")
+	return tu.Keyboard(rows...).WithResizeKeyboard().WithInputFieldPlaceholder(l.T("Выберите раздел"))
 }
 
-func ProfileEdit() *telego.InlineKeyboardMarkup {
+// Texts are a main menu button in every language.
+func Texts(button string) []string {
+	out := make([]string, 0, len(i18n.Langs))
+	for _, l := range i18n.Langs {
+		out = append(out, l.T(button))
+	}
+	return out
+}
+
+// SiteURL is the site (the Mini App) in a language: Russian unprefixed,
+// the others under /ky, /en, /de, as on the site.
+func SiteURL(base string, l i18n.Lang) string {
+	if l == i18n.RU || base == "" {
+		return base
+	}
+	return strings.TrimRight(base, "/") + "/" + string(l)
+}
+
+func ProfileEdit(l i18n.Lang) *telego.InlineKeyboardMarkup {
 	return tu.InlineKeyboard(
-		tu.InlineKeyboardRow(tu.InlineKeyboardButton("✏️ Изменить имя").WithCallbackData(EditName)),
-		tu.InlineKeyboardRow(tu.InlineKeyboardButton("✏️ Изменить телефон").WithCallbackData(EditPhone)),
+		tu.InlineKeyboardRow(tu.InlineKeyboardButton(l.T("✏️ Изменить имя")).WithCallbackData(EditName)),
+		tu.InlineKeyboardRow(tu.InlineKeyboardButton(l.T("✏️ Изменить телефон")).WithCallbackData(EditPhone)),
+		tu.InlineKeyboardRow(tu.InlineKeyboardButton("🌐 "+l.T("Язык")+" · "+l.Name()).WithCallbackData(LanguageMenu)),
 	)
 }
 
-func CancelEdit() *telego.InlineKeyboardMarkup {
-	return tu.InlineKeyboard(tu.InlineKeyboardRow(tu.InlineKeyboardButton("Отмена").WithCallbackData(EditCancel)))
+func CancelEdit(l i18n.Lang) *telego.InlineKeyboardMarkup {
+	return tu.InlineKeyboard(tu.InlineKeyboardRow(tu.InlineKeyboardButton(l.T("Отмена")).WithCallbackData(EditCancel)))
 }
 
 // LinkMove asks whether to move Telegram from its bot-made account to the
 // site account behind token.
-func LinkMove(token string) *telego.InlineKeyboardMarkup {
+func LinkMove(l i18n.Lang, token string) *telego.InlineKeyboardMarkup {
 	return tu.InlineKeyboard(tu.InlineKeyboardRow(
-		tu.InlineKeyboardButton("Привязать").WithCallbackData(LinkMovePrefix+token),
-		tu.InlineKeyboardButton("Отмена").WithCallbackData(LinkCancel),
+		tu.InlineKeyboardButton(l.T("Привязать")).WithCallbackData(LinkMovePrefix+token),
+		tu.InlineKeyboardButton(l.T("Отмена")).WithCallbackData(LinkCancel),
 	))
+}
+
+// Languages offers the bot's languages, the current one checked.
+func Languages(current i18n.Lang) *telego.InlineKeyboardMarkup {
+	var rows [][]telego.InlineKeyboardButton
+	for i := 0; i < len(i18n.Langs); i += 2 {
+		var row []telego.InlineKeyboardButton
+		for _, l := range i18n.Langs[i:min(i+2, len(i18n.Langs))] {
+			label := l.Name()
+			if l == current {
+				label = "✅ " + label
+			}
+			row = append(row, Button(label, LanguagePrefix+string(l)))
+		}
+		rows = append(rows, row)
+	}
+	return tu.InlineKeyboard(rows...)
 }
 
 // Button is an inline button pressing back to the bot.

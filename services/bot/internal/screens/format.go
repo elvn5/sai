@@ -5,7 +5,6 @@
 package screens
 
 import (
-	"fmt"
 	"html"
 	"net/url"
 	"strconv"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/mymmrac/telego"
 
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 )
 
@@ -73,23 +73,11 @@ func coverPreview(picture string) *telego.LinkPreviewOptions {
 
 func noPreview() *telego.LinkPreviewOptions { return &telego.LinkPreviewOptions{IsDisabled: true} }
 
-var (
-	bishkek  = time.FixedZone("Asia/Bishkek", 6*60*60)
-	weekdays = []string{"вс", "пн", "вт", "ср", "чт", "пт", "сб"}
-	months   = []string{"янв.", "фев.", "мар.", "апр.", "мая", "июн.", "июл.", "авг.", "сен.", "окт.", "нояб.", "дек."}
-	// Months in "12 — 14 июня" (genitive, unabbreviated).
-	monthsFull = []string{
-		"января", "февраля", "марта", "апреля", "мая", "июня",
-		"июля", "августа", "сентября", "октября", "ноября", "декабря",
-	}
-)
+var bishkek = time.FixedZone("Asia/Bishkek", 6*60*60)
 
 // When formats a time in Bishkek, e.g. "сб, 24 окт., 06:00" (as the
 // outing notifications do).
-func When(t time.Time) string {
-	t = t.In(bishkek)
-	return fmt.Sprintf("%s, %d %s, %s", weekdays[t.Weekday()], t.Day(), months[t.Month()-1], t.Format("15:04"))
-}
+func When(l i18n.Lang, t time.Time) string { return l.When(t.In(bishkek)) }
 
 func sameDay(a, b time.Time) bool {
 	a, b = a.In(bishkek), b.In(bishkek)
@@ -97,25 +85,19 @@ func sameDay(a, b time.Time) bool {
 }
 
 // day formats a date as "18 окт. 2026".
-func day(t time.Time) string {
-	t = t.In(bishkek)
-	return fmt.Sprintf("%d %s %d", t.Day(), months[t.Month()-1], t.Year())
-}
+func day(l i18n.Lang, t time.Time) string { return l.Date(t.In(bishkek)) }
 
 // dateRange formats YYYY-MM-DD dates: "12 — 14 июня", "30 июня — 2 июля".
-func dateRange(start, end string) string {
-	s, err1 := time.Parse(time.DateOnly, start)
-	e, err2 := time.Parse(time.DateOnly, end)
-	switch {
-	case err1 != nil:
+func dateRange(l i18n.Lang, start, end string) string {
+	s, err := time.Parse(time.DateOnly, start)
+	if err != nil {
 		return ""
-	case err2 != nil || s.Equal(e):
-		return fmt.Sprintf("%d %s", s.Day(), monthsFull[s.Month()-1])
-	case s.Month() == e.Month() && s.Year() == e.Year():
-		return fmt.Sprintf("%d — %d %s", s.Day(), e.Day(), monthsFull[e.Month()-1])
-	default:
-		return fmt.Sprintf("%d %s — %d %s", s.Day(), monthsFull[s.Month()-1], e.Day(), monthsFull[e.Month()-1])
 	}
+	e, err := time.Parse(time.DateOnly, end)
+	if err != nil {
+		e = time.Time{}
+	}
+	return l.DateRange(s, e)
 }
 
 func esc(s string) string { return html.EscapeString(s) }
@@ -147,19 +129,12 @@ func clip(s string, n int) string {
 }
 
 // days is "1 день", "3 дня", "7 дней".
-func days(n int) string { return strconv.Itoa(n) + " " + plural(n, "день", "дня", "дней") }
-
-// plural picks the form for n: one (1 выход), few (2 выхода), many (5 выходов).
-func plural(n int, one, few, many string) string {
-	switch {
-	case n%10 == 1 && n%100 != 11:
-		return one
-	case n%10 >= 2 && n%10 <= 4 && (n%100 < 10 || n%100 >= 20):
-		return few
-	default:
-		return many
-	}
+func days(l i18n.Lang, n int) string {
+	return strconv.Itoa(n) + " " + l.N(n, "день", "дня", "дней")
 }
+
+// som is an amount in som: "18 000 сом".
+func som(l i18n.Lang, n int) string { return money(n) + " " + l.T("сом") }
 
 func rows(r ...[]telego.InlineKeyboardButton) *telego.InlineKeyboardMarkup {
 	return &telego.InlineKeyboardMarkup{InlineKeyboard: r}

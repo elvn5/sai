@@ -63,7 +63,7 @@ func TestBlogSubscribers(t *testing.T) {
 	if on, err := s.IsBlogSubscriber(ctx, 42); err != nil || !on {
 		t.Errorf("subscribed: %v, %v", on, err)
 	}
-	if chats, err := s.BlogSubscribers(ctx); err != nil || !slices.Equal(chats, []int64{42, 7}) {
+	if chats, err := s.BlogSubscribers(ctx); err != nil || !slices.Equal(chats, []store.Subscriber{{ChatID: 42, Lang: "ru"}, {ChatID: 7, Lang: "ru"}}) {
 		t.Errorf("subscribers: %v, %v", chats, err)
 	}
 	for range 2 { // unsubscribing twice too
@@ -71,8 +71,33 @@ func TestBlogSubscribers(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if chats, err := s.BlogSubscribers(ctx); err != nil || !slices.Equal(chats, []int64{7}) {
+	if chats, err := s.BlogSubscribers(ctx); err != nil || !slices.Equal(chats, []store.Subscriber{{ChatID: 7, Lang: "ru"}}) {
 		t.Errorf("after unsubscribing: %v, %v", chats, err)
+	}
+	if err := s.SetLanguage(ctx, 7, "en"); err != nil {
+		t.Fatal(err)
+	}
+	if chats, err := s.BlogSubscribers(ctx); err != nil || !slices.Equal(chats, []store.Subscriber{{ChatID: 7, Lang: "en"}}) {
+		t.Errorf("with a language: %v, %v", chats, err)
+	}
+}
+
+func TestLanguages(t *testing.T) {
+	s, ctx := newStore(t), context.Background()
+	if lang, err := s.KnownLanguage(ctx, 5); err != nil || lang != "" {
+		t.Fatalf("unknown chat: %q, %v", lang, err)
+	}
+	// The first language a chat gets stays, until the user picks another.
+	for _, fallback := range []string{"de", "en"} {
+		if lang, err := s.Language(ctx, 5, fallback); err != nil || lang != "de" {
+			t.Errorf("Language(%s) = %q, %v", fallback, lang, err)
+		}
+	}
+	if err := s.SetLanguage(ctx, 5, "ky"); err != nil {
+		t.Fatal(err)
+	}
+	if lang, err := s.KnownLanguage(ctx, 5); err != nil || lang != "ky" {
+		t.Errorf("picked: %q, %v", lang, err)
 	}
 }
 

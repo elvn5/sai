@@ -1,12 +1,14 @@
 // Package blogfeed sends new blog posts to the chats subscribed to the
-// blog: it checks the blog now and then and posts what it hasn't seen,
-// with the cover as a photo. Posts are marked seen before they go out, so
+// blog: it checks the blog in each language now and then and posts what it
+// hasn't seen to the chats reading the bot in that language, with the
+// cover as a photo. Posts are marked seen before they go out, so
 // a crash never repeats one (it may skip one instead).
 package blogfeed
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -16,7 +18,9 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/screens"
+	"github.com/elvn5/sai/services/bot/internal/store"
 )
 
 const (
@@ -24,20 +28,22 @@ const (
 	maxPerPass = 3
 	// Pause between messages: well under Telegram's per-bot limit.
 	sendGap = 50 * time.Millisecond
-	// Marks that the first pass ran, even on an empty blog.
+	// Marks that the first pass ran, even on an empty blog: "__start__"
+	// for Russian posts (the feed's first language), "__start__:<lang>"
+	// for the others.
 	startMark = "__start__"
 )
 
-// Posts lists published posts, newest first (api.Client).
+// Posts lists published posts in a language, newest first (api.Client).
 type Posts interface {
-	BlogPosts(ctx context.Context) ([]api.BlogPost, error)
+	BlogPosts(ctx context.Context, locale string) ([]api.BlogPost, error)
 }
 
 // Store is the bot's database (store.Store).
 type Store interface {
 	SeenPosts(ctx context.Context) (map[string]bool, error)
 	MarkSeen(ctx context.Context, ids []string) error
-	BlogSubscribers(ctx context.Context) ([]int64, error)
+	BlogSubscribers(ctx context.Context) ([]store.Subscriber, error)
 	SetBlogSubscriber(ctx context.Context, chatID int64, on bool) error
 }
 
@@ -72,19 +78,46 @@ func (f *Feed) Run(ctx context.Context) {
 	}
 }
 
-// Pass sends the posts published since the last pass. The first pass only
-// remembers what is there.
+// Pass sends the posts published since the last pass. The first pass in a
+// language only remembers what is there.
 func (f *Feed) Pass(ctx context.Context) error {
-	posts, err := f.Posts.BlogPosts(ctx)
-	if err != nil {
-		return err
-	}
 	seen, err := f.Store.SeenPosts(ctx)
 	if err != nil {
 		return err
 	}
-	if len(seen) == 0 {
-		ids := []string{startMark}
+	subscribers, err := f.Store.BlogSubscribers(ctx)
+	if err != nil {
+		return err
+	}
+	chats := map[i18n.Lang][]int64{}
+	for _, s := range subscribers {
+		l := i18n.Lang(s.Lang)
+		if !l.Valid() {
+			l = i18n.RU
+		}
+		chats[l] = append(chats[l], s.ChatID)
+	}
+	var errs []error
+	for _, l := range i18n.Langs {
+		if err := f.pass(ctx, l, seen, chats[l]); err != nil {
+			errs = append(errs, fmt.Errorf("%s posts: %w", l, err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// pass sends a language's new posts to the chats reading in it.
+func (f *Feed) pass(ctx context.Context, l i18n.Lang, seen map[string]bool, chats []int64) error {
+	posts, err := f.Posts.BlogPosts(ctx, string(l))
+	if err != nil {
+		return err
+	}
+	mark := startMark
+	if l != i18n.RU {
+		mark += ":" + string(l)
+	}
+	if !seen[mark] {
+		ids := []string{mark}
 		for _, p := range posts {
 			ids = append(ids, p.ID)
 		}
@@ -112,13 +145,9 @@ func (f *Feed) Pass(ctx context.Context) error {
 		fresh = fresh[len(fresh)-maxPerPass:]
 	}
 
-	chats, err := f.Store.BlogSubscribers(ctx)
-	if err != nil {
-		return err
-	}
 	for _, p := range fresh {
 		for _, chat := range chats {
-			if err := f.send(ctx, chat, p); err != nil {
+			if err := f.send(ctx, l, chat, p); err != nil {
 				f.dropped(ctx, chat, err)
 			}
 			time.Sleep(sendGap)
@@ -127,8 +156,8 @@ func (f *Feed) Pass(ctx context.Context) error {
 	return nil
 }
 
-func (f *Feed) send(ctx context.Context, chat int64, p api.BlogPost) error {
-	caption, markup := screens.BlogPost(p)
+func (f *Feed) send(ctx context.Context, l i18n.Lang, chat int64, p api.BlogPost) error {
+	caption, markup := screens.BlogPost(l, p)
 	if picture := f.Links.Picture(p.CoverImageURL); picture != "" {
 		_, err := f.Bot.SendPhoto(ctx, tu.Photo(tu.ID(chat), tu.FileFromURL(picture)).
 			WithCaption(caption).WithParseMode(telego.ModeHTML).WithReplyMarkup(markup))

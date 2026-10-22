@@ -1,7 +1,7 @@
 // Command bot is Ermekten's Telegram bot: greets users, links Telegram to
 // site accounts, confirms phone registrations, edits profiles and shows
 // support contacts; shows the user's outings, tours and the blog, and
-// sends new blog posts to subscribers. Accounts live in the users service,
+// sends new blog posts to subscribers — in the site's languages. Accounts live in the users service,
 // outings, tours and posts behind the gateway.
 package main
 
@@ -24,6 +24,7 @@ import (
 	"github.com/elvn5/sai/services/bot/internal/config"
 	"github.com/elvn5/sai/services/bot/internal/drafts"
 	"github.com/elvn5/sai/services/bot/internal/handlers"
+	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/migrations"
 	"github.com/elvn5/sai/services/bot/internal/screens"
 	"github.com/elvn5/sai/services/bot/internal/session"
@@ -41,15 +42,18 @@ const (
 	blogFeedInterval = 10 * time.Minute
 )
 
-// commands is the bot's command menu.
-var commands = []telego.BotCommand{
-	{Command: "outings", Description: "Мои выходы"},
-	{Command: "organizer", Description: "Кабинет организатора: участники, туры"},
-	{Command: "tours", Description: "Туры: избранное и ближайшие"},
-	{Command: "blog", Description: "Статьи блога"},
-	{Command: "notifications", Description: "Что присылать"},
-	{Command: "profile", Description: "Профиль"},
-	{Command: "support", Description: "Поддержка"},
+// commands is the bot's command menu in a language.
+func commands(l i18n.Lang) []telego.BotCommand {
+	return []telego.BotCommand{
+		{Command: "outings", Description: l.T("Мои выходы")},
+		{Command: "organizer", Description: l.T("Кабинет организатора: участники, туры")},
+		{Command: "tours", Description: l.T("Туры: избранное и ближайшие")},
+		{Command: "blog", Description: l.T("Статьи блога")},
+		{Command: "notifications", Description: l.T("Что присылать")},
+		{Command: "profile", Description: l.T("Профиль")},
+		{Command: "support", Description: l.T("Поддержка")},
+		{Command: "language", Description: l.T("Язык")},
+	}
 }
 
 func main() {
@@ -122,8 +126,16 @@ func run(log *slog.Logger) error {
 	}
 
 	if content != nil {
-		if err := bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{Commands: commands}); err != nil {
-			log.Warn("could not set the command menu", slog.Any("error", err))
+		// Russian for everyone, the other languages for Telegram apps in
+		// them (the chosen language shows in the messages, not here).
+		for _, l := range i18n.Langs {
+			params := &telego.SetMyCommandsParams{Commands: commands(l)}
+			if l != i18n.RU {
+				params.LanguageCode = string(l)
+			}
+			if err := bot.SetMyCommands(ctx, params); err != nil {
+				log.Warn("could not set the command menu", slog.String("lang", string(l)), slog.Any("error", err))
+			}
 		}
 	}
 
@@ -137,6 +149,7 @@ func run(log *slog.Logger) error {
 	}
 	h := &handlers.Handlers{
 		Users: accounts, Sessions: session.New(), Drafts: drafts.NewStore(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links,
+		Languages: db,
 	}
 	if content != nil {
 		h.Content, h.Subscribers = content, db

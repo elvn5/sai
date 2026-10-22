@@ -14,16 +14,17 @@ import (
 	"github.com/elvn5/sai/services/listings/internal/routes"
 	"github.com/elvn5/sai/services/listings/internal/store"
 	"github.com/elvn5/sai/services/pkg/telegram"
+	"github.com/elvn5/sai/services/pkg/usersclient"
 )
 
-// Only the guest has Telegram linked.
-type fakeChats struct{}
+// Only the guest has Telegram linked; their chat reads the bot in lang.
+type fakeChats struct{ lang telegram.Lang }
 
-func (fakeChats) TelegramChats(_ context.Context, ids []string) (map[string]int64, error) {
-	out := map[string]int64{}
+func (f fakeChats) TelegramRecipients(_ context.Context, ids []string) (map[string]usersclient.TelegramChat, error) {
+	out := map[string]usersclient.TelegramChat{}
 	for _, id := range ids {
 		if id == guest {
-			out[id] = 42
+			out[id] = usersclient.TelegramChat{ID: 42, Lang: telegram.ParseLang(string(f.lang))}
 		}
 	}
 	return out, nil
@@ -44,13 +45,18 @@ func (f fakeSender) SendMessage(_ context.Context, chat int64, text string, butt
 
 func setupWithAlerts(t *testing.T) (client, fakeSender) {
 	t.Helper()
+	return setupWithAlertsIn(t, telegram.RU)
+}
+
+func setupWithAlertsIn(t *testing.T, lang telegram.Lang) (client, fakeSender) {
+	t.Helper()
 	db, _ := createDatabase(t, true)
 	st := store.New(db)
 	sent := make(fakeSender, 4)
 	log := slog.New(slog.DiscardHandler)
 	gin.SetMode(gin.TestMode)
 	return client{t, routes.Setup(handlers.Deps{Store: st, Authors: testUsers, Log: log, Alerts: &alerts.Notifier{
-		Store: st, Chats: fakeChats{}, Sender: sent, Log: log,
+		Store: st, Chats: fakeChats{lang}, Sender: sent, Log: log,
 	}}, testUsers, secret)}, sent
 }
 
@@ -147,7 +153,8 @@ func TestTourAlerts(t *testing.T) {
 	c.do("POST", "/tours", detailedTour, partner)
 	select {
 	case m := <-sent:
-		if m.chat != 42 || !strings.Contains(m.text, "Сон-Куль") || m.button == nil ||
+		if m.chat != 42 || !strings.Contains(m.text, "Сон-Куль") || !strings.Contains(m.text, "Новый тур") ||
+			!strings.Contains(m.text, "15000 сом за человека") || m.button == nil || m.button.Text != "Открыть тур" ||
 			!strings.HasPrefix(m.button.Data, "t:open:") || m.button.URL != "" {
 			t.Errorf("message: %+v", m)
 		}
@@ -162,5 +169,30 @@ func TestTourAlerts(t *testing.T) {
 
 	if _, body := c.do("DELETE", "/tour-alerts", `{"destination":"naryn"}`, guest); body != `{"destinations":[]}` {
 		t.Errorf("unfollow: %s", body)
+	}
+}
+
+// A follower gets the alert in their chat's language, with the same
+// callback data.
+func TestTourAlertLanguages(t *testing.T) {
+	for lang, want := range map[telegram.Lang][3]string{
+		telegram.KY: {"🏔 <b>Ermekten'де жаңы тур</b>", "💳 киши башына 15000 сом", "Турду ачуу"},
+		telegram.EN: {"🏔 <b>New tour on Ermekten</b>", "💳 15000 som per person", "Open the tour"},
+		telegram.DE: {"🏔 <b>Neue Tour auf Ermekten</b>", "💳 15000 Som pro Person", "Tour öffnen"},
+	} {
+		t.Run(string(lang), func(t *testing.T) {
+			c, sent := setupWithAlertsIn(t, lang)
+			c.do("PUT", "/tour-alerts", `{"destination":"naryn"}`, guest)
+			c.do("POST", "/tours", detailedTour, partner)
+			select {
+			case m := <-sent:
+				if !strings.Contains(m.text, want[0]) || !strings.Contains(m.text, want[1]) || !strings.Contains(m.text, "Сон-Куль") ||
+					m.button.Text != want[2] || !strings.HasPrefix(m.button.Data, "t:open:") {
+					t.Errorf("message: %q %+v", m.text, m.button)
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("no message")
+			}
+		})
 	}
 }

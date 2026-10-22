@@ -251,21 +251,21 @@ func TestNotificationLanguages(t *testing.T) {
 	}
 	for lang, want := range map[telegram.Lang]expected{
 		telegram.KY: {
-			joined: "<b>User 1111</b> «Sunday hike» (иш, 17-окт., 06:00) чыгуусуна кошулат.\nЭэленген орундар: 1 / 3.",
+			joined:  "<b>User 1111</b> «Sunday hike» (иш, 17-окт., 06:00) чыгуусуна кошулат.\nЭэленген орундар: 1 / 3.",
 			changed: "🕕 Чогулуу: <b>иш, 17-окт., 07:30</b> (мурда иш, 17-окт., 06:00)", cancelled: "чыгуусун уюштуруучу жокко чыгарды",
 			organizerReminder: "👥 Катышуучулар: 1", checkIn: "📋 Келгендерди белгилөө", participantReminder: "💬 Уюштуруучу: @hiker_kg",
 			followUp: "чыгуусу кандай өттү?", report: "📝 Маршрут тууралуу айтуу", rate: "Баа бериңиз", rateButton: "⭐ Чыгууга баа берүү",
 			openButton: "Чыгууну ачуу",
 		},
 		telegram.EN: {
-			joined: "<b>User 1111</b> is joining the outing “Sunday hike” (Sat, 17 Oct, 06:00).\nSeats taken: 1 of 3.",
+			joined:  "<b>User 1111</b> is joining the outing “Sunday hike” (Sat, 17 Oct, 06:00).\nSeats taken: 1 of 3.",
 			changed: "🕕 Meeting time: <b>Sat, 17 Oct, 07:30</b> (was Sat, 17 Oct, 06:00)", cancelled: "The organizer cancelled the outing “Sunday hike”",
 			organizerReminder: "👥 Participants: 1", checkIn: "📋 Check people in", participantReminder: "💬 Organizer: @hiker_kg",
 			followUp: "How was the outing “Sunday hike”?", report: "📝 Report on the route", rate: "Rate it", rateButton: "⭐ Rate the outing",
 			openButton: "Open the outing",
 		},
 		telegram.DE: {
-			joined: "<b>User 1111</b> nimmt am Ausflug „Sunday hike“ (Sa., 17. Okt., 06:00) teil.\nBelegte Plätze: 1 von 3.",
+			joined:  "<b>User 1111</b> nimmt am Ausflug „Sunday hike“ (Sa., 17. Okt., 06:00) teil.\nBelegte Plätze: 1 von 3.",
 			changed: "🕕 Treffen: <b>Sa., 17. Okt., 07:30</b> (vorher Sa., 17. Okt., 06:00)", cancelled: "wurde vom Organisator abgesagt",
 			organizerReminder: "👥 Teilnehmende: 1", checkIn: "📋 Anwesenheit erfassen", participantReminder: "💬 Organisator: @hiker_kg",
 			followUp: "Wie war der Ausflug „Sunday hike“?", report: "📝 Route bewerten", rate: "Bewerten Sie ihn", rateButton: "⭐ Ausflug bewerten",

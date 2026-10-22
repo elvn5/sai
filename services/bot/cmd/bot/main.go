@@ -149,7 +149,7 @@ func run(log *slog.Logger) error {
 	}
 	h := &handlers.Handlers{
 		Users: accounts, Sessions: session.New(), Drafts: drafts.NewStore(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links,
-		Languages: db,
+		Languages: &users.Languages{Store: db, Users: accounts, Log: log},
 	}
 	if content != nil {
 		h.Content, h.Subscribers = content, db

@@ -216,3 +216,17 @@ func (c *Client) TelegramChats(ctx context.Context, ids []string) (map[string]in
 	}
 	return res.GetChatIds(), nil
 }
+
+// SetLanguage tells the users service the language a chat reads the bot
+// in, so the other services' notifications come in it.
+func (c *Client) SetLanguage(ctx context.Context, telegramID int64, lang string) error {
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	_, err := c.client.SetTelegramLanguage(ctx, &usersv1.SetTelegramLanguageRequest{
+		TelegramId: strconv.FormatInt(telegramID, 10), Language: lang,
+	})
+	if err != nil {
+		return fmt.Errorf("set telegram language: %w", err)
+	}
+	return nil
+}

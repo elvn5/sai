@@ -38,7 +38,28 @@
     "heading": "Блог",
     "metaDescription": "Ermekten'дан Кыргызстан боюнча саякаттар тууралуу жаңылыктар, окуялар жана кеңештер.",
     "empty": "Азырынча макалалар жок",
+    "badges": {
+      "difficulty": "Татаалдыгы",
+      "duration": "Узактыгы",
+      "season": "Мезгили"
+    },
+    "difficulty": {
+      "any": "Каалаган деңгээл",
+      "easy": "Жеңил",
+      "moderate": "Орто",
+      "hard": "Татаал",
+      "expert": "Эксперттик"
+    },
+    "season": {
+      "spring": "Жаз",
+      "summer": "Жай",
+      "autumn": "Күз",
+      "winter": "Кыш",
+      "all_year": "Жыл бою"
+    },
     "form": {
+      "badgesHint": "Милдеттүү эмес: бул пост кайсы жүрүштөр жөнүндө",
+      "durationPlaceholder": "Мисалы, 2–5 саат",
       "newTitle": "Пост жазуу",
       "editTitle": "Постту түзөтүү",
       "title": "Аталышы",

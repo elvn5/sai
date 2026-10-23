@@ -1,4 +1,10 @@
-import { type BlogPost, LOCALE_OPTIONS, Locale } from '@/core/api/types';
+import {
+  type BlogDifficulty,
+  type BlogPost,
+  type BlogSeason,
+  LOCALE_OPTIONS,
+  Locale,
+} from '@/core/api/types';
 import { ConfigStore } from '@/core/config/app-config';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { slugify } from '@/core/lib/slugify';
@@ -18,7 +24,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { FormField, form, submit } from '@angular/forms/signals';
+import { FormField, form, maxLength, submit } from '@angular/forms/signals';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -31,8 +37,28 @@ interface PostForm {
   coverImageUrl: string | null;
   seoTitle: string;
   seoDescription: string;
+  // '' when not set.
+  difficulty: BlogDifficulty | '';
+  duration: string;
+  season: BlogSeason | '';
   isPublished: boolean;
 }
+
+// The badges on the post's card on the site.
+const DIFFICULTY_OPTIONS: { value: BlogDifficulty; label: string }[] = [
+  { value: 'any', label: 'Любой уровень' },
+  { value: 'easy', label: 'Лёгкий' },
+  { value: 'moderate', label: 'Средний' },
+  { value: 'hard', label: 'Сложный' },
+  { value: 'expert', label: 'Экспертный' },
+];
+const SEASON_OPTIONS: { value: BlogSeason; label: string }[] = [
+  { value: 'winter', label: 'Зима' },
+  { value: 'spring', label: 'Весна' },
+  { value: 'summer', label: 'Лето' },
+  { value: 'autumn', label: 'Осень' },
+  { value: 'all_year', label: 'Круглый год' },
+];
 
 // Writes or edits a blog post (services/content); /blog/new creates one.
 @Component({
@@ -76,6 +102,31 @@ interface PostForm {
             Краткое описание (анонс)
             <textarea class="ui-input" rows="2" [formField]="postForm.excerpt"></textarea>
           </label>
+          <div class="grid grid-cols-3 gap-4">
+            <label class="ui-field">
+              Сложность
+              <select class="ui-input" [formField]="postForm.difficulty">
+                <option value="">Не указана</option>
+                @for (option of difficultyOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="ui-field">
+              Длительность
+              <input class="ui-input" placeholder="Например, 2–5 часов" [formField]="postForm.duration" />
+            </label>
+            <label class="ui-field">
+              Сезон
+              <select class="ui-input" [formField]="postForm.season">
+                <option value="">Не указан</option>
+                @for (option of seasonOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <span class="ui-hint -mt-2">Бейджи на карточке статьи; пустые не показываются</span>
           <div class="ui-field">Обложка <app-image-upload-field [formField]="postForm.coverImageUrl" /></div>
           <div class="ui-field">Содержание <app-rich-text-editor [formField]="postForm.content" /></div>
 
@@ -130,6 +181,8 @@ export class BlogEditPage {
   protected previewRef: DialogRef | null = null;
 
   protected readonly localeOptions = LOCALE_OPTIONS;
+  protected readonly difficultyOptions = DIFFICULTY_OPTIONS;
+  protected readonly seasonOptions = SEASON_OPTIONS;
   protected readonly loaded = signal(false);
   protected readonly saveError = signal<string | null>(null);
   protected slugTouched = false;
@@ -143,9 +196,13 @@ export class BlogEditPage {
     coverImageUrl: null,
     seoTitle: '',
     seoDescription: '',
+    difficulty: '',
+    duration: '',
+    season: '',
     isPublished: false,
   });
-  protected readonly postForm = form(this.model);
+  // The API's limit.
+  protected readonly postForm = form(this.model, (path) => maxLength(path.duration, 40));
   private readonly title = computed(() => this.model().title);
 
   constructor() {
@@ -187,6 +244,9 @@ export class BlogEditPage {
       coverImageUrl: post.coverImageUrl,
       seoTitle: post.seoTitle ?? '',
       seoDescription: post.seoDescription ?? '',
+      difficulty: post.difficulty ?? '',
+      duration: post.duration ?? '',
+      season: post.season ?? '',
       isPublished: post.isPublished,
     });
     this.loaded.set(true);
@@ -210,6 +270,9 @@ export class BlogEditPage {
         coverImageUrl: value.coverImageUrl,
         seoTitle: value.seoTitle || null,
         seoDescription: value.seoDescription || null,
+        difficulty: value.difficulty || null,
+        duration: value.duration.trim() || null,
+        season: value.season || null,
         isPublished: value.isPublished,
       };
       try {

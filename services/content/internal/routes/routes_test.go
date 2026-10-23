@@ -173,8 +173,8 @@ func field(t *testing.T, body, key string) any {
 	return m[key]
 }
 
-// Migration 00003 seeds the winter hiking series: five published Russian
-// posts, each linking its PDF.
+// Migrations 00003 and 00004 seed the winter hiking series: five published
+// Russian posts, each linking its PDF, with their badges.
 func TestWinterSeriesSeeded(t *testing.T) {
 	c, _, _ := setup(t)
 	status, body := c.do("GET", "/blog?locale=ru", "")
@@ -185,6 +185,9 @@ func TestWinterSeriesSeeded(t *testing.T) {
 	for _, p := range posts {
 		if content, _ := p["content"].(string); !strings.Contains(content, `href="/files/blog/`+p["slug"].(string)+`.pdf"`) {
 			t.Errorf("%s: no PDF link", p["slug"])
+		}
+		if p["difficulty"] == nil || p["duration"] == nil || p["season"] != "winter" {
+			t.Errorf("%s: badges missing: %v %v %v", p["slug"], p["difficulty"], p["duration"], p["season"])
 		}
 	}
 }
@@ -221,6 +224,17 @@ func TestBlogPublishingLifecycle(t *testing.T) {
 	status, body = c.do("PUT", "/blog/"+id, `{"excerpt":null}`, admin)
 	if status != 200 || field(t, body, "excerpt") != nil || field(t, body, "title") != "First" || field(t, body, "publishedAt") == nil {
 		t.Fatalf("clear excerpt: %d %s", status, body)
+	}
+	// The card's badges.
+	status, body = c.do("PUT", "/blog/"+id, `{"difficulty":"moderate","duration":"1 день","season":"winter"}`, admin)
+	if status != 200 || field(t, body, "difficulty") != "moderate" || field(t, body, "duration") != "1 день" || field(t, body, "season") != "winter" {
+		t.Fatalf("badges: %d %s", status, body)
+	}
+	if status, _ := c.do("PUT", "/blog/"+id, `{"difficulty":"extreme"}`, admin); status != 400 {
+		t.Errorf("unknown difficulty: %d", status)
+	}
+	if status, _ := c.do("PUT", "/blog/"+id, `{"season":"monsoon"}`, admin); status != 400 {
+		t.Errorf("unknown season: %d", status)
 	}
 
 	if status, body := c.do("GET", "/blog/ru/first", ""); status != 200 || field(t, body, "id") != id {

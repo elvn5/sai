@@ -38,7 +38,28 @@
     "heading": "Blog",
     "metaDescription": "Neuigkeiten, Geschichten und Reisetipps rund um Kirgisistan von Ermekten.",
     "empty": "Noch keine Beiträge",
+    "badges": {
+      "difficulty": "Schwierigkeit",
+      "duration": "Dauer",
+      "season": "Saison"
+    },
+    "difficulty": {
+      "any": "Jedes Niveau",
+      "easy": "Leicht",
+      "moderate": "Mittel",
+      "hard": "Schwer",
+      "expert": "Experte"
+    },
+    "season": {
+      "spring": "Frühling",
+      "summer": "Sommer",
+      "autumn": "Herbst",
+      "winter": "Winter",
+      "all_year": "Ganzjährig"
+    },
     "form": {
+      "badgesHint": "Optional: um welche Touren es im Beitrag geht",
+      "durationPlaceholder": "z. B. 2–5 Stunden",
       "newTitle": "Beitrag schreiben",
       "editTitle": "Beitrag bearbeiten",
       "title": "Titel",

@@ -12,17 +12,22 @@ var (
 )
 
 type BlogPost struct {
-	ID             string         `json:"id"`
-	Locale         string         `json:"locale"`
-	Slug           string         `json:"slug"`
-	Title          string         `json:"title"`
-	Excerpt        *string        `json:"excerpt"`
-	Content        string         `json:"content"`
-	CoverImageURL  *string        `json:"coverImageUrl"`
-	SeoTitle       *string        `json:"seoTitle"`
-	SeoDescription *string        `json:"seoDescription"`
-	IsPublished    bool           `json:"isPublished"`
-	PublishedAt    *jsontime.Time `json:"publishedAt"`
+	ID             string  `json:"id"`
+	Locale         string  `json:"locale"`
+	Slug           string  `json:"slug"`
+	Title          string  `json:"title"`
+	Excerpt        *string `json:"excerpt"`
+	Content        string  `json:"content"`
+	CoverImageURL  *string `json:"coverImageUrl"`
+	SeoTitle       *string `json:"seoTitle"`
+	SeoDescription *string `json:"seoDescription"`
+	// Badges on the post's card, each optional: the trips' difficulty
+	// ("any" for every level), how long they take (free text) and the season.
+	Difficulty  *string        `json:"difficulty"`
+	Duration    *string        `json:"duration"`
+	Season      *string        `json:"season"`
+	IsPublished bool           `json:"isPublished"`
+	PublishedAt *jsontime.Time `json:"publishedAt"`
 	// The partner who wrote it; nil for posts written in the admin panel.
 	UserID    *string       `json:"userId"`
 	CreatedAt jsontime.Time `json:"createdAt"`

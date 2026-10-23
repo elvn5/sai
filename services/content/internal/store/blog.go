@@ -12,14 +12,14 @@ import (
 )
 
 const blogColumns = `id, locale, slug, title, excerpt, content, cover_image_url, seo_title,
-	seo_description, is_published, published_at, user_id::text, created_at, updated_at`
+	seo_description, difficulty, duration, season, is_published, published_at, user_id::text, created_at, updated_at`
 
 func scanBlogPost(row pgx.Row) (models.BlogPost, error) {
 	var p models.BlogPost
 	var publishedAt *time.Time
 	var createdAt, updatedAt time.Time
 	err := row.Scan(&p.ID, &p.Locale, &p.Slug, &p.Title, &p.Excerpt, &p.Content, &p.CoverImageURL,
-		&p.SeoTitle, &p.SeoDescription, &p.IsPublished, &publishedAt, &p.UserID, &createdAt, &updatedAt)
+		&p.SeoTitle, &p.SeoDescription, &p.Difficulty, &p.Duration, &p.Season, &p.IsPublished, &publishedAt, &p.UserID, &createdAt, &updatedAt)
 	p.PublishedAt, p.CreatedAt, p.UpdatedAt = timePtr(publishedAt), jsontime.New(createdAt), jsontime.New(updatedAt)
 	return p, err
 }
@@ -74,23 +74,24 @@ func (s *Store) BlogSlugTaken(ctx context.Context, locale, slug, excludeID strin
 
 func (s *Store) InsertBlogPost(ctx context.Context, p models.BlogPost) (models.BlogPost, error) {
 	saved, err := scanBlogPost(s.db.QueryRow(ctx, `INSERT INTO blog_posts
-		(locale, slug, title, excerpt, content, cover_image_url, seo_title, seo_description, is_published,
-		 published_at, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		(locale, slug, title, excerpt, content, cover_image_url, seo_title, seo_description, difficulty,
+		 duration, season, is_published, published_at, user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING `+blogColumns,
 		p.Locale, p.Slug, p.Title, p.Excerpt, p.Content, p.CoverImageURL, p.SeoTitle, p.SeoDescription,
-		p.IsPublished, publishedTime(p.PublishedAt), p.UserID))
+		p.Difficulty, p.Duration, p.Season, p.IsPublished, publishedTime(p.PublishedAt), p.UserID))
 	return saved, uniqueViolation(err)
 }
 
 func (s *Store) UpdateBlogPost(ctx context.Context, p models.BlogPost) (models.BlogPost, error) {
 	saved, err := scanBlogPost(s.db.QueryRow(ctx, `UPDATE blog_posts SET
 		locale = $2, slug = $3, title = $4, excerpt = $5, content = $6, cover_image_url = $7,
-		seo_title = $8, seo_description = $9, is_published = $10, published_at = $11, updated_at = now()
+		seo_title = $8, seo_description = $9, difficulty = $10, duration = $11, season = $12,
+		is_published = $13, published_at = $14, updated_at = now()
 		WHERE id = $1
 		RETURNING `+blogColumns,
 		p.ID, p.Locale, p.Slug, p.Title, p.Excerpt, p.Content, p.CoverImageURL, p.SeoTitle, p.SeoDescription,
-		p.IsPublished, publishedTime(p.PublishedAt)))
+		p.Difficulty, p.Duration, p.Season, p.IsPublished, publishedTime(p.PublishedAt)))
 	return saved, uniqueViolation(notFound(err))
 }
 

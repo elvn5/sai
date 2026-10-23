@@ -48,6 +48,10 @@ export interface PageSeo {
   ogImageUrl: string | null;
 }
 
+// Who a post's trips suit; "any" for posts for every level.
+export type BlogDifficulty = 'any' | 'easy' | 'moderate' | 'hard' | 'expert';
+export type BlogSeason = 'spring' | 'summer' | 'autumn' | 'winter' | 'all_year';
+
 export interface BlogPost {
   id: string;
   locale: string;
@@ -58,6 +62,11 @@ export interface BlogPost {
   coverImageUrl: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  // Badges on the post's card, each optional.
+  difficulty: BlogDifficulty | null;
+  // Free text in the post's language ("2–5 часов").
+  duration: string | null;
+  season: BlogSeason | null;
   isPublished: boolean;
   publishedAt: string | null;
   // The partner who wrote it; null for posts from the editorial team.

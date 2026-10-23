@@ -202,6 +202,15 @@
     transform: rotateY(360deg);
   }
 }
+/* An hourglass turned over. */
+@keyframes icon-turn {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(180deg);
+  }
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .group:is(:hover, :focus-visible) .icon-anim-bounce {
@@ -222,6 +231,15 @@
   }
   .group:is(:hover, :focus-visible) .icon-anim-flip {
     animation: icon-flip 900ms var(--ease-standard);
+  }
+  .group:is(:hover, :focus-visible) .icon-anim-turn {
+    animation: icon-turn 700ms var(--ease-spring);
+  }
+  /* A wrapper that plays its icon's keyframes (--icon-intro) once as the
+     page shows, so a badge moves without a hover too (phones). */
+  .icon-intro {
+    display: inline-flex;
+    animation: var(--icon-intro, none) 800ms var(--ease-standard) 400ms both;
   }
   .icon-anim-nudge {
     transition: transform var(--dur-fast) var(--ease-standard);

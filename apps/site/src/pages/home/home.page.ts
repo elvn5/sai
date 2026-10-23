@@ -10,6 +10,7 @@ import { AppLogo } from '@/ui/app-logo';
 import { TourCard } from '@/ui/listing/tour-card';
 import { MountainScene } from '@/ui/mountain-scene';
 import { OutingCard } from '@/ui/outing-card';
+import { PostBadges } from '@/ui/post-badges';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { httpResource } from '@angular/common/http';
@@ -37,6 +38,7 @@ const QUICK_LINKS = [
     MountainScene,
     NgOptimizedImage,
     OutingCard,
+    PostBadges,
     SiteLink,
     TourCard,
     TranslocoPipe,
@@ -134,6 +136,7 @@ const QUICK_LINKS = [
                   @if (post.excerpt) {
                     <p class="mt-1.5 text-sm text-text-muted">{{ post.excerpt }}</p>
                   }
+                  <div class="mt-2.5"><app-post-badges [post]="post" /></div>
                 </div>
               </a>
             </li>

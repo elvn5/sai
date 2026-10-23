@@ -15,6 +15,9 @@ const POST: BlogPost = {
   coverImageUrl: '/uploads/son-kul.webp',
   seoTitle: null,
   seoDescription: null,
+  difficulty: 'easy',
+  duration: '1 день',
+  season: 'summer',
   isPublished: true,
   publishedAt: '2026-09-01T08:00:00Z',
   userId: null,
@@ -44,6 +47,10 @@ describe('BlogPostPage', () => {
     expect(element.querySelector('h1')?.textContent).toContain('Сон-Куль летом');
     // Angular's sanitizer drops scripts from the post HTML.
     expect(element.querySelector('.prose')?.innerHTML).not.toContain('<script');
+    // Difficulty, duration and season as badges.
+    const badges = Array.from(element.querySelectorAll('app-post-badges li'));
+    expect(badges).toHaveLength(3);
+    expect(badges[1].textContent).toContain('1 день');
 
     const head = TestBed.inject(DOCUMENT).head;
     const types = Array.from(head.querySelectorAll('script[data-seo="page"]')).map(

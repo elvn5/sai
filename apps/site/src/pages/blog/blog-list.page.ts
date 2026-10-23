@@ -2,10 +2,12 @@ import { type BlogPost, SeoPage } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
+import { formatInBishkek } from '@/core/lib/format';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
+import { PostBadges } from '@/ui/post-badges';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { httpResource } from '@angular/common/http';
@@ -15,10 +17,10 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 // The blog in the current language: newest posts first (the API's order).
 @Component({
   selector: 'app-blog-list-page',
-  imports: [ListSkeleton, LoadError, NgOptimizedImage, SiteLink, TranslocoPipe],
+  imports: [ListSkeleton, LoadError, NgOptimizedImage, PostBadges, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="mx-auto max-w-4xl px-4 py-12">
+    <section class="ui-container py-12">
       <div class="mb-8 flex items-center justify-between gap-4">
         <h1 class="text-3xl font-extrabold text-text">{{ 'blog.heading' | transloco }}</h1>
         @if (auth.isPartner()) {
@@ -33,27 +35,35 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         <app-load-error (retry)="posts.reload()" />
       } @else if (posts.value(); as list) {
         @if (list.length > 0) {
-          <ul class="motion-reveal flex flex-col gap-4">
+          <ul class="motion-reveal grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @for (post of list; track post.id; let first = $first) {
-              <li class="ui-card overflow-hidden motion-lift">
-                <a [appSiteLink]="'/blog/' + post.slug" class="flex flex-col gap-4 p-4 sm:flex-row">
-                  @if (post.coverImageUrl) {
-                    <div class="relative aspect-video w-full shrink-0 overflow-hidden rounded-lg sm:w-56">
+              <li>
+                <a [appSiteLink]="'/blog/' + post.slug" class="group flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface shadow-[0_1px_2px_rgb(15_23_42/0.06)] motion-lift dark:shadow-none">
+                  <div class="relative aspect-[16/10] overflow-hidden bg-linear-to-br from-brand-500/20 via-surface to-secondary-500/20">
+                    @if (post.coverImageUrl) {
                       <img
                         [ngSrc]="media(post.coverImageUrl)"
                         fill
                         [priority]="first"
-                        sizes="(min-width: 640px) 25vw, 100vw"
+                        sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
                         alt=""
-                        class="object-cover"
+                        class="motion-zoom object-cover"
                       />
-                    </div>
-                  }
-                  <div class="flex flex-col justify-center">
-                    <h2 class="text-xl font-semibold text-text">{{ post.title }}</h2>
-                    @if (post.excerpt) {
-                      <p class="mt-2 text-text-muted">{{ post.excerpt }}</p>
+                    } @else {
+                      <span class="icon-[mdi--image-filter-hdr] absolute inset-0 m-auto size-14 text-brand-600/40 dark:text-brand-300/40" aria-hidden="true"></span>
                     }
+                    @if (post.publishedAt) {
+                      <time class="ui-chip-on-image absolute top-2 left-2" [attr.datetime]="post.publishedAt">
+                        <span class="icon-[heroicons--calendar-days] size-3.5" aria-hidden="true"></span>{{ date(post.publishedAt) }}
+                      </time>
+                    }
+                  </div>
+                  <div class="flex flex-1 flex-col gap-2 px-4 pt-3.5 pb-4">
+                    <h2 class="text-[1.0625rem] leading-snug font-semibold text-text group-hover:text-brand-700 dark:group-hover:text-brand-300">{{ post.title }}</h2>
+                    @if (post.excerpt) {
+                      <p class="line-clamp-3 text-sm text-text-muted">{{ post.excerpt }}</p>
+                    }
+                    <div class="mt-auto pt-1.5"><app-post-badges [post]="post" /></div>
                   </div>
                 </a>
               </li>
@@ -63,7 +73,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
           <p class="text-text-muted">{{ 'blog.empty' | transloco }}</p>
         }
       } @else {
-        <app-list-skeleton variant="rows" />
+        <app-list-skeleton variant="cards" />
       }
     </section>
   `,
@@ -89,6 +99,10 @@ export class BlogListPage {
         jsonLd: [seo.breadcrumbs([{ name: heading, path: '/blog' }])],
       };
     });
+  }
+
+  protected date(iso: string): string {
+    return formatInBishkek(this.lang(), iso, { day: 'numeric', month: 'long' });
   }
 
   protected media(url: string): string {

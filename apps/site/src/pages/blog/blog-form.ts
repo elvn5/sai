@@ -1,14 +1,22 @@
-import type { BlogPost } from '@/core/api/types';
+import type { BlogDifficulty, BlogPost, BlogSeason } from '@/core/api/types';
 import { injectLang } from '@/core/i18n/current-lang';
+import {
+  BLOG_DIFFICULTIES,
+  BLOG_DURATION_MAX,
+  BLOG_SEASONS,
+  type BadgeOption,
+} from '@/core/lib/blog-options';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { slugify } from '@/core/lib/slugify';
 import { FieldErrors } from '@/ui/field-errors';
+import { type IconOption, IconPicker } from '@/ui/icon-picker';
 import { ImageUploadField } from '@/ui/image-upload-field';
 import { RichTextEditor } from '@/ui/rich-text-editor';
 import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   input,
   linkedSignal,
@@ -24,6 +32,10 @@ interface PostForm {
   excerpt: string;
   content: string;
   coverImageUrl: string | null;
+  // '' when not set.
+  difficulty: string;
+  duration: string;
+  season: string;
   isPublished: boolean;
 }
 
@@ -33,6 +45,9 @@ function toForm(post: BlogPost | undefined): PostForm {
     excerpt: post?.excerpt ?? '',
     content: post?.content ?? '',
     coverImageUrl: post?.coverImageUrl ?? null,
+    difficulty: post?.difficulty ?? '',
+    duration: post?.duration ?? '',
+    season: post?.season ?? '',
     isPublished: post?.isPublished ?? true,
   };
 }
@@ -41,7 +56,7 @@ function toForm(post: BlogPost | undefined): PostForm {
 // opens the post, or the cabinet's listings for a draft.
 @Component({
   selector: 'app-blog-form',
-  imports: [FieldErrors, FormField, ImageUploadField, RichTextEditor, TranslocoPipe],
+  imports: [FieldErrors, FormField, IconPicker, ImageUploadField, RichTextEditor, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="mt-8 flex flex-col gap-6" novalidate (submit)="save($event)">
@@ -64,6 +79,22 @@ function toForm(post: BlogPost | undefined): PostForm {
         <app-rich-text-editor [placeholder]="'blog.form.contentPlaceholder' | transloco" [formField]="postForm.content" />
         <app-field-errors [state]="postForm.content()" />
       </div>
+      <fieldset class="flex flex-col gap-4">
+        <legend class="mb-1 text-sm text-text-muted">{{ 'blog.form.badgesHint' | transloco }}</legend>
+        <div class="ui-field">
+          <span>{{ 'blog.badges.difficulty' | transloco }}</span>
+          <app-icon-picker clearable [options]="difficultyOptions()" [formField]="postForm.difficulty" />
+        </div>
+        <label class="ui-field">
+          {{ 'blog.badges.duration' | transloco }}
+          <input class="ui-input max-w-sm" [placeholder]="'blog.form.durationPlaceholder' | transloco" [formField]="postForm.duration" />
+          <app-field-errors [state]="postForm.duration()" />
+        </label>
+        <div class="ui-field">
+          <span>{{ 'blog.badges.season' | transloco }}</span>
+          <app-icon-picker clearable [options]="seasonOptions()" [formField]="postForm.season" />
+        </div>
+      </fieldset>
       <label class="flex items-center gap-3 text-sm text-text">
         <input type="checkbox" class="size-4 accent-brand-600" [formField]="postForm.isPublished" />
         {{ 'blog.form.publish' | transloco }}
@@ -85,6 +116,10 @@ export class BlogForm {
   private readonly transloco = inject(TranslocoService);
   private readonly navigate = injectSiteNavigate();
   protected readonly saveFailed = signal(false);
+  protected readonly difficultyOptions = computed(() =>
+    this.options(BLOG_DIFFICULTIES, 'blog.difficulty'),
+  );
+  protected readonly seasonOptions = computed(() => this.options(BLOG_SEASONS, 'blog.season'));
 
   private readonly model = linkedSignal(() => toForm(this.post()));
   protected readonly postForm = form(this.model, (path) => {
@@ -101,6 +136,7 @@ export class BlogForm {
     // The API's limits.
     maxLength(path.title, 255);
     maxLength(path.excerpt, 500);
+    maxLength(path.duration, BLOG_DURATION_MAX);
   });
 
   protected async save(event: Event): Promise<void> {
@@ -113,6 +149,9 @@ export class BlogForm {
         excerpt: value.excerpt.trim() || null,
         content: value.content,
         coverImageUrl: value.coverImageUrl,
+        difficulty: (value.difficulty || null) as BlogDifficulty | null,
+        duration: value.duration.trim() || null,
+        season: (value.season || null) as BlogSeason | null,
         isPublished: value.isPublished,
       };
       const existing = this.post();
@@ -133,5 +172,14 @@ export class BlogForm {
       }
       return undefined;
     });
+  }
+
+  private options(options: BadgeOption[], prefix: string): IconOption[] {
+    this.lang();
+    return options.map((option) => ({
+      value: option.value,
+      icon: option.icon,
+      label: this.transloco.translate(`${prefix}.${option.value}`),
+    }));
   }
 }

@@ -27,6 +27,9 @@ type createBlogPostRequest struct {
 	CoverImageURL  validation.Field[string] `json:"coverImageUrl" binding:"omitempty,max=2000"`
 	SeoTitle       validation.Field[string] `json:"seoTitle" binding:"omitempty,max=255"`
 	SeoDescription validation.Field[string] `json:"seoDescription" binding:"omitempty,max=500"`
+	Difficulty     validation.Field[string] `json:"difficulty" binding:"omitempty,oneof=any easy moderate hard expert"`
+	Duration       validation.Field[string] `json:"duration" binding:"omitempty,max=40"`
+	Season         validation.Field[string] `json:"season" binding:"omitempty,oneof=spring summer autumn winter all_year"`
 	IsPublished    *bool                    `json:"isPublished"`
 }
 
@@ -39,6 +42,9 @@ type updateBlogPostRequest struct {
 	CoverImageURL  validation.Field[string] `json:"coverImageUrl" binding:"omitempty,max=2000"`
 	SeoTitle       validation.Field[string] `json:"seoTitle" binding:"omitempty,max=255"`
 	SeoDescription validation.Field[string] `json:"seoDescription" binding:"omitempty,max=500"`
+	Difficulty     validation.Field[string] `json:"difficulty" binding:"omitempty,oneof=any easy moderate hard expert"`
+	Duration       validation.Field[string] `json:"duration" binding:"omitempty,max=40"`
+	Season         validation.Field[string] `json:"season" binding:"omitempty,oneof=spring summer autumn winter all_year"`
 	IsPublished    *bool                    `json:"isPublished"`
 }
 
@@ -120,6 +126,7 @@ func (h *Blog) Create(c *gin.Context) {
 		Locale: *req.Locale, Slug: *req.Slug, Title: *req.Title, Content: *req.Content,
 		Excerpt: req.Excerpt.Ptr(), CoverImageURL: req.CoverImageURL.Ptr(),
 		SeoTitle: req.SeoTitle.Ptr(), SeoDescription: req.SeoDescription.Ptr(),
+		Difficulty: req.Difficulty.Ptr(), Duration: req.Duration.Ptr(), Season: req.Season.Ptr(),
 		IsPublished: req.IsPublished != nil && *req.IsPublished,
 	}
 	if !isAdmin(c) {
@@ -182,6 +189,9 @@ func (h *Blog) Update(c *gin.Context) {
 	applyField(&post.CoverImageURL, req.CoverImageURL)
 	applyField(&post.SeoTitle, req.SeoTitle)
 	applyField(&post.SeoDescription, req.SeoDescription)
+	applyField(&post.Difficulty, req.Difficulty)
+	applyField(&post.Duration, req.Duration)
+	applyField(&post.Season, req.Season)
 	if req.IsPublished != nil {
 		post.IsPublished = *req.IsPublished
 	}

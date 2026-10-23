@@ -7,6 +7,7 @@ import { article } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
 import { LoadError } from '@/ui/load-error';
+import { PostBadges } from '@/ui/post-badges';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
 import { HttpErrorResponse, httpResource } from '@angular/common/http';
@@ -17,7 +18,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 // so the page has no hreflang alternates.
 @Component({
   selector: 'app-blog-post-page',
-  imports: [LoadError, NgOptimizedImage, NotFoundPage, SiteLink, TranslocoPipe],
+  imports: [LoadError, NgOptimizedImage, NotFoundPage, PostBadges, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (notFound()) {
@@ -35,6 +36,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
             {{ published() }}
           </time>
         }
+        <div class="group mt-4"><app-post-badges [post]="item" /></div>
         @if (item.coverImageUrl) {
           <div class="relative mt-6 aspect-video overflow-hidden rounded-lg">
             <img [ngSrc]="media(item.coverImageUrl)" fill priority sizes="(min-width: 768px) 50vw, 100vw" alt="" class="object-cover" />

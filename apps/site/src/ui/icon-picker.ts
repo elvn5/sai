@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, input, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 export interface IconOption {
@@ -19,7 +19,7 @@ export interface IconOption {
           type="button"
           class="ui-chip-card"
           [attr.aria-pressed]="value() === option.value"
-          (click)="value.set(option.value)"
+          (click)="pick(option.value)"
         >
           <span [class]="option.icon + ' size-6'" aria-hidden="true"></span>
           <span class="text-center leading-tight">{{ option.label }}</span>
@@ -31,6 +31,12 @@ export interface IconOption {
 export class IconPicker implements FormValueControl<string> {
   readonly value = model('');
   readonly options = input.required<IconOption[]>();
+  // An optional choice: picking the chosen option again clears it ('').
+  readonly clearable = input(false, { transform: booleanAttribute });
+
+  protected pick(option: string): void {
+    this.value.set(this.clearable() && this.value() === option ? '' : option);
+  }
 }
 
 // …or several (equipment).

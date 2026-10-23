@@ -38,7 +38,28 @@
     "heading": "Блог",
     "metaDescription": "Новости, истории и советы о путешествиях по Кыргызстану от Ermekten.",
     "empty": "Пока нет статей",
+    "badges": {
+      "difficulty": "Сложность",
+      "duration": "Длительность",
+      "season": "Сезон"
+    },
+    "difficulty": {
+      "any": "Любой уровень",
+      "easy": "Лёгкий",
+      "moderate": "Средний",
+      "hard": "Сложный",
+      "expert": "Экспертный"
+    },
+    "season": {
+      "spring": "Весна",
+      "summer": "Лето",
+      "autumn": "Осень",
+      "winter": "Зима",
+      "all_year": "Круглый год"
+    },
     "form": {
+      "badgesHint": "Необязательно: про какие походы этот пост",
+      "durationPlaceholder": "Например, 2–5 часов",
       "newTitle": "Написать пост",
       "editTitle": "Редактирование поста",
       "title": "Заголовок",

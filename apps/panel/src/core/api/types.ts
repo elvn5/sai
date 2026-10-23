@@ -43,6 +43,10 @@ export const LOCALE_OPTIONS: { value: Locale; label: string }[] = [
   { value: Locale.DE, label: 'Deutsch' },
 ];
 
+// Who a post's trips suit; "any" for posts for every level.
+export type BlogDifficulty = 'any' | 'easy' | 'moderate' | 'hard' | 'expert';
+export type BlogSeason = 'spring' | 'summer' | 'autumn' | 'winter' | 'all_year';
+
 export interface BlogPost {
   id: string;
   locale: Locale;
@@ -53,6 +57,11 @@ export interface BlogPost {
   coverImageUrl: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  // Badges on the post's card, each optional.
+  difficulty: BlogDifficulty | null;
+  // Free text in the post's language ("2–5 часов").
+  duration: string | null;
+  season: BlogSeason | null;
   isPublished: boolean;
   publishedAt: string | null;
   // Set when a partner wrote it on the site; null for posts made here.

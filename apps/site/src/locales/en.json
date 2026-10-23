@@ -38,7 +38,28 @@
     "heading": "Blog",
     "metaDescription": "News, stories, and travel tips about exploring Kyrgyzstan from Ermekten.",
     "empty": "No posts yet",
+    "badges": {
+      "difficulty": "Difficulty",
+      "duration": "Duration",
+      "season": "Season"
+    },
+    "difficulty": {
+      "any": "Any level",
+      "easy": "Easy",
+      "moderate": "Moderate",
+      "hard": "Hard",
+      "expert": "Expert"
+    },
+    "season": {
+      "spring": "Spring",
+      "summer": "Summer",
+      "autumn": "Autumn",
+      "winter": "Winter",
+      "all_year": "All year"
+    },
     "form": {
+      "badgesHint": "Optional: what kind of trips the post is about",
+      "durationPlaceholder": "e.g. 2–5 hours",
       "newTitle": "Write a post",
       "editTitle": "Edit post",
       "title": "Title",

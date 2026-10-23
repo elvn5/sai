@@ -173,9 +173,29 @@ func field(t *testing.T, body, key string) any {
 	return m[key]
 }
 
-func TestBlogPublishingLifecycle(t *testing.T) {
+// Migration 00003 seeds the winter hiking series: five published Russian
+// posts, each linking its PDF.
+func TestWinterSeriesSeeded(t *testing.T) {
 	c, _, _ := setup(t)
+	status, body := c.do("GET", "/blog?locale=ru", "")
+	var posts []map[string]any
+	if status != 200 || json.Unmarshal([]byte(body), &posts) != nil || len(posts) != 5 {
+		t.Fatalf("seeded posts: %d %s", status, body)
+	}
+	for _, p := range posts {
+		if content, _ := p["content"].(string); !strings.Contains(content, `href="/files/blog/`+p["slug"].(string)+`.pdf"`) {
+			t.Errorf("%s: no PDF link", p["slug"])
+		}
+	}
+}
+
+func TestBlogPublishingLifecycle(t *testing.T) {
+	c, _, db := setup(t)
 	admin := cookie(t, "admin_token", jwt.MapClaims{"role": "admin"})
+	// Start from an empty blog, without the seeded series.
+	if _, err := db.Exec(context.Background(), `DELETE FROM blog_posts`); err != nil {
+		t.Fatal(err)
+	}
 
 	status, body := c.do("POST", "/blog", `{"locale":"ru","slug":"first","title":"First","content":"<p>x</p>"}`, admin)
 	if status != 201 || field(t, body, "isPublished") != false || field(t, body, "publishedAt") != nil {

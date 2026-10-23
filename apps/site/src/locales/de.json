@@ -27,16 +27,6 @@
         "description": "Fertige Reisen von Partnern"
       }
     },
-    "destinationsHeading": "Beliebte Reiseziele",
-    "destinationsSubheading": "Wohin Reisende am häufigsten fahren — fast die Hälfte wählt den Issyk-Kul",
-    "destinationBlurbs": {
-      "issyk_kul": "Der zweitgrößte Hochgebirgssee der Welt: Strände, Resorts und heiße Quellen.",
-      "karakol": "Ausgangspunkt für Treks zum Ala-Kul und nach Altyn-Arashan, im Winter Skigebiet.",
-      "song_kol": "Hochgebirgssee mit Jurtencamps, Nomadenleben und Ausritten.",
-      "ala_archa": "Nationalpark 40 Minuten von Bischkek — ideal für eine Tageswanderung.",
-      "bishkek": "Die Hauptstadt: Basare, Museen und Startpunkt der meisten Reisen.",
-      "osh": "Uralte Stadt im Süden, der Berg Sulaiman-Too und der lebhafteste Basar des Landes."
-    },
     "outingsHeading": "Nächste Gruppentouren",
     "outingsSubheading": "Schließen Sie sich einer Gruppe an oder finden Sie einen Platz im Auto",
     "viewAllOutings": "Alle Gruppentouren",
@@ -897,8 +887,7 @@
     "label": "Reiseziel suchen",
     "placeholder": "Wohin? Issyk-Kul, Karakol, Ala-Artscha…",
     "placeholderShort": "Wohin?",
-    "submit": "Suchen",
-    "popular": "Beliebt:"
+    "submit": "Suchen"
   },
   "favorites": {
     "add": "Zu Favoriten hinzufügen",

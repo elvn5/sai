@@ -1,14 +1,12 @@
-import { type BlogPost, Destination, type Outing, SeoPage, type Tour } from '@/core/api/types';
+import { type BlogPost, type Outing, SeoPage, type Tour } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { todayInBishkek } from '@/core/lib/format';
-import { FEATURED_DESTINATIONS } from '@/core/lib/listing-options';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { usePageChrome } from '@/core/lib/page-chrome';
 import { loaded } from '@/core/lib/resource';
 import { bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { AppLogo } from '@/ui/app-logo';
-import { DestinationSearch } from '@/ui/destination-search';
 import { TourCard } from '@/ui/listing/tour-card';
 import { MountainScene } from '@/ui/mountain-scene';
 import { OutingCard } from '@/ui/outing-card';
@@ -30,13 +28,12 @@ const QUICK_LINKS = [
 ] as const;
 
 // The home page (the feed): the nearest tours, who's heading out this
-// weekend, where to go and the latest news, all rendered on the server (the cached
+// weekend and the latest news, all rendered on the server (the cached
 // page is at most minutes old, so the outings' seats stay close enough).
 @Component({
   selector: 'app-home-page',
   imports: [
     AppLogo,
-    DestinationSearch,
     MountainScene,
     NgOptimizedImage,
     OutingCard,
@@ -55,13 +52,6 @@ const QUICK_LINKS = [
         </span>
         <h1 class="motion-enter motion-enter-1 text-3xl font-extrabold tracking-tight sm:text-[2.875rem] lg:mt-3.5">{{ 'brand.name' | transloco }}</h1>
         <p class="motion-enter motion-enter-2 mt-2 max-w-xl text-[0.9rem] text-white/92 sm:text-[1.0625rem] lg:mx-auto">{{ 'home.tagline' | transloco }}</p>
-        <app-destination-search class="motion-enter motion-enter-3 mt-6 max-w-[38.75rem] lg:mx-auto" />
-        <p class="motion-enter motion-enter-4 mt-4 hidden flex-wrap items-center justify-center gap-3 text-[0.8rem] text-white/90 sm:flex">
-          <span>{{ 'search.popular' | transloco }}</span>
-          @for (destination of popular; track destination) {
-            <a [appSiteLink]="'/tours?destination=' + destination" class="underline underline-offset-2 hover:text-white">{{ 'destinations.' + destination | transloco }}</a>
-          }
-        </p>
       </div>
     </section>
 
@@ -122,26 +112,7 @@ const QUICK_LINKS = [
       </section>
     }
 
-    <section class="ui-container py-12" aria-labelledby="home-destinations">
-      <h2 id="home-destinations" class="text-xl font-bold tracking-tight text-text">{{ 'home.destinationsHeading' | transloco }}</h2>
-      <p class="text-[0.8125rem] text-text-muted">{{ 'home.destinationsSubheading' | transloco }}</p>
-      <ul class="motion-reveal mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        @for (destination of destinations; track destination) {
-          <li class="group flex flex-col rounded-card border border-border bg-linear-to-br from-brand-500/10 via-surface to-secondary-500/10 p-5 dark:from-brand-500/14 dark:to-secondary-500/12">
-            <h3 class="flex items-center gap-1.5 text-base font-semibold text-text">
-              <span class="icon-[heroicons--map-pin] icon-anim-bounce size-[1.15rem] text-brand-600 dark:text-brand-300" aria-hidden="true"></span>
-              {{ 'destinations.' + destination | transloco }}
-            </h3>
-            <p class="mt-1.5 flex-1 text-[0.8125rem] text-text-muted">{{ 'home.destinationBlurbs.' + destination | transloco }}</p>
-            <p class="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[0.8125rem] font-medium">
-              <a [appSiteLink]="'/tours?destination=' + destination" class="text-brand-700 hover:underline dark:text-brand-300">{{ 'nav.tours' | transloco }}</a>
-            </p>
-          </li>
-        }
-      </ul>
-    </section>
-
-    <section class="ui-container pb-16" aria-labelledby="home-news">
+    <section class="ui-container py-12" aria-labelledby="home-news">
       <div class="mb-3.5 flex items-center justify-between gap-4">
         <h2 id="home-news" class="text-xl font-bold tracking-tight text-text">{{ 'home.latestNews' | transloco }}</h2>
         <a appSiteLink="/blog" class="group flex shrink-0 items-center gap-1 text-[0.84rem] font-medium text-brand-700 dark:text-brand-300">
@@ -178,9 +149,6 @@ export class HomePage {
   private readonly config = inject(APP_CONFIG);
   private readonly lang = injectLang();
   protected readonly quickLinks = QUICK_LINKS;
-  protected readonly destinations = FEATURED_DESTINATIONS;
-  // Hero links under the search: the most asked-for places.
-  protected readonly popular = [Destination.SONG_KOL, Destination.KARAKOL, Destination.ALA_ARCHA];
 
   protected readonly posts = httpResource<BlogPost[]>(() => ({
     url: '/blog',

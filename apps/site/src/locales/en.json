@@ -27,16 +27,6 @@
         "description": "Ready-made trips from partners"
       }
     },
-    "destinationsHeading": "Popular destinations",
-    "destinationsSubheading": "Where travelers go most — almost half choose Issyk-Kul",
-    "destinationBlurbs": {
-      "issyk_kul": "The world's second-largest alpine lake: beaches, resorts and hot springs.",
-      "karakol": "Base for treks to Ala-Kul and Altyn-Arashan, and a ski resort in winter.",
-      "song_kol": "High-altitude lake with yurt camps, nomadic life and horse rides.",
-      "ala_archa": "National park 40 minutes from Bishkek — perfect for a day hike.",
-      "bishkek": "The capital: bazaars, museums and the starting point of most trips.",
-      "osh": "Ancient southern city, Sulaiman-Too mountain and the country's liveliest bazaar."
-    },
     "outingsHeading": "Upcoming outings",
     "outingsSubheading": "Join a group or grab a seat in a car",
     "viewAllOutings": "All outings",
@@ -897,8 +887,7 @@
     "label": "Search destinations",
     "placeholder": "Where to? Issyk-Kul, Karakol, Ala-Archa…",
     "placeholderShort": "Where to?",
-    "submit": "Search",
-    "popular": "Popular:"
+    "submit": "Search"
   },
   "favorites": {
     "add": "Add to favorites",

@@ -33,6 +33,7 @@ func init() {
 	}, "Invalid email")
 	validation.RegisterPattern("sixdigits", regexp.MustCompile(`^\d{6}$`), "Code must be 6 digits")
 	validation.RegisterRule("adminpassword", func(s string) bool { return s != "" }, "Password is required")
+	validation.RegisterRule("bcryptpassword", func(s string) bool { return len(s) <= 72 }, "Password must contain at most 72 UTF-8 bytes")
 }
 
 // Deps is what the handlers share.

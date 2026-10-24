@@ -15,7 +15,7 @@ let registered: Promise<unknown> | null = null;
 // Icon convention): achievement icons set in the admin. The Iconify web
 // component draws it in the browser (fetched from the Iconify API on
 // demand); the server leaves the slot empty. Static icons use the
-// icon-[set--name] CSS classes instead.
+// CSS icon classes instead (for example, icon-[heroicons--map]).
 @Component({
   selector: 'app-icon',
   schemas: [CUSTOM_ELEMENTS_SCHEMA],

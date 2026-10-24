@@ -376,6 +376,7 @@
     "orTelegram": "oder mit Telegram",
     "required": "Pflichtfeld",
     "passwordTooShort": "Mindestens 8 Zeichen",
+    "passwordTooLong": "Das Passwort ist zu lang. Bitte kürzen (bis zu 72 lateinische oder 36 kyrillische Buchstaben).",
     "invalidCredentials": "Ungültige E-Mail/Telefon oder Passwort",
     "registerError": "Registrierung fehlgeschlagen. E-Mail oder Telefon ist möglicherweise bereits vergeben",
     "networkError": "Netzwerkfehler",

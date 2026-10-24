@@ -71,7 +71,7 @@ func (w *Worker) Run(ctx context.Context) {
 
 // Tick is one pass: check pending orders, then send messages.
 func (w *Worker) Tick(ctx context.Context) {
-	pending, err := w.Store.PendingOrders(ctx, batchSize)
+	pending, err := w.Store.PendingOrders(ctx, batchSize, w.now())
 	if err != nil {
 		w.Log.ErrorContext(ctx, "listing pending orders failed", slog.Any("error", err))
 	}

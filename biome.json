@@ -7,6 +7,8 @@
       "**/node_modules/**",
       "**/.output/**",
       "**/.angular/**",
+      "**/.nuxt/**",
+      ".claude/worktrees/**",
       "**/migrations/**",
       ".claude/settings.local.json"
     ]

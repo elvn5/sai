@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/elvn5/sai/services/payments/internal/handlers"
 	"github.com/elvn5/sai/services/payments/internal/listingsclient"
@@ -108,6 +109,7 @@ func (f *fakeTelegram) SendMessage(_ context.Context, chat int64, text string, _
 }
 
 type env struct {
+	db     *pgxpool.Pool
 	t      *testing.T
 	router *gin.Engine
 	fake   *provider.Fake
@@ -145,7 +147,7 @@ func setup(t *testing.T, gateway provider.Provider) *env {
 		}
 	})
 	clock := now
-	e := &env{t: t, tg: &fakeTelegram{}, clock: &clock}
+	e := &env{t: t, db: db, tg: &fakeTelegram{}, clock: &clock}
 	fake, _ := gateway.(*provider.Fake)
 	e.fake = fake
 	st := store.New(db)
@@ -292,8 +294,19 @@ func TestCapacityAndPlaces(t *testing.T) {
 		t.Errorf("unlimited: %d", status)
 	}
 
-	// An unpaid order lets its places go once it expires.
+	// Link expiry does not free seats until the worker reconciles payment.
 	*e.clock = e.clock.Add(31 * time.Minute)
+	if _, body := e.do("GET", "/orders/places?ids="+smallTour, "", ""); body != `{"`+smallTour+`":2}` {
+		t.Errorf("places during grace: %s", body)
+	}
+	if status, body := e.do("POST", "/orders", order(smallTour, 3), tourist); status != 409 {
+		t.Errorf("booking during grace: %d %s", status, body)
+	}
+	*e.clock = e.clock.Add(14 * time.Minute)
+	if status, _ := e.do("POST", "/orders", order(smallTour, 3), tourist); status != 409 {
+		t.Errorf("booking before reconciliation: %d", status)
+	}
+	e.worker.Tick(context.Background())
 	if _, body := e.do("GET", "/orders/places?ids="+smallTour, "", ""); body != `{}` {
 		t.Errorf("places after expiry: %s", body)
 	}

@@ -192,7 +192,7 @@ const TUCK_AFTER = 240;
         >
           <!-- Its own chunk, fetched while the page is idle: the panel opens
                at once, and its code stays out of the first bundle. -->
-          @defer (on immediate; prefetch on idle) {
+          @defer (on immediate) {
             <app-mobile-menu [links]="links" [section]="section()" [loginLink]="loginLink()" (done)="menuOpen.set(false)" />
           }
         </div>

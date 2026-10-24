@@ -86,7 +86,7 @@ func (h *Orders) Create(c *gin.Context) {
 		PayeeAmount: amount - fee, UserID: currentUserID(c), PayeeID: *tour.UserID,
 		ContactName: string(*req.ContactName), ContactPhone: *req.ContactPhone, Comment: req.Comment.Ptr(),
 		Provider: h.Provider.Name(), ExpiresAt: jsontime.New(h.now().Add(h.PaymentTTL)),
-	}, tour.Capacity, h.now())
+	}, tour.Capacity)
 	if errors.Is(err, store.ErrNoPlaces) {
 		httperr.Abort(c, http.StatusConflict, "Not enough free places on this tour")
 		return
@@ -138,7 +138,7 @@ func (h *Orders) Places(c *gin.Context) {
 			valid = append(valid, id)
 		}
 	}
-	taken, err := h.Store.TakenPlaces(c.Request.Context(), valid, h.now())
+	taken, err := h.Store.TakenPlaces(c.Request.Context(), valid)
 	if err != nil {
 		h.internalError(c, err)
 		return

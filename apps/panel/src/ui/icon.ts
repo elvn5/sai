@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 
 // An icon named at runtime, as stored by the API ("i-mdi-trophy", the
-// Nuxt Icon convention). Static icons use the icon-[set--name] CSS classes
+// Nuxt Icon convention). Static icons use CSS classes such as icon-[heroicons--map]
 // instead; these come from the Iconify API on demand.
 @Component({
   selector: 'app-icon',

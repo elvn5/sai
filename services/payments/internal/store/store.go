@@ -59,7 +59,7 @@ func (s *Store) collect(ctx context.Context, query string, args ...any) ([]model
 // InsertOrder saves a new order. With a capacity, it first checks under a
 // per-item lock that the places are still free (ErrNoPlaces otherwise), so
 // two bookings at once can't both take the last places.
-func (s *Store) InsertOrder(ctx context.Context, o models.Order, capacity *int, now time.Time) (models.Order, error) {
+func (s *Store) InsertOrder(ctx context.Context, o models.Order, capacity *int) (models.Order, error) {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return o, err
@@ -71,7 +71,7 @@ func (s *Store) InsertOrder(ctx context.Context, o models.Order, capacity *int, 
 		}
 		var taken int
 		if err := tx.QueryRow(ctx, `SELECT coalesce(sum(quantity), 0) FROM orders WHERE item_id::text = $1 AND `+
-			holdsPlaces, o.ItemID, now).Scan(&taken); err != nil {
+			holdsPlaces, o.ItemID).Scan(&taken); err != nil {
 			return o, err
 		}
 		if taken+o.Quantity > *capacity {
@@ -92,14 +92,14 @@ func (s *Store) InsertOrder(ctx context.Context, o models.Order, capacity *int, 
 	return saved, tx.Commit(ctx)
 }
 
-// An order holds its places once paid, or while its payment is pending ($2:
-// now).
-const holdsPlaces = `(status = 'paid' OR (status = 'pending' AND expires_at > $2))`
+// Keep pending reservations until the worker settles them. Link expiry alone
+// does not mean the bank has finished processing a payment.
+const holdsPlaces = `status IN ('paid', 'pending')`
 
 // TakenPlaces counts the places held on each of the items.
-func (s *Store) TakenPlaces(ctx context.Context, itemIDs []string, now time.Time) (map[string]int, error) {
+func (s *Store) TakenPlaces(ctx context.Context, itemIDs []string) (map[string]int, error) {
 	rows, err := s.db.Query(ctx, `SELECT item_id::text, sum(quantity)::int FROM orders
-		WHERE item_id::text = ANY($1) AND `+holdsPlaces+` GROUP BY item_id`, itemIDs, now)
+		WHERE item_id::text = ANY($1) AND `+holdsPlaces+` GROUP BY item_id`, itemIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +142,12 @@ func (s *Store) AllOrders(ctx context.Context, status *string, limit int) ([]mod
 }
 
 // PendingOrders lists orders awaiting payment, least recently checked first.
-func (s *Store) PendingOrders(ctx context.Context, limit int) ([]models.Order, error) {
-	return s.collect(ctx, `SELECT `+orderColumns+` FROM orders WHERE status = 'pending' AND payment_url IS NOT NULL
-		ORDER BY checked_at NULLS FIRST LIMIT $1`, limit)
+func (s *Store) PendingOrders(ctx context.Context, limit int, now time.Time) ([]models.Order, error) {
+	// Also reconcile expired orders whose link was never saved (e.g. a crash
+	// after the bank accepted CreatePayment), so they cannot hold seats forever.
+	return s.collect(ctx, `SELECT `+orderColumns+` FROM orders WHERE status = 'pending'
+		AND (payment_url IS NOT NULL OR expires_at <= $2)
+		ORDER BY checked_at NULLS FIRST LIMIT $1`, limit, now)
 }
 
 // Resolve moves a pending order to its outcome. It's a no-op (and returns
@@ -210,22 +213,39 @@ func (s *Store) CreatePayout(ctx context.Context, payeeID string, note *string) 
 		return models.Payout{}, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	// Lock the exact set being paid out. Concurrent payouts/refunds must wait;
+	// orders paid after this snapshot remain available for the next payout.
+	rows, err := tx.Query(ctx, `SELECT id::text, payee_amount FROM orders
+		WHERE payee_id = $1::uuid AND status = 'paid' AND payout_id IS NULL
+		ORDER BY id FOR UPDATE`, payeeID)
+	if err != nil {
+		return models.Payout{}, err
+	}
+	var ids []string
+	var amount, value int
+	var id string
+	_, err = pgx.ForEachRow(rows, []any{&id, &value}, func() error {
+		ids = append(ids, id)
+		amount += value
+		return nil
+	})
+	if err != nil {
+		return models.Payout{}, err
+	}
+	if len(ids) == 0 {
+		return models.Payout{}, ErrConflict
+	}
 	var p models.Payout
 	var created time.Time
 	err = tx.QueryRow(ctx, `INSERT INTO payouts (payee_id, amount, orders, note)
-		SELECT $1::uuid, sum(payee_amount), count(*), $2 FROM orders
-		WHERE payee_id = $1::uuid AND status = 'paid' AND payout_id IS NULL
-		HAVING count(*) > 0
-		RETURNING id::text, payee_id::text, amount, orders, note, created_at`, payeeID, note).
+		VALUES ($1::uuid, $2, $3, $4)
+		RETURNING id::text, payee_id::text, amount, orders, note, created_at`, payeeID, amount, len(ids), note).
 		Scan(&p.ID, &p.Payee.ID, &p.Amount, &p.Orders, &p.Note, &created)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return p, ErrConflict
-	}
 	if err != nil {
 		return p, err
 	}
 	if _, err := tx.Exec(ctx, `UPDATE orders SET payout_id = $2::uuid, updated_at = now()
-		WHERE payee_id = $1::uuid AND status = 'paid' AND payout_id IS NULL`, payeeID, p.ID); err != nil {
+		WHERE id = ANY($1::uuid[])`, ids, p.ID); err != nil {
 		return p, err
 	}
 	p.CreatedAt = jsontime.New(created)

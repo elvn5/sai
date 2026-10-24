@@ -1,6 +1,7 @@
 import { Analytics } from '@/core/analytics/analytics';
 import type { TelegramWidgetPayload } from '@/core/api/types';
 import { AuthStore, type PendingVerification } from '@/core/auth/auth.store';
+import { passwordFitsBcrypt } from '@/core/auth/password';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { FeatureFlags } from '@/core/feature-flags/feature-flags';
 import { injectLang } from '@/core/i18n/current-lang';
@@ -389,7 +390,12 @@ export class LoginPage {
       path,
       z.object({
         identifier: z.string().check(z.trim(), z.minLength(1, t('login.required'))),
-        password: z.string().check(z.minLength(8, t('login.passwordTooShort'))),
+        password: z
+          .string()
+          .check(
+            z.minLength(8, t('login.passwordTooShort')),
+            z.refine(passwordFitsBcrypt, t('login.passwordTooLong')),
+          ),
       }),
     );
   });
@@ -433,7 +439,12 @@ export class LoginPage {
       path,
       z.object({
         code: z.string().check(z.regex(/^\d{6}$/, t('login.verify.invalidFormat'))),
-        password: z.string().check(z.minLength(8, t('login.passwordTooShort'))),
+        password: z
+          .string()
+          .check(
+            z.minLength(8, t('login.passwordTooShort')),
+            z.refine(passwordFitsBcrypt, t('login.passwordTooLong')),
+          ),
       }),
     );
   });

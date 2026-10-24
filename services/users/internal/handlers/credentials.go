@@ -30,7 +30,7 @@ type PendingVerification struct {
 type registerRequest struct {
 	Email     *string `json:"email" binding:"omitnil,zodemail,max=255"`
 	Phone     *string `json:"phone" binding:"omitnil,min=5,max=30"`
-	Password  *string `json:"password" binding:"required,min=8,max=100"`
+	Password  *string `json:"password" binding:"required,min=8,bcryptpassword"`
 	FirstName *string `json:"firstName" binding:"omitnil,min=1,max=100"`
 }
 
@@ -54,7 +54,7 @@ type verifyRequest struct {
 type resetPasswordRequest struct {
 	Identifier *string `json:"identifier" binding:"required,min=1,max=255"`
 	Code       *string `json:"code" binding:"required,sixdigits"`
-	Password   *string `json:"password" binding:"required,min=8,max=100"`
+	Password   *string `json:"password" binding:"required,min=8,bcryptpassword"`
 }
 
 type identifierRequest struct {

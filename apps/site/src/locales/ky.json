@@ -376,6 +376,7 @@
     "orTelegram": "же Telegram аркылуу",
     "required": "Милдеттүү талаа",
     "passwordTooShort": "Кеминде 8 белги",
+    "passwordTooLong": "Сырсөз өтө узун. Кыскартыңыз (эң көп 72 латын же 36 кирилл тамгасы).",
     "invalidCredentials": "Email/телефон же сыр сөз туура эмес",
     "registerError": "Катталуу мүмкүн болбоду. Email же телефон буга чейин колдонулган болушу мүмкүн",
     "networkError": "Тармак катасы",

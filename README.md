@@ -65,7 +65,7 @@ pnpm dev:content  # http://localhost:8082
 pnpm dev:listings # http://localhost:8083
 pnpm dev:trails   # http://localhost:8085
 pnpm dev:payments # http://localhost:8086 (needs listings gRPC :9082)
-pnpm dev:gateway  # http://localhost:8080 — the API the frontends call
+pnpm dev:gateway  # http://localhost:3001 — the API the frontends call
 pnpm dev:bot      # needs USERS_GRPC_ADDR=localhost:9083
 pnpm dev:site     # http://localhost:3012
 pnpm dev:panel    # http://localhost:3013

@@ -7,7 +7,7 @@ import { publishedLegalPaths } from '@/core/legal/documents';
 
 // Hotels, local guides, trails and travel guides are paused for now
 // (server/paused-sections.ts): no sitemaps of theirs.
-export const SITEMAP_TYPES = ['pages', 'tours', 'blog'] as const;
+export const SITEMAP_TYPES = ['pages', 'tours', 'blog', 'organizers'] as const;
 export type SitemapType = (typeof SITEMAP_TYPES)[number];
 
 export function isSitemapType(value: string): value is SitemapType {
@@ -40,6 +40,7 @@ export interface SitemapEntry {
 interface Published {
   slug: string;
   publishedAt: string | null;
+  userId?: string | null;
 }
 
 // Tours and blog posts are written per language, each with its own slug.
@@ -55,6 +56,23 @@ async function perLanguage(getJson: GetJson, section: string): Promise<SitemapEn
   );
 }
 
+// Organizers' pages, one per partner running a published tour in any
+// language (outing organizers aren't listed: their outings are gone in
+// days). The same page in every language; lastmod is their latest tour.
+async function organizers(getJson: GetJson): Promise<SitemapEntry[]> {
+  const lists = await Promise.all(
+    LANGS.map(async (lang) => (await getJson(`/tours?locale=${lang}`)) as Published[]),
+  );
+  const latest = new Map<string, string | null>();
+  for (const tour of lists.flat()) {
+    if (!tour.userId) continue;
+    const seen = latest.get(tour.userId);
+    const newer = !seen || (tour.publishedAt !== null && tour.publishedAt > seen);
+    latest.set(tour.userId, newer ? tour.publishedAt : seen);
+  }
+  return [...latest].map(([id, lastmod]) => ({ path: `/organizers/${id}`, lastmod }));
+}
+
 export async function collectEntries(type: SitemapType, getJson: GetJson): Promise<SitemapEntry[]> {
   switch (type) {
     case 'pages':
@@ -62,6 +80,8 @@ export async function collectEntries(type: SitemapType, getJson: GetJson): Promi
     case 'tours':
     case 'blog':
       return perLanguage(getJson, type);
+    case 'organizers':
+      return organizers(getJson);
   }
 }
 

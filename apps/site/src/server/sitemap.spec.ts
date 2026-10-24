@@ -13,6 +13,7 @@ describe('sitemap', () => {
     const xml = renderIndex(SITE);
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/pages.xml</loc>');
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/tours.xml</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/organizers.xml</loc>');
     expect(xml).not.toContain('hotels.xml');
     // Outing pages aren't indexed: they're gone in days.
     expect(xml).not.toContain('outings.xml');
@@ -42,6 +43,19 @@ describe('sitemap', () => {
     const tours = await collectEntries('tours', getJson);
     expect(tours).toContainEqual({ path: '/tours/tour-ky', lastmod: null, lang: 'ky' });
     expect(tours).toHaveLength(4);
+  });
+
+  it('lists the organizers of tours once, with their latest tour', async () => {
+    const getJson: GetJson = async (path) =>
+      path.endsWith('=ru')
+        ? [
+            { slug: 'a', publishedAt: '2026-09-01T00:00:00Z', userId: 'u1' },
+            { slug: 'b', publishedAt: null, userId: null },
+          ]
+        : [{ slug: 'c', publishedAt: '2026-10-01T00:00:00Z', userId: 'u1' }];
+    expect(await collectEntries('organizers', getJson)).toEqual([
+      { path: '/organizers/u1', lastmod: '2026-10-01T00:00:00Z' },
+    ]);
   });
 
   it('caches rendered sitemaps but never a failure', async () => {

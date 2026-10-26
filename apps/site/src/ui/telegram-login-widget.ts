@@ -1,6 +1,5 @@
 import type { TelegramWidgetPayload } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
-import { ColorModeStore } from '@/core/theme/color-mode';
 import { isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -9,7 +8,6 @@ import {
   type ElementRef,
   PLATFORM_ID,
   afterNextRender,
-  effect,
   inject,
   output,
   viewChild,
@@ -24,16 +22,19 @@ type CallbackWindow = Window & { [CALLBACK]?: (payload: TelegramWidgetPayload) =
 // Telegram's "Log in with Telegram" button (Login Widget). It is an iframe
 // from telegram.org, created in the browser only; sign-in hands its signed
 // payload to `authorized`, for POST /auth/telegram/widget.
+// The frame's page declares `color-scheme: light dark`; an iframe whose
+// color scheme differs from its page's gets an opaque (black in dark OS
+// mode) backdrop, so the iframe element declares the same scheme.
 @Component({
   selector: 'app-telegram-login-widget',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: '<div #frame class="flex min-h-14 justify-center py-2"></div>',
+  template:
+    '<div #frame class="flex min-h-14 justify-center py-2 [&_iframe]:[color-scheme:light_dark]"></div>',
 })
 export class TelegramLoginWidget {
   readonly authorized = output<TelegramWidgetPayload>();
   private readonly frame = viewChild.required<ElementRef<HTMLElement>>('frame');
   private readonly botUsername = inject(APP_CONFIG).telegramBotUsername;
-  private readonly colorMode = inject(ColorModeStore);
   private readonly transloco = inject(TranslocoService);
   private observer: MutationObserver | undefined;
 
@@ -47,13 +48,11 @@ export class TelegramLoginWidget {
         delete view[CALLBACK];
         this.observer?.disconnect();
       });
+      this.mount();
     });
-    // Re-created when the mode changes: Telegram's "logged in as" chip has
-    // a dark backdrop that only suits dark mode.
-    effect(() => this.mount(this.colorMode.mode() === 'dark'));
   }
 
-  private mount(userpic: boolean): void {
+  private mount(): void {
     const frame = this.frame().nativeElement;
     if (!this.botUsername) return;
     const script = frame.ownerDocument.createElement('script');
@@ -64,7 +63,7 @@ export class TelegramLoginWidget {
     script.dataset['radius'] = '12';
     script.dataset['onauth'] = `${CALLBACK}(user)`;
     script.dataset['requestAccess'] = 'write';
-    script.dataset['userpic'] = String(userpic);
+    script.dataset['userpic'] = 'true';
     frame.replaceChildren(script);
     this.titleIframe(frame);
   }

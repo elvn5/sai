@@ -43,6 +43,8 @@ type tourRequest struct {
 	Phone              validation.Field[string] `json:"phone" binding:"omitempty,max=32,phone"`
 	Whatsapp           validation.Field[string] `json:"whatsapp" binding:"omitempty,max=32,phone"`
 	Telegram           validation.Field[string] `json:"telegram" binding:"omitempty,max=33,telegram"`
+	MeetingPoint       validation.Field[string] `json:"meetingPoint" binding:"omitempty,max=200"`
+	MeetingTime        validation.Field[string] `json:"meetingTime" binding:"omitempty,hhmm"`
 }
 
 type createTourRequest struct {
@@ -65,6 +67,8 @@ type createTourRequest struct {
 	Phone              validation.Field[string] `json:"phone" binding:"omitempty,max=32,phone"`
 	Whatsapp           validation.Field[string] `json:"whatsapp" binding:"omitempty,max=32,phone"`
 	Telegram           validation.Field[string] `json:"telegram" binding:"omitempty,max=33,telegram"`
+	MeetingPoint       validation.Field[string] `json:"meetingPoint" binding:"omitempty,max=200"`
+	MeetingTime        validation.Field[string] `json:"meetingTime" binding:"omitempty,hhmm"`
 }
 
 type programDay struct {
@@ -115,6 +119,8 @@ func (r tourRequest) apply(t *models.Tour) {
 		}
 	}
 	applyField(&t.Capacity, r.Capacity)
+	applyField(&t.MeetingPoint, r.MeetingPoint)
+	applyField(&t.MeetingTime, r.MeetingTime)
 	contactFields{r.Phone, r.Whatsapp, r.Telegram}.apply(&t.Phone, &t.Whatsapp, &t.Telegram)
 }
 
@@ -143,6 +149,9 @@ func (h *Tours) ListMine(c *gin.Context) {
 	if err != nil {
 		h.fail(c, err, tourNotFound, "")
 		return
+	}
+	for i := range tours {
+		tours[i].IsOrganizer = true
 	}
 	respond.JSON(c, http.StatusOK, tours)
 }
@@ -235,6 +244,7 @@ func (h *Tours) Create(c *gin.Context) {
 	userID := currentUserID(c)
 	tour := models.Tour{UserID: &userID}
 	req.asUpdate().apply(&tour)
+	tour.Schedule(h.now())
 	saved, err := h.Store.SaveTour(ctx, tour)
 	if err != nil {
 		h.fail(c, err, tourNotFound, tourSlugTaken)
@@ -270,12 +280,25 @@ func (h *Tours) Update(c *gin.Context) {
 			return
 		}
 	}
+	before := tour
 	req.apply(&tour)
+	if tour.Capacity != nil && *tour.Capacity < tour.Taken {
+		c.AbortWithStatusJSON(http.StatusBadRequest, validation.Flattened{
+			FormErrors:  []string{},
+			FieldErrors: map[string][]string{"capacity": {"More people have already signed up"}},
+		})
+		return
+	}
+	tour.Schedule(h.now())
 	saved, err := h.Store.SaveTour(ctx, tour)
 	if err != nil {
 		h.fail(c, err, tourNotFound, tourSlugTaken)
 		return
 	}
+	if saved.Taken > 0 && saved.StartsAt().After(h.now()) {
+		h.notifyParticipants(c, saved.ID, func(ids []string) { h.Notify.Changed(ctx, before, saved, ids) })
+	}
+	saved.IsOrganizer = true
 	respond.JSON(c, http.StatusOK, saved)
 }
 
@@ -284,9 +307,18 @@ func (h *Tours) Delete(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := h.Store.DeleteListing(c.Request.Context(), "tour", tour.ID); err != nil {
+	ctx := c.Request.Context()
+	// Who signed up hears it's off, if it hasn't taken place yet.
+	var participants []string
+	if tour.Taken > 0 && tour.StartsAt().After(h.now()) {
+		h.notifyParticipants(c, tour.ID, func(ids []string) { participants = ids })
+	}
+	if err := h.Store.DeleteListing(ctx, "tour", tour.ID); err != nil {
 		h.fail(c, err, tourNotFound, "")
 		return
+	}
+	if len(participants) > 0 {
+		h.Notify.Cancelled(ctx, tour, participants)
 	}
 	respond.Empty(c, http.StatusOK)
 }

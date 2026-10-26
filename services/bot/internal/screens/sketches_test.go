@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
-	"github.com/elvn5/sai/services/bot/internal/drafts"
 	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/screens"
 )
@@ -56,99 +55,123 @@ func checkScreen(t *testing.T, s screens.Screen, text string, rows ...string) {
 	}
 }
 
-// The outings drawn on the sketches.
+// The tours drawn on the sketches: two the user signed up for, one they
+// run.
 var (
-	uchitel = api.Outing{ID: "o1", Title: "Пик Учитель", StartsAt: at(10, 24, 6, 0), Status: "open",
-		Seats: 10, Taken: 7, IsJoined: true, MeetingPoint: "ТЦ «Вефа», парковка", Trail: &api.TrailRef{Name: "Ала-Арча"}}
-	barskoon = api.Outing{ID: "o2", Title: "Водопад Барскоон", StartsAt: at(11, 1, 7, 30), Status: "open",
-		Seats: 12, Taken: 4, IsOrganizer: true, Trail: &api.TrailRef{Name: "Барскоон"}}
-	alaKol = api.Outing{ID: "o3", Title: "Озеро Ала-Кёль", StartsAt: at(11, 7, 5, 30), Status: "open",
-		Seats: 10, Taken: 9, IsJoined: true, Trail: &api.TrailRef{Name: "Каракол"}}
+	uchitel = api.Tour{ID: "o1", Title: "Пик Учитель", StartDate: "2026-10-24", EndDate: "2026-10-24", MeetingTime: str("06:00"),
+		MeetingPoint: str("ТЦ «Вефа», парковка"), Capacity: num(10), Taken: 7, IsJoined: true}
+	barskoon = api.Tour{ID: "o2", Title: "Водопад Барскоон", StartDate: "2026-11-01", EndDate: "2026-11-01", MeetingTime: str("07:30"),
+		Capacity: num(12), Taken: 4, IsOrganizer: true}
+	alaKol = api.Tour{ID: "o3", Title: "Озеро Ала-Кёль", StartDate: "2026-11-07", EndDate: "2026-11-08", MeetingTime: str("05:30"),
+		Taken: 9, IsJoined: true}
 )
 
 func TestSketchMain(t *testing.T) {
 	next := uchitel
 	want := "🏔 <b>Здравствуйте, Айбек!</b>\n\n" +
-		"Я бот Ermekten — помогу не пропустить выходы в горы и туры по Кыргызстану.\n\n" +
-		"🥾 <b>Мои выходы</b> — куда вы идёте и когда сбор\n" +
+		"Я бот Ermekten — помогу не пропустить туры по Кыргызстану и записаться на них прямо в чате.\n\n" +
+		"🎒 <b>Мои туры</b> — куда вы едете и когда сбор\n" +
 		"🧭 <b>Туры</b> — избранное и ближайшие даты\n" +
 		"📰 <b>Блог</b> — свежие статьи и маршруты\n" +
 		"🔔 <b>Уведомления</b> — что присылать\n\n" +
-		"Ближайший выход: <b>Пик Учитель</b>, сб, 24 окт., 06:00\n\n" +
+		"Ближайший тур: <b>Пик Учитель</b>, сб, 24 окт., 06:00\n\n" +
 		"Выберите раздел в меню ниже."
 	if got := screens.Welcome(i18n.RU, "Айбек", &next); got != want {
 		t.Errorf("greeting:\n%s\n--- want (sketch):\n%s", got, want)
 	}
-	if got := screens.Welcome(i18n.RU, "Айбек", nil); strings.Contains(got, "Ближайший выход") {
-		t.Errorf("greeting without outings mentions one:\n%s", got)
+	if got := screens.Welcome(i18n.RU, "Айбек", nil); strings.Contains(got, "Ближайший тур") {
+		t.Errorf("greeting without tours mentions one:\n%s", got)
 	}
 }
 
-func TestSketchMyOutings(t *testing.T) {
-	sum := &api.OutingsSummary{Outings: 12, DistanceKm: 84.2, ElevationGain: 5200}
-	s := screens.MyOutings(i18n.RU, []api.Outing{alaKol, barskoon, uchitel}, sum, screens.FromMine, at(10, 20, 10, 5))
+func TestSketchMyTours(t *testing.T) {
+	done := api.Tour{ID: "o9", Title: "Сон-Кёль", StartDate: "2026-09-12", EndDate: "2026-09-14", IsJoined: true}
+	s := screens.MyTours(i18n.RU, []api.Tour{alaKol, done, uchitel}, screens.FromMine, at(10, 20, 10, 5))
 	checkScreen(t, s,
-		"🥾 <b>Мои выходы</b>\n"+
-			"За всё время: 12 выходов · 84 км · ↗ 5 200 м\n\n"+
+		"🎒 <b>Мои туры</b>\n"+
+			"За всё время: 1 тур\n\n"+
 			"<b>Предстоящие</b>\n\n"+
-			"<b>1. Пик Учитель</b>\nсб, 24 окт., 06:00 · 👥 7/10 · вы идёте\n\n"+
-			"<b>2. Водопад Барскоон</b>\nвс, 1 нояб., 07:30 · 👥 4/12 · ⭐ вы организатор\n\n"+
-			"<b>3. Озеро Ала-Кёль</b>\nсб, 7 нояб., 05:30 · 👥 9/10 · вы идёте",
+			"<b>1. Пик Учитель</b>\nсб, 24 окт., 06:00 · 👥 7 из 10 мест\n\n"+
+			"<b>2. Озеро Ала-Кёль</b>\nсб, 7 нояб., 05:30 · 👥 записались: 9",
 		"1 · Пик Учитель→o:view:u:o1",
-		"2 · Водопад Барскоон→o:view:u:o2",
-		"3 · Озеро Ала-Кёль→o:view:u:o3",
+		"2 · Озеро Ала-Кёль→o:view:u:o3",
 		"• Предстоящие •→o:list:u | Прошедшие→o:list:p",
-		"🔎 Найти выход→o:find:0 | ➕ Собрать выход→d:new",
+		"🧭 Все туры→t:n:0",
 		"🧑‍✈️ Кабинет организатора→g:home",
 	)
 }
 
-func TestSketchFindOutings(t *testing.T) {
-	alaKolFull := alaKol
-	alaKolFull.Taken, alaKolFull.IsJoined = 10, false
-	komsomolets := api.Outing{ID: "o4", Title: "Пик Комсомолец", StartsAt: at(11, 7, 7, 0), Status: "open",
-		Seats: 8, Taken: 2, Trail: &api.TrailRef{Name: "Ала-Арча"}}
-	more := api.Outing{ID: "o5", Title: "Кёль-Тор", StartsAt: at(11, 8, 8, 0), Status: "open", Seats: 15, Taken: 9}
-	s := screens.FindOutings(i18n.RU, []api.Outing{uchitel, barskoon, alaKolFull, komsomolets, more}, 0)
-	checkScreen(t, s,
-		"🔎 <b>Ближайшие выходы</b>\n\n"+
-			"<b>1. Пик Учитель</b>\nсб, 24 окт., 06:00 · 👥 свободно 3 из 10 · 🏔 Ала-Арча · вы идёте\n\n"+
-			"<b>2. Водопад Барскоон</b>\nвс, 1 нояб., 07:30 · 👥 свободно 8 из 12 · 🏔 Барскоон · ⭐ вы организатор\n\n"+
-			"<b>3. Озеро Ала-Кёль</b>\nсб, 7 нояб., 05:30 · мест нет · 🏔 Каракол\n\n"+
-			"<b>4. Пик Комсомолец</b>\nсб, 7 нояб., 07:00 · 👥 свободно 6 из 8 · 🏔 Ала-Арча",
-		"1 · Пик Учитель→o:view:f:o1",
-		"2 · Водопад Барскоон→o:view:f:o2",
-		"3 · Озеро Ала-Кёль→o:view:f:o3",
-		"4 · Пик Комсомолец→o:view:f:o4",
-		"◀️→o:find:1 | 1 / 2→noop | ▶️→o:find:1",
-		"➕ Собрать выход→d:new | ⬅️ Мои выходы→o:list:u",
+func TestSketchTourCard(t *testing.T) {
+	o := uchitel
+	o.Price, o.Organizer, o.Telegram = num(500), &api.Person{FirstName: str("Айгуль")}, str("aigul_trek")
+	o.Roster = nil
+
+	checkScreen(t, screens.TourCard(i18n.RU, o, screens.FromMine, links, at(10, 20, 10, 6)),
+		"🧭 <b>Пик Учитель</b>\n📅 24 октября\n\n"+
+			"🕕 Сбор: сб, 24 окт., 06:00\n"+
+			"📍 ТЦ «Вефа», парковка\n"+
+			"💳 500 сом с человека\n"+
+			"👥 ▰▰▰▰▰▰▰▱▱▱ 7 из 10 мест\n"+
+			"🧑 Организатор: Айгуль\n\n"+
+			"📞 <b>Связь с организатором</b>\nTelegram: @aigul_trek\n\n"+
+			"✅ Вы записаны",
+		"🙅 Отменить запись→o:ask:u:o1",
+		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=tour_o1",
+		"⬅️ К моим турам→o:list:u",
+	)
+	checkScreen(t, screens.LeaveConfirm(i18n.RU, o, screens.FromMine),
+		"Точно отменить запись на «Пик Учитель»?\n\nМесто освободится, организатор получит уведомление.",
+		"Да, отменить→o:leave:u:o1 | Нет, еду→o:view:u:o1",
 	)
 }
 
-func TestSketchOutingCard(t *testing.T) {
-	o := uchitel
-	returns := at(10, 24, 19, 0)
-	o.ReturnsAt, o.Level, o.Transport, o.CostPerPerson = &returns, "intermediate", "car", num(500)
-	o.Organizer, o.Contact = api.Person{FirstName: str("Айгуль")}, str("@aigul_trek")
+func TestSketchOrganizerCard(t *testing.T) {
+	o := barskoon
+	o.MeetingPoint, o.Price = str("Южные ворота"), num(800)
+	o.Roster = []api.RosterEntry{{Person: api.Person{FirstName: str("Айбек")}}, {Person: api.Person{FirstName: str("Нурлан")}},
+		{Person: api.Person{Username: str("aidai_kg")}}, {Person: api.Person{FirstName: str("Мээрим")}}}
+	checkScreen(t, screens.TourCard(i18n.RU, o, screens.FromMine, links, at(10, 20, 10, 6)),
+		"🧭 <b>Водопад Барскоон</b>\n📅 1 ноября\n\n"+
+			"🕕 Сбор: вс, 1 нояб., 07:30\n"+
+			"📍 Южные ворота\n"+
+			"💳 800 сом с человека\n"+
+			"👥 ▰▰▰▱▱▱▱▱▱▱ 4 из 12 мест\n\n"+
+			"👥 Едут: Айбек, Нурлан, @aidai_kg, Мээрим\n\n"+
+			"⭐ Вы организатор",
+		"📋 Участники и отметка→g:r:o2",
+		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=tour_o2",
+		"⬅️ К моим турам→o:list:u",
+	)
+}
 
-	checkScreen(t, screens.OutingCard(i18n.RU, o, screens.FromMine, links, at(10, 20, 10, 6)),
-		"🥾 <b>Пик Учитель</b>\n🏔 Ала-Арча · нужен опыт\n\n"+
-			"📅 сб, 24 окт., 06:00 → 19:00\n"+
-			"📍 Сбор: ТЦ «Вефа», парковка\n"+
-			"🚗 На машине организатора\n"+
-			"💳 500 сом с человека\n"+
-			"👥 ▰▰▰▰▰▰▰▱▱▱ 7 из 10 мест\n"+
-			"🧑 Организатор: Айгуль\n"+
-			"💬 Связь: @aigul_trek\n\n"+
-			"✅ Вы идёте",
-		"🙅 Не смогу пойти→o:ask:u:o1",
-		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=outing_o1",
-		"⬅️ К моим выходам→o:list:u",
+func TestSketchTourMore(t *testing.T) {
+	tour := api.Tour{ID: "t2", Slug: "son-kol", Title: "Сон-Кёль: ночь в юрте", Location: str("Нарын"), DurationDays: num(3),
+		StartDate: "2027-06-12", EndDate: "2027-06-14", Price: num(18000), Capacity: num(12), Taken: 5, MeetingTime: str("08:00"),
+		Content: `<p>Три дня на высокогорном озере: перевал <strong>Калмак-Ашуу</strong>, табуны на джайлоо и ночь в юрте.</p>` +
+			`<h3>Что включено</h3><ul><li>Транспорт из Бишкека</li><li>Юрта и питание</li></ul>`,
+		Program: []api.ProgramDay{
+			{Title: "Бишкек — Кочкор", Text: "Выезд в 8:00, обед в Кочкоре."},
+			{Title: "Сон-Кёль", Text: "Конная прогулка, закат."},
+		},
+		Telegram: str("@sonkol_tours"), Phone: str("+996 555 123 456")}
+	checkScreen(t, screens.TourMore(i18n.RU, tour, screens.TabFavorites, 1, 0, true, links, at(10, 20, 10, 0)),
+		"🧭 <b>Сон-Кёль: ночь в юрте</b>\n"+
+			"📍 Нарын · 3 дня\n📅 12 — 14 июня\n💳 18 000 сом с человека\n🕕 Сбор: сб, 12 июн., 08:00 · 👥 5 из 12 мест\n\n"+
+			"👥 В группе до 12 человек\n\n"+
+			"Три дня на высокогорном озере: перевал <b>Калмак-Ашуу</b>, табуны на джайлоо и ночь в юрте.\n\n"+
+			"<b>Что включено</b>\n\n"+
+			"• Транспорт из Бишкека\n• Юрта и питание\n\n"+
+			"🗓 <b>Программа</b>\n\n"+
+			"<b>День 1. Бишкек — Кочкор</b>\nВыезд в 8:00, обед в Кочкоре.\n\n"+
+			"<b>День 2. Сон-Кёль</b>\nКонная прогулка, закат.\n\n"+
+			"📞 <b>Связь с организатором</b>\nTelegram: @sonkol_tours\nТелефон: +996 555 123 456",
+		"✋ Записаться→o:join:t:t2",
+		"💔 Из избранного→t:drop:f:1:t2:more | ⬅️ К турам→t:f:1",
 	)
-	checkScreen(t, screens.LeaveConfirm(i18n.RU, o, screens.FromMine),
-		"Точно не пойдёте на «Пик Учитель»?\n\nМесто освободится, организатор получит уведомление.",
-		"Да, не пойду→o:leave:u:o1 | Нет, иду→o:view:u:o1",
-	)
+	tour.IsJoined = true
+	if got := layout(screens.TourMore(i18n.RU, tour, screens.TabFavorites, 1, 0, true, links, at(10, 20, 10, 0))); got[0] != "🎒 Моя запись→o:view:t:t2" {
+		t.Errorf("joined: %v", got)
+	}
 }
 
 func TestSketchTours(t *testing.T) {
@@ -205,7 +228,7 @@ func TestSketchBlog(t *testing.T) {
 func TestSketchNotifications(t *testing.T) {
 	checkScreen(t, screens.Notifications(i18n.RU, screens.NotifySettings{ToursAll: true}),
 		"🔔 <b>Уведомления</b>\n\nВыберите, о чём вам писать.\n\n"+
-			"🥾 <b>Мои выходы</b> — всегда\nКто записался, изменения, отмена, напоминание перед сбором.\n\n"+
+			"🎒 <b>Мои туры</b> — всегда\nКто записался, изменения, отмена, напоминание перед сбором, просьба оценить тур.\n\n"+
 			"🧭 <b>Новые туры</b> — ✅ включено\nКогда на сайте появляется новый тур.\n\n"+
 			"📰 <b>Статьи блога</b> — выключено\nНовая статья — одним сообщением с обложкой.",
 		"🧭 Новые туры: ✅ вкл→n:tours",
@@ -222,99 +245,6 @@ func TestSketchBlogNotification(t *testing.T) {
 			"<b>Осенняя Ала-Арча: 5 маршрутов на один день</b>\n"+
 			"От лёгкой прогулки к водопаду до подъёма на Рацек — с перепадами высот и временем в пути.",
 		"📖 Читать→b:read:p9:0 | 🔕 Не присылать→n:blog_off",
-	)
-}
-
-func TestSketchOrganizerCard(t *testing.T) {
-	o := barskoon
-	o.MeetingPoint, o.Transport, o.Level, o.CostPerPerson = "Южные ворота", "arranged", "beginner", num(800)
-	o.Participants = []api.Person{{FirstName: str("Айбек")}, {FirstName: str("Нурлан")}, {Username: str("aidai_kg")}, {FirstName: str("Мээрим")}}
-	checkScreen(t, screens.OutingCard(i18n.RU, o, screens.FromMine, links, at(10, 20, 10, 6)),
-		"🥾 <b>Водопад Барскоон</b>\n🏔 Барскоон · для новичков\n\n"+
-			"📅 вс, 1 нояб., 07:30\n"+
-			"📍 Сбор: Южные ворота\n"+
-			"🚗 Заказной транспорт\n"+
-			"💳 800 сом с человека\n"+
-			"👥 ▰▰▰▱▱▱▱▱▱▱ 4 из 12 мест\n\n"+
-			"👥 Идут: Айбек, Нурлан, @aidai_kg, Мээрим\n\n"+
-			"⭐ Вы организатор",
-		"✏️ Изменить→o:edit:u:o2 | ❌ Отменить выход→o:cask:u:o2",
-		"📋 Участники и отметка→g:r:o2",
-		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=outing_o2",
-		"⬅️ К моим выходам→o:list:u",
-	)
-	checkScreen(t, screens.CancelConfirm(i18n.RU, o, screens.FromMine),
-		"Отменить выход «Водопад Барскоон»?\n\nУчастников: 4 — бот сообщит им об отмене.\n\nВернуть выход после отмены не получится.",
-		"Да, отменить→o:cancel:u:o2 | Нет, оставить→o:view:u:o2",
-	)
-}
-
-// The new outing's steps drawn on the sketches: the route, the day, the
-// review.
-func TestSketchNewOuting(t *testing.T) {
-	now := at(10, 20, 10, 5)
-	d := drafts.New("aibek", now)
-	d.Trails = []api.TrailRef{{ID: "a", Name: "Пик Учитель"}, {ID: "b", Name: "Водопад Барскоон"}, {ID: "c", Name: "Озеро Ала-Кёль"},
-		{ID: "d", Name: "Кёль-Тор"}, {ID: "e", Name: "Пик Комсомолец"}, {ID: "f", Name: "Сон-Кёль"}}
-	checkScreen(t, screens.DraftScreen(i18n.RU, d, now),
-		"➕ <b>Новый выход</b> · шаг 1 из 12\n\n"+
-			"🏔 <b>Куда идём?</b>\nВыберите маршрут из каталога или напишите его название — я поищу.",
-		"Пик Учитель→d:trail:0 | Водопад Барскоон→d:trail:1",
-		"Озеро Ала-Кёль→d:trail:2 | Кёль-Тор→d:trail:3",
-		"Пик Комсомолец→d:trail:4 | Сон-Кёль→d:trail:5",
-		"Без маршрута из каталога→d:trail:none",
-		"✖️ Отмена→d:cancel",
-	)
-
-	d.TrailID, d.TrailName, d.Title, d.Step = "a", "Пик Учитель", "Пик Учитель за один день", drafts.StepDate
-	checkScreen(t, screens.DraftScreen(i18n.RU, d, now),
-		"➕ <b>Новый выход</b> · шаг 3 из 12\n\n"+
-			"📅 <b>Когда выходим?</b>\nВыберите день в календаре или напишите дату, например 24.10.",
-		" →noop | Октябрь 2026→noop | ▶️→d:month:2026-11",
-		"Пн→noop | Вт→noop | Ср→noop | Чт→noop | Пт→noop | Сб→noop | Вс→noop",
-		"·→noop | 20→d:date:2026-10-20 | 21→d:date:2026-10-21 | 22→d:date:2026-10-22 | 23→d:date:2026-10-23 | 24→d:date:2026-10-24 | 25→d:date:2026-10-25",
-		"26→d:date:2026-10-26 | 27→d:date:2026-10-27 | 28→d:date:2026-10-28 | 29→d:date:2026-10-29 | 30→d:date:2026-10-30 | 31→d:date:2026-10-31 |  →noop",
-		"⬅️ Назад→d:back | ✖️ Отмена→d:cancel",
-	)
-
-	d.Date, d.Time, d.Returns = "2026-10-24", "06:00", "2026-10-24T19:00"
-	d.MeetingPoint, d.Contact, d.Step, d.Reviewing = "ТЦ «Вефа», парковка", "@aibek", drafts.StepReview, true
-	checkScreen(t, screens.DraftScreen(i18n.RU, d, now),
-		"👀 <b>Проверьте выход</b>\n\n"+
-			"🥾 <b>Пик Учитель за один день</b>\n🏔 Пик Учитель · для новичков\n\n"+
-			"📅 сб, 24 окт., 06:00 → 19:00\n"+
-			"📍 Сбор: ТЦ «Вефа», парковка\n"+
-			"🚗 На машине организатора\n"+
-			"👥 Мест: 3\n"+
-			"💬 Связь: @aibek\n\n"+
-			"Всё верно? Выход появится в ближайших — в боте и на сайте, а бот будет сообщать вам о каждом, кто запишется.",
-		"✅ Опубликовать→d:save",
-		"✏️ Изменить→d:fields | ✖️ Отмена→d:cancel",
-	)
-}
-
-func TestSketchTourMore(t *testing.T) {
-	tour := api.Tour{ID: "t2", Slug: "son-kol", Title: "Сон-Кёль: ночь в юрте", Location: str("Нарын"), DurationDays: num(3),
-		StartDate: "2027-06-12", EndDate: "2027-06-14", Price: num(18000), Capacity: num(12),
-		Content: `<p>Три дня на высокогорном озере: перевал <strong>Калмак-Ашуу</strong>, табуны на джайлоо и ночь в юрте.</p>` +
-			`<h3>Что включено</h3><ul><li>Транспорт из Бишкека</li><li>Юрта и питание</li></ul>`,
-		Program: []api.ProgramDay{
-			{Title: "Бишкек — Кочкор", Text: "Выезд в 8:00, обед в Кочкоре."},
-			{Title: "Сон-Кёль", Text: "Конная прогулка, закат."},
-		},
-		Telegram: str("@sonkol_tours"), Phone: str("+996 555 123 456")}
-	checkScreen(t, screens.TourMore(i18n.RU, tour, screens.TabFavorites, 1, 0, true, links),
-		"🧭 <b>Сон-Кёль: ночь в юрте</b>\n"+
-			"📍 Нарын · 3 дня\n📅 12 — 14 июня\n💳 18 000 сом с человека\n\n"+
-			"👥 В группе до 12 человек\n\n"+
-			"Три дня на высокогорном озере: перевал <b>Калмак-Ашуу</b>, табуны на джайлоо и ночь в юрте.\n\n"+
-			"<b>Что включено</b>\n\n"+
-			"• Транспорт из Бишкека\n• Юрта и питание\n\n"+
-			"🗓 <b>Программа</b>\n\n"+
-			"<b>День 1. Бишкек — Кочкор</b>\nВыезд в 8:00, обед в Кочкоре.\n\n"+
-			"<b>День 2. Сон-Кёль</b>\nКонная прогулка, закат.\n\n"+
-			"📞 <b>Записаться и спросить</b>\nTelegram: @sonkol_tours\nТелефон: +996 555 123 456",
-		"💔 Из избранного→t:drop:f:1:t2:more | ⬅️ К турам→t:f:1",
 	)
 }
 
@@ -340,37 +270,16 @@ func TestSketchArticle(t *testing.T) {
 	}
 }
 
-func TestSketchCondition(t *testing.T) {
-	o := alaKol
-	o.Trail = &api.TrailRef{Slug: "ala-kol", Name: "Ала-Кёль"}
-	checkScreen(t, screens.ConditionState(i18n.RU, o),
-		"📝 <b>Как маршрут «Ала-Кёль»?</b>\n\n"+
-			"Расскажите в два нажатия — сводка появится на странице маршрута и поможет тем, кто пойдёт следом.\n\n"+
-			"<b>Какой была тропа?</b>",
-		"☀️ Сухо, тропа чистая→c:t:o3:0 | 💧 Мокро, грязь→c:t:o3:1",
-		"🌨 Местами снег→c:t:o3:2 | ❄️ Снег→c:t:o3:3",
-		"⛄ Глубокий снег→c:t:o3:4 | 🧊 Лёд→c:t:o3:5",
-		"⬅️ К выходу→o:view:p:o3",
-	)
-	checkScreen(t, screens.ConditionTraction(i18n.RU, o, 2),
-		"📝 <b>Как маршрут «Ала-Кёль»?</b>\n\nТропа: 🌨 Местами снег\n\n<b>Что понадобилось на ноги?</b>",
-		"👟 Хватило обычной обуви→c:d:o3:2:0",
-		"🦶 Пригодились микрошипы→c:d:o3:2:1",
-		"⛓ Нужны кошки→c:d:o3:2:2",
-		"⬅️ Назад→c:s:o3",
-	)
-}
-
-// The organizer's room: the outings they run and their tours.
+// The organizer's room: the tours they run.
 var (
-	barskoonDay = func() api.Outing {
+	barskoonDay = func() api.Tour {
 		o := barskoon
-		o.ID, o.StartsAt, o.MeetingPoint, o.Taken, o.Seats = "o2", at(10, 25, 7, 30), "Южные ворота", 4, 12
+		o.StartDate, o.EndDate, o.MeetingPoint, o.Taken, o.IsPublished = "2026-10-25", "2026-10-25", str("Южные ворота"), 4, true
 		joined := at(10, 18, 12, 0)
 		arrived := at(10, 25, 7, 20)
-		o.Participants = []api.Person{{ID: "u-aibek-1", FirstName: str("Айбек")}, {ID: "u-nurlan-2", FirstName: str("Нурлан"), Username: str("nurlan_kg")},
+		people := []api.Person{{ID: "u-aibek-1", FirstName: str("Айбек")}, {ID: "u-nurlan-2", FirstName: str("Нурлан"), Username: str("nurlan_kg")},
 			{ID: "u-aidai-33", Username: str("aidai_kg")}, {ID: "u-meerim-4"}}
-		for i, p := range o.Participants {
+		for i, p := range people {
 			e := api.RosterEntry{Person: p, JoinedAt: joined}
 			if i < 2 {
 				e.ArrivedAt = &arrived
@@ -380,26 +289,25 @@ var (
 		return o
 	}()
 	sonKolOwn = api.Tour{ID: "t1", Slug: "son-kol", Title: "Сон-Кёль на лошадях", StartDate: "2027-06-12", EndDate: "2027-06-14",
-		DurationDays: num(3), Location: str("Нарын"), Price: num(18000), Capacity: num(12), IsPublished: true,
+		DurationDays: num(3), Location: str("Нарын"), Price: num(18000), Capacity: num(12), Taken: 3, IsPublished: true,
 		RatingAverage: 4.8, ReviewCount: 12,
 		Program: []api.ProgramDay{{Title: "Бишкек — Кочкор", Text: "Выезд в 8:00.\nОбед в Кочкоре."}, {Title: "Сон-Кёль", Text: "Конная прогулка."}, {Title: "Обратно"}}}
 )
 
 func TestSketchOrganizerHome(t *testing.T) {
 	draft := api.Tour{ID: "t2", Title: "Ала-Кёль", StartDate: "2027-07-03", EndDate: "2027-07-05"}
-	checkScreen(t, screens.OrganizerHome(i18n.RU, []api.Outing{barskoonDay}, []api.Tour{sonKolOwn, draft}, at(10, 25, 7, 25)),
+	checkScreen(t, screens.OrganizerHome(i18n.RU, []api.Tour{barskoonDay, sonKolOwn, draft}, at(10, 25, 7, 25)),
 		"🧑‍✈️ <b>Кабинет организатора</b>\nУчастники, отметка на сборе и ваши туры.\n\n"+
-			"🥾 <b>Ваши выходы</b>\n\n"+
-			"<b>1. Водопад Барскоон</b>\nвс, 25 окт., 07:30 · 👥 4/12 · ✅ на месте 2 из 4\n\n"+
 			"🧭 <b>Ваши туры</b>\n\n"+
-			"<b>2. Сон-Кёль на лошадях</b>\n12 — 14 июня · 🟢 опубликован\n\n"+
-			"<b>3. Ала-Кёль</b>\n3 — 5 июля · 📝 черновик",
-		"1 · Водопад Барскоон→g:r:o2",
-		"2 · Сон-Кёль на лошадях→g:t:0",
-		"3 · Ала-Кёль→g:t:1",
-		"➕ Собрать выход→d:new | ⬅️ Мои выходы→o:list:u",
+			"<b>1. Водопад Барскоон</b>\n25 октября · 👥 4 из 12 мест · ✅ на месте 2 из 4\n\n"+
+			"<b>2. Сон-Кёль на лошадях</b>\n12 — 14 июня · 👥 3 из 12 мест\n\n"+
+			"<b>3. Ала-Кёль</b>\n3 — 5 июля · 👥 записались: 0 · 📝 черновик",
+		"1 · Водопад Барскоон→g:t:0",
+		"2 · Сон-Кёль на лошадях→g:t:1",
+		"3 · Ала-Кёль→g:t:2",
+		"⬅️ Мои туры→o:list:u",
 	)
-	if s := screens.OrganizerHome(i18n.RU, nil, nil, at(10, 25, 7, 25)); !strings.Contains(s.Text, "Вы пока ничего не организуете") {
+	if s := screens.OrganizerHome(i18n.RU, nil, at(10, 25, 7, 25)); !strings.Contains(s.Text, "У вас пока нет туров") {
 		t.Errorf("empty room:\n%s", s.Text)
 	}
 }
@@ -418,8 +326,8 @@ func TestSketchRoster(t *testing.T) {
 		"⬜ @aidai_kg→g:a:o2:u-aidai- | ⬜ Участник 4→g:a:o2:u-meerim",
 		"✅ Все на месте→g:all:o2",
 		"📣 Написать участникам→g:m:o2",
-		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=outing_o2",
-		"🥾 Карточка выхода→o:view:u:o2 | ⬅️ Кабинет→g:home",
+		"📤 Позвать друзей→share:https://t.me/ermekten_bot?start=tour_o2",
+		"🧭 Карточка тура→o:view:u:o2 | ⬅️ Кабинет→g:home",
 	)
 	// A week ahead: no marks yet.
 	early := screens.Roster(i18n.RU, barskoonDay, nil, links, at(10, 18, 13, 0))
@@ -431,7 +339,7 @@ func TestSketchRoster(t *testing.T) {
 
 func TestSketchBroadcast(t *testing.T) {
 	o := barskoonDay
-	o.Organizer = api.Person{FirstName: str("Айгуль")}
+	o.Organizer = &api.Person{FirstName: str("Айгуль")}
 	checkScreen(t, screens.BroadcastPrompt(i18n.RU, o),
 		"📣 <b>Сообщение участникам</b>\n«Водопад Барскоон» · 4 человека\n\n"+
 			"Напишите сообщение — бот перешлёт его всем, кто записался. Например: "+
@@ -444,8 +352,8 @@ func TestSketchBroadcast(t *testing.T) {
 		"📣 Отправить→g:ms:o2 | Отмена→g:mx:o2",
 	)
 	checkScreen(t, screens.BroadcastMessage(i18n.RU, o, "Ждём у ворот"),
-		"📣 <b>Сообщение от организатора</b> · Айгуль\nВыход «Водопад Барскоон», вс, 25 окт., 07:30\n\nЖдём у ворот",
-		"Открыть выход→o:view:n:o2",
+		"📣 <b>Сообщение от организатора</b> · Айгуль\nТур «Водопад Барскоон», вс, 25 окт., 07:30\n\nЖдём у ворот",
+		"Открыть тур→o:view:n:o2",
 	)
 	checkScreen(t, screens.BroadcastSent(i18n.RU, o, 3, 4),
 		"✅ Сообщение отправлено: 3 из 4.\n\nНе дошло до 1 человека — у них не подключён Telegram или бот заблокирован. "+
@@ -462,8 +370,9 @@ func TestSketchOrganizerTour(t *testing.T) {
 	}
 	mine := screens.TourBookings(bookings, "t1")
 	checkScreen(t, screens.OrganizerTour(i18n.RU, sonKolOwn, 0, &api.StatCounts{Views: 340, Contacts: 21}, mine, links),
-		"🧭 <b>Сон-Кёль на лошадях</b>\n📅 12 — 14 июня · 3 дня\n📍 Нарын\n💳 18 000 сом · 👥 мест: 12\n🟢 Опубликован\n⭐ 4.8 · 12 отзывов\n\n"+
+		"🧭 <b>Сон-Кёль на лошадях</b>\n📅 12 — 14 июня · 3 дня\n📍 Нарын\n💳 18 000 сом · 👥 3 из 12 мест\n🟢 Опубликован\n⭐ 4.8 · 12 отзывов\n\n"+
 			"📊 <b>За 30 дней</b>: 👁 340 просмотров · 📞 21 обращение\n🎫 Онлайн-заявок: 1 · 2 человека",
+		"📋 Участники · 3→g:r:t1",
 		"📖 Программа · 3 дня→g:tp:0:0",
 		"🎫 Заявки→g:tb:0",
 		"⬅️ Кабинет→g:home",
@@ -483,25 +392,23 @@ func TestSketchOrganizerTour(t *testing.T) {
 
 func TestSketchRating(t *testing.T) {
 	o := uchitel
-	o.Organizer = api.Person{FirstName: str("Айгуль")}
+	o.Organizer = &api.Person{FirstName: str("Айгуль")}
 	o.CanRate = true
-	checkScreen(t, screens.RateOuting(i18n.RU, o),
-		"⭐ <b>Как прошёл выход «Пик Учитель»?</b>\nсб, 24 окт., 06:00 · организатор Айгуль\n\n"+
-			"Оцените от 1 до 5. Оценка появится на странице организатора — так другие поймут, с кем идти в горы.",
+	checkScreen(t, screens.RateTour(i18n.RU, o),
+		"⭐ <b>Как прошёл тур «Пик Учитель»?</b>\nсб, 24 окт., 06:00 · организатор Айгуль\n\n"+
+			"Оцените от 1 до 5. Оценка станет вашим отзывом о туре — так другие поймут, с кем ехать в горы.",
 		"1 ★→r:v:o1:1 | 2 ★→r:v:o1:2 | 3 ★→r:v:o1:3 | 4 ★→r:v:o1:4 | 5 ★→r:v:o1:5",
 	)
 	o.MyRating = &api.RatingMine{Rating: 4}
-	o.Trail = &api.TrailRef{Name: "Ала-Арча", Slug: "uchitel"}
-	checkScreen(t, screens.RateThanks(i18n.RU, o, at(10, 25, 10, 0)),
-		"Спасибо! Ваша оценка выхода «Пик Учитель»: ★★★★☆\n\n"+
-			"Добавьте пару слов — что понравилось, что можно улучшить. Отзыв увидят на странице организатора.",
+	checkScreen(t, screens.RateThanks(i18n.RU, o),
+		"Спасибо! Ваша оценка тура «Пик Учитель»: ★★★★☆\n\n"+
+			"Добавьте пару слов — что понравилось, что можно улучшить. Отзыв увидят на странице тура и организатора.",
 		"✍️ Написать отзыв→r:w:o1",
-		"📝 Рассказать, как маршрут→c:s:o1",
 		"Изменить оценку→r:s:o1",
 	)
 	o.MyRating.Text = str("Отличный темп")
-	if s := screens.RateThanks(i18n.RU, o, at(10, 25, 10, 0)); !strings.HasSuffix(s.Text, "<i>Отличный темп</i>") || layout(s)[0] != "✍️ Изменить отзыв→r:w:o1" {
+	if s := screens.RateThanks(i18n.RU, o); !strings.HasSuffix(s.Text, "<i>Отличный темп</i>") || layout(s)[0] != "✍️ Изменить отзыв→r:w:o1" {
 		t.Errorf("with a comment:\n%s\n%v", s.Text, layout(s))
 	}
-	checkScreen(t, screens.ReviewPrompt(i18n.RU, o), "Напишите отзыв о выходе «Пик Учитель» одним сообщением.", "Отмена→r:v:o1:0")
+	checkScreen(t, screens.ReviewPrompt(i18n.RU, o), "Напишите отзыв о туре «Пик Учитель» одним сообщением.", "Отмена→r:v:o1:0")
 }

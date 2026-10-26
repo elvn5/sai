@@ -45,20 +45,5 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.GET("/conditions", conditions.Recent)
 	r.DELETE("/conditions/:id", requireAdminOrUser, conditions.Delete)
 
-	outings := &handlers.Outings{Deps: d}
-	r.GET("/outings", optionalUser, outings.List)
-	r.GET("/outings/mine", requireUser, outings.Mine)
-	r.GET("/outings/mine/summary", requireUser, outings.Summary)
-	r.GET("/outings/organizers/:userId", outings.Organizer)
-	r.GET("/outings/:id", optionalUser, outings.Get)
-	r.POST("/outings", requireUser, outings.Create)
-	r.PUT("/outings/:id", requireUser, outings.Update)
-	r.POST("/outings/:id/cancel", requireUser, outings.Cancel)
-	r.POST("/outings/:id/join", requireUser, outings.Join)
-	r.DELETE("/outings/:id/join", requireUser, outings.Leave)
-	r.PUT("/outings/:id/participants/:userId/arrival", requireUser, outings.SetArrival)
-	r.DELETE("/outings/:id/participants/:userId/arrival", requireUser, outings.SetArrival)
-	r.PUT("/outings/:id/rating", requireUser, outings.Rate)
-
 	return r
 }

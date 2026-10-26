@@ -4,7 +4,7 @@ import { TelegramLink } from '@/ui/telegram-link';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-// Tells a participant whether outing notifications will reach them in
+// Tells a participant whether tour notifications will reach them in
 // Telegram: they go to accounts linked to Telegram, from the site's bot,
 // which the visitor must have started.
 @Component({
@@ -19,13 +19,13 @@ import { TranslocoPipe } from '@jsverse/transloco';
         <div class="flex flex-col gap-2 text-text">
           @if (linked()) {
             <p>
-              {{ 'outings.telegram.linked' | transloco }}
-              <a [href]="'https://t.me/' + bot + '?start=outings'" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 hover:underline dark:text-sky-300">
-                {{ 'outings.telegram.startBot' | transloco: { bot: '@' + bot } }}
+              {{ 'tours.signup.telegram.linked' | transloco }}
+              <a [href]="'https://t.me/' + bot + '?start=tours'" target="_blank" rel="noopener noreferrer" class="font-medium text-sky-700 hover:underline dark:text-sky-300">
+                {{ 'tours.signup.telegram.startBot' | transloco: { bot: '@' + bot } }}
               </a>
             </p>
           } @else {
-            <p>{{ 'outings.telegram.notLinked' | transloco }}</p>
+            <p>{{ 'tours.signup.telegram.notLinked' | transloco }}</p>
             <app-telegram-link [compact]="true" />
           }
         </div>

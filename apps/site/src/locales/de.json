@@ -6,8 +6,7 @@
     "tours": "Touren",
     "blog": "Blog",
     "menu": "Menü",
-    "hallOfFame": "Ruhmeshalle",
-    "outings": "Touren"
+    "hallOfFame": "Ruhmeshalle"
   },
   "theme": { "toggle": "Design", "light": "Hell", "dark": "Dunkel" },
   "colorTheme": { "toggle": "Farbthema" },
@@ -18,18 +17,15 @@
     "latestNews": "Neueste Beiträge",
     "viewAllPosts": "Alle Beiträge",
     "quick": {
-      "outings": {
-        "title": "Ausflüge",
-        "description": "Gemeinsame Wanderungen am Wochenende"
-      },
       "tours": {
         "title": "Touren",
         "description": "Fertige Reisen von Partnern"
+      },
+      "blog": {
+        "title": "Blog",
+        "description": "Routen, Tipps und Neuigkeiten"
       }
     },
-    "outingsHeading": "Nächste Gruppentouren",
-    "outingsSubheading": "Schließen Sie sich einer Gruppe an oder finden Sie einen Platz im Auto",
-    "viewAllOutings": "Alle Gruppentouren",
     "toursHeading": "Nächste Touren",
     "toursSubheading": "Die nächsten Termine der Veranstalter",
     "viewAllTours": "Alle Touren"
@@ -125,8 +121,7 @@
     "deleteButton": "Löschen",
     "deleteConfirm": "Diese Tour löschen?",
     "perPerson": "pro Person",
-    "emptyHint": "Partner fügen jede Woche neue Termine hinzu. Schauen Sie sich inzwischen die Gruppentouren an.",
-    "emptyCta": "Gruppentouren ansehen",
+    "emptyHint": "Partner fügen jede Woche neue Termine hinzu. Aktivieren Sie Benachrichtigungen – wir melden neue Touren.",
     "emptyFiltered": "Keine Touren zu diesen Filtern",
     "emptyFilteredHint": "Wählen Sie eine andere Dauer oder entfernen Sie einen Filter.",
     "filters": {
@@ -174,7 +169,46 @@
     },
     "capacityLabel": "Gruppengröße",
     "capacityHint": "Leer lassen für unbegrenzt. Online-Buchungen überschreiten diese Zahl nicht.",
-    "photosLabel": "Fotos für die Galerie"
+    "photosLabel": "Fotos für die Galerie",
+    "meetingPointLabel": "Treffpunkt",
+    "meetingPointPlaceholder": "z. B. Südtor, an der Tankstelle",
+    "meetingTimeLabel": "Treffzeit",
+    "meetingTimeHint": "Am Starttag, Bischkek-Zeit",
+    "signup": {
+      "heading": "Anmeldung",
+      "meeting": "Treffen: {when}",
+      "placesTaken": "{taken} von {capacity} angemeldet",
+      "signedUp": "Angemeldet: {taken}",
+      "join": "Anmelden",
+      "joinHint": "Der Organisator wird benachrichtigt, und wir erinnern Sie am Vortag.",
+      "joined": "Sie sind angemeldet",
+      "leave": "Anmeldung stornieren",
+      "leaveConfirm": "Anmeldung stornieren? Ihr Platz wird frei, und der Organisator wird benachrichtigt.",
+      "full": "Ausgebucht",
+      "closed": "Anmeldung geschlossen: Die Tour hat begonnen.",
+      "participants": "Teilnehmende",
+      "arrived": "anwesend",
+      "noParticipants": "Noch hat sich niemand angemeldet.",
+      "checkInHint": "Die Anwesenheit erfassen Sie im Telegram-Bot, ab einem Tag vor dem Start.",
+      "errors": {
+        "conflict": "Hat nicht geklappt: keine Plätze mehr oder die Anmeldung ist geschlossen.",
+        "generic": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+      },
+      "rate": {
+        "title": "Wie war die Tour?",
+        "hint": "Ihre Bewertung wird zu Ihrer Rezension der Tour und erscheint auf der Seite des Organisators.",
+        "textPlaceholder": "Was hat Ihnen gefallen, was könnte besser sein? (optional)",
+        "submit": "Bewertung speichern",
+        "saved": "Danke! Ihre Bewertung ist gespeichert",
+        "yours": "Ihre Bewertung",
+        "error": "Bewertung konnte nicht gespeichert werden"
+      },
+      "telegram": {
+        "linked": "Tour-Benachrichtigungen kommen per Telegram: Änderungen, eine Erinnerung am Vortag, danach die Bitte um eine Bewertung.",
+        "startBot": "Öffnen Sie {bot} und tippen Sie auf „Start“, falls noch nicht geschehen.",
+        "notLinked": "Tour-Benachrichtigungen kommen per Telegram – verknüpfen Sie es mit Ihrem Konto."
+      }
+    }
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -312,21 +346,18 @@
     "reviewsCount": "Bewertungen: {count}",
     "noRating": "Noch keine Bewertungen",
     "stats": {
-      "outings": "Ausflüge geleitet",
       "people": "Teilnehmende",
       "tours": "Touren geleitet",
       "reviews": "Bewertungen"
     },
-    "upcomingOutings": "Nächste Ausflüge",
     "upcomingTours": "Nächste Touren",
     "reviews": "Bewertungen von Teilnehmenden",
-    "noReviews": "Noch keine Bewertungen. Sie stammen von Leuten, die mit diesem Veranstalter unterwegs waren.",
-    "aboutOuting": "Zum Ausflug",
+    "noReviews": "Noch keine Bewertungen. Sie stammen von Teilnehmenden einer Tour mit diesem Organisator.",
     "aboutTour": "Zur Tour",
     "reply": "Antwort des Veranstalters",
     "title": "{name}, Veranstalter",
-    "meta": "{name}: Bergausflüge und Touren in Kirgisistan auf Ermekten.",
-    "metaRated": "{name}: Bewertung {rating} aus {count} Bewertungen. Bergausflüge und Touren in Kirgisistan auf Ermekten.",
+    "meta": "{name}: Bergtouren und Reisen durch Kirgisistan auf Ermekten.",
+    "metaRated": "{name}: Bewertung {rating} aus {count} Rezensionen. Bergtouren und Reisen durch Kirgisistan auf Ermekten.",
     "profileLink": "Profil des Veranstalters"
   },
   "reviews": {
@@ -465,11 +496,11 @@
       "telegram": "Telegram"
     },
     "history": {
-      "empty": "Noch keine Gruppentouren",
-      "emptyHint": "Gruppentouren, die Sie organisieren oder denen Sie beitreten, erscheinen hier.",
+      "empty": "Noch keine Touren",
+      "emptyHint": "Hier erscheinen die Touren, für die Sie sich anmelden.",
       "cta": "Tour finden",
-      "upcoming": "Kommende Gruppentouren",
-      "past": "Vergangene Gruppentouren"
+      "upcoming": "Bevorstehende Touren",
+      "past": "Vergangene Touren"
     },
     "partner": {
       "pitch": "Werden Sie Ermekten-Partner: Veröffentlichen Sie Unterkünfte, Touren, Guides und Beiträge und verleihen Sie Reisenden Erfolge.",
@@ -488,14 +519,11 @@
       "open": "Ruhmeshalle öffnen"
     },
     "stats": {
-      "outings": "Touren",
       "bookings": "Bezahlte Buchungen",
       "points": "Punkte",
       "awards": "Erfolge",
-      "distance": "Strecke",
-      "elevation": "Höhenmeter",
-      "kmValue": "{value} km",
-      "metersValue": "{value} m"
+      "tours": "Touren",
+      "upcoming": "Bevorstehend"
     }
   },
   "footer": {
@@ -637,101 +665,15 @@
     "self": "Sie können sich keinen Erfolg selbst verleihen.",
     "awardError": "Der Erfolg konnte nicht verliehen werden. Bitte erneut versuchen."
   },
-  "outings": {
-    "rate": {
-      "title": "Wie war der Ausflug?",
-      "hint": "Bewertung und Kommentar erscheinen auf der Seite des Veranstalters.",
-      "textPlaceholder": "Was hat gefallen, was ginge besser? (optional)",
-      "submit": "Bewertung speichern",
-      "saved": "Danke! Bewertung gespeichert",
-      "yours": "Ihre Bewertung",
-      "error": "Bewertung konnte nicht gespeichert werden"
-    },
-    "title": "Gruppentouren",
-    "subtitle": "Gemeinsame Wanderungen und Besteigungen: finden Sie Begleitung, einen Platz im Auto oder stellen Sie Ihre eigene Gruppe zusammen.",
-    "create": "Tour organisieren",
-    "empty": "Noch keine anstehenden Gruppentouren",
-    "emptyHint": "Starten Sie eine: Route, Zeit und freie Plätze angeben.",
-    "freeSeatsOnly": "Nur mit freien Plätzen",
-    "groups": {
-      "today": "Heute",
-      "tomorrow": "Morgen"
-    },
-    "transport": {
-      "car": "Im Auto des Organisators",
-      "bus": "Mit öffentlichen Verkehrsmitteln",
-      "arranged": "Gemieteter Transport"
-    },
-    "level": {
-      "beginner": "Für Einsteiger",
-      "intermediate": "Mit Erfahrung",
-      "advanced": "Für Erfahrene"
-    },
-    "free": "Kostenlos",
-    "full": "Voll",
-    "seatsLeft": "Freie Plätze: {count}",
-    "seatsTaken": "{taken} von {seats} belegt",
-    "cancelled": "Abgesagt",
-    "participants": "Teilnehmende",
-    "organizer": "Organisator",
-    "contact": "Kontakt zum Organisator",
-    "returns": "Zurück: {when}",
-    "join": "Mitmachen",
-    "joinHint": "Danach sehen Sie den Kontakt des Organisators.",
-    "leave": "Ich kann nicht",
-    "cancel": "Tour absagen",
-    "cancelConfirm": "Tour absagen? Die Teilnehmenden sehen, dass sie abgesagt ist.",
-    "notYours": "Nur der Organisator kann diese Tour bearbeiten.",
-    "errors": {
-      "conflict": "Hat nicht geklappt: keine Plätze mehr oder die Tour ist geschlossen.",
-      "generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen."
-    },
-    "form": {
-      "newTitle": "Tour organisieren",
-      "newHint": "Sagen Sie, wohin und wann es geht — Interessierte schließen sich an, den Kontakt sehen nur Teilnehmende.",
-      "editTitle": "Tour bearbeiten",
-      "trail": "Route",
-      "trailHint": "Leer lassen, wenn die Route nicht im Katalog ist.",
-      "noTrail": "Ohne Katalogroute",
-      "title": "Titel",
-      "titlePlaceholder": "z. B. Utschitel am Samstag",
-      "startsAt": "Treffpunkt-Zeit",
-      "bishkekTime": "Bischkeker Zeit",
-      "returnsAt": "Rückkehr (falls bekannt)",
-      "meetingPoint": "Treffpunkt",
-      "meetingPointPlaceholder": "z. B. Südtor, an der Tankstelle",
-      "transport": "Anreise",
-      "seats": "Wie viele Personen Sie mitnehmen",
-      "seatsHint": "Außer Ihnen — z. B. freie Plätze im Auto",
-      "cost": "Beitrag pro Person, Som",
-      "costHint": "Benzin, Parkeintritt; 0 = kostenlos",
-      "level": "Niveau",
-      "description": "Details",
-      "descriptionPlaceholder": "Tempo, was mitzunehmen ist, Übernachtung, Plan B bei schlechtem Wetter…",
-      "contact": "Wie man Sie erreicht",
-      "contactHint": "Nur Teilnehmende sehen es",
-      "create": "Tour veröffentlichen",
-      "save": "Speichern",
-      "saveError": "Die Tour konnte nicht gespeichert werden.",
-      "checkFields": "Bitte prüfen Sie die Felder.",
-      "futureStart": "Der Treffpunkt muss in der Zukunft liegen",
-      "returnAfterStart": "Die Rückkehr muss nach dem Start liegen"
-    },
-    "telegram": {
-      "linked": "Benachrichtigungen zur Tour kommen per Telegram: wer mitmacht, Änderungen, eine Erinnerung am Vortag.",
-      "startBot": "Öffnen Sie {bot} und tippen Sie auf „Start“, falls noch nicht geschehen.",
-      "notLinked": "Benachrichtigungen zu Gruppentouren kommen per Telegram — verknüpfen Sie es mit Ihrem Konto."
-    }
-  },
   "telegramLink": {
-    "why": "Verknüpfen Sie Telegram, um Benachrichtigungen zu Gruppentouren zu erhalten und sich mit Telegram anzumelden.",
+    "why": "Verknüpfen Sie Telegram, um Tour-Benachrichtigungen zu erhalten und sich per Telegram anzumelden.",
     "link": "Telegram verknüpfen",
     "open": "{bot} öffnen",
     "waiting": "Tippen Sie im Bot auf „Start“ — wir warten auf die Bestätigung…",
     "linked": "Telegram verknüpft",
     "justLinked": "Fertig, Telegram ist verknüpft!",
     "unlink": "Trennen",
-    "unlinkConfirm": "Telegram trennen? Benachrichtigungen zu Gruppentouren kommen dann nicht mehr.",
+    "unlinkConfirm": "Telegram trennen? Tour-Benachrichtigungen werden dann nicht mehr gesendet.",
     "onlySignIn": "Telegram ist Ihre einzige Anmeldemöglichkeit und kann nicht getrennt werden.",
     "expired": "Der Link ist abgelaufen. Tippen Sie erneut auf „Telegram verknüpfen“.",
     "error": "Etwas ist schiefgelaufen. Bitte erneut versuchen."

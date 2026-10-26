@@ -57,6 +57,9 @@ export interface TourPayload {
   photos: string[];
   program: TourDay[];
   capacity: number | null;
+  meetingPoint: string | null;
+  // HH:MM, Bishkek time, on the start date.
+  meetingTime: string | null;
   phone: string | null;
   whatsapp: string | null;
   telegram: string | null;
@@ -82,6 +85,8 @@ interface TourFormModel {
   photos: string[];
   program: TourDay[];
   capacity: number | null;
+  meetingPoint: string;
+  meetingTime: string;
   content: string;
   whatsapp: string;
   telegram: string;
@@ -103,6 +108,8 @@ function toModel(tour: Partial<Tour> | undefined): TourFormModel {
     photos: tour?.photos ?? [],
     program: (tour?.program ?? []).map((day) => ({ ...day })),
     capacity: tour?.capacity ?? null,
+    meetingPoint: tour?.meetingPoint ?? '',
+    meetingTime: tour?.meetingTime ?? '',
     content: tour?.content ?? '',
     whatsapp: tour?.whatsapp ?? '',
     telegram: tour?.telegram ?? '',
@@ -176,6 +183,18 @@ let nextFormId = 0;
           />
           <app-field-errors [state]="tourForm.endDate()" />
         </div>
+      </div>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,1fr)_10rem]">
+        <label class="ui-field">
+          {{ 'tours.meetingPointLabel' | transloco }}
+          <input class="ui-input" [placeholder]="'tours.meetingPointPlaceholder' | transloco" [formField]="tourForm.meetingPoint" />
+          <app-field-errors [state]="tourForm.meetingPoint()" />
+        </label>
+        <label class="ui-field">
+          {{ 'tours.meetingTimeLabel' | transloco }}
+          <input class="ui-input" type="time" [formField]="tourForm.meetingTime" />
+          <span class="ui-hint">{{ 'tours.meetingTimeHint' | transloco }}</span>
+        </label>
       </div>
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div class="ui-field">
@@ -315,6 +334,7 @@ export class TourForm {
     maxLength(path.title, 255);
     maxLength(path.excerpt, 500);
     maxLength(path.location, 255);
+    maxLength(path.meetingPoint, 200);
     maxLength(path.content, 20000);
     min(path.price, 0);
     min(path.durationDays, 1);
@@ -374,6 +394,8 @@ export class TourForm {
           photos: value.photos,
           program: value.program.map((day) => ({ title: day.title.trim(), text: day.text.trim() })),
           capacity: value.capacity,
+          meetingPoint: emptyToNull(value.meetingPoint),
+          meetingTime: value.meetingTime || null,
           phone: emptyToNull(value.phone),
           whatsapp: emptyToNull(value.whatsapp),
           telegram: telegramUsername(value.telegram),

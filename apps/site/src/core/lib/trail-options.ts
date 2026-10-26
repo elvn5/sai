@@ -1,5 +1,5 @@
 // Mirrors services/trails/internal/models/options.go — keep the two in
-// sync. Labels are translation keys under trails.* and outings.*; icons
+// sync. Labels are translation keys under trails.*; icons
 // are static CSS classes (written out in full so Tailwind generates them).
 
 export interface TrailOption {
@@ -93,18 +93,6 @@ export const TRACTIONS: TrailOption[] = [
 ];
 
 export const AVALANCHE_RISKS = ['low', 'moderate', 'considerable', 'high'] as const;
-
-export const TRANSPORTS: TrailOption[] = [
-  { value: 'car', icon: 'icon-[mdi--car]' },
-  { value: 'bus', icon: 'icon-[mdi--bus]' },
-  { value: 'arranged', icon: 'icon-[mdi--van-passenger]' },
-];
-
-export const LEVELS: TrailOption[] = [
-  { value: 'beginner', icon: 'icon-[mdi--signal-cellular-1]' },
-  { value: 'intermediate', icon: 'icon-[mdi--signal-cellular-2]' },
-  { value: 'advanced', icon: 'icon-[mdi--signal-cellular-3]' },
-];
 
 export function optionIcon(options: TrailOption[], value: string): string {
   return (

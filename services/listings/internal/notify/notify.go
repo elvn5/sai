@@ -1,8 +1,8 @@
-// Package notify sends Telegram notifications about outings: to the
-// organizer when people join or leave, to participants when the outing
-// changes or is cancelled, a reminder before it starts and a request for a
-// condition report after it. Each is written in the recipient's language
-// (the one their chat reads the bot in). Messages go through an outbox table and a
+// Package notify sends Telegram notifications about sign-ups for tours: to
+// the organizer when people sign up or drop out, to participants when the
+// tour moves or is cancelled, a reminder before it starts and a request to
+// rate it after. Each is written in the recipient's language (the one
+// their chat reads the bot in). Messages go through an outbox table and a
 // background worker, so requests never wait on Telegram and failed sends
 // are retried.
 package notify
@@ -14,10 +14,10 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/elvn5/sai/services/listings/internal/models"
+	"github.com/elvn5/sai/services/listings/internal/store"
 	"github.com/elvn5/sai/services/pkg/telegram"
 	"github.com/elvn5/sai/services/pkg/usersclient"
-	"github.com/elvn5/sai/services/trails/internal/models"
-	"github.com/elvn5/sai/services/trails/internal/store"
 )
 
 const (
@@ -64,20 +64,21 @@ func botButton(l telegram.Lang, text, data string) (*string, *string) {
 	return &text, &data
 }
 
-// outingButton opens the outing's card in the bot, as a new message.
-func outingButton(l telegram.Lang, o models.Outing) (*string, *string) {
-	return botButton(l, "Открыть выход", "o:view:n:"+o.ID)
+// tourButton opens the tour's card in the bot (the user's place on it),
+// as a new message.
+func tourButton(l telegram.Lang, t models.Tour) (*string, *string) {
+	return botButton(l, "Открыть тур", "o:view:n:"+t.ID)
 }
 
 // checkInButton opens the organizer's roster in the bot, to mark who
 // arrived.
-func checkInButton(l telegram.Lang, o models.Outing) (*string, *string) {
-	return botButton(l, "📋 Отметить прибывших", "g:rn:"+o.ID)
+func checkInButton(l telegram.Lang, t models.Tour) (*string, *string) {
+	return botButton(l, "📋 Отметить прибывших", "g:rn:"+t.ID)
 }
 
-func (n *Notifier) message(l telegram.Lang, userID, kind string, o models.Outing, text string) store.Notification {
-	btnText, btnData := outingButton(l, o)
-	return store.Notification{UserID: userID, Kind: kind, OutingID: &o.ID, Text: text, ButtonText: btnText, ButtonData: btnData}
+func (n *Notifier) message(l telegram.Lang, userID, kind string, t models.Tour, text string) store.Notification {
+	btnText, btnData := tourButton(l, t)
+	return store.Notification{UserID: userID, Kind: kind, TourID: &t.ID, Text: text, ButtonText: btnText, ButtonData: btnData}
 }
 
 // langs looks up the recipients' languages: Russian for a chat the bot
@@ -103,29 +104,43 @@ func (n *Notifier) enqueue(ctx context.Context, items []store.Notification) {
 	}
 }
 
-func (n *Notifier) person(ctx context.Context, id string) models.Person {
+func (n *Notifier) person(ctx context.Context, id string) usersclient.Author {
 	authors, err := n.Users.Authors(ctx, []string{id})
 	if a, ok := authors[id]; err == nil && ok {
-		return models.Person{ID: a.ID, FirstName: a.FirstName, Username: a.Username}
+		return a
 	}
-	return models.Person{ID: id}
+	return usersclient.Author{ID: id}
 }
 
-// Joined tells the organizer someone joined (o is the updated outing).
-func (n *Notifier) Joined(ctx context.Context, o models.Outing, userID string) {
-	l := n.langs(ctx, o.UserID)(o.UserID)
-	n.enqueue(ctx, []store.Notification{n.message(l, o.UserID, "joined", o, joinedText(l, o, n.person(ctx, userID)))})
+func organizerOf(t models.Tour) string {
+	if t.UserID == nil {
+		return ""
+	}
+	return *t.UserID
+}
+
+// Joined tells the organizer someone signed up (t is the updated tour).
+func (n *Notifier) Joined(ctx context.Context, t models.Tour, userID string) {
+	owner := organizerOf(t)
+	if owner == "" {
+		return
+	}
+	l := n.langs(ctx, owner)(owner)
+	n.enqueue(ctx, []store.Notification{n.message(l, owner, "joined", t, joinedText(l, t, n.person(ctx, userID)))})
 }
 
 // Left tells the organizer someone dropped out.
-func (n *Notifier) Left(ctx context.Context, o models.Outing, userID string) {
-	l := n.langs(ctx, o.UserID)(o.UserID)
-	n.enqueue(ctx, []store.Notification{n.message(l, o.UserID, "left", o, leftText(l, o, n.person(ctx, userID)))})
+func (n *Notifier) Left(ctx context.Context, t models.Tour, userID string) {
+	owner := organizerOf(t)
+	if owner == "" {
+		return
+	}
+	l := n.langs(ctx, owner)(owner)
+	n.enqueue(ctx, []store.Notification{n.message(l, owner, "left", t, leftText(l, t, n.person(ctx, userID)))})
 }
 
-// Changed tells participants when the start, meeting point or route
-// changed.
-func (n *Notifier) Changed(ctx context.Context, before, after models.Outing, participantIDs []string) {
+// Changed tells participants when the start or the meeting point changed.
+func (n *Notifier) Changed(ctx context.Context, before, after models.Tour, participantIDs []string) {
 	if changedText(telegram.RU, before, after) == "" || len(participantIDs) == 0 {
 		return
 	}
@@ -138,32 +153,18 @@ func (n *Notifier) Changed(ctx context.Context, before, after models.Outing, par
 	n.enqueue(ctx, items)
 }
 
-// Cancelled tells participants the outing is off.
-func (n *Notifier) Cancelled(ctx context.Context, o models.Outing, participantIDs []string) {
+// Cancelled tells participants the tour is off (it was deleted: the
+// message has no button).
+func (n *Notifier) Cancelled(ctx context.Context, t models.Tour, participantIDs []string) {
 	if len(participantIDs) == 0 {
 		return
 	}
 	lang := n.langs(ctx, participantIDs...)
 	items := make([]store.Notification, 0, len(participantIDs))
 	for _, id := range participantIDs {
-		l := lang(id)
-		items = append(items, n.message(l, id, "cancelled", o, cancelledText(l, o)))
+		items = append(items, store.Notification{UserID: id, Kind: "cancelled", TourID: &t.ID, Text: cancelledText(lang(id), t)})
 	}
 	n.enqueue(ctx, items)
-}
-
-func trailName(o models.Outing) string {
-	if o.Trail == nil {
-		return ""
-	}
-	return o.Trail.Name
-}
-
-func orDash(s string) string {
-	if s == "" {
-		return "—"
-	}
-	return s
 }
 
 // Run schedules reminders and follow-ups and delivers the queue until ctx
@@ -197,25 +198,27 @@ func (n *Notifier) Tick(ctx context.Context) {
 
 func (n *Notifier) schedule(ctx context.Context) error {
 	now := n.now()
-	due, err := n.Store.OutingsDueForReminder(ctx, now)
+	due, err := n.Store.ToursDueForReminder(ctx, now)
 	if err != nil {
 		return err
 	}
 	for _, id := range due {
-		o, participants, err := n.loadOuting(ctx, id)
+		t, participants, err := n.loadTour(ctx, id)
 		if err != nil {
 			return err
 		}
-		lang := n.langs(ctx, append([]string{o.UserID}, participants...)...)
-		l := lang(o.UserID)
-		toOrganizer := n.message(l, o.UserID, "reminder", o, reminderText(l, o, true))
-		if o.Taken > 0 {
-			toOrganizer.ButtonText, toOrganizer.ButtonData = checkInButton(l, o)
+		owner := organizerOf(t)
+		lang := n.langs(ctx, append([]string{owner}, participants...)...)
+		var items []store.Notification
+		if owner != "" {
+			l := lang(owner)
+			toOrganizer := n.message(l, owner, "reminder", t, reminderText(l, t, true))
+			toOrganizer.ButtonText, toOrganizer.ButtonData = checkInButton(l, t)
+			items = append(items, once(toOrganizer, t.RemindAt))
 		}
-		items := []store.Notification{once(toOrganizer, o.RemindAt)}
 		for _, p := range participants {
 			l := lang(p)
-			items = append(items, once(n.message(l, p, "reminder", o, reminderText(l, o, false)), o.RemindAt))
+			items = append(items, once(n.message(l, p, "reminder", t, reminderText(l, t, false)), t.RemindAt))
 		}
 		if err := n.Store.Enqueue(ctx, items, n.now()); err != nil {
 			return err
@@ -225,32 +228,24 @@ func (n *Notifier) schedule(ctx context.Context) error {
 		}
 	}
 
-	due, err = n.Store.OutingsDueForFollowUp(ctx, now, now.Add(-followUpStale))
+	due, err = n.Store.ToursDueForFollowUp(ctx, now, now.Add(-followUpStale))
 	if err != nil {
 		return err
 	}
 	for _, id := range due {
-		o, participants, err := n.loadOuting(ctx, id)
+		t, participants, err := n.loadTour(ctx, id)
 		if err != nil {
 			return err
 		}
-		// Participants rate the outing (and, on a catalog route, then tell
-		// how it is) in the bot; the organizer reports on the route.
-		lang := n.langs(ctx, append([]string{o.UserID}, participants...)...)
-		items := make([]store.Notification, 0, len(participants)+1)
-		if o.Trail != nil {
-			l := lang(o.UserID)
-			text, data := botButton(l, "📝 Рассказать, как маршрут", "c:s:"+o.ID)
-			items = append(items, once(store.Notification{
-				UserID: o.UserID, Kind: "followup", OutingID: &o.ID, Text: followUpText(l, o), ButtonText: text, ButtonData: data,
-			}, o.FollowUpAt))
-		}
+		// Participants rate the tour in the bot.
+		lang := n.langs(ctx, participants...)
+		items := make([]store.Notification, 0, len(participants))
 		for _, userID := range participants {
 			l := lang(userID)
-			text, data := botButton(l, "⭐ Оценить выход", "r:s:"+o.ID)
+			text, data := botButton(l, "⭐ Оценить тур", "r:s:"+t.ID)
 			items = append(items, once(store.Notification{
-				UserID: userID, Kind: "followup", OutingID: &o.ID, Text: rateText(l, o), ButtonText: text, ButtonData: data,
-			}, o.FollowUpAt))
+				UserID: userID, Kind: "followup", TourID: &t.ID, Text: rateText(l, t), ButtonText: text, ButtonData: data,
+			}, t.FollowUpAt))
 		}
 		if err := n.Store.Enqueue(ctx, items, n.now()); err != nil {
 			return err
@@ -263,24 +258,24 @@ func (n *Notifier) schedule(ctx context.Context) error {
 }
 
 // once sets a dedup key so a scheduled message is queued at most once per
-// due time (a moved outing is reminded again).
+// due time (a moved tour is reminded again).
 func once(item store.Notification, due *time.Time) store.Notification {
 	var at int64
 	if due != nil {
 		at = due.Unix()
 	}
-	key := fmt.Sprintf("%s:%s:%s:%d", item.Kind, *item.OutingID, item.UserID, at)
+	key := fmt.Sprintf("%s:%s:%s:%d", item.Kind, *item.TourID, item.UserID, at)
 	item.DedupKey = &key
 	return item
 }
 
-func (n *Notifier) loadOuting(ctx context.Context, id string) (models.Outing, []string, error) {
-	o, err := n.Store.Outing(ctx, id)
+func (n *Notifier) loadTour(ctx context.Context, id string) (models.Tour, []string, error) {
+	t, err := n.Store.Tour(ctx, id)
 	if err != nil {
-		return o, nil, err
+		return t, nil, err
 	}
 	participants, err := n.Store.ParticipantIDs(ctx, id)
-	return o, participants, err
+	return t, participants, err
 }
 
 func (n *Notifier) deliver(ctx context.Context) error {
@@ -311,12 +306,8 @@ func (n *Notifier) deliverOne(ctx context.Context, item store.Notification, chat
 		return n.Store.MarkNotification(ctx, item.ID, "skipped", item.Attempts, &reason, n.now())
 	}
 	var button *telegram.Button
-	switch {
-	case item.ButtonText != nil && item.ButtonData != nil:
+	if item.ButtonText != nil && item.ButtonData != nil {
 		button = &telegram.Button{Text: *item.ButtonText, Data: *item.ButtonData}
-	case item.ButtonText != nil && item.ButtonURL != nil:
-		// Queued before buttons pressed back to the bot.
-		button = &telegram.Button{Text: *item.ButtonText, URL: *item.ButtonURL}
 	}
 	err := n.Sender.SendMessage(ctx, chat.ID, item.Text, button)
 	var rateLimited *telegram.RateLimitedError

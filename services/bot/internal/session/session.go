@@ -12,11 +12,11 @@ type Field string
 const (
 	FieldName  Field = "name"
 	FieldPhone Field = "phone"
-	// A message from an outing's organizer to its participants: being
-	// written (the argument is the outing), then written (outing and text).
+	// A message from a tour's organizer to its participants: being written
+	// (the argument is the tour), then written (tour and text).
 	FieldBroadcast      Field = "broadcast"
 	FieldBroadcastReady Field = "broadcast_ready"
-	// A participant's comment to their rating of an outing (the argument).
+	// A participant's comment to their rating of a tour (the argument).
 	FieldReview Field = "review"
 )
 
@@ -44,7 +44,7 @@ func New() *Store {
 
 func (s *Store) Start(chatID int64, field Field) { s.StartWith(chatID, field, "") }
 
-// StartWith remembers a field with what it is about (an outing's id).
+// StartWith remembers a field with what it is about (a tour's id).
 func (s *Store) StartWith(chatID int64, field Field, arg string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/elvn5/sai/services/listings/internal/alerts"
+	"github.com/elvn5/sai/services/listings/internal/models"
 	"github.com/elvn5/sai/services/listings/internal/store"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
@@ -41,12 +42,23 @@ type AuthorSource interface {
 	Authors(ctx context.Context, ids []string) (map[string]usersclient.Author, error)
 }
 
+// TourNotifier queues Telegram notifications about sign-ups for tours
+// (internal/notify); optional.
+type TourNotifier interface {
+	Joined(ctx context.Context, t models.Tour, userID string)
+	Left(ctx context.Context, t models.Tour, userID string)
+	Changed(ctx context.Context, before, after models.Tour, participantIDs []string)
+	Cancelled(ctx context.Context, t models.Tour, participantIDs []string)
+}
+
 // Deps is what the handlers share.
 type Deps struct {
 	Store   *store.Store
 	Authors AuthorSource
 	// Telegram messages about new tours; nil when the bot isn't configured.
 	Alerts *alerts.Notifier
+	// Telegram messages about sign-ups; nil when the bot isn't configured.
+	Notify TourNotifier
 	Log    *slog.Logger
 	// Now is overridable in tests.
 	Now func() time.Time
@@ -58,6 +70,13 @@ func (d Deps) today() time.Time {
 		return d.Now().In(bishkek)
 	}
 	return time.Now().In(bishkek)
+}
+
+func (d Deps) now() time.Time {
+	if d.Now != nil {
+		return d.Now()
+	}
+	return time.Now()
 }
 
 // fail answers a store error. Messages for "not found" and duplicates
@@ -79,6 +98,8 @@ func (d Deps) fail(c *gin.Context, err error, notFoundMessage, duplicateMessage 
 func validID(id string) bool { return uuid.Validate(id) == nil }
 
 func currentUserID(c *gin.Context) string { return c.GetString(middleware.ContextUserID) }
+
+func isAdmin(c *gin.Context) bool { return c.GetBool(middleware.ContextIsAdmin) }
 
 func ownedBy(owner *string, userID string) bool { return owner != nil && *owner == userID }
 

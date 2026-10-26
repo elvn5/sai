@@ -12,8 +12,8 @@ Telego.
 | [`services/gateway`](services/gateway) | Go + Gin | Public API entry point; routes requests to backend services |
 | [`services/media`](services/media) | Go + Gin | Uploads: R2 presigned URLs, WebP image conversion, `/uploads` files, resized thumbnails (`/images`) |
 | [`services/content`](services/content) | Go + Gin | Blog, written guides, gallery, page SEO; own `content` database |
-| [`services/listings`](services/listings) | Go + Gin | Hotels, local guides, tours, reviews, owner posts; own `listings` database |
-| [`services/trails`](services/trails) | Go + Gin | Route catalog with GPX tracks, trail condition reports, group outings; own `trails` database |
+| [`services/listings`](services/listings) | Go + Gin | Hotels, local guides, tours with sign-ups (roster, check-in, reminders), reviews, owner posts; own `listings` database |
+| [`services/trails`](services/trails) | Go + Gin | Route catalog with GPX tracks, trail condition reports; own `trails` database |
 | [`services/payments`](services/payments) | Go + Gin | Online payments for bookings via Bakai Bank Open Banking (or a test page), partner balances and payouts; own `payments` database |
 | [`services/users`](services/users) | Go + Gin | Accounts: sign-in (password, Telegram, admin), registration, partners, support; gRPC for the other services and the bot; own `users` database |
 | [`services/bot`](services/bot) | Go + Telego | Telegram bot, long polling (no database; accounts via the users service's gRPC API) |
@@ -95,8 +95,8 @@ services/   Go workspace (go.work)
   gateway/  Gin API gateway
   media/    Uploads service (R2, WebP, /uploads)
   content/  Blog, guides, gallery, page SEO (own database)
-  listings/ Hotels, local guides, tours, reviews, posts (own database)
-  trails/   Routes, condition reports, group outings (own database)
+  listings/ Hotels, local guides, tours and sign-ups, reviews, posts (own database)
+  trails/   Routes, condition reports (own database)
   payments/ Bookings paid online (Bakai), partner payouts (own database)
   bot/      Telegram bot (Telego; accounts via users gRPC)
   users/    Accounts, sign-in, partners, support (own database; HTTP + gRPC)

@@ -306,8 +306,28 @@ export interface Tour extends ListingContacts {
   program: TourDay[];
   // Places for travelers; null when unlimited.
   capacity: number | null;
+  // Where and when (HH:MM, Bishkek time, on startDate) the group meets.
+  meetingPoint: string | null;
+  meetingTime: string | null;
+  // Travelers signed up.
+  taken: number;
   // The partner who runs it (absent for editorial tours).
   organizer?: PublicAuthor;
+  // The signed-in visitor's: whether they signed up or run it (on
+  // /tours/by-id/:id and their own lists; re-read in the browser).
+  isJoined?: boolean;
+  isOrganizer?: boolean;
+  // The organizer's: who signed up and who came.
+  roster?: TourParticipant[];
+  // A participant's: whether they can rate it now, and their rating.
+  canRate?: boolean;
+  myRating?: { rating: number; text: string | null } | null;
+}
+
+// Someone signed up for a tour, as its organizer sees them.
+export interface TourParticipant extends PublicAuthor {
+  joinedAt: string;
+  arrivedAt: string | null;
 }
 
 // One day of a tour's program.
@@ -515,7 +535,6 @@ export interface Trail {
   isPublished: boolean;
   userId: string | null;
   latestCondition: ConditionSummary | null;
-  upcomingOutings: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -543,34 +562,6 @@ export interface ConditionReport {
   createdAt: string;
 }
 
-// A group outing: anyone signed in organizes one, others join while seats
-// last. `contact` and `participants` reach participants only, and
-// isJoined/isOrganizer depend on the visitor: re-read in the browser.
-export interface Outing {
-  id: string;
-  trail: TrailRef | null;
-  title: string;
-  startsAt: string;
-  returnsAt: string | null;
-  meetingPoint: string;
-  transport: string;
-  seats: number;
-  taken: number;
-  costPerPerson: number | null;
-  level: string;
-  description: string | null;
-  contact: string | null;
-  status: 'open' | 'cancelled';
-  organizer: Person;
-  participants?: Person[];
-  isJoined: boolean;
-  isOrganizer: boolean;
-  // A participant's: whether they can rate it now, and their rating.
-  canRate?: boolean;
-  myRating?: { rating: number; text: string | null } | null;
-  createdAt: string;
-}
-
 // An organizer's public profile (users service).
 export interface OrganizerProfile extends Person {
   // An approved partner.
@@ -583,25 +574,11 @@ export interface RatingSummary {
   count: number;
 }
 
-// An organizer's outings (trails service): held, people, rating, upcoming
-// outings and the latest ratings of them.
-export interface OrganizerOutings {
-  hosted: number;
-  participants: number;
-  rating: RatingSummary;
-  upcoming: Outing[];
-  reviews: {
-    rating: number;
-    text: string | null;
-    createdAt: string;
-    author: Person;
-    outing: { id: string; title: string; startsAt: string };
-  }[];
-}
-
 // An organizer's tours in a language (listings service).
 export interface OrganizerTours {
   held: number;
+  // Travelers who signed up for the tours held.
+  participants: number;
   upcoming: Tour[];
   rating: RatingSummary;
   reviews: (Review & {

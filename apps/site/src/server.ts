@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { contextFromEnv } from '@/core/config/app-config';
-import { pausedSectionRedirect } from '@/server/paused-sections';
+import { movedSectionRedirect, pausedSectionRedirect } from '@/server/paused-sections';
 import { SitemapCache, isSitemapType, renderIndex } from '@/server/sitemap';
 import {
   AngularNodeAppEngine,
@@ -54,8 +54,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Sections paused for now: their addresses lead to what's left (302).
+// Sections paused for now: their addresses lead to what's left (302);
+// removed ones moved for good (301).
 app.use((req, res, next) => {
+  const moved = movedSectionRedirect(req.originalUrl);
+  if (moved) {
+    res.redirect(301, moved);
+    return;
+  }
   const target = pausedSectionRedirect(req.originalUrl);
   if (target) {
     res.redirect(302, target);

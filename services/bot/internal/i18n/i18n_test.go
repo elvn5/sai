@@ -20,10 +20,10 @@ func TestParse(t *testing.T) {
 
 func TestPlural(t *testing.T) {
 	for n, want := range map[int]string{
-		0: "выходов", 1: "выход", 2: "выхода", 4: "выхода", 5: "выходов", 11: "выходов", 12: "выходов",
-		14: "выходов", 21: "выход", 22: "выхода", 101: "выход", 111: "выходов", 112: "выходов",
+		0: "туров", 1: "тур", 2: "тура", 4: "тура", 5: "туров", 11: "туров", 12: "туров",
+		14: "туров", 21: "тур", 22: "тура", 101: "тур", 111: "туров", 112: "туров",
 	} {
-		if got := i18n.RU.N(n, "выход", "выхода", "выходов"); got != want {
+		if got := i18n.RU.N(n, "тур", "тура", "туров"); got != want {
 			t.Errorf("N(%d) = %q, want %q", n, got, want)
 		}
 	}
@@ -32,21 +32,21 @@ func TestPlural(t *testing.T) {
 		n    int
 		want string
 	}{
-		{i18n.EN, 1, "outing"}, {i18n.EN, 0, "outings"}, {i18n.EN, 21, "outings"},
-		{i18n.DE, 1, "Ausflug"}, {i18n.DE, 5, "Ausflüge"}, {i18n.KY, 1, "чыгуу"}, {i18n.KY, 5, "чыгуу"},
+		{i18n.EN, 1, "tour"}, {i18n.EN, 0, "tours"}, {i18n.EN, 21, "tours"},
+		{i18n.DE, 1, "Tour"}, {i18n.DE, 5, "Touren"}, {i18n.KY, 1, "тур"}, {i18n.KY, 5, "тур"},
 	} {
-		if got := tc.l.N(tc.n, "выход", "выхода", "выходов"); got != tc.want {
+		if got := tc.l.N(tc.n, "тур", "тура", "туров"); got != tc.want {
 			t.Errorf("%s.N(%d) = %q, want %q", tc.l, tc.n, got, tc.want)
 		}
 	}
 }
 
 func TestSay(t *testing.T) {
-	m := i18n.M("Можно от 1 до %d человек", 50)
-	if got := m.String(); got != "Можно от 1 до 50 человек" {
+	m := i18n.M("Слишком длинно: не больше %d символов. Сократите и отправьте ещё раз.", 50)
+	if got := m.String(); got != "Слишком длинно: не больше 50 символов. Сократите и отправьте ещё раз." {
 		t.Errorf("String = %q", got)
 	}
-	if got := i18n.EN.Say(m); got != "From 1 to 50 people" {
+	if got := i18n.EN.Say(m); got != "Too long: 50 characters at most. Shorten it and send it again." {
 		t.Errorf("EN = %q", got)
 	}
 	if i18n.EN.Say(i18n.Msg{}) != "" {

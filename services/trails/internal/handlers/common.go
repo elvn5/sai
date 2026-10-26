@@ -39,20 +39,10 @@ type AuthorSource interface {
 	Authors(ctx context.Context, ids []string) (map[string]usersclient.Author, error)
 }
 
-// OutingNotifier queues Telegram notifications about outings
-// (internal/notify); optional.
-type OutingNotifier interface {
-	Joined(ctx context.Context, o models.Outing, userID string)
-	Left(ctx context.Context, o models.Outing, userID string)
-	Changed(ctx context.Context, before, after models.Outing, participantIDs []string)
-	Cancelled(ctx context.Context, o models.Outing, participantIDs []string)
-}
-
 // Deps is what the handlers share.
 type Deps struct {
 	Store   *store.Store
 	Authors AuthorSource
-	Notify  OutingNotifier
 	Log     *slog.Logger
 	Now     func() time.Time
 }

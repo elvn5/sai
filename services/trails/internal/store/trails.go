@@ -16,8 +16,7 @@ const trailColumns = `t.id::text, t.slug, t.name, t.summary, t.description, t.ar
 	t.seasons, t.gear, t.summit_elevation, t.start_elevation, t.elevation_gain, t.distance_km::float8,
 	t.duration_hours::float8, t.days, t.segments, t.getting_there, t.start_latitude, t.start_longitude,
 	t.gpx_url, t.cover_image_url, t.photos, t.is_published, t.user_id::text, t.created_at, t.updated_at,
-	lc.observed_on::text, lc.trail_state, lc.traction,
-	(SELECT count(*) FROM outings o WHERE o.trail_id = t.id AND o.status = 'open' AND o.starts_at > @now)::int`
+	lc.observed_on::text, lc.trail_state, lc.traction`
 
 // trailJoins adds the newest condition report.
 const trailJoins = ` FROM trails t
@@ -32,7 +31,7 @@ func scanTrail(row pgx.Row, withTrack bool) (models.Trail, error) {
 		&t.Seasons, &t.Gear, &t.SummitElevation, &t.StartElevation, &t.ElevationGain, &t.DistanceKm,
 		&t.DurationHours, &t.Days, &t.Segments, &t.GettingThere, &t.StartLatitude, &t.StartLongitude,
 		&t.GpxURL, &t.CoverImageURL, &t.Photos, &t.IsPublished, &t.UserID, &created, &updated,
-		&observedOn, &state, &traction, &t.UpcomingOutings}
+		&observedOn, &state, &traction}
 	if withTrack {
 		dest = append(dest, &t.Track)
 	}
@@ -92,9 +91,8 @@ func (s *Store) PublishedTrails(ctx context.Context, f TrailFilter, now time.Tim
 		"newest":    "t.created_at DESC",
 	}[f.Sort]
 	if order == "" {
-		// Most talked about: fresh reports and planned outings first.
-		order = `(SELECT count(*) FROM condition_reports c WHERE c.trail_id = t.id AND c.observed_on > @now - interval '60 days')
-			+ (SELECT count(*) FROM outings o WHERE o.trail_id = t.id AND o.starts_at > @now - interval '60 days') DESC, t.name`
+		// Most talked about: fresh reports first.
+		order = `(SELECT count(*) FROM condition_reports c WHERE c.trail_id = t.id AND c.observed_on > @now - interval '60 days') DESC, t.name`
 	}
 	return s.collectTrails(ctx, now, `SELECT `+trailColumns+trailJoins+` WHERE `+w.sql()+` ORDER BY `+order+` LIMIT 200`, w.args...)
 }

@@ -1,4 +1,4 @@
-// Package screens renders the bot's sections — outings, tours, the blog,
+// Package screens renders the bot's sections — my tours, tours, the blog,
 // notification settings — as HTML messages with inline keyboards. A
 // section is one message: moving around inside it edits that message.
 // Layouts follow the bot's design sketches.
@@ -76,7 +76,7 @@ func noPreview() *telego.LinkPreviewOptions { return &telego.LinkPreviewOptions{
 var bishkek = time.FixedZone("Asia/Bishkek", 6*60*60)
 
 // When formats a time in Bishkek, e.g. "сб, 24 окт., 06:00" (as the
-// outing notifications do).
+// tour notifications do).
 func When(l i18n.Lang, t time.Time) string { return l.When(t.In(bishkek)) }
 
 func sameDay(a, b time.Time) bool {

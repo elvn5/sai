@@ -16,8 +16,6 @@ const CLIENT_PATHS = [
   'blog/new',
   'blog/edit/:id',
   'tours/new',
-  'outings/new',
-  'outings/:id/edit',
   'login',
   'profile',
   'achievements/award',

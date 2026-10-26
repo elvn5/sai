@@ -17,12 +17,12 @@ import (
 // The organizer's room: callback data "g:<action>[:<arg>…]".
 const (
 	OrgHome = keyboards.OrganizerPrefix + "home"
-	// "g:r:<outing>" the roster; "g:rn:<outing>" the same from a
-	// notification, as a message of its own.
+	// "g:r:<tour>" the roster; "g:rn:<tour>" the same from a notification,
+	// as a message of its own.
 	OrgRoster       = "r"
 	OrgRosterNotice = "rn"
-	// "g:a:<outing>:<participant id prefix>" marks one arrived or not;
-	// "g:all:<outing>" marks everyone.
+	// "g:a:<tour>:<participant id prefix>" marks one arrived or not;
+	// "g:all:<tour>" marks everyone.
 	OrgArrival    = "a"
 	OrgArrivedAll = "all"
 	// A message to the participants: write it, send it, drop it.
@@ -38,7 +38,7 @@ const (
 
 const (
 	// The organizer marks arrivals from a day before the start until a
-	// week after it (as the trails service takes them).
+	// week after it (as the listings service takes them).
 	checkInBefore = 24 * time.Hour
 	checkInAfter  = 7 * 24 * time.Hour
 	// A participant's button carries this much of their id: callback data
@@ -56,28 +56,30 @@ func OrgData(action string, args ...string) string {
 // ParticipantKey is the part of a participant's id their button carries.
 func ParticipantKey(id string) string { return id[:min(len(id), idPrefixLen)] }
 
-// CanCheckIn: the organizer can mark arrivals of an open outing from a day
-// before its start until a week after.
-func CanCheckIn(o api.Outing, now time.Time) bool {
-	return o.Status == "open" && !now.Before(o.StartsAt.Add(-checkInBefore)) && !now.After(o.StartsAt.Add(checkInAfter))
+// CanCheckIn: the organizer can mark arrivals from a day before the
+// meeting until a week after.
+func CanCheckIn(t api.Tour, now time.Time) bool {
+	starts := t.StartsAt()
+	return !now.Before(starts.Add(-checkInBefore)) && !now.After(starts.Add(checkInAfter))
 }
 
-// OrganizedOutings are the outings the user runs that still need them:
-// open, not more than a week since the start; soonest first.
-func OrganizedOutings(list []api.Outing, now time.Time) []api.Outing {
-	var out []api.Outing
-	for _, o := range list {
-		if o.IsOrganizer && o.Status == "open" && now.Before(o.StartsAt.Add(checkInAfter)) {
-			out = append(out, o)
+// ActiveTours are the organizer's tours that still need them (not more
+// than a week since the start), soonest first; the rest keep their order.
+func ActiveTours(list []api.Tour, now time.Time) (active, rest []api.Tour) {
+	for _, t := range list {
+		if now.Before(t.StartsAt().Add(checkInAfter)) {
+			active = append(active, t)
+		} else {
+			rest = append(rest, t)
 		}
 	}
-	sort.SliceStable(out, func(i, j int) bool { return out[i].StartsAt.Before(out[j].StartsAt) })
-	return out
+	sort.SliceStable(active, func(i, j int) bool { return active[i].StartsAt().Before(active[j].StartsAt()) })
+	return active, rest
 }
 
-func arrivedCount(o api.Outing) int {
+func arrivedCount(t api.Tour) int {
 	n := 0
-	for _, p := range o.Roster {
+	for _, p := range t.Roster {
 		if p.ArrivedAt != nil {
 			n++
 		}
@@ -92,47 +94,35 @@ func publishedLabel(l i18n.Lang, t api.Tour) string {
 	return l.T("📝 черновик")
 }
 
-// OrganizerHome is the organizer's room: the outings they run and their
-// tours.
-func OrganizerHome(l i18n.Lang, outings []api.Outing, tours []api.Tour, now time.Time) Screen {
+// OrganizerHome is the organizer's room: the tours they run (tours[i]
+// opens as "g:t:<i>"), with who signed up and, around the start, who came.
+func OrganizerHome(l i18n.Lang, tours []api.Tour, now time.Time) Screen {
 	var b strings.Builder
 	b.WriteString(l.T("🧑‍✈️ <b>Кабинет организатора</b>\nУчастники, отметка на сборе и ваши туры."))
 	var buttons [][]telego.InlineKeyboardButton
-	if len(outings) == 0 && len(tours) == 0 {
-		b.WriteString("\n\n" + l.T("Вы пока ничего не организуете. Соберите выход — здесь появятся его участники, отметка прибывших и рассылка."))
-	}
-	n := 0
-	if len(outings) > 0 {
-		b.WriteString("\n\n" + l.T("🥾 <b>Ваши выходы</b>"))
-	}
-	for _, o := range outings {
-		n++
-		meta := []string{fmt.Sprintf("👥 %d/%d", o.Taken, o.Seats)}
-		if CanCheckIn(o, now) && o.Taken > 0 {
-			meta = append(meta, l.F("✅ на месте %d из %d", arrivedCount(o), o.Taken))
-		}
-		b.WriteString("\n\n" + outingLine(l, n, o, meta...))
-		buttons = append(buttons, []telego.InlineKeyboardButton{
-			keyboards.Button(fmt.Sprintf("%d · %s", n, clip(o.Title, 40)), OrgData(OrgRoster, o.ID)),
-		})
-	}
-	if len(tours) > 0 {
+	if len(tours) == 0 {
+		b.WriteString("\n\n" + l.T("У вас пока нет туров. Добавьте тур на сайте — здесь появятся его участники, отметка прибывших и рассылка."))
+	} else {
 		b.WriteString("\n\n" + l.T("🧭 <b>Ваши туры</b>"))
 	}
 	for i, t := range tours {
-		n++
-		meta := []string{publishedLabel(l, t)}
+		meta := []string{}
 		if r := dateRange(l, t.StartDate, t.EndDate); r != "" {
-			meta = append([]string{r}, meta...)
+			meta = append(meta, r)
 		}
-		fmt.Fprintf(&b, "\n\n<b>%d. %s</b>\n%s", n, esc(t.Title), strings.Join(meta, " · "))
+		meta = append(meta, "👥 "+placesLine(l, t))
+		if CanCheckIn(t, now) && len(t.Roster) > 0 {
+			meta = append(meta, l.F("✅ на месте %d из %d", arrivedCount(t), len(t.Roster)))
+		}
+		if !t.IsPublished {
+			meta = append(meta, publishedLabel(l, t))
+		}
+		fmt.Fprintf(&b, "\n\n<b>%d. %s</b>\n%s", i+1, esc(t.Title), strings.Join(meta, " · "))
 		buttons = append(buttons, []telego.InlineKeyboardButton{
-			keyboards.Button(fmt.Sprintf("%d · %s", n, clip(t.Title, 40)), OrgData(OrgTour, strconv.Itoa(i))),
+			keyboards.Button(fmt.Sprintf("%d · %s", i+1, clip(t.Title, 40)), OrgData(OrgTour, strconv.Itoa(i))),
 		})
 	}
-	buttons = append(buttons, []telego.InlineKeyboardButton{
-		keyboards.Button(l.T("➕ Собрать выход"), NewOutingData), keyboards.Button(l.T("⬅️ Мои выходы"), ListData(FromMine)),
-	})
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("⬅️ Мои туры"), ListData(FromMine))})
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
 
@@ -160,25 +150,28 @@ func buttonName(l i18n.Lang, p api.Person, n int) string {
 	return l.F("Участник %d", n)
 }
 
-// Roster is an outing's participants for its organizer: who they are
+// Roster is a tour's participants for its organizer: who they are
 // (linked to their Telegram when chats knows it), who has arrived, and a
 // message to all of them.
-func Roster(l i18n.Lang, o api.Outing, chats map[string]int64, links Links, now time.Time) Screen {
-	checkIn := CanCheckIn(o, now)
+func Roster(l i18n.Lang, t api.Tour, chats map[string]int64, links Links, now time.Time) Screen {
+	checkIn := CanCheckIn(t, now)
 	var b strings.Builder
-	b.WriteString(l.F("📋 <b>Участники · %s</b>", esc(o.Title)) + "\n" + When(l, o.StartsAt) + " · 📍 " + esc(o.MeetingPoint))
-	b.WriteString("\n👥 " + l.F("%d из %d мест", len(o.Roster), o.Seats))
-	if checkIn && len(o.Roster) > 0 {
-		b.WriteString(" · " + l.F("✅ на месте %d из %d", arrivedCount(o), len(o.Roster)))
+	b.WriteString(l.F("📋 <b>Участники · %s</b>", esc(t.Title)) + "\n" + When(l, t.StartsAt()))
+	if t.MeetingPoint != nil && *t.MeetingPoint != "" {
+		b.WriteString(" · 📍 " + esc(*t.MeetingPoint))
+	}
+	b.WriteString("\n👥 " + placesLine(l, t))
+	if checkIn && len(t.Roster) > 0 {
+		b.WriteString(" · " + l.F("✅ на месте %d из %d", arrivedCount(t), len(t.Roster)))
 	}
 
-	if len(o.Roster) == 0 {
+	if len(t.Roster) == 0 {
 		b.WriteString("\n\n" + l.T("Пока никто не записался. Позовите друзей — участники появятся здесь."))
 	} else {
 		b.WriteString("\n")
 	}
 	var marks []telego.InlineKeyboardButton
-	for i, p := range o.Roster {
+	for i, p := range t.Roster {
 		mark := "•"
 		if checkIn {
 			mark = "⬜"
@@ -189,16 +182,14 @@ func Roster(l i18n.Lang, o api.Outing, chats map[string]int64, links Links, now 
 		fmt.Fprintf(&b, "\n%d. %s %s · %s", i+1, mark, personLink(l, p.Person, i+1, chats),
 			l.F("с %s", l.DayMonth(p.JoinedAt.In(bishkek))))
 		if checkIn {
-			marks = append(marks, keyboards.Button(mark+" "+buttonName(l, p.Person, i+1), OrgData(OrgArrival, o.ID, ParticipantKey(p.ID))))
+			marks = append(marks, keyboards.Button(mark+" "+buttonName(l, p.Person, i+1), OrgData(OrgArrival, t.ID, ParticipantKey(p.ID))))
 		}
 	}
 
 	switch {
-	case o.Status == "cancelled":
-		b.WriteString("\n\n" + l.T("❌ Выход отменён"))
-	case checkIn && len(o.Roster) > 0:
+	case checkIn && len(t.Roster) > 0:
 		b.WriteString("\n\n" + l.T("Нажмите на участника, когда он придёт на сбор."))
-	case len(o.Roster) > 0 && now.Before(o.StartsAt):
+	case len(t.Roster) > 0 && now.Before(t.StartsAt()):
 		b.WriteString("\n\n" + l.T("Отмечать прибывших можно будет за сутки до сбора."))
 	}
 
@@ -206,19 +197,19 @@ func Roster(l i18n.Lang, o api.Outing, chats map[string]int64, links Links, now 
 	for i := 0; i < len(marks); i += 2 {
 		buttons = append(buttons, marks[i:min(i+2, len(marks))])
 	}
-	if checkIn && arrivedCount(o) < len(o.Roster) {
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("✅ Все на месте"), OrgData(OrgArrivedAll, o.ID))})
+	if checkIn && arrivedCount(t) < len(t.Roster) {
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("✅ Все на месте"), OrgData(OrgArrivedAll, t.ID))})
 	}
-	if o.Status == "open" && len(o.Roster) > 0 {
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("📣 Написать участникам"), OrgData(OrgWrite, o.ID))})
+	if len(t.Roster) > 0 {
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("📣 Написать участникам"), OrgData(OrgWrite, t.ID))})
 	}
-	if isUpcoming(o, now) && o.Taken < o.Seats {
-		if share := inviteFriends(l, o, links); share != nil {
+	if IsUpcoming(t, now) && !t.Full() {
+		if share := inviteFriends(l, t, links); share != nil {
 			buttons = append(buttons, []telego.InlineKeyboardButton{*share})
 		}
 	}
 	buttons = append(buttons, []telego.InlineKeyboardButton{
-		keyboards.Button(l.T("🥾 Карточка выхода"), OutingData(ActView, FromMine, o.ID)), keyboards.Button(l.T("⬅️ Кабинет"), OrgHome),
+		keyboards.Button(l.T("🧭 Карточка тура"), TripData(ActView, FromMine, t.ID)), keyboards.Button(l.T("⬅️ Кабинет"), OrgHome),
 	})
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: noPreview()}
 }
@@ -228,38 +219,38 @@ func people(l i18n.Lang, n int) string {
 }
 
 // BroadcastPrompt asks the organizer for a message to the participants.
-func BroadcastPrompt(l i18n.Lang, o api.Outing) Screen {
-	text := l.T("📣 <b>Сообщение участникам</b>") + "\n«" + esc(o.Title) + "» · " + people(l, len(o.Participants)) + "\n\n" +
+func BroadcastPrompt(l i18n.Lang, t api.Tour) Screen {
+	text := l.T("📣 <b>Сообщение участникам</b>") + "\n«" + esc(t.Title) + "» · " + people(l, len(t.Roster)) + "\n\n" +
 		l.T("Напишите сообщение — бот перешлёт его всем, кто записался. Например: <i>«Сбор переносится на 06:30, ждём у южного входа»</i>.")
 	return Screen{Text: text, Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{
-		keyboards.Button(l.T("Отмена"), OrgData(OrgWriteAbort, o.ID)),
+		keyboards.Button(l.T("Отмена"), OrgData(OrgWriteAbort, t.ID)),
 	})}
 }
 
 // BroadcastPreview shows the message before it goes out.
-func BroadcastPreview(l i18n.Lang, o api.Outing, message string) Screen {
-	text := l.F("Отправить участникам «%s» (%s)?", esc(o.Title), people(l, len(o.Participants))) +
+func BroadcastPreview(l i18n.Lang, t api.Tour, message string) Screen {
+	text := l.F("Отправить участникам «%s» (%s)?", esc(t.Title), people(l, len(t.Roster))) +
 		"\n\n<blockquote>" + esc(message) + "</blockquote>\n\n" + l.T("<i>Чтобы исправить, просто напишите сообщение заново.</i>")
 	return Screen{Text: text, Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{
-		keyboards.Button(l.T("📣 Отправить"), OrgData(OrgSend, o.ID)), keyboards.Button(l.T("Отмена"), OrgData(OrgWriteAbort, o.ID)),
+		keyboards.Button(l.T("📣 Отправить"), OrgData(OrgSend, t.ID)), keyboards.Button(l.T("Отмена"), OrgData(OrgWriteAbort, t.ID)),
 	})}
 }
 
 // BroadcastMessage is the organizer's message as a participant gets it.
-func BroadcastMessage(l i18n.Lang, o api.Outing, message string) Screen {
+func BroadcastMessage(l i18n.Lang, t api.Tour, message string) Screen {
 	var b strings.Builder
 	b.WriteString(l.T("📣 <b>Сообщение от организатора</b>"))
-	if name := o.Organizer.Name(); name != "" {
-		b.WriteString(" · " + esc(name))
+	if t.Organizer != nil && t.Organizer.Name() != "" {
+		b.WriteString(" · " + esc(t.Organizer.Name()))
 	}
-	b.WriteString("\n" + l.F("Выход «%s», %s", esc(o.Title), When(l, o.StartsAt)) + "\n\n" + esc(message))
+	b.WriteString("\n" + l.F("Тур «%s», %s", esc(t.Title), When(l, t.StartsAt())) + "\n\n" + esc(message))
 	return Screen{Text: b.String(), Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{
-		keyboards.Button(l.T("Открыть выход"), OutingData(ActView, FromNotice, o.ID)),
+		keyboards.Button(l.T("Открыть тур"), TripData(ActView, FromNotice, t.ID)),
 	})}
 }
 
 // BroadcastSent tells the organizer how many got the message.
-func BroadcastSent(l i18n.Lang, o api.Outing, sent, total int) Screen {
+func BroadcastSent(l i18n.Lang, t api.Tour, sent, total int) Screen {
 	text := l.F("✅ Сообщение отправлено: %d из %d.", sent, total)
 	if sent < total {
 		missed := total - sent
@@ -267,7 +258,7 @@ func BroadcastSent(l i18n.Lang, o api.Outing, sent, total int) Screen {
 			missed, l.N(missed, "человека", "человек", "человек"))
 	}
 	return Screen{Text: text, Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{
-		keyboards.Button(l.T("⬅️ К участникам"), OrgData(OrgRoster, o.ID)),
+		keyboards.Button(l.T("⬅️ К участникам"), OrgData(OrgRoster, t.ID)),
 	})}
 }
 
@@ -316,9 +307,7 @@ func OrganizerTour(l i18n.Lang, t api.Tour, index int, stats *api.StatCounts, bo
 	if t.Price != nil {
 		terms = append(terms, "💳 "+som(l, *t.Price))
 	}
-	if t.Capacity != nil {
-		terms = append(terms, "👥 "+l.F("мест: %d", *t.Capacity))
-	}
+	terms = append(terms, "👥 "+placesLine(l, t))
 	if len(terms) > 0 {
 		b.WriteString("\n" + strings.Join(terms, " · "))
 	}
@@ -339,6 +328,9 @@ func OrganizerTour(l i18n.Lang, t api.Tour, index int, stats *api.StatCounts, bo
 
 	idx := strconv.Itoa(index)
 	var buttons [][]telego.InlineKeyboardButton
+	buttons = append(buttons, []telego.InlineKeyboardButton{
+		keyboards.Button(l.F("📋 Участники · %d", t.Taken), OrgData(OrgRoster, t.ID)),
+	})
 	if len(t.Program) > 0 {
 		buttons = append(buttons, []telego.InlineKeyboardButton{
 			keyboards.Button("📖 "+l.T("Программа")+" · "+days(l, len(t.Program)), OrgData(OrgProgram, idx, "0")),

@@ -25,9 +25,8 @@ import { filter } from 'rxjs';
 // own under the same names where they mean the same thing.
 export interface AnalyticsEvents {
   view_tour: { tour_id: string };
-  view_outing: { outing_id: string };
-  join_outing: { outing_id: string };
-  leave_outing: { outing_id: string };
+  join_tour: { tour_id: string };
+  leave_tour: { tour_id: string };
   // Online booking is paused: contacting the organizer is the booking.
   contact_organizer: { item_type: string; item_id: string; method: string };
   login: { method: string };
@@ -144,12 +143,9 @@ export class Analytics {
   }
 }
 
-// Reports one view of a tour or an outing, once it's shown in the browser
-// (again when the page moves to another one). Call in an injection context.
-export function trackItemView(
-  name: 'view_tour' | 'view_outing',
-  id: Signal<string | undefined>,
-): void {
+// Reports one view of a tour, once it's shown in the browser (again when
+// the page moves to another one). Call in an injection context.
+export function trackItemView(name: 'view_tour', id: Signal<string | undefined>): void {
   const analytics = inject(Analytics);
   const shown = signal(false);
   let sent: string | undefined;
@@ -158,10 +154,6 @@ export function trackItemView(
     const current = id();
     if (!shown() || !current || current === sent) return;
     sent = current;
-    untracked(() =>
-      name === 'view_tour'
-        ? analytics.track(name, { tour_id: current })
-        : analytics.track(name, { outing_id: current }),
-    );
+    untracked(() => analytics.track(name, { tour_id: current }));
   });
 }

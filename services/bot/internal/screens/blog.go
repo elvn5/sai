@@ -158,7 +158,7 @@ func Notifications(l i18n.Lang, s NotifySettings) Screen {
 		blog, blogButton = l.T("✅ включено"), l.T("📰 Статьи блога: ✅ вкл")
 	}
 	text := l.T("🔔 <b>Уведомления</b>\n\nВыберите, о чём вам писать.") + "\n\n" +
-		l.T("🥾 <b>Мои выходы</b> — всегда\nКто записался, изменения, отмена, напоминание перед сбором.") + "\n\n" +
+		l.T("🎒 <b>Мои туры</b> — всегда\nКто записался, изменения, отмена, напоминание перед сбором, просьба оценить тур.") + "\n\n" +
 		l.F("🧭 <b>Новые туры</b> — %s\nКогда на сайте появляется новый тур.", tours) + "\n\n" +
 		l.F("📰 <b>Статьи блога</b> — %s\nНовая статья — одним сообщением с обложкой.", blog)
 	return Screen{Text: text, Preview: noPreview(), Markup: rows(
@@ -167,17 +167,17 @@ func Notifications(l i18n.Lang, s NotifySettings) Screen {
 	)}
 }
 
-// Welcome greets the user; next is their nearest outing, if any.
-func Welcome(l i18n.Lang, name string, next *api.Outing) string {
+// Welcome greets the user; next is their nearest tour, if any.
+func Welcome(l i18n.Lang, name string, next *api.Tour) string {
 	var b strings.Builder
 	b.WriteString(l.F("🏔 <b>Здравствуйте, %s!</b>", esc(name)) + "\n\n" +
-		l.T("Я бот Ermekten — помогу не пропустить выходы в горы и туры по Кыргызстану.") + "\n\n" +
-		l.T("🥾 <b>Мои выходы</b> — куда вы идёте и когда сбор") + "\n" +
+		l.T("Я бот Ermekten — помогу не пропустить туры по Кыргызстану и записаться на них прямо в чате.") + "\n\n" +
+		l.T("🎒 <b>Мои туры</b> — куда вы едете и когда сбор") + "\n" +
 		l.T("🧭 <b>Туры</b> — избранное и ближайшие даты") + "\n" +
 		l.T("📰 <b>Блог</b> — свежие статьи и маршруты") + "\n" +
 		l.T("🔔 <b>Уведомления</b> — что присылать"))
 	if next != nil {
-		b.WriteString("\n\n" + l.F("Ближайший выход: <b>%s</b>, %s", esc(next.Title), When(l, next.StartsAt)))
+		b.WriteString("\n\n" + l.F("Ближайший тур: <b>%s</b>, %s", esc(next.Title), When(l, next.StartsAt())))
 	}
 	b.WriteString("\n\n" + l.T("Выберите раздел в меню ниже."))
 	return b.String()

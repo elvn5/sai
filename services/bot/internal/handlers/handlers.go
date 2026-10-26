@@ -1,7 +1,7 @@
 // Package handlers holds the bot's update handlers: account linking and
 // the profile (texts, buttons and callback data as in the former NestJS
 // bot: the site links into the bot with t.me deep links), the language
-// picker, and the outings, tours, blog and notification sections
+// picker, and the my tours, tours, blog and notification sections
 // (sections.go). Every answer is in the chat's language (lang).
 package handlers
 
@@ -19,7 +19,6 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
-	"github.com/elvn5/sai/services/bot/internal/drafts"
 	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 	"github.com/elvn5/sai/services/bot/internal/screens"
@@ -31,6 +30,8 @@ import (
 const (
 	verifyPrefix = "verify_"
 	linkPrefix   = "link_"
+	tourPrefix   = "tour_"
+	// Shared before outings merged into tours: opens the user's tours.
 	outingPrefix = "outing_"
 )
 
@@ -60,18 +61,16 @@ type Handlers struct {
 	// each user's Telegram app.
 	Languages Languages
 
-	// The outings, tours, blog and notification sections; off unless both
-	// are set.
+	// The my tours, tours, blog and notification sections; off unless
+	// both are set.
 	Content     Content
 	Subscribers Subscribers
 	// The organizer's room (arrivals, tours); off without the sections.
 	Organizer Organizing
 	Chats     Chats
-	// Participants rating outings; off without the sections.
+	// Participants rating tours; off without the sections.
 	Ratings Rating
-	// Outings being put together, step by step.
-	Drafts *drafts.Store
-	Links  screens.Links
+	Links   screens.Links
 	// Now is overridable in tests.
 	Now func() time.Time
 	// Where events go (analytics.Client); nil: not reported.
@@ -81,25 +80,23 @@ type Handlers struct {
 // Register routes updates to the handlers. The first matching route wins,
 // so free text (a value being edited) comes last.
 func (h *Handlers) Register(bh *th.BotHandler) {
-	if h.Drafts == nil {
-		h.Drafts = drafts.NewStore()
-	}
 	bh.HandleMessage(h.start, th.CommandEqual("start"))
 	bh.HandleMessage(h.menu("profile", h.profile), menuButton(keyboards.Profile, "profile"))
 	bh.HandleMessage(h.menu("support", h.support), menuButton(keyboards.Support, "support"))
 	bh.HandleMessage(h.menu("language", h.languageMenu), th.CommandEqual("language"))
 	bh.HandleCallbackQuery(h.languagePress, th.CallbackDataPrefix(keyboards.LanguagePrefix))
 	if h.sections() {
-		bh.HandleMessage(h.menu("outings", h.outingsMenu), menuButton(keyboards.Outings, "outings"))
+		bh.HandleMessage(h.menu("my_tours", h.myToursMenu), menuButton(keyboards.MyTours, "mytours"))
+		bh.HandleMessage(h.menu("my_tours", h.myToursMenu), menuButton(keyboards.LegacyOutings, "outings"))
 		bh.HandleMessage(h.menu("tours", h.toursMenu), menuButton(keyboards.Tours, "tours"))
 		bh.HandleMessage(h.menu("blog", h.blogMenu), menuButton(keyboards.Blog, "blog"))
 		bh.HandleMessage(h.menu("notifications", h.notifyMenu), menuButton(keyboards.Notifications, "notifications"))
-		bh.HandleCallbackQuery(h.outingPress, th.CallbackDataPrefix(keyboards.OutingsPrefix))
+		bh.HandleCallbackQuery(h.myToursPress, th.CallbackDataPrefix(keyboards.MyToursPrefix))
 		bh.HandleCallbackQuery(h.tourPress, th.CallbackDataPrefix(keyboards.ToursPrefix))
 		bh.HandleCallbackQuery(h.blogPress, th.CallbackDataPrefix(keyboards.BlogPrefix))
 		bh.HandleCallbackQuery(h.notifyPress, th.CallbackDataPrefix(keyboards.NotifyPrefix))
-		bh.HandleCallbackQuery(h.draftPress, th.CallbackDataPrefix(keyboards.DraftPrefix))
-		bh.HandleCallbackQuery(h.conditionPress, th.CallbackDataPrefix(keyboards.ConditionPrefix))
+		bh.HandleCallbackQuery(h.stalePress, th.CallbackDataPrefix(keyboards.DraftPrefix))
+		bh.HandleCallbackQuery(h.stalePress, th.CallbackDataPrefix(keyboards.ConditionPrefix))
 	}
 	if h.rating() {
 		bh.HandleCallbackQuery(h.ratingPress, th.CallbackDataPrefix(keyboards.RatingPrefix))
@@ -211,8 +208,14 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 		return err
 	}
 	if h.sections() {
-		if id, ok := strings.CutPrefix(payload, outingPrefix); ok && id != "" {
-			return h.outingCard(ctx, l, msg.Chat.ID, from, id)
+		if id, ok := strings.CutPrefix(payload, tourPrefix); ok && id != "" {
+			return h.tourCard(ctx, l, msg.Chat.ID, from, id)
+		}
+		if strings.HasPrefix(payload, outingPrefix) {
+			if err := h.reply(ctx, msg.Chat.ID, l.T("Выходы теперь — туры: записывайтесь на них прямо здесь, в боте."), h.mainMenu(l)); err != nil {
+				return err
+			}
+			return h.myToursMenu(ctx, msg)
 		}
 	}
 	name := from.FirstName
@@ -231,15 +234,15 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 	return nil
 }
 
-// welcome greets the user with the main menu and their nearest outing.
+// welcome greets the user with the main menu and their nearest tour.
 func (h *Handlers) welcome(ctx context.Context, l i18n.Lang, userID, name string) string {
-	var next *api.Outing
-	if list, err := h.Content.MyOutings(ctx, userID); err == nil {
-		if upcoming, _ := screens.SplitOutings(list, h.now()); len(upcoming) > 0 {
+	var next *api.Tour
+	if list, err := h.Content.JoinedTours(ctx, userID); err == nil {
+		if upcoming, _ := screens.SplitTours(list, h.now()); len(upcoming) > 0 {
 			next = &upcoming[0]
 		}
 	} else {
-		h.Log.WarnContext(ctx, "nearest outing", slog.Any("error", err))
+		h.Log.WarnContext(ctx, "nearest tour", slog.Any("error", err))
 	}
 	return screens.Welcome(l, name, next)
 }
@@ -264,7 +267,7 @@ func (h *Handlers) link(ctx *th.Context, l i18n.Lang, chatID int64, from *telego
 	}
 	switch res.Status {
 	case users.Linked:
-		return h.reply(ctx, chatID, l.F("✅ Telegram привязан к вашему аккаунту Ermekten%s! Теперь сюда будут приходить уведомления о выходах, а войти на сайт можно через Telegram.",
+		return h.reply(ctx, chatID, l.F("✅ Telegram привязан к вашему аккаунту Ermekten%s! Теперь сюда будут приходить уведомления о турах, а войти на сайт можно через Telegram.",
 			withName(res.Account)), h.mainMenu(l))
 	case users.LinkInvalid:
 		return h.reply(ctx, chatID,
@@ -404,14 +407,14 @@ func (h *Handlers) editCancel(ctx *th.Context, q telego.CallbackQuery) error {
 }
 
 // text saves the value of a profile field being edited, takes an
-// organizer's message to the participants, or answers the step of an
-// outing being put together; other text is ignored.
+// organizer's message to the participants or a participant's review;
+// other text is ignored.
 func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 	l := h.lang(ctx, msg.From)
 	field, arg, ok := h.Sessions.ConsumeWith(msg.Chat.ID)
 	if ok && h.organizing() && (field == session.FieldBroadcast || field == session.FieldBroadcastReady) {
-		outingID, _, _ := strings.Cut(arg, "\n")
-		return h.broadcastText(ctx, l, msg, outingID)
+		tourID, _, _ := strings.Cut(arg, "\n")
+		return h.broadcastText(ctx, l, msg, tourID)
 	}
 	if ok && h.rating() && field == session.FieldReview {
 		return h.reviewText(ctx, l, msg, arg)
@@ -420,10 +423,6 @@ func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 		ok = false
 	}
 	if !ok {
-		if h.sections() {
-			_, err := h.draftText(ctx, l, msg)
-			return err
-		}
 		return nil
 	}
 	if msg.From == nil {

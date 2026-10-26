@@ -29,7 +29,7 @@ func (f *fakeTracker) names() string {
 	var out []string
 	for _, e := range f.events {
 		param := ""
-		for _, key := range []string{"deep_link", "section", "outing_id", "tour_id", "post_id"} {
+		for _, key := range []string{"deep_link", "section", "tour_id", "post_id"} {
 			if v, ok := e.Params[key]; ok {
 				param = fmt.Sprint(v)
 				break
@@ -56,17 +56,17 @@ func TestAnalyticsEvents(t *testing.T) {
 
 	h.message("/start")
 	h.expect("sendMessage")
-	h.message("/start outing_o2")
+	h.message("/start tour_o2")
 	h.expect("sendMessage")
 	h.message("/start verify_secret-token")
 	h.expect("sendMessage")
-	h.message("🥾 Мои выходы")
+	h.message("🎒 Мои туры")
 	h.expect("sendMessage")
 	h.message("/tours")
 	h.expect("sendMessage")
-	h.press("o:join:f:o2")
+	h.press("o:join:t:o2")
 	h.expect("answerCallbackQuery", "editMessageText")
-	h.press("o:leave:f:o2")
+	h.press("o:leave:t:o2")
 	h.expect("answerCallbackQuery", "editMessageText")
 	h.press("t:more:n:1:0")
 	h.expect("answerCallbackQuery", "editMessageText")
@@ -79,8 +79,8 @@ func TestAnalyticsEvents(t *testing.T) {
 	h.press("l:de")
 	h.expect("answerCallbackQuery", "editMessageReplyMarkup", "setChatMenuButton", "sendMessage")
 
-	want := "bot_start none ky,bot_start outing ky,bot_start verify ky,menu_select outings ky,menu_select tours ky," +
-		"join_outing o2 ky,leave_outing o2 ky,view_tour t2 ky,view_tour t1 ky,view_article p1 ky,language_change de"
+	want := "bot_start none ky,bot_start tour ky,bot_start verify ky,menu_select my_tours ky,menu_select tours ky," +
+		"join_tour o2 ky,leave_tour o2 ky,view_tour t2 ky,view_tour t1 ky,view_article p1 ky,language_change de"
 	if got := events.names(); got != want {
 		t.Errorf("events:\n%s\nwant:\n%s", got, want)
 	}

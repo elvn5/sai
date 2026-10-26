@@ -277,7 +277,6 @@ function matchesDuration(days: number | null, range: string): boolean {
           </app-state-block>
         } @else {
           <app-state-block class="mt-2" icon="icon-[heroicons--map]" title="tours.empty" text="tours.emptyHint">
-            <a appSiteLink="/outings" class="ui-btn-primary">{{ 'tours.emptyCta' | transloco }}</a>
             <app-tour-alert-button [destination]="destination() ?? ''" />
             @if (destination()) {
               <a appSiteLink="/tours" class="ui-btn-ghost">{{ 'listing.filters.allDestinations' | transloco }}</a>

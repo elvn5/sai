@@ -77,16 +77,16 @@ describe('Analytics', () => {
       params: { content_path: '/tours/son-kol', lang: 'ky' },
     });
 
-    await router.navigateByUrl('/outings/o1');
+    await router.navigateByUrl('/tours/ala-kul');
     await settle();
-    analytics.track('join_outing', { outing_id: 'o1' });
+    analytics.track('join_tour', { tour_id: 't1' });
     await settle();
     expect(logged.slice(1)).toEqual([
       expect.objectContaining({
         name: 'page_view',
-        params: expect.objectContaining({ content_path: '/outings/o1' }),
+        params: expect.objectContaining({ content_path: '/tours/ala-kul' }),
       }),
-      { name: 'join_outing', params: { outing_id: 'o1', lang: 'ky' } },
+      { name: 'join_tour', params: { tour_id: 't1', lang: 'ky' } },
     ]);
     expect(loader).toHaveBeenCalledTimes(1);
   });
@@ -107,7 +107,7 @@ describe('Analytics', () => {
     document.cookie = '_ga=GA1.1.123; path=/';
     consent.set('necessary');
     await settle();
-    analytics.track('view_outing', { outing_id: 'o1' });
+    analytics.track('view_tour', { tour_id: 't1' });
     await settle();
     expect(enabled).toEqual([false]);
     expect(document.cookie).not.toContain('_ga=');

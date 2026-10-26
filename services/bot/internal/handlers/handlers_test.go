@@ -205,6 +205,7 @@ func (h *harness) quiet() {
 }
 
 func str(s string) *string { return &s }
+func num(n int) *int       { return &n }
 
 func TestStart(t *testing.T) {
 	h := newHarness(t, miniApp)
@@ -257,7 +258,7 @@ func TestLinkDeepLink(t *testing.T) {
 		markup string
 	}{
 		{users.LinkResult{Status: users.Linked, Account: users.Account{FirstName: str("Айгерим")}},
-			"✅ Telegram привязан к вашему аккаунту Ermekten, Айгерим! Теперь сюда будут приходить уведомления о выходах, а войти на сайт можно через Telegram.",
+			"✅ Telegram привязан к вашему аккаунту Ermekten, Айгерим! Теперь сюда будут приходить уведомления о турах, а войти на сайт можно через Telegram.",
 			`"keyboard"`},
 		{users.LinkResult{Status: users.LinkInvalid},
 			"❌ Ссылка недействительна или истекла. Нажмите «Привязать Telegram» в профиле на сайте ещё раз.", "null"},

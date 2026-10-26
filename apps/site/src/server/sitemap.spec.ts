@@ -15,8 +15,6 @@ describe('sitemap', () => {
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/tours.xml</loc>');
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/organizers.xml</loc>');
     expect(xml).not.toContain('hotels.xml');
-    // Outing pages aren't indexed: they're gone in days.
-    expect(xml).not.toContain('outings.xml');
   });
 
   it('lists language-independent pages in every language with hreflang', () => {

@@ -15,13 +15,16 @@ import (
 // Main menu buttons, in Russian: they show in the user's language and are
 // matched by text in any language when pressed (see Texts).
 const (
-	Outings       = "🥾 Мои выходы"
+	MyTours       = "🎒 Мои туры"
 	Tours         = "🧭 Туры"
 	Blog          = "📰 Блог"
 	Notifications = "🔔 Уведомления"
 	Profile       = "👤 Профиль"
 	Support       = "🆘 Поддержка"
 	MiniApp       = "🏔 Открыть Ermekten"
+	// The button before outings merged into tours: kept on keyboards sent
+	// back then, it opens the user's tours.
+	LegacyOutings = "🥾 Мои выходы"
 )
 
 // Callback data of inline buttons.
@@ -38,33 +41,32 @@ const (
 	// Buttons that only show something (a page counter).
 	Noop = "noop"
 
-	// Outings: "o:<action>:<arg>…", see the handlers.
-	OutingsPrefix = "o:"
+	// The user's tours: "o:<action>:<arg>…", see the handlers.
+	MyToursPrefix = "o:"
 	// Tours: "t:<tab>:<index>" and "t:fav:<tab>:<index>:<tour id>".
 	ToursPrefix = "t:"
 	// Blog: "b:<index>".
 	BlogPrefix = "b:"
 	// Notification settings: "n:tours", "n:blog", "n:blog_off" (from a post).
 	NotifyPrefix = "n:"
-	// An outing being put together: "d:<action>[:<arg>]".
-	DraftPrefix = "d:"
-	// A trail condition report: "c:<step>:<outing id>[:<answers>]".
+	// Buttons of what is gone (an outing being put together, a trail
+	// condition report): only answered.
+	DraftPrefix     = "d:"
 	ConditionPrefix = "c:"
 	// The organizer's room: "g:<action>[:<arg>…]".
 	OrganizerPrefix = "g:"
-	// Rating an outing after it: "r:<action>:<outing id>[:<stars>]".
+	// Rating a tour after it: "r:<action>:<tour id>[:<stars>]".
 	RatingPrefix = "r:"
 )
 
 // MainMenu is the persistent menu, with a Mini App button when its URL is
-// set; sections reaches the outings, tours and blog buttons (they need the
-// API).
+// set; sections reaches the tours and blog buttons (they need the API).
 func MainMenu(l i18n.Lang, miniAppURL string, sections bool) *telego.ReplyKeyboardMarkup {
 	button := func(text string) telego.KeyboardButton { return tu.KeyboardButton(l.T(text)) }
 	var rows [][]telego.KeyboardButton
 	if sections {
 		rows = append(rows,
-			tu.KeyboardRow(button(Outings), button(Tours)),
+			tu.KeyboardRow(button(MyTours), button(Tours)),
 			tu.KeyboardRow(button(Blog), button(Notifications)),
 		)
 	}

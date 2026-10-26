@@ -48,131 +48,136 @@ func has(list []string, want string) bool {
 	return false
 }
 
-func outing(id, title string, starts time.Time, status string) api.Outing {
-	return api.Outing{ID: id, Title: title, StartsAt: starts, Status: status, Seats: 10, Taken: 7, MeetingPoint: "ТЦ «Вефа»"}
+// trip is a tour starting on day (YYYY-MM-DD) at 10:00 in Bishkek, with
+// 7 of 10 places taken.
+func trip(id, title, day string) api.Tour {
+	return api.Tour{ID: id, Title: title, StartDate: day, EndDate: day, MeetingTime: str("10:00"),
+		MeetingPoint: str("ТЦ «Вефа»"), Capacity: num(10), Taken: 7}
 }
 
-func TestMyOutingsSplitsUpcomingAndPast(t *testing.T) {
-	soon := outing("o1", "Пик Учитель", now.Add(4*24*time.Hour), "open")
-	soon.IsJoined = true
-	later := outing("o2", "Водопад <Барскоон>", now.Add(12*24*time.Hour), "open")
-	later.IsOrganizer = true
-	done := outing("o3", "Ала-Кёль", now.Add(-10*24*time.Hour), "open")
-	cancelled := outing("o4", "Сон-Кёль", now.Add(2*24*time.Hour), "cancelled")
-	list := []api.Outing{later, done, soon, cancelled}
-	sum := &api.OutingsSummary{Outings: 12, DistanceKm: 84.4, ElevationGain: 5200}
+func TestMyToursSplitsUpcomingAndPast(t *testing.T) {
+	soon := trip("t1", "Пик Учитель", "2026-10-24")
+	later := trip("t2", "Водопад <Барскоон>", "2026-11-01")
+	later.Capacity = nil
+	done := trip("t3", "Ала-Кёль", "2026-10-10")
+	list := []api.Tour{later, done, soon}
 
-	s := screens.MyOutings(i18n.RU, list, sum, screens.FromMine, now)
+	s := screens.MyTours(i18n.RU, list, screens.FromMine, now)
 	for _, want := range []string{
-		"🥾 <b>Мои выходы</b>\nЗа всё время: 12 выходов · 84 км · ↗ 5 200 м\n\n<b>Предстоящие</b>",
-		"<b>1. Пик Учитель</b>\nсб, 24 окт., 10:00 · 👥 7/10 · вы идёте",
-		"<b>2. Водопад &lt;Барскоон&gt;</b>\nвс, 1 нояб., 10:00 · 👥 7/10 · ⭐ вы организатор",
+		"🎒 <b>Мои туры</b>\nЗа всё время: 1 тур\n\n<b>Предстоящие</b>",
+		"<b>1. Пик Учитель</b>\nсб, 24 окт., 10:00 · 👥 7 из 10 мест",
+		"<b>2. Водопад &lt;Барскоон&gt;</b>\nвс, 1 нояб., 10:00 · 👥 записались: 7",
 	} {
 		if !strings.Contains(s.Text, want) {
 			t.Errorf("text lacks %q:\n%s", want, s.Text)
 		}
 	}
-	if strings.Contains(s.Text, "Ала-Кёль") || strings.Contains(s.Text, "Сон-Кёль") {
-		t.Errorf("past outings among upcoming:\n%s", s.Text)
+	if strings.Contains(s.Text, "Ала-Кёль") {
+		t.Errorf("a past tour among upcoming:\n%s", s.Text)
 	}
 	got := buttons(s)
 	for _, want := range []string{
-		"1 · Пик Учитель→o:view:u:o1", "2 · Водопад <Барскоон>→o:view:u:o2",
-		"• Предстоящие •→o:list:u", "Прошедшие→o:list:p", "🔎 Найти выход→o:find:0",
+		"1 · Пик Учитель→o:view:u:t1", "2 · Водопад <Барскоон>→o:view:u:t2",
+		"• Предстоящие •→o:list:u", "Прошедшие→o:list:p", "🧭 Все туры→t:n:0", "🧑‍✈️ Кабинет организатора→g:home",
 	} {
 		if !has(got, want) {
 			t.Errorf("buttons lack %q: %v", want, got)
 		}
 	}
 
-	past := screens.MyOutings(i18n.RU, list, nil, screens.FromPast, now)
-	if !strings.Contains(past.Text, "<b>1. Сон-Кёль</b>\nчт, 22 окт., 10:00 · ❌ отменён") ||
-		!strings.Contains(past.Text, "<b>2. Ала-Кёль</b>") || strings.Contains(past.Text, "За всё время") {
-		t.Errorf("past:\n%s", past.Text)
-	}
-	if !has(buttons(past), "1 · Сон-Кёль→o:view:p:o4") {
-		t.Errorf("past buttons: %v", buttons(past))
+	past := screens.MyTours(i18n.RU, list, screens.FromPast, now)
+	if !strings.Contains(past.Text, "<b>1. Ала-Кёль</b>\nсб, 10 окт., 10:00") || !has(buttons(past), "1 · Ала-Кёль→o:view:p:t3") {
+		t.Errorf("past: %v\n%s", buttons(past), past.Text)
 	}
 }
 
-func TestMyOutingsEmpty(t *testing.T) {
-	s := screens.MyOutings(i18n.RU, nil, &api.OutingsSummary{}, screens.FromMine, now)
-	if !strings.Contains(s.Text, "Вы пока не записаны ни на один выход.") || strings.Contains(s.Text, "За всё время") {
+func TestMyToursEmpty(t *testing.T) {
+	s := screens.MyTours(i18n.RU, nil, screens.FromMine, now)
+	if !strings.Contains(s.Text, "Вы пока не записаны ни на один тур.") || strings.Contains(s.Text, "За всё время") {
 		t.Errorf("empty:\n%s", s.Text)
 	}
+	if past := screens.MyTours(i18n.RU, nil, screens.FromPast, now); !strings.HasSuffix(past.Text, "Прошедших туров пока нет.") {
+		t.Errorf("no past:\n%s", past.Text)
+	}
 }
 
-func TestOutingCardActions(t *testing.T) {
-	o := outing("o1", "Пик Учитель", now.Add(4*24*time.Hour), "open")
-	returns := o.StartsAt.Add(9 * time.Hour)
-	o.ReturnsAt, o.Trail, o.Level, o.Transport = &returns, &api.TrailRef{Name: "Ала-Арча"}, "intermediate", "car"
-	o.CostPerPerson, o.Organizer, o.Contact = num(500), api.Person{FirstName: str("Айгуль")}, str("@aigul_trek")
+func TestTourCardActions(t *testing.T) {
+	o := trip("t1", "Пик Учитель", "2026-10-24")
+	o.EndDate, o.Price, o.Telegram = "2026-10-25", num(500), str("aigul_trek")
+	o.Organizer = &api.Person{FirstName: str("Айгуль")}
 	o.IsJoined = true
 
-	s := screens.OutingCard(i18n.RU, o, screens.FromFind, links, now)
-	want := "🥾 <b>Пик Учитель</b>\n🏔 Ала-Арча · нужен опыт\n\n📅 сб, 24 окт., 10:00 → 19:00\n📍 Сбор: ТЦ «Вефа»\n" +
-		"🚗 На машине организатора\n💳 500 сом с человека\n👥 ▰▰▰▰▰▰▰▱▱▱ 7 из 10 мест\n🧑 Организатор: Айгуль\n💬 Связь: @aigul_trek\n\n✅ Вы идёте"
+	s := screens.TourCard(i18n.RU, o, screens.FromTours, links, now)
+	want := "🧭 <b>Пик Учитель</b>\n📅 24 — 25 октября\n\n🕕 Сбор: сб, 24 окт., 10:00\n📍 ТЦ «Вефа»\n" +
+		"💳 500 сом с человека\n👥 ▰▰▰▰▰▰▰▱▱▱ 7 из 10 мест\n🧑 Организатор: Айгуль\n\n📞 <b>Связь с организатором</b>\nTelegram: @aigul_trek\n\n✅ Вы записаны"
 	if s.Text != want {
 		t.Errorf("card:\n%s\nwant:\n%s", s.Text, want)
 	}
-	if got := buttons(s); strings.Join(got, ",") != "🙅 Не смогу пойти→o:ask:f:o1,"+
-		"📤 Позвать друзей→https://t.me/share/url?url="+url.QueryEscape("https://t.me/ermekten_bot?start=outing_o1")+
-		"&text="+url.QueryEscape("Пойдём в горы: «Пик Учитель», сб, 24 окт., 10:00")+","+
-		"⬅️ К ближайшим выходам→o:find:0" {
+	if got := buttons(s); strings.Join(got, ",") != "🙅 Отменить запись→o:ask:t:t1,"+
+		"📤 Позвать друзей→https://t.me/share/url?url="+url.QueryEscape("https://t.me/ermekten_bot?start=tour_t1")+
+		"&text="+url.QueryEscape("Поехали в тур: «Пик Учитель», сб, 24 окт., 10:00")+","+
+		"⬅️ К турам→t:n:0" {
 		t.Errorf("joined buttons: %v", got)
 	}
 
 	o.IsJoined = false
-	if !has(buttons(screens.OutingCard(i18n.RU, o, screens.FromMine, links, now)), "✋ Пойду→o:join:u:o1") {
-		t.Error("no join button for a free seat")
+	stranger := screens.TourCard(i18n.RU, o, screens.FromMine, links, now)
+	if !has(buttons(stranger), "✋ Записаться→o:join:u:t1") || strings.Contains(stranger.Text, "aigul_trek") {
+		t.Errorf("not joined: %v\n%s", buttons(stranger), stranger.Text)
 	}
 	o.Taken = 10
-	full := screens.OutingCard(i18n.RU, o, screens.FromMine, links, now)
+	full := screens.TourCard(i18n.RU, o, screens.FromMine, links, now)
 	if got := strings.Join(buttons(full), ","); strings.Contains(got, "o:join") || strings.Contains(got, "Позвать") ||
 		!strings.HasSuffix(full.Text, "Мест больше нет") {
 		t.Errorf("full: %v\n%s", buttons(full), full.Text)
 	}
 	o.Taken, o.IsOrganizer = 3, true
-	o.Participants = []api.Person{{FirstName: str("Аня")}, {Username: str("bob")}, {}}
-	own := screens.OutingCard(i18n.RU, o, screens.FromMine, links, now)
-	if got := buttons(own); len(got) != 5 || got[2] != "📋 Участники и отметка→g:r:o1" || got[0] != "✏️ Изменить→o:edit:u:o1" || got[1] != "❌ Отменить выход→o:cask:u:o1" ||
-		!strings.HasSuffix(own.Text, "👥 Идут: Аня, @bob и ещё 1\n\n⭐ Вы организатор") {
+	o.Roster = []api.RosterEntry{{Person: api.Person{FirstName: str("Аня")}}, {Person: api.Person{Username: str("bob")}}, {}}
+	own := screens.TourCard(i18n.RU, o, screens.FromMine, links, now)
+	if got := buttons(own); len(got) != 3 || got[0] != "📋 Участники и отметка→g:r:t1" ||
+		!strings.HasSuffix(own.Text, "👥 Едут: Аня, @bob и ещё 1\n\n⭐ Вы организатор") {
 		t.Errorf("organizer: %v\n%s", got, own.Text)
 	}
-	cancel := screens.CancelConfirm(i18n.RU, o, screens.FromMine)
-	if got := buttons(cancel); strings.Join(got, ",") != "Да, отменить→o:cancel:u:o1,Нет, оставить→o:view:u:o1" ||
-		!strings.Contains(cancel.Text, "Участников: 3 — бот сообщит им об отмене.") {
-		t.Errorf("cancel confirm: %v\n%s", got, cancel.Text)
-	}
-	o.IsOrganizer, o.Status = false, "cancelled"
-	if gone := screens.OutingCard(i18n.RU, o, screens.FromPast, links, now); len(buttons(gone)) != 1 ||
-		!strings.HasSuffix(gone.Text, "❌ Выход отменён организатором") {
-		t.Errorf("cancelled: %v", buttons(gone))
-	}
 
+	o.IsOrganizer = false
 	confirm := screens.LeaveConfirm(i18n.RU, o, screens.FromMine)
-	if got := buttons(confirm); strings.Join(got, ",") != "Да, не пойду→o:leave:u:o1,Нет, иду→o:view:u:o1" {
+	if got := buttons(confirm); strings.Join(got, ",") != "Да, отменить→o:leave:u:t1,Нет, еду→o:view:u:t1" {
 		t.Errorf("confirm: %v", got)
 	}
 }
 
-func TestFindOutingsPages(t *testing.T) {
-	var list []api.Outing
-	for i := range 7 {
-		list = append(list, outing("id"+string(rune('a'+i)), "Выход", now.Add(time.Duration(i+1)*24*time.Hour), "open"))
+func TestTourCardAfter(t *testing.T) {
+	// Past: nothing to do but look, and rate it when it may be rated.
+	past := trip("t2", "Ала-Кёль", "2026-10-18")
+	past.IsJoined = true
+	ps := screens.TourCard(i18n.RU, past, screens.FromPast, links, now)
+	if !strings.HasSuffix(ps.Text, "🏁 Тур уже прошёл") {
+		t.Errorf("past:\n%s", ps.Text)
 	}
-	s := screens.FindOutings(i18n.RU, list, 1)
-	got := buttons(s)
-	if !has(got, "6 · Выход→o:view:f:idf") || !has(got, "2 / 2→noop") || !has(got, "◀️→o:find:0") ||
-		!has(got, "▶️→o:find:0") || has(got, "1 · Выход→o:view:f:ida") {
-		t.Errorf("page 2: %v", got)
+	if got := buttons(ps); strings.Join(got, ",") != "⬅️ К моим турам→o:list:p" {
+		t.Errorf("past buttons: %v", got)
 	}
-	if !strings.Contains(s.Text, "👥 свободно 3 из 10") {
-		t.Errorf("text:\n%s", s.Text)
+	past.CanRate = true
+	if got := buttons(screens.TourCard(i18n.RU, past, screens.FromPast, links, now)); !has(got, "⭐ Оценить тур→r:s:t2") {
+		t.Errorf("rate button: %v", got)
 	}
-	empty := screens.FindOutings(i18n.RU, nil, 0)
-	if !has(buttons(empty), "➕ Собрать выход→d:new") {
-		t.Errorf("empty: %v", buttons(empty))
+	// Met less than 3 hours ago: still upcoming.
+	late := trip("t3", "X", "2026-10-20")
+	late.MeetingTime = str("08:00")
+	if s := screens.TourCard(i18n.RU, late, screens.FromMine, links, now); !has(buttons(s), "✋ Записаться→o:join:u:t3") {
+		t.Errorf("grace period: %v", buttons(s))
+	}
+}
+
+func TestMyToursMoreThanShown(t *testing.T) {
+	var list []api.Tour
+	for i := range 10 {
+		list = append(list, trip("t"+string(rune('a'+i)), "Тур", "2026-11-0"+strconv.Itoa(i)))
+	}
+	list[0].StartDate = "2026-11-10"
+	s := screens.MyTours(i18n.RU, list, screens.FromMine, now)
+	if !strings.HasSuffix(s.Text, "…и ещё 2.") || len(s.Markup.InlineKeyboard) != 8+3 {
+		t.Errorf("10 tours: %d rows\n%s", len(s.Markup.InlineKeyboard), s.Text)
 	}
 }
 
@@ -269,66 +274,6 @@ func TestPicture(t *testing.T) {
 	}
 }
 
-func TestOutingCardDetails(t *testing.T) {
-	o := outing("o1", "Траверс <Ала-Арчи>", now.Add(48*time.Hour), "open")
-	returns := o.StartsAt.Add(30 * time.Hour)
-	o.ReturnsAt, o.CostPerPerson, o.Transport, o.Level = &returns, num(0), "arranged", "advanced"
-	o.Organizer = api.Person{Username: str("guide")}
-	o.Description = str("Берите кошки & ледоруб.")
-	s := screens.OutingCard(i18n.RU, o, screens.FromMine, links, now)
-	for _, want := range []string{
-		"🥾 <b>Траверс &lt;Ала-Арчи&gt;</b>\nдля опытных\n\n",
-		"📅 чт, 22 окт., 10:00 → пт, 23 окт., 16:00",
-		"🚗 Заказной транспорт\n💳 Бесплатно",
-		"🧑 Организатор: @guide",
-		"<i>Берите кошки &amp; ледоруб.</i>",
-		"Есть свободные места — присоединяйтесь!",
-	} {
-		if !strings.Contains(s.Text, want) {
-			t.Errorf("card lacks %q:\n%s", want, s.Text)
-		}
-	}
-
-	// Past: nothing to do but look; no organizer name, no line.
-	past := outing("o2", "Ала-Кёль", now.Add(-48*time.Hour), "open")
-	past.IsJoined = true
-	ps := screens.OutingCard(i18n.RU, past, screens.FromPast, links, now)
-	if !strings.HasSuffix(ps.Text, "🏁 Выход уже прошёл") || strings.Contains(ps.Text, "Организатор") {
-		t.Errorf("past:\n%s", ps.Text)
-	}
-	if got := buttons(ps); strings.Join(got, ",") != "⬅️ К моим выходам→o:list:p" {
-		t.Errorf("past buttons: %v", got)
-	}
-	// Along a catalog route: tell how the route was, for a month.
-	past.Trail = &api.TrailRef{Slug: "ala-kol", Name: "Ала-Кёль"}
-	if got := buttons(screens.OutingCard(i18n.RU, past, screens.FromPast, links, now)); !has(got, "📝 Рассказать, как маршрут→c:s:o2") {
-		t.Errorf("report button: %v", got)
-	}
-	if got := buttons(screens.OutingCard(i18n.RU, past, screens.FromPast, links, now.Add(31*24*time.Hour))); has(got, "📝 Рассказать, как маршрут→c:s:o2") {
-		t.Errorf("report button after a month: %v", got)
-	}
-	// Started less than 3 hours ago: still upcoming, as on the site.
-	if late := screens.OutingCard(i18n.RU, outing("o3", "X", now.Add(-2*time.Hour), "open"), screens.FromMine, links, now); !has(buttons(late), "✋ Пойду→o:join:u:o3") {
-		t.Errorf("grace period: %v", buttons(late))
-	}
-}
-
-func TestMyOutingsMoreThanShown(t *testing.T) {
-	var list []api.Outing
-	for i := range 10 {
-		o := outing("o"+string(rune('a'+i)), "Выход", now.Add(time.Duration(i+1)*time.Hour), "open")
-		o.IsJoined = true
-		list = append(list, o)
-	}
-	s := screens.MyOutings(i18n.RU, list, nil, screens.FromMine, now)
-	if !strings.HasSuffix(s.Text, "…и ещё 2.") || len(s.Markup.InlineKeyboard) != 8+3 {
-		t.Errorf("10 outings: %d rows\n%s", len(s.Markup.InlineKeyboard), s.Text)
-	}
-	if empty := screens.MyOutings(i18n.RU, nil, nil, screens.FromPast, now); !strings.HasSuffix(empty.Text, "Прошедших выходов пока нет.") {
-		t.Errorf("no past:\n%s", empty.Text)
-	}
-}
-
 func TestToursEdges(t *testing.T) {
 	one := []api.Tour{{ID: "t1", Slug: "a", Title: "A", StartDate: "bad"}}
 	// Past the end: the last tour; one tour: no pager; no dates line for a bad date.
@@ -359,18 +304,18 @@ func TestBlogEdges(t *testing.T) {
 // Everything is done in the chat: no section button opens the Mini App
 // or the site — only Telegram's own share dialog.
 func TestNoMiniAppButtons(t *testing.T) {
-	o := outing("o1", "Пик", now.Add(48*time.Hour), "open")
+	o := trip("o1", "Пик", "2026-10-22")
 	own := o
 	own.IsOrganizer = true
-	tour := api.Tour{ID: "t1", Slug: "son-kol", Locale: "ky", Title: "Сон-Кёль", Content: `<p>Текст</p>`}
+	tour := api.Tour{ID: "t1", Slug: "son-kol", Locale: "ky", Title: "Сон-Кёль", Content: `<p>Текст</p>`, StartDate: "2026-11-01"}
 	post := api.BlogPost{ID: "p1", Slug: "checklist", Title: "Чек-лист", Content: `<p>Текст</p>`}
 	_, pushMarkup := screens.BlogPost(i18n.RU, post)
 
 	for _, s := range []screens.Screen{
-		screens.MyOutings(i18n.RU, []api.Outing{o}, nil, screens.FromMine, now), screens.FindOutings(i18n.RU, nil, 0),
-		screens.OutingCard(i18n.RU, o, screens.FromMine, links, now), screens.OutingCard(i18n.RU, own, screens.FromMine, links, now),
+		screens.MyTours(i18n.RU, []api.Tour{o}, screens.FromMine, now),
+		screens.TourCard(i18n.RU, o, screens.FromMine, links, now), screens.TourCard(i18n.RU, own, screens.FromMine, links, now),
 		screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabUpcoming, Tours: []api.Tour{tour}}, links),
-		screens.TourMore(i18n.RU, tour, screens.TabUpcoming, 0, 0, false, links),
+		screens.TourMore(i18n.RU, tour, screens.TabUpcoming, 0, 0, false, links, now),
 		screens.Blog(i18n.RU, []api.BlogPost{post}, 0, false, links), screens.Article(i18n.RU, post, 0, 0, links),
 		{Markup: pushMarkup},
 	} {
@@ -387,20 +332,20 @@ func TestNoMiniAppButtons(t *testing.T) {
 // Telegram takes up to 64 bytes of callback data; ids are UUIDs.
 func TestCallbackDataFits(t *testing.T) {
 	const id = "0f8fad5b-d9cb-469f-a165-70867728950e"
-	o := outing(id, "Пик", now.Add(48*time.Hour), "open")
+	o := trip(id, "Пик", "2026-10-22")
 	o.IsOrganizer = true
-	past := outing(id, "Пик", now.Add(-48*time.Hour), "open")
-	past.IsJoined, past.Trail = true, &api.TrailRef{Slug: "x", Name: "X"}
+	past := trip(id, "Пик", "2026-10-18")
+	past.IsJoined, past.CanRate = true, true
 	tours := []api.Tour{{ID: id, Slug: "x"}}
 	for i := range 20 {
 		tours = append(tours, api.Tour{ID: id, Slug: "x", Title: strconv.Itoa(i)})
 	}
 	post := api.BlogPost{ID: id, Content: strings.Repeat("<p>"+strings.Repeat("слово ", 600)+"</p>", 5)}
 	for _, s := range []screens.Screen{
-		screens.OutingCard(i18n.RU, o, screens.FromFind, links, now), screens.CancelConfirm(i18n.RU, o, screens.FromFind),
-		screens.OutingCard(i18n.RU, past, screens.FromPast, links, now), screens.ConditionState(i18n.RU, past), screens.ConditionTraction(i18n.RU, past, 5),
+		screens.TourCard(i18n.RU, o, screens.FromTours, links, now), screens.LeaveConfirm(i18n.RU, o, screens.FromNotice),
+		screens.TourCard(i18n.RU, past, screens.FromPast, links, now), screens.Roster(i18n.RU, o, nil, links, now),
 		screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabFavorites, Index: 19, Tours: tours, Favorites: map[string]bool{id: true}}, links),
-		screens.TourMore(i18n.RU, tours[19], screens.TabFavorites, 19, 0, true, links),
+		screens.TourMore(i18n.RU, tours[19], screens.TabFavorites, 19, 0, true, links, now),
 		screens.Article(i18n.RU, post, 99, 3, links),
 	} {
 		for _, row := range s.Markup.InlineKeyboard {

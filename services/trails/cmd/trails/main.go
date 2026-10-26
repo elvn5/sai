@@ -1,5 +1,4 @@
-// Command trails serves the route catalog, trail condition reports and
-// group outings.
+// Command trails serves the route catalog and trail condition reports.
 package main
 
 import (
@@ -18,12 +17,10 @@ import (
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
-	"github.com/elvn5/sai/services/pkg/telegram"
 	"github.com/elvn5/sai/services/pkg/usersclient"
 	"github.com/elvn5/sai/services/trails/internal/config"
 	"github.com/elvn5/sai/services/trails/internal/handlers"
 	"github.com/elvn5/sai/services/trails/internal/migrations"
-	"github.com/elvn5/sai/services/trails/internal/notify"
 	"github.com/elvn5/sai/services/trails/internal/routes"
 	"github.com/elvn5/sai/services/trails/internal/store"
 )
@@ -61,15 +58,6 @@ func run(log *slog.Logger) error {
 
 	st := store.New(db)
 	deps := handlers.Deps{Store: st, Authors: users, Log: log}
-	if cfg.BotToken != "" {
-		notifier := &notify.Notifier{
-			Store: st, Users: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL), Log: log,
-		}
-		deps.Notify = notifier
-		go notifier.Run(ctx)
-	} else {
-		log.Warn("BOT_TOKEN not set: Telegram notifications about outings are off")
-	}
 
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{

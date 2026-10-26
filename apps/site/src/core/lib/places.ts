@@ -22,12 +22,12 @@ export function placesResource(
   });
 }
 
-// Free places on a tour, or null when it has no limit (or before the count
-// is known).
+// Free places on a tour — less those signed up (tour.taken) and those
+// booked — or null when it has no limit (or before the bookings are known).
 export function placesLeft(
-  tour: { id: string; capacity: number | null },
+  tour: { id: string; capacity: number | null; taken?: number },
   taken: TakenPlaces | undefined,
 ): number | null {
   if (tour.capacity == null || !taken) return null;
-  return Math.max(0, tour.capacity - (taken[tour.id] ?? 0));
+  return Math.max(0, tour.capacity - (tour.taken ?? 0) - (taken[tour.id] ?? 0));
 }

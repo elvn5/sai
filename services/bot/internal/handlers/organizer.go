@@ -22,7 +22,7 @@ import (
 // (api.Client): marking arrivals, the organizer's tours, their numbers and
 // bookings.
 type Organizing interface {
-	SetArrival(ctx context.Context, userID, outingID, participantID string, arrived bool) (api.Outing, error)
+	SetArrival(ctx context.Context, userID, tourID, participantID string, arrived bool) (api.Tour, error)
 	MyTours(ctx context.Context, userID string) ([]api.Tour, error)
 	ListingStats(ctx context.Context, userID string) (api.ListingStats, error)
 	ReceivedOrders(ctx context.Context, userID string) ([]api.Order, error)
@@ -34,46 +34,47 @@ type Chats interface {
 	TelegramChats(ctx context.Context, ids []string) (map[string]int64, error)
 }
 
-// arrivalErrors are the trails service's refusals to mark an arrival.
+// arrivalErrors are the listings service's refusals to mark an arrival.
 var arrivalErrors = map[string]string{
 	"Check-in opens a day before the start": "Отмечать прибывших можно за сутки до сбора",
-	"Check-in is over":                      "Отметка закрыта: прошла неделя после выхода",
-	"This outing is closed":                 "Выход отменён — отмечать некого",
+	"Check-in is over":                      "Отметка закрыта: прошла неделя после тура",
 	"Participant not found":                 "Этот участник уже не записан",
 	"Only the organizer can mark arrivals":  "Отмечать прибывших может только организатор",
 }
 
-const notOrganizer = "Это может только организатор выхода"
+const notOrganizer = "Это может только организатор тура"
 
 func (h *Handlers) organizing() bool { return h.sections() && h.Organizer != nil }
 
-// orgHome gathers the organizer's room: the outings they run, their tours.
+// orgTours are the tours the user runs, those still ahead (or just
+// behind) first; none when they aren't a partner or listings is down.
+func (h *Handlers) orgTours(ctx context.Context, userID string) ([]api.Tour, error) {
+	tours, err := h.Organizer.MyTours(ctx, userID)
+	if api.StatusOf(err) == http.StatusForbidden || api.StatusOf(err) == http.StatusUnauthorized {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	active, rest := screens.ActiveTours(tours, h.now())
+	return append(active, rest...), nil
+}
+
+// orgHome gathers the organizer's room: the tours they run, with the
+// roster of those around the start (for the check-in count).
 func (h *Handlers) orgHome(ctx context.Context, l i18n.Lang, userID string) (screens.Screen, error) {
-	list, err := h.Content.MyOutings(ctx, userID)
+	tours, err := h.orgTours(ctx, userID)
 	if err != nil {
 		return screens.Screen{}, err
 	}
-	outings := screens.OrganizedOutings(list, h.now())
-	// The list doesn't carry the roster: load it where arrivals count.
-	for i, o := range outings {
-		if screens.CanCheckIn(o, h.now()) && o.Taken > 0 {
-			if full, err := h.Content.Outing(ctx, userID, o.ID); err == nil {
-				outings[i] = full
+	for i, t := range tours {
+		if screens.CanCheckIn(t, h.now()) && t.Taken > 0 {
+			if full, err := h.Content.TourByID(ctx, userID, t.ID); err == nil {
+				tours[i] = full
 			}
 		}
 	}
-	return screens.OrganizerHome(l, outings, h.myTours(ctx, userID), h.now()), nil
-}
-
-// myTours are the tours the user runs; none when they aren't a partner or
-// listings is down (the outings still show).
-func (h *Handlers) myTours(ctx context.Context, userID string) []api.Tour {
-	tours, err := h.Organizer.MyTours(ctx, userID)
-	if err != nil {
-		h.Log.WarnContext(ctx, "organizer's tours", slog.Any("error", err))
-		return nil
-	}
-	return tours
+	return screens.OrganizerHome(l, tours, h.now()), nil
 }
 
 func (h *Handlers) organizerMenu(ctx *th.Context, msg telego.Message) error {
@@ -128,12 +129,12 @@ func (h *Handlers) organizerPress(ctx *th.Context, q telego.CallbackQuery) error
 	return h.answer(ctx, q, "")
 }
 
-// organized loads an outing the user organizes, with its roster; false
-// (the press answered) when it is gone or not theirs.
-func (h *Handlers) organized(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id string) (api.Outing, bool, error) {
-	o, err := h.Content.Outing(ctx, userID, id)
-	if api.StatusOf(err) == http.StatusNotFound || api.StatusOf(err) == http.StatusBadRequest {
-		return o, false, h.answer(ctx, q, l.T("Этого выхода больше нет"))
+// organized loads a tour the user runs, with its roster; false (the press
+// answered) when it is gone or not theirs.
+func (h *Handlers) organized(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id string) (api.Tour, bool, error) {
+	o, err := h.Content.TourByID(ctx, userID, id)
+	if gone(err) {
+		return o, false, h.answer(ctx, q, l.T("Этого тура больше нет"))
 	}
 	if err != nil {
 		return o, false, h.failedPress(ctx, l, q, err)
@@ -145,7 +146,7 @@ func (h *Handlers) organized(ctx *th.Context, l i18n.Lang, q telego.CallbackQuer
 }
 
 // chatsOf finds the participants' chats, best effort (names stay plain).
-func (h *Handlers) chatsOf(ctx context.Context, o api.Outing) map[string]int64 {
+func (h *Handlers) chatsOf(ctx context.Context, o api.Tour) map[string]int64 {
 	if h.Chats == nil || len(o.Roster) == 0 {
 		return nil
 	}
@@ -160,7 +161,7 @@ func (h *Handlers) chatsOf(ctx context.Context, o api.Outing) map[string]int64 {
 	return chats
 }
 
-func (h *Handlers) showRoster(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, o api.Outing, toast string, notice bool) error {
+func (h *Handlers) showRoster(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, o api.Tour, toast string, notice bool) error {
 	if err := h.answer(ctx, q, toast); err != nil {
 		return err
 	}
@@ -229,7 +230,7 @@ func (h *Handlers) markAllArrived(ctx *th.Context, l i18n.Lang, q telego.Callbac
 			o = updated
 		}
 	}
-	return h.showRoster(ctx, l, q, o, l.T("✅ Все на месте — хорошего похода!"), false)
+	return h.showRoster(ctx, l, q, o, l.T("✅ Все на месте — хорошего тура!"), false)
 }
 
 // startBroadcast asks the organizer for a message: the next text is it.
@@ -238,8 +239,8 @@ func (h *Handlers) startBroadcast(ctx *th.Context, l i18n.Lang, q telego.Callbac
 	if !ok {
 		return err
 	}
-	if o.Status != "open" || len(o.Participants) == 0 {
-		return h.showRoster(ctx, l, q, o, l.T("Некому писать: на выход никто не записан"), false)
+	if len(o.Roster) == 0 {
+		return h.showRoster(ctx, l, q, o, l.T("Некому писать: на тур никто не записан"), false)
 	}
 	h.Sessions.StartWith(chatOf(q), session.FieldBroadcast, o.ID)
 	if err := h.answer(ctx, q, ""); err != nil {
@@ -250,28 +251,28 @@ func (h *Handlers) startBroadcast(ctx *th.Context, l i18n.Lang, q telego.Callbac
 
 // broadcastText takes the organizer's typed message and shows it before
 // sending; typing again replaces it.
-func (h *Handlers) broadcastText(ctx *th.Context, l i18n.Lang, msg telego.Message, outingID string) error {
+func (h *Handlers) broadcastText(ctx *th.Context, l i18n.Lang, msg telego.Message, tourID string) error {
 	text := strings.TrimSpace(msg.Text)
 	if text == "" || msg.From == nil {
-		h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcast, outingID)
+		h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcast, tourID)
 		return h.reply(ctx, msg.Chat.ID, l.T("Напишите сообщение текстом."), nil)
 	}
 	if utf8.RuneCountInString(text) > screens.BroadcastMaxLen {
-		h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcast, outingID)
+		h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcast, tourID)
 		return h.reply(ctx, msg.Chat.ID, l.F("Слишком длинно: не больше %d символов. Сократите и отправьте ещё раз.", screens.BroadcastMaxLen), nil)
 	}
 	userID, err := h.userOf(ctx, msg.From)
 	if err != nil {
 		return err
 	}
-	o, err := h.Content.Outing(ctx, userID, outingID)
+	o, err := h.Content.TourByID(ctx, userID, tourID)
 	if err != nil {
 		return h.failed(ctx, l, msg.Chat.ID, err)
 	}
 	if !o.IsOrganizer {
 		return h.reply(ctx, msg.Chat.ID, l.T(notOrganizer), nil)
 	}
-	h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcastReady, outingID+"\n"+text)
+	h.Sessions.StartWith(msg.Chat.ID, session.FieldBroadcastReady, tourID+"\n"+text)
 	return h.send(ctx, msg.Chat.ID, screens.BroadcastPreview(l, o, text))
 }
 
@@ -280,8 +281,8 @@ func (h *Handlers) broadcastText(ctx *th.Context, l i18n.Lang, msg telego.Messag
 func (h *Handlers) sendBroadcast(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, id string) error {
 	chatID := chatOf(q)
 	field, arg, ok := h.Sessions.ConsumeWith(chatID)
-	outingID, text, _ := strings.Cut(arg, "\n")
-	if !ok || field != session.FieldBroadcastReady || outingID != id || text == "" {
+	tourID, text, _ := strings.Cut(arg, "\n")
+	if !ok || field != session.FieldBroadcastReady || tourID != id || text == "" {
 		if ok {
 			h.Sessions.StartWith(chatID, field, arg)
 		}
@@ -295,8 +296,8 @@ func (h *Handlers) sendBroadcast(ctx *th.Context, l i18n.Lang, q telego.Callback
 	if !ok {
 		return err
 	}
-	ids := make([]string, 0, len(o.Participants))
-	for _, p := range o.Participants {
+	ids := make([]string, 0, len(o.Roster))
+	for _, p := range o.Roster {
 		ids = append(ids, p.ID)
 	}
 	chats := map[string]int64{}
@@ -332,7 +333,7 @@ func (h *Handlers) orgTour(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery,
 	if err != nil {
 		return h.answer(ctx, q, "")
 	}
-	tours, err := h.Organizer.MyTours(ctx, userID)
+	tours, err := h.orgTours(ctx, userID)
 	if err != nil {
 		return h.failedPress(ctx, l, q, err)
 	}

@@ -10,17 +10,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/elvn5/sai/services/pkg/jsontime"
 )
 
 var (
 	ErrNotFound  = errors.New("not found")
 	ErrDuplicate = errors.New("duplicate")
-	// ErrFull: the outing has no free seats left.
-	ErrFull = errors.New("outing full")
-	// ErrClosed: the outing was cancelled or has already started.
-	ErrClosed = errors.New("outing closed")
 )
 
 type Store struct {
@@ -53,14 +47,6 @@ func nonNil[T any](s []T) []T {
 	return s
 }
 
-func timePtr(t *time.Time) *jsontime.Time {
-	if t == nil {
-		return nil
-	}
-	v := jsontime.New(*t)
-	return &v
-}
-
 // where accumulates SQL conditions with numbered parameters.
 type where struct {
 	conds []string
@@ -82,6 +68,9 @@ func (w *where) sql() string {
 // atNow numbers the @now placeholder after args and adds now to them, so
 // "now" in a query is the app's clock rather than the database's.
 func atNow(query string, now time.Time, args []any) (string, []any) {
+	if !strings.Contains(query, "@now") {
+		return query, args // Postgres refuses a parameter it can't type
+	}
 	args = append(args, now)
 	return strings.ReplaceAll(query, "@now", "$"+strconv.Itoa(len(args))+"::timestamptz"), args
 }

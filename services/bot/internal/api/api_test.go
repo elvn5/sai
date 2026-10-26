@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -45,13 +44,27 @@ func newClient(t *testing.T, status int, answer string) (*api.Client, *[]request
 
 func TestCallsAsTheUser(t *testing.T) {
 	c, got := newClient(t, http.StatusOK,
-		`[{"id":"o1","title":"Пик","startsAt":"2026-10-24T00:00:00.000Z","seats":10,"taken":7,"status":"open","organizer":{"id":"u2","firstName":"Айгуль"}}]`)
-	list, err := c.MyOutings(context.Background(), "u1")
-	if err != nil || len(list) != 1 || list[0].Organizer.Name() != "Айгуль" || list[0].StartsAt.Day() != 24 {
-		t.Fatalf("MyOutings = %+v, %v", list, err)
+		`[{"id":"t1","title":"Сон-Кёль","startDate":"2026-10-24","meetingTime":"06:30","capacity":10,"taken":7,"isJoined":true,"organizer":{"id":"u2","firstName":"Айгуль"}}]`)
+	list, err := c.JoinedTours(context.Background(), "u1")
+	if err != nil || len(list) != 1 || list[0].Organizer.Name() != "Айгуль" || !list[0].IsJoined ||
+		!list[0].StartsAt().Equal(time.Date(2026, 10, 24, 0, 30, 0, 0, time.UTC)) || list[0].Full() {
+		t.Fatalf("JoinedTours = %+v, %v", list, err)
 	}
-	if r := (*got)[0]; r.method != http.MethodGet || r.uri != "/outings/mine" || r.userID != "u1" {
+	if r := (*got)[0]; r.method != http.MethodGet || r.uri != "/tours/joined" || r.userID != "u1" {
 		t.Errorf("request: %+v", r)
+	}
+}
+
+// A tour without a meeting time meets at 09:00 in Bishkek; a full one has
+// no places left.
+func TestTourStart(t *testing.T) {
+	ten := 10
+	tour := api.Tour{StartDate: "2026-10-24", Capacity: &ten, Taken: 10}
+	if !tour.StartsAt().Equal(time.Date(2026, 10, 24, 3, 0, 0, 0, time.UTC)) || !tour.Full() {
+		t.Errorf("start %v, full %v", tour.StartsAt(), tour.Full())
+	}
+	if (api.Tour{StartDate: "2026-10-24", Taken: 99}).Full() {
+		t.Error("a tour without a limit is never full")
 	}
 }
 
@@ -59,8 +72,6 @@ func TestWrites(t *testing.T) {
 	c, got := newClient(t, http.StatusOK, `[]`)
 	ctx := context.Background()
 	for _, call := range []func() error{
-		func() error { return c.JoinOuting(ctx, "u1", "o1") },
-		func() error { return c.LeaveOuting(ctx, "u1", "o1") },
 		func() error { return c.SetFavoriteTour(ctx, "u1", "t1", true) },
 		func() error { return c.SetFavoriteTour(ctx, "u1", "t1", false) },
 		func() error { return c.SetAllToursAlert(ctx, "u1", true) },
@@ -71,8 +82,6 @@ func TestWrites(t *testing.T) {
 		}
 	}
 	want := []request{
-		{http.MethodPost, "/outings/o1/join", "", "u1"},
-		{http.MethodDelete, "/outings/o1/join", "", "u1"},
 		{http.MethodPut, "/favorites/tour/t1", "", "u1"},
 		{http.MethodDelete, "/favorites/tour/t1", "", "u1"},
 		{http.MethodPut, "/tour-alerts", `{"destination":""}`, "u1"},
@@ -86,19 +95,10 @@ func TestWrites(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	c, _ := newClient(t, http.StatusConflict, `{"statusCode":409,"message":"No seats left","error":"Conflict"}`)
-	err := c.JoinOuting(context.Background(), "u1", "o1")
-	if api.StatusOf(err) != http.StatusConflict || api.MessageOf(err) != "No seats left" {
+	c, _ := newClient(t, http.StatusConflict, `{"statusCode":409,"message":"No places left","error":"Conflict"}`)
+	_, err := c.JoinTour(context.Background(), "u1", "t1")
+	if api.StatusOf(err) != http.StatusConflict || api.MessageOf(err) != "No places left" {
 		t.Errorf("error: %v", err)
-	}
-}
-
-// /outings/mine says only who organizes: the rest are joined.
-func TestMyOutingsJoined(t *testing.T) {
-	c, _ := newClient(t, http.StatusOK, `[{"id":"a","isOrganizer":true},{"id":"b","isOrganizer":false}]`)
-	list, err := c.MyOutings(context.Background(), "u1")
-	if err != nil || list[0].IsJoined || !list[1].IsJoined {
-		t.Errorf("MyOutings = %+v, %v", list, err)
 	}
 }
 
@@ -109,17 +109,12 @@ func TestReads(t *testing.T) {
 		call                func(c *api.Client) (any, error)
 		check               func(v any) bool
 	}{
-		{`{"outings":3,"distanceKm":12.5,"elevationGain":900}`, "/outings/mine/summary", "u1",
-			func(c *api.Client) (any, error) { return c.OutingsSummary(ctx, "u1") },
+		{`{"id":"t 1","isJoined":true,"canRate":true,"myRating":{"rating":4,"text":null},"roster":[{"id":"u2","joinedAt":"2026-10-18T03:00:00Z"}]}`, "/tours/by-id/t%201", "u1",
+			func(c *api.Client) (any, error) { return c.TourByID(ctx, "u1", "t 1") },
 			func(v any) bool {
-				return v.(api.OutingsSummary) == api.OutingsSummary{Outings: 3, DistanceKm: 12.5, ElevationGain: 900}
+				o := v.(api.Tour)
+				return o.IsJoined && o.CanRate && o.MyRating.Rating == 4 && o.Roster[0].ID == "u2" && o.Roster[0].ArrivedAt == nil
 			}},
-		{`[{"id":"o1"}]`, "/outings?limit=50", "u1",
-			func(c *api.Client) (any, error) { return c.UpcomingOutings(ctx, "u1") },
-			func(v any) bool { return len(v.([]api.Outing)) == 1 }},
-		{`{"id":"o 1","isJoined":true,"contact":"@a"}`, "/outings/o%201", "u1",
-			func(c *api.Client) (any, error) { return c.Outing(ctx, "u1", "o 1") },
-			func(v any) bool { o := v.(api.Outing); return o.IsJoined && *o.Contact == "@a" }},
 		{`{"tours":[{"id":"t1"}],"hotels":[],"localGuides":[]}`, "/favorites/mine", "u1",
 			func(c *api.Client) (any, error) { return c.FavoriteTours(ctx, "u1") },
 			func(v any) bool { return len(v.([]api.Tour)) == 1 }},
@@ -193,32 +188,31 @@ func TestPersonName(t *testing.T) {
 	}
 }
 
-func TestOutingWrites(t *testing.T) {
-	c, got := newClient(t, http.StatusOK, `{"id":"o9","title":"Пик","isOrganizer":true}`)
+func TestParticipationWrites(t *testing.T) {
+	c, got := newClient(t, http.StatusOK, `{"id":"t9","title":"Сон-Кёль","isOrganizer":true}`)
 	ctx := context.Background()
-	trail := "t1"
-	in := api.OutingInput{TrailID: &trail, Title: "Пик", StartsAt: "2026-10-24T06:00:00+06:00", MeetingPoint: "Вефа",
-		Transport: "car", Seats: 4, Level: "beginner"}
-	if o, err := c.CreateOuting(ctx, "u1", in); err != nil || o.ID != "o9" || !o.IsOrganizer {
-		t.Fatalf("create: %+v %v", o, err)
+	if o, err := c.SetArrival(ctx, "u1", "t9", "u2", true); err != nil || o.ID != "t9" || !o.IsOrganizer {
+		t.Fatalf("arrival: %+v %v", o, err)
 	}
-	in.TrailID = nil
-	if _, err := c.UpdateOuting(ctx, "u1", "o9", in); err != nil {
+	if _, err := c.SetArrival(ctx, "u1", "t9", "u2", false); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.CancelOuting(ctx, "u1", "o9"); err != nil {
+	text := "Отлично"
+	if _, err := c.RateTour(ctx, "u3", "t9", 5, &text); err != nil {
 		t.Fatal(err)
 	}
-	if err := c.ReportCondition(ctx, "u1", "ala-kol", api.ConditionInput{ObservedOn: "2026-10-18", TrailState: "wet", Traction: "none"}); err != nil {
+	if _, err := c.JoinTour(ctx, "u3", "t9"); err != nil {
 		t.Fatal(err)
 	}
-	body := `{"trailId":"t1","title":"Пик","startsAt":"2026-10-24T06:00:00+06:00","returnsAt":null,"meetingPoint":"Вефа",` +
-		`"transport":"car","seats":4,"costPerPerson":null,"level":"beginner","description":null,"contact":null}`
+	if _, err := c.LeaveTour(ctx, "u3", "t9"); err != nil {
+		t.Fatal(err)
+	}
 	want := []request{
-		{http.MethodPost, "/outings", body, "u1"},
-		{http.MethodPut, "/outings/o9", strings.Replace(body, `"trailId":"t1"`, `"trailId":null`, 1), "u1"},
-		{http.MethodPost, "/outings/o9/cancel", "", "u1"},
-		{http.MethodPost, "/trails/ala-kol/conditions", `{"observedOn":"2026-10-18","trailState":"wet","traction":"none"}`, "u1"},
+		{http.MethodPut, "/tours/t9/participants/u2/arrival", "", "u1"},
+		{http.MethodDelete, "/tours/t9/participants/u2/arrival", "", "u1"},
+		{http.MethodPut, "/tours/t9/rating", `{"rating":5,"text":"Отлично"}`, "u3"},
+		{http.MethodPost, "/tours/t9/join", "", "u3"},
+		{http.MethodDelete, "/tours/t9/join", "", "u3"},
 	}
 	for i, w := range want {
 		if (*got)[i] != w {
@@ -229,19 +223,7 @@ func TestOutingWrites(t *testing.T) {
 
 func TestDetailReads(t *testing.T) {
 	ctx := context.Background()
-	c, got := newClient(t, http.StatusOK, `[{"id":"t1","slug":"uchitel","name":"Пик Учитель","description":"…"}]`)
-	trails, err := c.Trails(ctx, "пик у")
-	if err != nil || len(trails) != 1 || trails[0].ID != "t1" || trails[0].Name != "Пик Учитель" {
-		t.Errorf("trails: %+v %v", trails, err)
-	}
-	if _, err := c.Trails(ctx, ""); err != nil {
-		t.Fatal(err)
-	}
-	if (*got)[0].uri != "/trails?search=%D0%BF%D0%B8%D0%BA+%D1%83&sort=popular" || (*got)[1].uri != "/trails?sort=popular" {
-		t.Errorf("trails requests: %+v", *got)
-	}
-
-	c, got = newClient(t, http.StatusOK, `{"id":"t1","content":"<p>x</p>","program":[{"title":"День","text":"Т"}],"capacity":12,"telegram":"@a"}`)
+	c, got := newClient(t, http.StatusOK, `{"id":"t1","content":"<p>x</p>","program":[{"title":"День","text":"Т"}],"capacity":12,"telegram":"@a"}`)
 	tour, err := c.Tour(ctx, "ru", "son-kol")
 	if err != nil || tour.Content != "<p>x</p>" || tour.Program[0].Title != "День" || *tour.Capacity != 12 || *tour.Telegram != "@a" {
 		t.Errorf("tour: %+v %v", tour, err)

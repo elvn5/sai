@@ -21,9 +21,5 @@ var (
 	Tractions      = []string{"none", "microspikes", "crampons"}
 	AvalancheRisks = []string{"low", "moderate", "considerable", "high"}
 
-	Transports   = []string{"car", "bus", "arranged"}
-	Levels       = []string{"beginner", "intermediate", "advanced"}
-	OutingStates = []string{"open", "cancelled"}
-
 	TrailSorts = []string{"popular", "name", "elevation", "newest"}
 )

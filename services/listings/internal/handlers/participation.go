@@ -1,0 +1,301 @@
+package handlers
+
+import (
+	"errors"
+	"log/slog"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/elvn5/sai/services/listings/internal/models"
+	"github.com/elvn5/sai/services/listings/internal/store"
+	"github.com/elvn5/sai/services/pkg/httperr"
+	"github.com/elvn5/sai/services/pkg/jsontime"
+	"github.com/elvn5/sai/services/pkg/respond"
+	"github.com/elvn5/sai/services/pkg/validation"
+)
+
+const (
+	// The organizer marks arrivals from a day before the start until a
+	// week after it.
+	checkInBefore = 24 * time.Hour
+	checkInAfter  = 7 * 24 * time.Hour
+	// Participants rate a tour from its start until a month after its end.
+	ratingWindow = 30 * 24 * time.Hour
+)
+
+type ratingRequest struct {
+	Rating *int                     `json:"rating" binding:"required,gte=1,lte=5"`
+	Text   validation.Field[string] `json:"text" binding:"omitempty,max=1000"`
+}
+
+// Participation serves signing up for tours: travelers take a place while
+// there are any, the partner sees who signed up and marks who came, and
+// participants rate the tour after it (their review of it).
+type Participation struct{ Deps }
+
+// Get is one tour as the visitor sees it: whether they signed up, and for
+// the organizer the roster. The owner and admins also see an unpublished
+// tour.
+func (h *Participation) Get(c *gin.Context) {
+	tour, ok := h.load(c)
+	if !ok {
+		return
+	}
+	if !tour.IsPublished && !ownedBy(tour.UserID, currentUserID(c)) && !isAdmin(c) {
+		httperr.Abort(c, http.StatusNotFound, tourNotFound)
+		return
+	}
+	h.respondDetail(c, tour)
+}
+
+// Joined lists the tours the signed-in user signed up for.
+func (h *Participation) Joined(c *gin.Context) {
+	ctx := c.Request.Context()
+	tours, err := h.Store.JoinedTours(ctx, currentUserID(c))
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	for i := range tours {
+		tours[i].IsJoined = true
+	}
+	(&Tours{Deps: h.Deps}).withOrganizers(ctx, tours)
+	respond.JSON(c, http.StatusOK, tours)
+}
+
+func (h *Participation) Join(c *gin.Context) {
+	tour, ok := h.load(c)
+	if !ok {
+		return
+	}
+	me := currentUserID(c)
+	if ownedBy(tour.UserID, me) {
+		httperr.Abort(c, http.StatusBadRequest, "You organize this tour")
+		return
+	}
+	switch err := h.Store.Join(c.Request.Context(), tour.ID, me, tour.StartsAt(), h.now()); {
+	case errors.Is(err, store.ErrFull):
+		httperr.Abort(c, http.StatusConflict, "No places left")
+		return
+	case errors.Is(err, store.ErrClosed):
+		httperr.Abort(c, http.StatusConflict, "Sign-up for this tour is closed")
+		return
+	case errors.Is(err, store.ErrDuplicate):
+		httperr.Abort(c, http.StatusConflict, "You have already signed up")
+		return
+	case err != nil:
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	if updated, ok := h.reload(c, tour.ID); ok && h.Notify != nil {
+		h.Notify.Joined(c.Request.Context(), updated, me)
+	}
+}
+
+func (h *Participation) Leave(c *gin.Context) {
+	tour, ok := h.load(c)
+	if !ok {
+		return
+	}
+	if err := h.Store.Leave(c.Request.Context(), tour.ID, currentUserID(c)); err != nil {
+		h.fail(c, err, "You haven't signed up for this tour", "")
+		return
+	}
+	// Dropping out of a tour that took place isn't news.
+	if updated, ok := h.reload(c, tour.ID); ok && h.Notify != nil && updated.StartsAt().After(h.now()) {
+		h.Notify.Left(c.Request.Context(), updated, currentUserID(c))
+	}
+}
+
+// SetArrival marks a participant as arrived at the meeting point (PUT) or
+// not (DELETE): the organizer's check-in.
+func (h *Participation) SetArrival(c *gin.Context) {
+	tour, ok := h.load(c)
+	if !ok {
+		return
+	}
+	if !ownedBy(tour.UserID, currentUserID(c)) {
+		httperr.Abort(c, http.StatusForbidden, "Only the organizer can mark arrivals")
+		return
+	}
+	now := h.now()
+	switch {
+	case now.Before(tour.StartsAt().Add(-checkInBefore)):
+		httperr.Abort(c, http.StatusConflict, "Check-in opens a day before the start")
+		return
+	case now.After(tour.StartsAt().Add(checkInAfter)):
+		httperr.Abort(c, http.StatusConflict, "Check-in is over")
+		return
+	}
+	participant := c.Param("userId")
+	if !validID(participant) {
+		httperr.Abort(c, http.StatusNotFound, "Participant not found")
+		return
+	}
+	arrived := c.Request.Method == http.MethodPut
+	if err := h.Store.SetArrived(c.Request.Context(), tour.ID, participant, arrived, now); err != nil {
+		h.fail(c, err, "Participant not found", "")
+		return
+	}
+	h.reload(c, tour.ID)
+}
+
+// rateRefusal says why userID can't rate the tour now ("" when they can):
+// they signed up, it started and ended less than a month ago, and — once
+// the organizer marked arrivals — they were marked.
+func (h *Participation) rateRefusal(c *gin.Context, t models.Tour, userID string, roster []store.Participant) (string, error) {
+	var mine *store.Participant
+	marked := false
+	for i, p := range roster {
+		if p.UserID == userID {
+			mine = &roster[i]
+		}
+		marked = marked || p.ArrivedAt != nil
+	}
+	if mine == nil {
+		return "Only participants can rate this tour", nil
+	}
+	now := h.now()
+	switch {
+	case now.Before(t.StartsAt()):
+		return "The tour hasn't started yet", nil
+	case now.After(t.EndsAt().Add(ratingWindow)):
+		return "Rating is closed", nil
+	case marked && mine.ArrivedAt == nil:
+		return "Only those who came can rate this tour", nil
+	}
+	return "", nil
+}
+
+// Rate stores the signed-in participant's 1–5 rating of a tour with an
+// optional comment, as their review of it; rating again changes it.
+func (h *Participation) Rate(c *gin.Context) {
+	var req ratingRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	tour, ok := h.load(c)
+	if !ok {
+		return
+	}
+	ctx := c.Request.Context()
+	me := currentUserID(c)
+	roster, err := h.Store.Participants(ctx, tour.ID)
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	refusal, err := h.rateRefusal(c, tour, me, roster)
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	if refusal != "" {
+		status := http.StatusConflict
+		if strings.HasPrefix(refusal, "Only") {
+			status = http.StatusForbidden
+		}
+		httperr.Abort(c, status, refusal)
+		return
+	}
+	text := ""
+	if req.Text.Valid {
+		text = strings.TrimSpace(req.Text.Value)
+	}
+	if err := h.Store.RateTour(ctx, tour.ID, me, *req.Rating, text); err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	h.reload(c, tour.ID)
+}
+
+func (h *Participation) load(c *gin.Context) (models.Tour, bool) {
+	id := c.Param("id")
+	if !validID(id) {
+		h.fail(c, store.ErrNotFound, tourNotFound, "")
+		return models.Tour{}, false
+	}
+	tour, err := h.Store.Tour(c.Request.Context(), id)
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return models.Tour{}, false
+	}
+	return tour, true
+}
+
+// reload answers with the tour's current state and returns it.
+func (h *Participation) reload(c *gin.Context, id string) (models.Tour, bool) {
+	tour, err := h.Store.Tour(c.Request.Context(), id)
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return tour, false
+	}
+	return tour, h.respondDetail(c, tour)
+}
+
+// respondDetail adds the organizer, the visitor's place and rating, and
+// for the organizer (or an admin) the roster.
+func (h *Participation) respondDetail(c *gin.Context, t models.Tour) bool {
+	ctx := c.Request.Context()
+	roster, err := h.Store.Participants(ctx, t.ID)
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return false
+	}
+	me := currentUserID(c)
+	t.IsOrganizer = me != "" && ownedBy(t.UserID, me)
+	for _, p := range roster {
+		t.IsJoined = t.IsJoined || (me != "" && p.UserID == me)
+	}
+	tours := []models.Tour{t}
+	(&Tours{Deps: h.Deps}).withOrganizers(ctx, tours)
+	t = tours[0]
+	if (t.IsOrganizer || isAdmin(c)) && len(roster) > 0 {
+		ids := make([]string, len(roster))
+		for i, p := range roster {
+			ids[i] = p.UserID
+		}
+		people, err := h.Authors.Authors(ctx, ids)
+		if err != nil {
+			h.Log.WarnContext(ctx, "participants' profiles", slog.Any("error", err))
+		}
+		t.Roster = make([]models.RosterEntry, 0, len(roster))
+		for _, p := range roster {
+			t.Roster = append(t.Roster, models.RosterEntry{
+				Author: authorFor(people, p.UserID), JoinedAt: jsontime.New(p.JoinedAt), ArrivedAt: jsontime.Ptr(p.ArrivedAt),
+			})
+		}
+	}
+	if t.IsJoined {
+		refusal, err := h.rateRefusal(c, t, me, roster)
+		if err == nil {
+			t.MyRating, err = h.Store.MyTourRating(ctx, t.ID, me)
+		}
+		if err != nil {
+			h.fail(c, err, tourNotFound, "")
+			return false
+		}
+		t.CanRate = refusal == ""
+	}
+	respond.JSON(c, http.StatusOK, t)
+	return true
+}
+
+// notifyParticipants calls send with the tour's participants, if
+// notifications are on and anyone signed up.
+func (h *Tours) notifyParticipants(c *gin.Context, tourID string, send func(ids []string)) {
+	if h.Notify == nil {
+		return
+	}
+	ids, err := h.Store.ParticipantIDs(c.Request.Context(), tourID)
+	if err != nil {
+		h.Log.ErrorContext(c.Request.Context(), "could not load participants to notify", slog.Any("error", err))
+		return
+	}
+	if len(ids) > 0 {
+		send(ids)
+	}
+}

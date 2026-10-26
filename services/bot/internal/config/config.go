@@ -17,10 +17,10 @@ type Config struct {
 	// the chat.
 	MiniAppURL string `env:"MINI_APP_URL"`
 
-	// The gateway the bot calls on a user's behalf (outings, tours,
+	// The gateway the bot calls on a user's behalf (tours and signing up,
 	// favorites, the blog), e.g. http://gateway:8080 on the Docker network,
-	// with user sessions it signs with JWT_SECRET. Without both the
-	// outings, tours and blog sections are off.
+	// with user sessions it signs with JWT_SECRET. Without both the tours
+	// and blog sections are off.
 	APIURL    string `env:"API_URL"`
 	JWTSecret string `env:"JWT_SECRET"`
 	// The gateway's public address, for cover pictures Telegram fetches

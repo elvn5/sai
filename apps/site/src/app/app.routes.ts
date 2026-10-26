@@ -58,25 +58,6 @@ const pages: Routes = [
     loadComponent: () => import('@/pages/organizers/organizer.page').then((m) => m.OrganizerPage),
   },
 
-  {
-    path: 'outings',
-    loadComponent: () => import('@/pages/outings/outings-list.page').then((m) => m.OutingsListPage),
-  },
-  {
-    path: 'outings/new',
-    canActivate: [requireAuth],
-    loadComponent: () => import('@/pages/outings/outing-new.page').then((m) => m.OutingNewPage),
-  },
-  {
-    path: 'outings/:id/edit',
-    canActivate: [requireAuth],
-    loadComponent: () => import('@/pages/outings/outing-edit.page').then((m) => m.OutingEditPage),
-  },
-  {
-    path: 'outings/:id',
-    loadComponent: () => import('@/pages/outings/outing.page').then((m) => m.OutingPage),
-  },
-
   ...LEGAL_DOCUMENTS.map((doc) => ({
     path: LEGAL[doc].path.slice(1),
     data: { doc },

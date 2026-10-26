@@ -1,4 +1,4 @@
-import { type BlogPost, type Outing, SeoPage, type Tour } from '@/core/api/types';
+import { type BlogPost, SeoPage, type Tour } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { todayInBishkek } from '@/core/lib/format';
@@ -9,7 +9,6 @@ import { bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { AppLogo } from '@/ui/app-logo';
 import { TourCard } from '@/ui/listing/tour-card';
 import { MountainScene } from '@/ui/mountain-scene';
-import { OutingCard } from '@/ui/outing-card';
 import { PostBadges } from '@/ui/post-badges';
 import { SiteLink } from '@/ui/site-link';
 import { NgOptimizedImage } from '@angular/common';
@@ -18,26 +17,24 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const NEWS_LIMIT = 3;
-const OUTINGS_LIMIT = 4;
 const TOURS_LIMIT = 6;
 
-// Outings and tours for now: the other sections are paused
+// Tours and the blog for now: the other sections are paused
 // (server/paused-sections.ts).
 const QUICK_LINKS = [
-  { path: '/outings', icon: 'icon-[heroicons--user-group] icon-anim-pop', key: 'outings' },
   { path: '/tours', icon: 'icon-[heroicons--map] icon-anim-flip', key: 'tours' },
+  { path: '/blog', icon: 'icon-[heroicons--newspaper] icon-anim-pop', key: 'blog' },
 ] as const;
 
-// The home page (the feed): the nearest tours, who's heading out this
-// weekend and the latest news, all rendered on the server (the cached
-// page is at most minutes old, so the outings' seats stay close enough).
+// The home page (the feed): the nearest tours and the latest news, all
+// rendered on the server (the cached page is at most minutes old, so the
+// tours' places stay close enough).
 @Component({
   selector: 'app-home-page',
   imports: [
     AppLogo,
     MountainScene,
     NgOptimizedImage,
-    OutingCard,
     PostBadges,
     SiteLink,
     TourCard,
@@ -95,25 +92,6 @@ const QUICK_LINKS = [
       </section>
     }
 
-    @if (upcoming().length > 0) {
-      <section class="ui-container pt-12" aria-labelledby="home-outings">
-        <div class="mb-3.5 flex items-center justify-between gap-4">
-          <div>
-            <h2 id="home-outings" class="text-xl font-bold tracking-tight text-text">{{ 'home.outingsHeading' | transloco }}</h2>
-            <p class="text-[0.8125rem] text-text-muted">{{ 'home.outingsSubheading' | transloco }}</p>
-          </div>
-          <a appSiteLink="/outings" class="group flex shrink-0 items-center gap-1 text-[0.84rem] font-medium text-brand-700 dark:text-brand-300">
-            {{ 'home.viewAllOutings' | transloco }}<span class="icon-[heroicons--arrow-right] icon-anim-nudge size-4" aria-hidden="true"></span>
-          </a>
-        </div>
-        <ul class="motion-reveal grid grid-cols-1 gap-3 sm:grid-cols-2">
-          @for (outing of upcoming(); track outing.id) {
-            <li><app-outing-card [outing]="outing" /></li>
-          }
-        </ul>
-      </section>
-    }
-
     <section class="ui-container py-12" aria-labelledby="home-news">
       <div class="mb-3.5 flex items-center justify-between gap-4">
         <h2 id="home-news" class="text-xl font-bold tracking-tight text-text">{{ 'home.latestNews' | transloco }}</h2>
@@ -161,14 +139,9 @@ export class HomePage {
     url: '/tours',
     params: { locale: this.lang() },
   }));
-  private readonly outings = httpResource<Outing[]>(() => ({
-    url: '/outings',
-    params: { limit: OUTINGS_LIMIT },
-  }));
 
   // A section whose request failed is left out: the rest of the page stands.
   protected readonly latestPosts = computed(() => (loaded(this.posts) ?? []).slice(0, NEWS_LIMIT));
-  protected readonly upcoming = computed(() => loaded(this.outings) ?? []);
   // Tours still ahead, soonest first.
   protected readonly upcomingTours = computed(() => {
     const today = todayInBishkek();

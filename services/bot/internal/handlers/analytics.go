@@ -18,14 +18,13 @@ type Tracker interface {
 
 // The events the bot reports; each carries the chat's language ("lang").
 const (
-	eventStart        = "bot_start"     // deep_link: verify, link, outing or none; outing_id
-	eventMenu         = "menu_select"   // section
-	eventJoinOuting   = "join_outing"   // outing_id
-	eventLeaveOuting  = "leave_outing"  // outing_id
-	eventCreateOuting = "create_outing" // outing_id
-	eventLanguage     = "language_change"
-	eventViewTour     = "view_tour"    // tour_id, source: list or alert
-	eventViewArticle  = "view_article" // post_id
+	eventStart       = "bot_start"   // deep_link: verify, link, tour, outing (old) or none; tour_id
+	eventMenu        = "menu_select" // section
+	eventJoinTour    = "join_tour"   // tour_id
+	eventLeaveTour   = "leave_tour"  // tour_id
+	eventLanguage    = "language_change"
+	eventViewTour    = "view_tour"    // tour_id, source: list or alert
+	eventViewArticle = "view_article" // post_id
 )
 
 // track reports what a user did, without waiting.
@@ -57,8 +56,11 @@ func startParams(payload string) map[string]any {
 			return map[string]any{"deep_link": kind.name}
 		}
 	}
-	if id, ok := strings.CutPrefix(payload, outingPrefix); ok && id != "" {
-		return map[string]any{"deep_link": "outing", "outing_id": id}
+	if id, ok := strings.CutPrefix(payload, tourPrefix); ok && id != "" {
+		return map[string]any{"deep_link": "tour", "tour_id": id}
+	}
+	if strings.HasPrefix(payload, outingPrefix) {
+		return map[string]any{"deep_link": "outing"}
 	}
 	if payload != "" {
 		return map[string]any{"deep_link": "other"}

@@ -8,7 +8,6 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 const PARENTS = [
   { path: '/tours', label: 'nav.tours' },
-  { path: '/outings', label: 'nav.outings' },
   { path: '/blog', label: 'nav.blog' },
 ] as const;
 

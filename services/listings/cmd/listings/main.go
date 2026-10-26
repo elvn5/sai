@@ -23,6 +23,7 @@ import (
 	"github.com/elvn5/sai/services/listings/internal/handlers"
 	"github.com/elvn5/sai/services/listings/internal/legacyimport"
 	"github.com/elvn5/sai/services/listings/internal/migrations"
+	"github.com/elvn5/sai/services/listings/internal/notify"
 	"github.com/elvn5/sai/services/listings/internal/purge"
 	"github.com/elvn5/sai/services/listings/internal/routes"
 	"github.com/elvn5/sai/services/listings/internal/store"
@@ -77,9 +78,13 @@ func run(log *slog.Logger) error {
 	st := store.New(db)
 	deps := handlers.Deps{Store: st, Authors: users, Log: log}
 	if cfg.BotToken != "" {
-		deps.Alerts = &alerts.Notifier{
-			Store: st, Chats: users, Sender: telegram.New(cfg.BotToken, cfg.TelegramAPIURL), Log: log,
-		}
+		sender := telegram.New(cfg.BotToken, cfg.TelegramAPIURL)
+		deps.Alerts = &alerts.Notifier{Store: st, Chats: users, Sender: sender, Log: log}
+		notifier := &notify.Notifier{Store: st, Users: users, Sender: sender, Log: log}
+		deps.Notify = notifier
+		go notifier.Run(ctx)
+	} else {
+		log.Warn("BOT_TOKEN not set: Telegram notifications about tours are off")
 	}
 	grpcSrv := grpc.NewServer()
 	listingsv1.RegisterListingsServiceServer(grpcSrv, &grpcserver.Server{Store: st, Log: log})

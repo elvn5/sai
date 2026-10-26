@@ -23,6 +23,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 
 	verifier := auth.NewVerifier(jwtSecret)
 	requireUser := middleware.RequireUser(verifier, users)
+	optionalUser := middleware.OptionalUser(verifier)
 	requirePartner := middleware.RequirePartner()
 
 	hotels := &handlers.Hotels{Deps: d}
@@ -49,6 +50,17 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.POST("/tours", requireUser, requirePartner, tours.Create)
 	r.PUT("/tours/:id", requireUser, tours.Update)
 	r.DELETE("/tours/:id", requireUser, tours.Delete)
+
+	// Signing up for a tour, the organizer's roster and check-in, and
+	// participants' ratings.
+	trips := &handlers.Participation{Deps: d}
+	r.GET("/tours/joined", requireUser, trips.Joined)
+	r.GET("/tours/by-id/:id", optionalUser, trips.Get)
+	r.POST("/tours/:id/join", requireUser, trips.Join)
+	r.DELETE("/tours/:id/join", requireUser, trips.Leave)
+	r.PUT("/tours/:id/participants/:userId/arrival", requireUser, trips.SetArrival)
+	r.DELETE("/tours/:id/participants/:userId/arrival", requireUser, trips.SetArrival)
+	r.PUT("/tours/:id/rating", requireUser, trips.Rate)
 
 	reviews := &handlers.Reviews{Deps: d}
 	r.GET("/reviews", reviews.List)

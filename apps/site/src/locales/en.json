@@ -6,8 +6,7 @@
     "tours": "Tours",
     "blog": "Blog",
     "menu": "Menu",
-    "hallOfFame": "Hall of fame",
-    "outings": "Outings"
+    "hallOfFame": "Hall of fame"
   },
   "theme": { "toggle": "Theme", "light": "Light", "dark": "Dark" },
   "colorTheme": { "toggle": "Color theme" },
@@ -18,18 +17,15 @@
     "latestNews": "Latest news",
     "viewAllPosts": "View all posts",
     "quick": {
-      "outings": {
-        "title": "Outings",
-        "description": "Group hikes this weekend and beyond"
-      },
       "tours": {
         "title": "Tours",
         "description": "Ready-made trips from partners"
+      },
+      "blog": {
+        "title": "Blog",
+        "description": "Routes, tips and news"
       }
     },
-    "outingsHeading": "Upcoming outings",
-    "outingsSubheading": "Join a group or grab a seat in a car",
-    "viewAllOutings": "All outings",
     "toursHeading": "Upcoming tours",
     "toursSubheading": "The nearest dates from organizers",
     "viewAllTours": "All tours"
@@ -125,8 +121,7 @@
     "deleteButton": "Delete",
     "deleteConfirm": "Delete this tour?",
     "perPerson": "per person",
-    "emptyHint": "Partners add new dates every week. Meanwhile, check the group outings.",
-    "emptyCta": "See outings",
+    "emptyHint": "Partners add new dates every week. Turn on alerts and we'll tell you about new tours.",
     "emptyFiltered": "No tours match these filters",
     "emptyFilteredHint": "Try another length or drop a filter.",
     "filters": {
@@ -174,7 +169,46 @@
     },
     "capacityLabel": "Group size",
     "capacityHint": "Leave empty for no limit. Online bookings won't exceed it.",
-    "photosLabel": "Gallery photos"
+    "photosLabel": "Gallery photos",
+    "meetingPointLabel": "Meeting point",
+    "meetingPointPlaceholder": "e.g. South Gate, by the gas station",
+    "meetingTimeLabel": "Meeting time",
+    "meetingTimeHint": "On the start date, Bishkek time",
+    "signup": {
+      "heading": "Sign up",
+      "meeting": "Meeting: {when}",
+      "placesTaken": "{taken} of {capacity} signed up",
+      "signedUp": "Signed up: {taken}",
+      "join": "Sign up",
+      "joinHint": "The organizer gets notified, and we'll remind you the day before.",
+      "joined": "You're signed up",
+      "leave": "Cancel sign-up",
+      "leaveConfirm": "Cancel your sign-up? Your place frees up and the organizer is notified.",
+      "full": "Full",
+      "closed": "Sign-up is closed: the tour has started.",
+      "participants": "Participants",
+      "arrived": "checked in",
+      "noParticipants": "Nobody has signed up yet.",
+      "checkInHint": "Check people in from the Telegram bot, from a day before the start.",
+      "errors": {
+        "conflict": "Didn't work: no places left or sign-up is closed.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "rate": {
+        "title": "How was the tour?",
+        "hint": "Your rating becomes your review of the tour and appears on the organizer's page.",
+        "textPlaceholder": "What did you like, what could be better? (optional)",
+        "submit": "Save rating",
+        "saved": "Thanks! Your rating is saved",
+        "yours": "Your rating",
+        "error": "Couldn't save the rating"
+      },
+      "telegram": {
+        "linked": "You'll get tour notifications in Telegram: changes, a reminder the day before, a request to rate it after.",
+        "startBot": "Open {bot} and press Start if you haven't yet.",
+        "notLinked": "Tour notifications are sent in Telegram — link it to your account."
+      }
+    }
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -312,21 +346,18 @@
     "reviewsCount": "Reviews: {count}",
     "noRating": "No ratings yet",
     "stats": {
-      "outings": "Outings held",
       "people": "Participants",
       "tours": "Tours held",
       "reviews": "Reviews"
     },
-    "upcomingOutings": "Upcoming outings",
     "upcomingTours": "Upcoming tours",
     "reviews": "Reviews from participants",
-    "noReviews": "No reviews yet. They come from people who joined this organizer's outings or tours.",
-    "aboutOuting": "About the outing",
+    "noReviews": "No reviews yet. They come from people who went on a tour with this organizer.",
     "aboutTour": "About the tour",
     "reply": "Organizer's reply",
     "title": "{name}, organizer",
-    "meta": "{name}: mountain outings and tours in Kyrgyzstan on Ermekten.",
-    "metaRated": "{name}: rated {rating} from {count} reviews. Mountain outings and tours in Kyrgyzstan on Ermekten.",
+    "meta": "{name}: mountain tours and trips across Kyrgyzstan on Ermekten.",
+    "metaRated": "{name}: rated {rating} from {count} reviews. Mountain tours and trips across Kyrgyzstan on Ermekten.",
     "profileLink": "Organizer's profile"
   },
   "reviews": {
@@ -465,11 +496,11 @@
       "telegram": "Telegram"
     },
     "history": {
-      "empty": "No outings yet",
-      "emptyHint": "Outings you organize or join will show up here.",
-      "cta": "Find an outing",
-      "upcoming": "Upcoming outings",
-      "past": "Past outings"
+      "empty": "No tours yet",
+      "emptyHint": "Tours you sign up for will show up here.",
+      "cta": "Find a tour",
+      "upcoming": "Upcoming tours",
+      "past": "Past tours"
     },
     "partner": {
       "pitch": "Become an Ermekten partner: publish stays, tours, guides and posts, and award travelers achievements.",
@@ -488,14 +519,11 @@
       "open": "Open the hall of fame"
     },
     "stats": {
-      "outings": "Outings",
       "bookings": "Paid bookings",
       "points": "Points",
       "awards": "Achievements",
-      "distance": "Distance",
-      "elevation": "Elevation gain",
-      "kmValue": "{value} km",
-      "metersValue": "{value} m"
+      "tours": "Tours",
+      "upcoming": "Upcoming"
     }
   },
   "footer": {
@@ -637,101 +665,15 @@
     "self": "You can't award yourself.",
     "awardError": "Couldn't award the achievement. Please try again."
   },
-  "outings": {
-    "rate": {
-      "title": "How was the outing?",
-      "hint": "Your rating and review appear on the organizer's page.",
-      "textPlaceholder": "What did you like, what could be better? (optional)",
-      "submit": "Save rating",
-      "saved": "Thanks! Your rating is saved",
-      "yours": "Your rating",
-      "error": "Couldn't save the rating"
-    },
-    "title": "Outings",
-    "subtitle": "Group hikes and climbs: find company, a seat in a car, or gather your own group.",
-    "create": "Organize an outing",
-    "empty": "No upcoming outings yet",
-    "emptyHint": "Start one: pick a route, a time and how many seats you have.",
-    "freeSeatsOnly": "Only with free seats",
-    "groups": {
-      "today": "Today",
-      "tomorrow": "Tomorrow"
-    },
-    "transport": {
-      "car": "In the organizer's car",
-      "bus": "By public transport",
-      "arranged": "Hired transport"
-    },
-    "level": {
-      "beginner": "Beginners welcome",
-      "intermediate": "Some experience",
-      "advanced": "Experienced"
-    },
-    "free": "Free",
-    "full": "Full",
-    "seatsLeft": "Seats left: {count}",
-    "seatsTaken": "{taken} of {seats} taken",
-    "cancelled": "Cancelled",
-    "participants": "Participants",
-    "organizer": "organizer",
-    "contact": "Organizer's contact",
-    "returns": "Back: {when}",
-    "join": "Join",
-    "joinHint": "You'll then see the organizer's contact.",
-    "leave": "I can't make it",
-    "cancel": "Cancel outing",
-    "cancelConfirm": "Cancel this outing? Participants will see it's cancelled.",
-    "notYours": "Only the organizer can edit this outing.",
-    "errors": {
-      "conflict": "Didn't work: no seats left or the outing is closed.",
-      "generic": "Something went wrong. Please try again."
-    },
-    "form": {
-      "newTitle": "Organize an outing",
-      "newHint": "Say where and when you're going — people join, and only they see your contact.",
-      "editTitle": "Edit outing",
-      "trail": "Route",
-      "trailHint": "Leave empty if the route isn't in the catalog.",
-      "noTrail": "No catalog route",
-      "title": "Title",
-      "titlePlaceholder": "e.g. Uchitel on Saturday",
-      "startsAt": "Meet at",
-      "bishkekTime": "Bishkek time",
-      "returnsAt": "Back by (if known)",
-      "meetingPoint": "Meeting point",
-      "meetingPointPlaceholder": "e.g. South Gate, by the gas station",
-      "transport": "Getting there",
-      "seats": "How many people you take",
-      "seatsHint": "Besides you — e.g. free seats in your car",
-      "cost": "Contribution per person, som",
-      "costHint": "Fuel, park entry; 0 means free",
-      "level": "Level",
-      "description": "Details",
-      "descriptionPlaceholder": "Pace, what to bring, overnight, plan B for bad weather…",
-      "contact": "How to reach you",
-      "contactHint": "Only people who join see it",
-      "create": "Publish outing",
-      "save": "Save",
-      "saveError": "Couldn't save the outing.",
-      "checkFields": "Please check the fields.",
-      "futureStart": "The meeting time must be in the future",
-      "returnAfterStart": "The return must be after the start"
-    },
-    "telegram": {
-      "linked": "You'll get outing notifications in Telegram: who joined, changes, a reminder the day before.",
-      "startBot": "Open {bot} and press Start if you haven't yet.",
-      "notLinked": "Outing notifications are sent in Telegram — link it to your account."
-    }
-  },
   "telegramLink": {
-    "why": "Link Telegram to get outing notifications and sign in with Telegram.",
+    "why": "Link Telegram to get tour notifications and sign in to the site with Telegram.",
     "link": "Link Telegram",
     "open": "Open {bot}",
     "waiting": "Press Start in the bot — waiting for confirmation…",
     "linked": "Telegram linked",
     "justLinked": "Done, Telegram is linked!",
     "unlink": "Unlink",
-    "unlinkConfirm": "Unlink Telegram? You'll stop getting outing notifications.",
+    "unlinkConfirm": "Unlink Telegram? Tour notifications will stop.",
     "onlySignIn": "Telegram is your only way to sign in, so it can't be unlinked.",
     "expired": "The link expired. Press “Link Telegram” again.",
     "error": "Something went wrong. Please try again."

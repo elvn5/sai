@@ -119,8 +119,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
       TRAILS_DB_NAME: trails
       USERS_GRPC_ADDR: users:9083
-      # Telegram notifications about outings, sent as the bot.
-      BOT_TOKEN: ${BOT_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -192,7 +190,7 @@ services:
       MINI_APP_URL: ${MINI_APP_URL:-http://localhost:3002}
       # Accounts and support contacts come from the users service.
       USERS_GRPC_ADDR: users:9083
-      # Outings, tours and the blog: the gateway, called on users' behalf
+      # Tours and the blog: the gateway, called on users' behalf
       # with sessions signed with JWT_SECRET.
       API_URL: http://gateway:8080
       JWT_SECRET: ${JWT_SECRET}

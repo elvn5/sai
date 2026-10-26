@@ -24,7 +24,7 @@ type Config struct {
 	// users service: session checks, partner status, review/post authors.
 	UsersGRPCAddr string `env:"USERS_GRPC_ADDR,required"`
 
-	// Telegram messages about new tours, sent as the site's bot. Off
+	// Telegram messages about new tours and sign-ups, sent as the site's bot. Off
 	// without a token.
 	BotToken       string `env:"BOT_TOKEN"`
 	TelegramAPIURL string `env:"TELEGRAM_API_URL"`

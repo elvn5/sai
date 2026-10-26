@@ -19,7 +19,6 @@ export function isSitemapType(value: string): value is SitemapType {
 const SECTION_PATHS = [
   '/',
   '/tours',
-  '/outings',
   '/blog',
   '/gallery',
   '/hall-of-fame',
@@ -57,8 +56,7 @@ async function perLanguage(getJson: GetJson, section: string): Promise<SitemapEn
 }
 
 // Organizers' pages, one per partner running a published tour in any
-// language (outing organizers aren't listed: their outings are gone in
-// days). The same page in every language; lastmod is their latest tour.
+// language. The same page in every language; lastmod is their latest tour.
 async function organizers(getJson: GetJson): Promise<SitemapEntry[]> {
   const lists = await Promise.all(
     LANGS.map(async (lang) => (await getJson(`/tours?locale=${lang}`)) as Published[]),

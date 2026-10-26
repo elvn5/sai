@@ -22,12 +22,6 @@ const ITEMS = [
     active: 'icon-[heroicons--home-solid]',
   },
   {
-    path: '/outings',
-    label: 'nav.outings',
-    icon: 'icon-[heroicons--user-group]',
-    active: 'icon-[heroicons--user-group-solid]',
-  },
-  {
     path: '/tours',
     label: 'nav.tours',
     icon: 'icon-[heroicons--map]',
@@ -51,7 +45,7 @@ const ITEMS = [
   host: { class: 'lg:hidden' },
   template: `
     <nav
-      class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-surface/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md transition-transform duration-(--dur-base) ease-standard motion-reduce:transition-none"
+      class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-surface/92 pb-[env(safe-area-inset-bottom)] backdrop-blur-md transition-transform duration-(--dur-base) ease-standard motion-reduce:transition-none"
       [class.translate-y-full]="hidden()"
       [attr.aria-label]="'nav.menu' | transloco"
     >

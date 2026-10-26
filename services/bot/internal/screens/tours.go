@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mymmrac/telego"
 
@@ -167,25 +168,15 @@ func tourParagraphs(l i18n.Lang, t api.Tour) []string {
 			out = append(out, text)
 		}
 	}
-	var contacts []string
-	if t.Telegram != nil && *t.Telegram != "" {
-		contacts = append(contacts, "Telegram: "+esc(*t.Telegram))
-	}
-	if t.Whatsapp != nil && *t.Whatsapp != "" {
-		contacts = append(contacts, "WhatsApp: "+esc(*t.Whatsapp))
-	}
-	if t.Phone != nil && *t.Phone != "" {
-		contacts = append(contacts, l.F("Телефон: %s", esc(*t.Phone)))
-	}
-	if len(contacts) > 0 {
-		out = append(out, "📞 <b>"+l.T("Записаться и спросить")+"</b>\n"+strings.Join(contacts, "\n"))
+	if c := contacts(l, t); len(c) > 0 {
+		out = append(out, "📞 <b>"+l.T("Связь с организатором")+"</b>\n"+strings.Join(c, "\n"))
 	}
 	return out
 }
 
 // TourMore is a page of a tour's description, read in the chat; the
-// cover and the facts open the first page.
-func TourMore(l i18n.Lang, t api.Tour, tab string, index, page int, favorite bool, links Links) Screen {
+// cover and the facts open the first page. Signing up is a button away.
+func TourMore(l i18n.Lang, t api.Tour, tab string, index, page int, favorite bool, links Links, now time.Time) Screen {
 	pages := Pages(tourParagraphs(l, t), pageLimit)
 	n := max(len(pages), 1)
 	page = min(max(page, 0), n-1)
@@ -199,6 +190,9 @@ func TourMore(l i18n.Lang, t api.Tour, tab string, index, page int, favorite boo
 	if page == 0 {
 		picture = links.Picture(t.CoverImageURL)
 		b.WriteString(tourFacts(l, t))
+		if !t.StartsAt().IsZero() {
+			b.WriteString("\n🕕 " + l.F("Сбор: %s", When(l, t.StartsAt())) + " · 👥 " + placesLine(l, t))
+		}
 	}
 	if len(pages) > 0 {
 		b.WriteString("\n\n" + pages[page])
@@ -214,6 +208,12 @@ func TourMore(l i18n.Lang, t api.Tour, tab string, index, page int, favorite boo
 			row = append(row, keyboards.Button(l.T("Дальше ▶️"), MoreData(tab, index, page+1)))
 		}
 		buttons = append(buttons, row)
+	}
+	switch {
+	case t.IsJoined || t.IsOrganizer:
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🎒 Моя запись"), TripData(ActView, FromTours, t.ID))})
+	case IsUpcoming(t, now) && !t.Full():
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("✋ Записаться"), TripData(ActJoin, FromTours, t.ID))})
 	}
 	save := keyboards.Button(l.T("❤️ В избранное"), tourAction(ActSave, tab, index, t.ID)+":"+ActMore)
 	if favorite {

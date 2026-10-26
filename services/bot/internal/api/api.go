@@ -1,5 +1,5 @@
-// Package api is the bot's view of the public API (the gateway): outings,
-// tours, favorites, tour alerts and the blog. Requests that need a user go
+// Package api is the bot's view of the public API (the gateway): tours
+// and signing up for them, favorites, tour alerts and the blog. Requests that need a user go
 // with a short-lived session of that user, signed with the shared
 // JWT_SECRET, so the services treat them exactly like the site's.
 package api
@@ -80,41 +80,7 @@ func (p Person) Name() string {
 	}
 }
 
-type TrailRef struct {
-	ID   string `json:"id"`
-	Slug string `json:"slug"`
-	Name string `json:"name"`
-	Area string `json:"area"`
-}
-
-type Outing struct {
-	ID            string     `json:"id"`
-	Trail         *TrailRef  `json:"trail"`
-	Title         string     `json:"title"`
-	StartsAt      time.Time  `json:"startsAt"`
-	ReturnsAt     *time.Time `json:"returnsAt"`
-	MeetingPoint  string     `json:"meetingPoint"`
-	Transport     string     `json:"transport"`
-	Seats         int        `json:"seats"`
-	Taken         int        `json:"taken"`
-	CostPerPerson *int       `json:"costPerPerson"`
-	Level         string     `json:"level"`
-	Description   *string    `json:"description"`
-	Contact       *string    `json:"contact"`
-	Status        string     `json:"status"`
-	Organizer     Person     `json:"organizer"`
-	IsJoined      bool       `json:"isJoined"`
-	IsOrganizer   bool       `json:"isOrganizer"`
-	// Who joined: on one outing's details only.
-	Participants []Person `json:"participants"`
-	// The organizer's view of them: when each joined and arrived.
-	Roster []RosterEntry `json:"roster"`
-	// A participant's: whether they can rate it now, and their rating.
-	CanRate  bool        `json:"canRate"`
-	MyRating *RatingMine `json:"myRating"`
-}
-
-// RatingMine is the user's own 1–5 rating of an outing.
+// RatingMine is the user's own 1–5 rating of a tour they went on.
 type RatingMine struct {
 	Rating int     `json:"rating"`
 	Text   *string `json:"text"`
@@ -125,35 +91,6 @@ type RosterEntry struct {
 	Person
 	JoinedAt  time.Time  `json:"joinedAt"`
 	ArrivedAt *time.Time `json:"arrivedAt"`
-}
-
-// OutingInput creates an outing or replaces an outing's fields. Times are
-// RFC 3339; nil clears an optional field.
-type OutingInput struct {
-	TrailID       *string `json:"trailId"`
-	Title         string  `json:"title"`
-	StartsAt      string  `json:"startsAt"`
-	ReturnsAt     *string `json:"returnsAt"`
-	MeetingPoint  string  `json:"meetingPoint"`
-	Transport     string  `json:"transport"`
-	Seats         int     `json:"seats"`
-	CostPerPerson *int    `json:"costPerPerson"`
-	Level         string  `json:"level"`
-	Description   *string `json:"description"`
-	Contact       *string `json:"contact"`
-}
-
-// ConditionInput is a trail condition report.
-type ConditionInput struct {
-	ObservedOn string `json:"observedOn"` // YYYY-MM-DD
-	TrailState string `json:"trailState"`
-	Traction   string `json:"traction"`
-}
-
-type OutingsSummary struct {
-	Outings       int     `json:"outings"`
-	DistanceKm    float64 `json:"distanceKm"`
-	ElevationGain int     `json:"elevationGain"`
 }
 
 type Tour struct {
@@ -180,7 +117,46 @@ type Tour struct {
 	Telegram *string      `json:"telegram"`
 	// On the organizer's own list.
 	IsPublished bool `json:"isPublished"`
+
+	// Signing up: where and when (HH:MM, Bishkek, on StartDate) the group
+	// meets, and the travelers signed up.
+	MeetingPoint *string `json:"meetingPoint"`
+	MeetingTime  *string `json:"meetingTime"`
+	Taken        int     `json:"taken"`
+	Organizer    *Person `json:"organizer"`
+	// As the user sees it (one tour by id, the user's own lists).
+	IsJoined    bool `json:"isJoined"`
+	IsOrganizer bool `json:"isOrganizer"`
+	// The organizer's: who signed up and who came.
+	Roster []RosterEntry `json:"roster"`
+	// A participant's: whether they can rate it now, and their rating.
+	CanRate  bool        `json:"canRate"`
+	MyRating *RatingMine `json:"myRating"`
 }
+
+// bishkek is the time zone tours' dates and meeting times are in.
+var bishkek = time.FixedZone("Asia/Bishkek", 6*60*60)
+
+// defaultMeetingTime stands in for a tour without one, as listings does.
+const defaultMeetingTime = "09:00"
+
+// StartsAt is when the group meets: the start date at the meeting time in
+// Bishkek (zero for a malformed date).
+func (t Tour) StartsAt() time.Time {
+	at := defaultMeetingTime
+	if t.MeetingTime != nil && *t.MeetingTime != "" {
+		at = *t.MeetingTime
+	}
+	starts, err := time.ParseInLocation(time.DateOnly+" 15:04", t.StartDate+" "+at, bishkek)
+	if err != nil {
+		day, _ := time.ParseInLocation(time.DateOnly, t.StartDate, bishkek)
+		return day
+	}
+	return starts
+}
+
+// Full: every place is taken (a tour without a limit never is).
+func (t Tour) Full() bool { return t.Capacity != nil && t.Taken >= *t.Capacity }
 
 // StatCounts are a listing's visits and contact-button clicks.
 type StatCounts struct {
@@ -323,71 +299,49 @@ func (c *Client) do(ctx context.Context, method, path, userID string, body, out 
 	return nil
 }
 
-// MyOutings lists what the user organizes or joined, latest start first.
-// The list says only who organizes, so the rest are the ones joined.
-func (c *Client) MyOutings(ctx context.Context, userID string) ([]Outing, error) {
-	var out []Outing
-	if err := c.do(ctx, http.MethodGet, "/outings/mine", userID, nil, &out); err != nil {
-		return nil, err
-	}
-	for i := range out {
-		out[i].IsJoined = !out[i].IsOrganizer
-	}
-	return out, nil
+// JoinedTours lists the tours the user signed up for, latest start first.
+func (c *Client) JoinedTours(ctx context.Context, userID string) ([]Tour, error) {
+	var out []Tour
+	return out, c.do(ctx, http.MethodGet, "/tours/joined", userID, nil, &out)
 }
 
-func (c *Client) OutingsSummary(ctx context.Context, userID string) (OutingsSummary, error) {
-	var out OutingsSummary
-	return out, c.do(ctx, http.MethodGet, "/outings/mine/summary", userID, nil, &out)
+// TourByID is one tour as the user sees it: their place, and for its
+// organizer the roster.
+func (c *Client) TourByID(ctx context.Context, userID, id string) (Tour, error) {
+	var out Tour
+	return out, c.do(ctx, http.MethodGet, "/tours/by-id/"+url.PathEscape(id), userID, nil, &out)
 }
 
-// UpcomingOutings lists open outings, soonest first.
-func (c *Client) UpcomingOutings(ctx context.Context, userID string) ([]Outing, error) {
-	var out []Outing
-	return out, c.do(ctx, http.MethodGet, "/outings?limit=50", userID, nil, &out)
+// JoinTour signs the user up for a tour.
+func (c *Client) JoinTour(ctx context.Context, userID, id string) (Tour, error) {
+	var out Tour
+	return out, c.do(ctx, http.MethodPost, "/tours/"+url.PathEscape(id)+"/join", userID, nil, &out)
 }
 
-// Outing is one outing as the user sees it (the contact once joined).
-func (c *Client) Outing(ctx context.Context, userID, id string) (Outing, error) {
-	var out Outing
-	return out, c.do(ctx, http.MethodGet, "/outings/"+url.PathEscape(id), userID, nil, &out)
+// LeaveTour gives up the user's place on a tour.
+func (c *Client) LeaveTour(ctx context.Context, userID, id string) (Tour, error) {
+	var out Tour
+	return out, c.do(ctx, http.MethodDelete, "/tours/"+url.PathEscape(id)+"/join", userID, nil, &out)
 }
 
-// CreateOuting organizes an outing.
-func (c *Client) CreateOuting(ctx context.Context, userID string, in OutingInput) (Outing, error) {
-	var out Outing
-	return out, c.do(ctx, http.MethodPost, "/outings", userID, in, &out)
-}
-
-// UpdateOuting changes an outing the user organizes.
-func (c *Client) UpdateOuting(ctx context.Context, userID, id string, in OutingInput) (Outing, error) {
-	var out Outing
-	return out, c.do(ctx, http.MethodPut, "/outings/"+url.PathEscape(id), userID, in, &out)
-}
-
-// CancelOuting calls off an outing the user organizes.
-func (c *Client) CancelOuting(ctx context.Context, userID, id string) error {
-	return c.do(ctx, http.MethodPost, "/outings/"+url.PathEscape(id)+"/cancel", userID, nil, nil)
-}
-
-// SetArrival marks a participant of an outing the user organizes as
-// arrived at the meeting point, or not.
-func (c *Client) SetArrival(ctx context.Context, userID, outingID, participantID string, arrived bool) (Outing, error) {
+// SetArrival marks a participant of a tour the user runs as arrived at the
+// meeting point, or not.
+func (c *Client) SetArrival(ctx context.Context, userID, tourID, participantID string, arrived bool) (Tour, error) {
 	method := http.MethodPut
 	if !arrived {
 		method = http.MethodDelete
 	}
-	var out Outing
-	path := "/outings/" + url.PathEscape(outingID) + "/participants/" + url.PathEscape(participantID) + "/arrival"
+	var out Tour
+	path := "/tours/" + url.PathEscape(tourID) + "/participants/" + url.PathEscape(participantID) + "/arrival"
 	return out, c.do(ctx, method, path, userID, nil, &out)
 }
 
-// RateOuting rates an outing the user went on (1–5, an optional comment);
-// rating again changes it.
-func (c *Client) RateOuting(ctx context.Context, userID, outingID string, rating int, text *string) (Outing, error) {
-	var out Outing
+// RateTour rates a tour the user went on (1–5, an optional comment): their
+// review of it; rating again changes it.
+func (c *Client) RateTour(ctx context.Context, userID, tourID string, rating int, text *string) (Tour, error) {
+	var out Tour
 	body := map[string]any{"rating": rating, "text": text}
-	return out, c.do(ctx, http.MethodPut, "/outings/"+url.PathEscape(outingID)+"/rating", userID, body, &out)
+	return out, c.do(ctx, http.MethodPut, "/tours/"+url.PathEscape(tourID)+"/rating", userID, body, &out)
 }
 
 // MyTours lists the tours the user runs, published or not, newest first.
@@ -408,30 +362,6 @@ func (c *Client) ListingStats(ctx context.Context, userID string) (ListingStats,
 func (c *Client) ReceivedOrders(ctx context.Context, userID string) ([]Order, error) {
 	var out []Order
 	return out, c.do(ctx, http.MethodGet, "/orders/received", userID, nil, &out)
-}
-
-// Trails lists published routes, most popular first; search narrows them
-// by name.
-func (c *Client) Trails(ctx context.Context, search string) ([]TrailRef, error) {
-	q := url.Values{"sort": {"popular"}}
-	if search != "" {
-		q.Set("search", search)
-	}
-	var out []TrailRef
-	return out, c.do(ctx, http.MethodGet, "/trails?"+q.Encode(), "", nil, &out)
-}
-
-// ReportCondition posts what a route looked like.
-func (c *Client) ReportCondition(ctx context.Context, userID, trail string, in ConditionInput) error {
-	return c.do(ctx, http.MethodPost, "/trails/"+url.PathEscape(trail)+"/conditions", userID, in, nil)
-}
-
-func (c *Client) JoinOuting(ctx context.Context, userID, id string) error {
-	return c.do(ctx, http.MethodPost, "/outings/"+url.PathEscape(id)+"/join", userID, nil, nil)
-}
-
-func (c *Client) LeaveOuting(ctx context.Context, userID, id string) error {
-	return c.do(ctx, http.MethodDelete, "/outings/"+url.PathEscape(id)+"/join", userID, nil, nil)
 }
 
 // UpcomingTours lists published tours in a language departing from today

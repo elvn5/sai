@@ -43,7 +43,7 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 		{"CONTENT_URL", cfg.ContentURL, []string{"/blog", "/guides", "/gallery", "/page-seo"}},
 		{"LISTINGS_URL", cfg.ListingsURL, []string{"/hotels", "/local-guides", "/tours", "/reviews", "/listing-posts", "/listing-stats", "/favorites", "/tour-alerts"}},
 		{"USERS_URL", cfg.UsersURL, []string{"/auth", "/users", "/partners", "/support", "/achievements", "/hall-of-fame"}},
-		{"TRAILS_URL", cfg.TrailsURL, []string{"/trails", "/conditions", "/outings"}},
+		{"TRAILS_URL", cfg.TrailsURL, []string{"/trails", "/conditions"}},
 		{"PAYMENTS_URL", cfg.PaymentsURL, []string{"/orders", "/payouts", "/payments"}},
 	}
 	for _, svc := range services {

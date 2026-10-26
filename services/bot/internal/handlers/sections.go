@@ -20,22 +20,14 @@ import (
 	"github.com/elvn5/sai/services/bot/internal/screens"
 )
 
-// Content is the public API, as the outings, tours and blog sections use
-// it (api.Client).
+// Content is the public API, as the tours and blog sections use it
+// (api.Client).
 type Content interface {
-	MyOutings(ctx context.Context, userID string) ([]api.Outing, error)
-	OutingsSummary(ctx context.Context, userID string) (api.OutingsSummary, error)
-	UpcomingOutings(ctx context.Context, userID string) ([]api.Outing, error)
-	Outing(ctx context.Context, userID, id string) (api.Outing, error)
-	JoinOuting(ctx context.Context, userID, id string) error
-	LeaveOuting(ctx context.Context, userID, id string) error
-	CreateOuting(ctx context.Context, userID string, in api.OutingInput) (api.Outing, error)
-	UpdateOuting(ctx context.Context, userID, id string, in api.OutingInput) (api.Outing, error)
-	CancelOuting(ctx context.Context, userID, id string) error
-	Trails(ctx context.Context, search string) ([]api.TrailRef, error)
-	ReportCondition(ctx context.Context, userID, trail string, in api.ConditionInput) error
+	JoinedTours(ctx context.Context, userID string) ([]api.Tour, error)
+	TourByID(ctx context.Context, userID, id string) (api.Tour, error)
+	JoinTour(ctx context.Context, userID, id string) (api.Tour, error)
+	LeaveTour(ctx context.Context, userID, id string) (api.Tour, error)
 	UpcomingTours(ctx context.Context, locale string) ([]api.Tour, error)
-	Tour(ctx context.Context, locale, slug string) (api.Tour, error)
 	FavoriteTours(ctx context.Context, userID string) ([]api.Tour, error)
 	SetFavoriteTour(ctx context.Context, userID, tourID string, saved bool) error
 	TourAlerts(ctx context.Context, userID string) ([]string, error)
@@ -120,23 +112,17 @@ func (h *Handlers) failedPress(ctx *th.Context, l i18n.Lang, q telego.CallbackQu
 
 func (h *Handlers) noop(ctx *th.Context, q telego.CallbackQuery) error { return h.answer(ctx, q, "") }
 
-// --- Outings ---
+// --- My tours ---
 
-func (h *Handlers) myOutings(ctx context.Context, l i18n.Lang, userID, tab string) (screens.Screen, error) {
-	list, err := h.Content.MyOutings(ctx, userID)
+func (h *Handlers) myTrips(ctx context.Context, l i18n.Lang, userID, tab string) (screens.Screen, error) {
+	list, err := h.Content.JoinedTours(ctx, userID)
 	if err != nil {
 		return screens.Screen{}, err
 	}
-	var sum *api.OutingsSummary
-	if s, err := h.Content.OutingsSummary(ctx, userID); err == nil {
-		sum = &s
-	} else {
-		h.Log.WarnContext(ctx, "outings summary", slog.Any("error", err))
-	}
-	return screens.MyOutings(l, list, sum, tab, h.now()), nil
+	return screens.MyTours(l, list, tab, h.now()), nil
 }
 
-func (h *Handlers) outingsMenu(ctx *th.Context, msg telego.Message) error {
+func (h *Handlers) myToursMenu(ctx *th.Context, msg telego.Message) error {
 	if msg.From == nil {
 		return nil
 	}
@@ -145,39 +131,44 @@ func (h *Handlers) outingsMenu(ctx *th.Context, msg telego.Message) error {
 	if err != nil {
 		return err
 	}
-	s, err := h.myOutings(ctx, l, userID, screens.FromMine)
+	s, err := h.myTrips(ctx, l, userID, screens.FromMine)
 	if err != nil {
 		return h.failed(ctx, l, msg.Chat.ID, err)
 	}
 	return h.send(ctx, msg.Chat.ID, s)
 }
 
-// outingCard sends an outing's card (a deep link from the site).
-func (h *Handlers) outingCard(ctx *th.Context, l i18n.Lang, chatID int64, from *telego.User, id string) error {
+// gone: the API doesn't know the tour (deleted, or an old outing's id).
+func gone(err error) bool {
+	return api.StatusOf(err) == http.StatusNotFound || api.StatusOf(err) == http.StatusBadRequest
+}
+
+// tourCard sends a tour's card (a deep link from the site or a friend).
+func (h *Handlers) tourCard(ctx *th.Context, l i18n.Lang, chatID int64, from *telego.User, id string) error {
 	userID, err := h.userOf(ctx, from)
 	if err != nil {
 		return err
 	}
-	o, err := h.Content.Outing(ctx, userID, id)
-	if api.StatusOf(err) == http.StatusNotFound || api.StatusOf(err) == http.StatusBadRequest {
-		return h.reply(ctx, chatID, l.T("Такого выхода нет — возможно, его удалили."), nil)
+	t, err := h.Content.TourByID(ctx, userID, id)
+	if gone(err) {
+		return h.reply(ctx, chatID, l.T("Такого тура нет — возможно, его удалили."), nil)
 	}
 	if err != nil {
 		return h.failed(ctx, l, chatID, err)
 	}
-	return h.send(ctx, chatID, screens.OutingCard(l, o, screens.FromMine, h.Links, h.now()))
+	return h.send(ctx, chatID, screens.TourCard(l, t, screens.FromMine, h.Links, h.now()))
 }
 
-// joinErrors are the trails service's refusals, as the user reads them.
+// joinErrors are the listings service's refusals, as the user reads them.
 var joinErrors = map[string]string{
-	"No seats left":            "Мест больше нет 😔",
-	"This outing is closed":    "Запись на этот выход закрыта",
-	"You have already joined":  "Вы уже записаны на этот выход",
-	"You organize this outing": "Это ваш выход — вы его организатор",
+	"No places left":                  "Мест больше нет 😔",
+	"Sign-up for this tour is closed": "Запись на этот тур закрыта",
+	"You have already signed up":      "Вы уже записаны на этот тур",
+	"You organize this tour":          "Это ваш тур — вы его организатор",
 }
 
-func (h *Handlers) outingPress(ctx *th.Context, q telego.CallbackQuery) error {
-	parts := strings.Split(strings.TrimPrefix(q.Data, keyboards.OutingsPrefix), ":")
+func (h *Handlers) myToursPress(ctx *th.Context, q telego.CallbackQuery) error {
+	parts := strings.Split(strings.TrimPrefix(q.Data, keyboards.MyToursPrefix), ":")
 	l := h.lang(ctx, &q.From)
 	userID, err := h.userOf(ctx, &q.From)
 	if err != nil {
@@ -186,7 +177,7 @@ func (h *Handlers) outingPress(ctx *th.Context, q telego.CallbackQuery) error {
 
 	switch {
 	case len(parts) == 2 && parts[0] == screens.ActList:
-		s, err := h.myOutings(ctx, l, userID, parts[1])
+		s, err := h.myTrips(ctx, l, userID, parts[1])
 		if err != nil {
 			return h.failedPress(ctx, l, q, err)
 		}
@@ -195,42 +186,13 @@ func (h *Handlers) outingPress(ctx *th.Context, q telego.CallbackQuery) error {
 		}
 		return h.show(ctx, q, s)
 
-	case len(parts) == 2 && parts[0] == screens.ActFind:
-		page, _ := strconv.Atoi(parts[1])
-		list, err := h.Content.UpcomingOutings(ctx, userID)
-		if err != nil {
-			return h.failedPress(ctx, l, q, err)
-		}
-		h.markJoined(ctx, userID, list)
-		if err := h.answer(ctx, q, ""); err != nil {
-			return err
-		}
-		return h.show(ctx, q, screens.FindOutings(l, list, page))
-
 	case len(parts) == 3:
-		return h.outingAction(ctx, l, q, userID, parts[0], parts[1], parts[2])
+		return h.tripAction(ctx, l, q, userID, parts[0], parts[1], parts[2])
 	}
 	return h.answer(ctx, q, "")
 }
 
-// markJoined marks the outings the user joined: the public list doesn't
-// say (best effort).
-func (h *Handlers) markJoined(ctx context.Context, userID string, list []api.Outing) {
-	mine, err := h.Content.MyOutings(ctx, userID)
-	if err != nil {
-		h.Log.WarnContext(ctx, "my outings", slog.Any("error", err))
-		return
-	}
-	joined := make(map[string]bool, len(mine))
-	for _, o := range mine {
-		joined[o.ID] = o.IsJoined
-	}
-	for i := range list {
-		list[i].IsJoined = list[i].IsJoined || joined[list[i].ID]
-	}
-}
-
-func (h *Handlers) outingAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, action, from, id string) error {
+func (h *Handlers) tripAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery, userID, action, from, id string) error {
 	// A button under a notification opens the card as a message of its
 	// own, keeping the notification.
 	notice := from == screens.FromNotice
@@ -239,44 +201,38 @@ func (h *Handlers) outingAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQ
 	}
 	toast := ""
 	switch action {
-	case screens.ActCancel:
-		err := h.Content.CancelOuting(ctx, userID, id)
-		if msg, known := organizerErrors[api.MessageOf(err)]; known {
-			toast = l.T(msg)
-		} else if err != nil && api.StatusOf(err) != http.StatusNotFound {
-			return h.failedPress(ctx, l, q, err)
-		} else if err == nil {
-			toast = l.T("Выход отменён. Участники получат уведомление.")
-		}
 	case screens.ActJoin:
-		err := h.Content.JoinOuting(ctx, userID, id)
+		_, err := h.Content.JoinTour(ctx, userID, id)
 		if msg, known := joinErrors[api.MessageOf(err)]; known {
 			toast = l.T(msg)
-		} else if err != nil && api.StatusOf(err) != http.StatusNotFound {
+		} else if err != nil && !gone(err) {
 			return h.failedPress(ctx, l, q, err)
 		} else if err == nil {
 			toast = l.T("✅ Вы записаны! Организатор получит уведомление.")
-			h.track(&q.From, l, eventJoinOuting, map[string]any{"outing_id": id})
+			h.track(&q.From, l, eventJoinTour, map[string]any{"tour_id": id})
 		}
 	case screens.ActLeave:
-		err := h.Content.LeaveOuting(ctx, userID, id)
-		if err != nil && api.StatusOf(err) != http.StatusNotFound {
+		_, err := h.Content.LeaveTour(ctx, userID, id)
+		if err != nil && !gone(err) {
 			return h.failedPress(ctx, l, q, err)
 		}
 		if err == nil {
-			toast = l.T("Вы больше не идёте на этот выход")
-			h.track(&q.From, l, eventLeaveOuting, map[string]any{"outing_id": id})
+			toast = l.T("Запись отменена")
+			h.track(&q.From, l, eventLeaveTour, map[string]any{"tour_id": id})
 		}
 	}
 
-	o, err := h.Content.Outing(ctx, userID, id)
-	if api.StatusOf(err) == http.StatusNotFound || api.StatusOf(err) == http.StatusBadRequest {
-		if err := h.answer(ctx, q, l.T("Этого выхода больше нет")); err != nil {
+	t, err := h.Content.TourByID(ctx, userID, id)
+	if gone(err) {
+		if err := h.answer(ctx, q, l.T("Этого тура больше нет")); err != nil {
 			return err
 		}
-		s, err := h.myOutings(ctx, l, userID, screens.FromMine)
+		s, err := h.myTrips(ctx, l, userID, screens.FromMine)
 		if err != nil {
 			return h.failed(ctx, l, chatOf(q), err)
+		}
+		if notice {
+			return h.send(ctx, chatOf(q), s)
 		}
 		return h.show(ctx, q, s)
 	}
@@ -287,16 +243,19 @@ func (h *Handlers) outingAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQ
 		return err
 	}
 	switch {
-	case action == screens.ActAsk && o.IsJoined:
-		return h.show(ctx, q, screens.LeaveConfirm(l, o, from))
-	case action == screens.ActCancelAsk && o.IsOrganizer && o.Status == "open":
-		return h.show(ctx, q, screens.CancelConfirm(l, o, from))
-	case action == screens.ActEdit && o.IsOrganizer && o.Status == "open" && o.StartsAt.After(h.now()):
-		return h.editDraft(ctx, l, q, o)
+	case action == screens.ActAsk && t.IsJoined:
+		return h.show(ctx, q, screens.LeaveConfirm(l, t, from))
 	case notice:
-		return h.send(ctx, chatOf(q), screens.OutingCard(l, o, from, h.Links, h.now()))
+		return h.send(ctx, chatOf(q), screens.TourCard(l, t, from, h.Links, h.now()))
 	}
-	return h.show(ctx, q, screens.OutingCard(l, o, from, h.Links, h.now()))
+	return h.show(ctx, q, screens.TourCard(l, t, from, h.Links, h.now()))
+}
+
+// stalePress answers a button of what is gone: an outing being put
+// together, a trail condition report.
+func (h *Handlers) stalePress(ctx *th.Context, q telego.CallbackQuery) error {
+	l := h.lang(ctx, &q.From)
+	return h.answer(ctx, q, l.T("Эта кнопка устарела: выходы теперь — туры. Откройте «🎒 Мои туры»."))
 }
 
 // --- Tours ---
@@ -411,8 +370,8 @@ func (h *Handlers) tourPress(ctx *th.Context, q telego.CallbackQuery) error {
 	}
 	if more && index >= 0 && index < len(v.Tours) {
 		t := v.Tours[index]
-		full, err := h.Content.Tour(ctx, localeOf(t.Locale, l), t.Slug)
-		if err != nil && api.StatusOf(err) != http.StatusNotFound {
+		full, err := h.Content.TourByID(ctx, userID, t.ID)
+		if err != nil && !gone(err) {
 			return h.failedPress(ctx, l, q, err)
 		}
 		if err == nil {
@@ -422,7 +381,7 @@ func (h *Handlers) tourPress(ctx *th.Context, q telego.CallbackQuery) error {
 			if err := h.answer(ctx, q, toast); err != nil {
 				return err
 			}
-			return h.show(ctx, q, screens.TourMore(l, full, tab, index, page, v.Favorites[full.ID], h.Links))
+			return h.show(ctx, q, screens.TourMore(l, full, tab, index, page, v.Favorites[full.ID], h.Links, h.now()))
 		}
 		toast = l.T("Этот тур больше не опубликован")
 	}
@@ -443,9 +402,8 @@ func (h *Handlers) openTour(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery
 	if index < 0 {
 		return h.answer(ctx, q, l.T("Этого тура уже нет среди ближайших"))
 	}
-	t := v.Tours[index]
-	full, err := h.Content.Tour(ctx, localeOf(t.Locale, l), t.Slug)
-	if api.StatusOf(err) == http.StatusNotFound {
+	full, err := h.Content.TourByID(ctx, userID, id)
+	if gone(err) {
 		return h.answer(ctx, q, l.T("Этот тур больше не опубликован"))
 	}
 	if err != nil {
@@ -455,7 +413,7 @@ func (h *Handlers) openTour(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery
 	if err := h.answer(ctx, q, ""); err != nil {
 		return err
 	}
-	return h.send(ctx, chatOf(q), screens.TourMore(l, full, screens.TabUpcoming, index, 0, v.Favorites[full.ID], h.Links))
+	return h.send(ctx, chatOf(q), screens.TourMore(l, full, screens.TabUpcoming, index, 0, v.Favorites[full.ID], h.Links, h.now()))
 }
 
 // localeOf is the language a tour or post was written in, the reader's

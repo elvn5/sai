@@ -16,11 +16,6 @@ type Config struct {
 
 	// users service: session checks, partner status, public profiles.
 	UsersGRPCAddr string `env:"USERS_GRPC_ADDR,required"`
-
-	// Telegram notifications about outings, sent as the site's bot. Off
-	// without a token.
-	BotToken       string `env:"BOT_TOKEN"`
-	TelegramAPIURL string `env:"TELEGRAM_API_URL"`
 }
 
 func (c Config) DSN() string {

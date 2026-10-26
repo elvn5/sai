@@ -2,8 +2,6 @@
 package models
 
 import (
-	"time"
-
 	"github.com/elvn5/sai/services/pkg/jsontime"
 )
 
@@ -68,12 +66,11 @@ type Trail struct {
 	IsPublished     bool              `json:"isPublished"`
 	UserID          *string           `json:"userId"`
 	LatestCondition *ConditionSummary `json:"latestCondition"`
-	UpcomingOutings int               `json:"upcomingOutings"`
 	CreatedAt       jsontime.Time     `json:"createdAt"`
 	UpdatedAt       jsontime.Time     `json:"updatedAt"`
 }
 
-// TrailRef is how reports and outings point at their route.
+// TrailRef is how reports point at their route.
 type TrailRef struct {
 	ID   string `json:"id"`
 	Slug string `json:"slug"`
@@ -95,91 +92,4 @@ type ConditionReport struct {
 	Photos        []string      `json:"photos"`
 	CreatedAt     jsontime.Time `json:"createdAt"`
 	UserID        string        `json:"-"`
-}
-
-// OutingsSummary is a person's record: outings been on, and the distance
-// and climb of their routes.
-type OutingsSummary struct {
-	Outings       int     `json:"outings"`
-	DistanceKm    float64 `json:"distanceKm"`
-	ElevationGain int     `json:"elevationGain"`
-}
-
-// RatingMine is the visitor's own rating of an outing.
-type RatingMine struct {
-	Rating int     `json:"rating"`
-	Text   *string `json:"text"`
-}
-
-// OutingReview is a participant's rating of an outing, as the organizer's
-// public page shows it.
-type OutingReview struct {
-	Rating    int           `json:"rating"`
-	Text      *string       `json:"text"`
-	CreatedAt jsontime.Time `json:"createdAt"`
-	Author    Person        `json:"author"`
-	Outing    struct {
-		ID       string        `json:"id"`
-		Title    string        `json:"title"`
-		StartsAt jsontime.Time `json:"startsAt"`
-	} `json:"outing"`
-	UserID string `json:"-"`
-}
-
-// RatingSummary is an average of 1–5 ratings and how many there are.
-type RatingSummary struct {
-	Average float64 `json:"average"`
-	Count   int     `json:"count"`
-}
-
-// OrganizerOutings is what an organizer's public page shows about their
-// outings.
-type OrganizerOutings struct {
-	// Outings held (open, started) and the people who joined them.
-	Hosted       int            `json:"hosted"`
-	Participants int            `json:"participants"`
-	Rating       RatingSummary  `json:"rating"`
-	Upcoming     []Outing       `json:"upcoming"`
-	Reviews      []OutingReview `json:"reviews"`
-}
-
-// RosterEntry is a participant as the organizer sees them.
-type RosterEntry struct {
-	Person
-	JoinedAt  jsontime.Time  `json:"joinedAt"`
-	ArrivedAt *jsontime.Time `json:"arrivedAt"`
-}
-
-type Outing struct {
-	ID            string         `json:"id"`
-	Trail         *TrailRef      `json:"trail"`
-	Title         string         `json:"title"`
-	StartsAt      jsontime.Time  `json:"startsAt"`
-	ReturnsAt     *jsontime.Time `json:"returnsAt"`
-	MeetingPoint  string         `json:"meetingPoint"`
-	Transport     string         `json:"transport"`
-	Seats         int            `json:"seats"`
-	Taken         int            `json:"taken"`
-	CostPerPerson *int           `json:"costPerPerson"`
-	Level         string         `json:"level"`
-	Description   *string        `json:"description"`
-	// Contact is shown to the organizer and participants only.
-	Contact      *string  `json:"contact"`
-	Status       string   `json:"status"`
-	Organizer    Person   `json:"organizer"`
-	Participants []Person `json:"participants,omitempty"`
-	// Who joined and who turned up: for the organizer, on one outing's
-	// details only.
-	Roster      []RosterEntry `json:"roster,omitempty"`
-	IsJoined    bool          `json:"isJoined"`
-	IsOrganizer bool          `json:"isOrganizer"`
-	// For a participant, on one outing's details: whether they can rate it
-	// now, and their rating if given.
-	CanRate   bool          `json:"canRate,omitempty"`
-	MyRating  *RatingMine   `json:"myRating,omitempty"`
-	CreatedAt jsontime.Time `json:"createdAt"`
-	UserID    string        `json:"-"`
-	// When the reminder and follow-up notifications are due (see Schedule).
-	RemindAt   *time.Time `json:"-"`
-	FollowUpAt *time.Time `json:"-"`
 }

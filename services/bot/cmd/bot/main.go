@@ -1,8 +1,8 @@
 // Command bot is Ermekten's Telegram bot: greets users, links Telegram to
 // site accounts, confirms phone registrations, edits profiles and shows
-// support contacts; shows the user's outings, tours and the blog, and
-// sends new blog posts to subscribers — in the site's languages. Accounts live in the users service,
-// outings, tours and posts behind the gateway.
+// support contacts; signs the user up for tours, shows tours and the blog,
+// and sends new blog posts to subscribers — in the site's languages.
+// Accounts live in the users service, tours and posts behind the gateway.
 package main
 
 import (
@@ -23,7 +23,6 @@ import (
 	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/blogfeed"
 	"github.com/elvn5/sai/services/bot/internal/config"
-	"github.com/elvn5/sai/services/bot/internal/drafts"
 	"github.com/elvn5/sai/services/bot/internal/handlers"
 	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/migrations"
@@ -46,7 +45,7 @@ const (
 // commands is the bot's command menu in a language.
 func commands(l i18n.Lang) []telego.BotCommand {
 	return []telego.BotCommand{
-		{Command: "outings", Description: l.T("Мои выходы")},
+		{Command: "mytours", Description: l.T("Мои туры")},
 		{Command: "organizer", Description: l.T("Кабинет организатора: участники, туры")},
 		{Command: "tours", Description: l.T("Туры: избранное и ближайшие")},
 		{Command: "blog", Description: l.T("Статьи блога")},
@@ -93,7 +92,7 @@ func run(log *slog.Logger) error {
 			return err
 		}
 	} else {
-		log.Warn("API_URL or JWT_SECRET unset: outings, tours and blog sections are off")
+		log.Warn("API_URL or JWT_SECRET unset: tours and blog sections are off")
 	}
 	links := screens.Links{PublicAPI: strings.TrimRight(cfg.PublicAPIURL, "/")}
 
@@ -161,7 +160,7 @@ func run(log *slog.Logger) error {
 		go tracker.Run(trackCtx)
 	}
 	h := &handlers.Handlers{
-		Users: accounts, Sessions: session.New(), Drafts: drafts.NewStore(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links,
+		Users: accounts, Sessions: session.New(), MiniAppURL: cfg.MiniAppURL, Log: log, Links: links,
 		Languages: &users.Languages{Store: db, Users: accounts, Log: log},
 	}
 	if tracker != nil { // not a nil *Client inside the interface

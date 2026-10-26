@@ -3,14 +3,13 @@ import {
   type BlogPost,
   type HallOfFame,
   type MyAchievements,
-  type Outing,
   PartnerStatus,
   type Tour,
 } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { FavoritesStore } from '@/core/favorites/favorites.store';
 import { injectLang } from '@/core/i18n/current-lang';
-import { formatAmount } from '@/core/lib/format';
+import { formatAmount, todayInBishkek } from '@/core/lib/format';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { Notify } from '@/core/notify/notify';
@@ -22,7 +21,6 @@ import { ListSkeleton } from '@/ui/list-skeleton';
 import { TourCard } from '@/ui/listing/tour-card';
 import { LoadError } from '@/ui/load-error';
 import { MountainScene } from '@/ui/mountain-scene';
-import { OutingCard } from '@/ui/outing-card';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
 import { StateBlock } from '@/ui/state-block';
@@ -49,13 +47,6 @@ interface Favorites {
   tours: Tour[];
 }
 
-// Completed outings and what they add up to (/outings/mine/summary).
-interface OutingsSummary {
-  outings: number;
-  distanceKm: number;
-  elevationGain: number;
-}
-
 interface ListingItem {
   key: string;
   // Translation key of the kind ("Tour", "Post").
@@ -68,7 +59,7 @@ interface ListingItem {
 }
 
 // /profile: the account, the hall of fame (own medals, award code, the
-// leaders), outings and the partner application. ?tab=partner (etc.) opens a tab. Browser only.
+// leaders), the tours signed up for and the partner application. ?tab=partner (etc.) opens a tab. Browser only.
 @Component({
   selector: 'app-profile-page',
   imports: [
@@ -78,7 +69,6 @@ interface ListingItem {
     MountainScene,
     ListSkeleton,
     LoadError,
-    OutingCard,
     PersonAvatar,
     SiteLink,
     StateBlock,
@@ -169,7 +159,7 @@ interface ListingItem {
           </button>
         </div>
 
-        <dl class="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+        <dl class="mt-5 grid grid-cols-3 gap-2.5 sm:gap-3">
           @for (stat of stats(); track stat.key) {
             <div class="ui-card px-4 py-3">
               <dt class="text-xs text-text-muted">{{ 'profile.stats.' + stat.key | transloco }}</dt>
@@ -283,9 +273,9 @@ interface ListingItem {
                 @if (upcoming().length > 0) {
                   <section aria-labelledby="history-upcoming">
                     <h2 id="history-upcoming" class="mb-3 font-semibold text-text">{{ 'profile.history.upcoming' | transloco }}</h2>
-                    <ul class="flex flex-col gap-2">
-                      @for (outing of upcoming(); track outing.id) {
-                        <li><app-outing-card [outing]="outing" /></li>
+                    <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      @for (tour of upcoming(); track tour.id) {
+                        <li><app-tour-card [tour]="tour" /></li>
                       }
                     </ul>
                   </section>
@@ -293,16 +283,16 @@ interface ListingItem {
                 @if (past().length > 0) {
                   <section aria-labelledby="history-past">
                     <h2 id="history-past" class="mb-3 font-semibold text-text">{{ 'profile.history.past' | transloco }}</h2>
-                    <ul class="flex flex-col gap-2">
-                      @for (outing of past(); track outing.id) {
-                        <li><app-outing-card [outing]="outing" /></li>
+                    <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      @for (tour of past(); track tour.id) {
+                        <li><app-tour-card [tour]="tour" /></li>
                       }
                     </ul>
                   </section>
                 }
-                @if (outings.hasValue() && upcoming().length + past().length === 0) {
+                @if (joined.hasValue() && upcoming().length + past().length === 0) {
                   <app-state-block icon="icon-[heroicons--flag]" title="profile.history.empty" text="profile.history.emptyHint">
-                    <a appSiteLink="/outings" class="ui-btn-primary">{{ 'profile.history.cta' | transloco }}</a>
+                    <a appSiteLink="/tours" class="ui-btn-primary">{{ 'profile.history.cta' | transloco }}</a>
                   </app-state-block>
                 }
               </div>
@@ -420,9 +410,8 @@ export class ProfilePage {
     return user?.firstName ?? user?.username ?? user?.email ?? '';
   });
 
-  // Outings and medals feed the summary on top, so they load at once; the
-  // hall of fame loads when its tab opens.
-  private readonly summary = httpResource<OutingsSummary>(() => '/outings/mine/summary');
+  // The tours signed up for and medals feed the summary on top, so they
+  // load at once; the hall of fame loads when its tab opens.
   // Reloaded when a heart changes (here or on another page).
   private readonly favoritesStore = inject(FavoritesStore);
   protected readonly favorites = httpResource<Favorites>(() => {
@@ -436,7 +425,7 @@ export class ProfilePage {
   });
   private readonly lang = injectLang();
   private readonly transloco = inject(TranslocoService);
-  protected readonly outings = httpResource<Outing[]>(() => '/outings/mine');
+  protected readonly joined = httpResource<Tour[]>(() => '/tours/joined');
   private readonly achievements = httpResource<MyAchievements>(() => '/achievements/me');
   private readonly hall = httpResource<HallOfFame>(() =>
     this.active() === 'achievements' ? '/hall-of-fame' : undefined,
@@ -450,16 +439,17 @@ export class ProfilePage {
   protected readonly myRank = computed(
     () => this.leaders().find((entry) => entry.user.id === this.auth.user()?.id)?.rank ?? null,
   );
-  protected readonly upcoming = computed(() =>
-    (loaded(this.outings) ?? [])
-      .filter((outing) => new Date(outing.startsAt).getTime() > Date.now())
-      .reverse(),
-  );
-  protected readonly past = computed(() =>
-    (loaded(this.outings) ?? []).filter(
-      (outing) => new Date(outing.startsAt).getTime() <= Date.now(),
-    ),
-  );
+  // Tours ahead, soonest first, then the ones behind, latest first.
+  protected readonly upcoming = computed(() => {
+    const today = todayInBishkek();
+    return (loaded(this.joined) ?? [])
+      .filter((tour) => tour.startDate >= today)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  });
+  protected readonly past = computed(() => {
+    const today = todayInBishkek();
+    return (loaded(this.joined) ?? []).filter((tour) => tour.startDate < today);
+  });
   // A partner's listings, every kind in one list (the cabinet has the details).
   private readonly listingsOpen = computed(
     () => this.active() === 'listings' && this.auth.isPartner(),
@@ -499,27 +489,11 @@ export class ProfilePage {
   // The summary: null while its number is loading.
   protected readonly stats = computed(() => {
     const mine = loaded(this.achievements);
-    const summary = loaded(this.summary);
-    const done = this.summary.error() ? { outings: 0, distanceKm: 0, elevationGain: 0 } : summary;
+    const joined = this.joined.error() ? [] : loaded(this.joined);
     const lang = this.lang();
     return [
-      { key: 'outings', value: done ? formatAmount(lang, done.outings) : null },
-      {
-        key: 'distance',
-        value: done
-          ? this.transloco.translate('profile.stats.kmValue', {
-              value: formatAmount(lang, done.distanceKm),
-            })
-          : null,
-      },
-      {
-        key: 'elevation',
-        value: done
-          ? this.transloco.translate('profile.stats.metersValue', {
-              value: formatAmount(lang, done.elevationGain),
-            })
-          : null,
-      },
+      { key: 'tours', value: joined ? formatAmount(lang, this.past().length) : null },
+      { key: 'upcoming', value: joined ? formatAmount(lang, this.upcoming().length) : null },
       { key: 'awards', value: mine ? String(mine.awards.length) : null },
     ];
   });
@@ -562,7 +536,7 @@ export class ProfilePage {
       this.notify.success({ title: 'profile.partner.applied' });
     } catch {
       this.applyFailed.set(true);
-      this.notify.error({ title: 'outings.errors.generic', text: 'notify.tryAgain' });
+      this.notify.error({ title: 'tours.signup.errors.generic', text: 'notify.tryAgain' });
     } finally {
       this.applying.set(false);
     }

@@ -1,10 +1,4 @@
-import type {
-  OrganizerOutings,
-  OrganizerProfile,
-  OrganizerTours,
-  Person,
-  ReviewReply,
-} from '@/core/api/types';
+import type { OrganizerProfile, OrganizerTours, Person, ReviewReply } from '@/core/api/types';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatInBishkek, personName } from '@/core/lib/format';
 import { loaded } from '@/core/lib/resource';
@@ -12,7 +6,6 @@ import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
 import { TourCard } from '@/ui/listing/tour-card';
 import { LoadError } from '@/ui/load-error';
-import { OutingCard } from '@/ui/outing-card';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { RatingStars } from '@/ui/rating-stars';
 import { SiteLink } from '@/ui/site-link';
@@ -20,37 +13,24 @@ import { HttpErrorResponse, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
-// Reviews shown on the page, both kinds together.
-const REVIEWS_SHOWN = 20;
-
-// A review of an outing or a tour, as the page lists them.
+// A review of a tour, as the page lists them.
 interface OrganizerReview {
   rating: number;
   text: string | null;
   createdAt: string;
   author: Person;
-  // What it is about: a translation key, the title and the link.
-  kind: 'organizer.aboutOuting' | 'organizer.aboutTour';
+  // The tour it is about: its title and link.
   title: string;
   link: string;
   reply: ReviewReply | null;
 }
 
 // An organizer's public page: who they are, how they are rated by those
-// who went with them (outings and tours together), what they ran and what
-// is coming up. Verified means an approved partner.
+// who went with them, what they ran and what is coming up. Verified means
+// an approved partner.
 @Component({
   selector: 'app-organizer-page',
-  imports: [
-    LoadError,
-    NotFoundPage,
-    OutingCard,
-    PersonAvatar,
-    RatingStars,
-    SiteLink,
-    TourCard,
-    TranslocoPipe,
-  ],
+  imports: [LoadError, NotFoundPage, PersonAvatar, RatingStars, SiteLink, TourCard, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (notFound()) {
@@ -92,7 +72,7 @@ interface OrganizerReview {
           </div>
         </header>
 
-        <dl class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <dl class="mt-4 grid grid-cols-3 gap-3">
           @for (stat of stats(); track stat.label) {
             <div class="ui-card p-4">
               <dt class="text-xs text-text-muted">{{ stat.label | transloco }}</dt>
@@ -100,17 +80,6 @@ interface OrganizerReview {
             </div>
           }
         </dl>
-
-        @if (outings()?.upcoming?.length) {
-          <section class="mt-10" aria-labelledby="org-outings">
-            <h2 id="org-outings" class="mb-4 text-xl font-bold text-text">{{ 'organizer.upcomingOutings' | transloco }}</h2>
-            <div class="grid gap-3 md:grid-cols-2">
-              @for (o of outings()!.upcoming; track o.id) {
-                <app-outing-card [outing]="o" />
-              }
-            </div>
-          </section>
-        }
 
         @if (tours()?.upcoming?.length) {
           <section class="mt-10" aria-labelledby="org-tours">
@@ -143,7 +112,7 @@ interface OrganizerReview {
                     <p class="mt-3 whitespace-pre-line text-text">{{ r.text }}</p>
                   }
                   <p class="mt-2 text-xs text-text-muted">
-                    {{ r.kind | transloco }} <a [appSiteLink]="r.link" class="font-medium text-brand-700 hover:underline dark:text-brand-300">{{ r.title }}</a>
+                    {{ 'organizer.aboutTour' | transloco }} <a [appSiteLink]="r.link" class="font-medium text-brand-700 hover:underline dark:text-brand-300">{{ r.title }}</a>
                   </p>
                   @if (r.reply; as reply) {
                     <div class="mt-3 rounded-lg bg-text/5 p-3 text-sm">
@@ -169,16 +138,12 @@ export class OrganizerPage {
   private readonly profileRes = httpResource<OrganizerProfile>(
     () => `/users/${encodeURIComponent(this.id())}/public`,
   );
-  private readonly outingsRes = httpResource<OrganizerOutings>(
-    () => `/outings/organizers/${encodeURIComponent(this.id())}`,
-  );
   private readonly toursRes = httpResource<OrganizerTours>(() => ({
     url: `/tours/organizers/${encodeURIComponent(this.id())}`,
     params: { locale: this.lang() },
   }));
 
   protected readonly profile = computed(() => loaded(this.profileRes));
-  protected readonly outings = computed(() => loaded(this.outingsRes));
   protected readonly tours = computed(() => loaded(this.toursRes));
 
   protected readonly notFound = computed(() => {
@@ -186,9 +151,7 @@ export class OrganizerPage {
     return error instanceof HttpErrorResponse && error.status === 404;
   });
   protected readonly failed = computed(
-    () =>
-      !this.notFound() &&
-      Boolean(this.profileRes.error() || this.outingsRes.error() || this.toursRes.error()),
+    () => !this.notFound() && Boolean(this.profileRes.error() || this.toursRes.error()),
   );
 
   protected readonly name = computed(() => {
@@ -200,63 +163,36 @@ export class OrganizerPage {
     return p ? new Date(p.memberSince).getFullYear() : '';
   });
 
-  // Outings and tours together, weighted by how many ratings each has.
-  protected readonly rating = computed(() => {
-    const a = this.outings()?.rating ?? { average: 0, count: 0 };
-    const b = this.tours()?.rating ?? { average: 0, count: 0 };
-    const count = a.count + b.count;
-    return {
-      count,
-      average: count > 0 ? (a.average * a.count + b.average * b.count) / count : 0,
-    };
-  });
+  protected readonly rating = computed(() => this.tours()?.rating ?? { average: 0, count: 0 });
 
   protected readonly stats = computed(() => {
-    const o = this.outings();
     const t = this.tours();
     return [
-      { label: 'organizer.stats.outings', value: o?.hosted ?? 0 },
-      { label: 'organizer.stats.people', value: o?.participants ?? 0 },
       { label: 'organizer.stats.tours', value: t?.held ?? 0 },
+      { label: 'organizer.stats.people', value: t?.participants ?? 0 },
       { label: 'organizer.stats.reviews', value: this.rating().count },
     ];
   });
 
-  protected readonly reviews = computed((): OrganizerReview[] => {
-    const fromOutings = (this.outings()?.reviews ?? []).map(
+  protected readonly reviews = computed((): OrganizerReview[] =>
+    (this.tours()?.reviews ?? []).map(
       (r): OrganizerReview => ({
         rating: r.rating,
         text: r.text,
         createdAt: r.createdAt,
         author: r.author,
-        kind: 'organizer.aboutOuting',
-        title: r.outing.title,
-        link: `/outings/${r.outing.id}`,
-        reply: null,
-      }),
-    );
-    const fromTours = (this.tours()?.reviews ?? []).map(
-      (r): OrganizerReview => ({
-        rating: r.rating,
-        text: r.text,
-        createdAt: r.createdAt,
-        author: r.author,
-        kind: 'organizer.aboutTour',
         title: r.listing.title,
         link: `/tours/${r.listing.slug}`,
         reply: r.reply,
       }),
-    );
-    return [...fromOutings, ...fromTours]
-      .sort((x, y) => y.createdAt.localeCompare(x.createdAt))
-      .slice(0, REVIEWS_SHOWN);
-  });
+    ),
+  );
 
   constructor() {
     const seo = inject(SeoService);
     bindPageMeta(() => {
       const p = this.profile();
-      if (!p || !this.outings() || !this.tours()) return undefined;
+      if (!p || !this.tours()) return undefined;
       const name = personName(p);
       const { average, count } = this.rating();
       const description =
@@ -293,7 +229,6 @@ export class OrganizerPage {
 
   protected reload(): void {
     this.profileRes.reload();
-    this.outingsRes.reload();
     this.toursRes.reload();
   }
 

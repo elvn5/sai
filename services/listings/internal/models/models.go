@@ -3,6 +3,8 @@
 package models
 
 import (
+	"time"
+
 	"github.com/elvn5/sai/services/pkg/jsontime"
 	"github.com/elvn5/sai/services/pkg/usersclient"
 )
@@ -83,7 +85,12 @@ type Tour struct {
 	// The trip day by day.
 	Program []ProgramDay `json:"program"`
 	// Places per departure; nil: not limited.
-	Capacity      *int           `json:"capacity"`
+	Capacity *int `json:"capacity"`
+	// Where and when (HH:MM in Bishkek, on startDate) the group meets.
+	MeetingPoint *string `json:"meetingPoint"`
+	MeetingTime  *string `json:"meetingTime"`
+	// Places taken: travelers signed up.
+	Taken         int            `json:"taken"`
 	Phone         *string        `json:"phone"`
 	Whatsapp      *string        `json:"whatsapp"`
 	Telegram      *string        `json:"telegram"`
@@ -96,6 +103,33 @@ type Tour struct {
 	Organizer *usersclient.Author `json:"organizer,omitempty"`
 	CreatedAt jsontime.Time       `json:"createdAt"`
 	UpdatedAt jsontime.Time       `json:"updatedAt"`
+
+	// For the signed-in visitor, on GET /tours/by-id/:id and the visitor's
+	// own lists: whether they signed up or run it.
+	IsJoined    bool `json:"isJoined"`
+	IsOrganizer bool `json:"isOrganizer"`
+	// Who signed up and who came: for the organizer, on one tour only.
+	Roster []RosterEntry `json:"roster,omitempty"`
+	// For a participant, on one tour: whether they can rate it now, and
+	// their rating if given (a review of the tour).
+	CanRate  bool        `json:"canRate,omitempty"`
+	MyRating *RatingMine `json:"myRating,omitempty"`
+	// When the reminder and follow-up notifications are due (see Schedule).
+	RemindAt   *time.Time `json:"-"`
+	FollowUpAt *time.Time `json:"-"`
+}
+
+// RosterEntry is a participant as the organizer sees them.
+type RosterEntry struct {
+	usersclient.Author
+	JoinedAt  jsontime.Time  `json:"joinedAt"`
+	ArrivedAt *jsontime.Time `json:"arrivedAt"`
+}
+
+// RatingMine is the visitor's own rating of a tour they went on.
+type RatingMine struct {
+	Rating int     `json:"rating"`
+	Text   *string `json:"text"`
 }
 
 // ProgramDay is one day of a tour's program.
@@ -131,10 +165,12 @@ type PartnerReview struct {
 // OrganizerTours is what an organizer's public page shows about their
 // tours.
 type OrganizerTours struct {
-	// Published tours that already started.
-	Held     int    `json:"held"`
-	Upcoming []Tour `json:"upcoming"`
-	Rating   struct {
+	// Published tours that already started, and the travelers who signed
+	// up for them.
+	Held         int    `json:"held"`
+	Participants int    `json:"participants"`
+	Upcoming     []Tour `json:"upcoming"`
+	Rating       struct {
 		Average float64 `json:"average"`
 		Count   int     `json:"count"`
 	} `json:"rating"`

@@ -1,4 +1,4 @@
-"""Explicit, repeatable import of the three reviewed routes to staging only."""
+"""Explicit, repeatable import of the reviewed routes in content/staging-trails to staging only."""
 
 import hashlib
 import http.cookiejar

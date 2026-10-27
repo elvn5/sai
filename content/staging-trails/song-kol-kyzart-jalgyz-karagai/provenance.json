@@ -1,0 +1,26 @@
+{
+  "preparedAt": "2026-10-27",
+  "status": "Prepared, not published",
+  "geometry": "Derived from OpenStreetMap walking ways, shortest connected path through listed landmarks",
+  "license": "ODbL 1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "osmWays": [
+    247152072, 247152081, 247152127, 431996797, 431996798, 526591968, 527943767, 527943816,
+    527943860, 575057656, 575057668, 575057669, 592765283, 714075492, 721839971, 721839973,
+    1085591636, 1095013037, 1095013038, 1095013039
+  ],
+  "elevationSource": "SRTM 30m via OpenTopoData; bilinear sampling, elevations interpolated between samples ~80m apart",
+  "elevationSamples": 374,
+  "sources": [
+    ["Wikivoyage: Сон-Куль, подход из Кызарта", "https://en.wikivoyage.org/wiki/Song_Kul"],
+    [
+      "CDC: высота и акклиматизация",
+      "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+    ],
+    [
+      "Картографические данные: © OpenStreetMap contributors, ODbL 1.0",
+      "https://www.openstreetmap.org/copyright"
+    ],
+    ["Высоты: SRTM 30 м через OpenTopoData", "https://www.opentopodata.org/datasets/srtm/"]
+  ]
+}

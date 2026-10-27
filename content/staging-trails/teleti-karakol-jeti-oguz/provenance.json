@@ -1,0 +1,40 @@
+{
+  "preparedAt": "2026-10-27",
+  "status": "Prepared, not published",
+  "geometry": "Derived from OpenStreetMap walking ways, shortest connected path through listed landmarks, preferring the ways of the OSM hiking relations listed",
+  "license": "ODbL 1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "osmWays": [
+    121904939, 121904940, 121904941, 121904942, 121904943, 121904944, 121904945, 121904947,
+    150646627, 151368230, 151368234, 151522961, 175365730, 175365749, 336608669, 477279941,
+    477279942, 477279943, 477279944, 506525896, 506525899, 511794351, 511794352, 511794354,
+    511794355, 511794356, 511794357, 513084198, 513084199, 515351363, 528544644, 528544646,
+    528544649, 528544651, 528544653, 528544655, 610565838, 610565841, 610565843, 610565845,
+    610565847, 610565850, 610565852, 610565854, 610565857, 610565868, 610565875, 610566623,
+    769274225, 909772682, 909778535, 909778536, 909778542, 909786700, 979424269, 979424270,
+    979424271, 979424272, 979424273, 979424274, 979424275, 979424276, 1230373077, 1451219999
+  ],
+  "osmRelations": [12350279, 19847524],
+  "elevationSource": "SRTM 30m via OpenTopoData; bilinear sampling, elevations interpolated between samples ~80m apart",
+  "elevationSamples": 504,
+  "sources": [
+    [
+      "Wikivoyage: тропы у Каракола, Джети-Огуз - Каракольское ущелье",
+      "https://en.wikivoyage.org/wiki/Karakol"
+    ],
+    [
+      "OSM: маршрут «Джети-Огюз - Каракольское ущелье - Ала-Куль»",
+      "https://www.openstreetmap.org/relation/12350279"
+    ],
+    ["OSM: маршрут Teleti Pass", "https://www.openstreetmap.org/relation/19847524"],
+    [
+      "CDC: высота и акклиматизация",
+      "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+    ],
+    [
+      "Картографические данные: © OpenStreetMap contributors, ODbL 1.0",
+      "https://www.openstreetmap.org/copyright"
+    ],
+    ["Высоты: SRTM 30 м через OpenTopoData", "https://www.opentopodata.org/datasets/srtm/"]
+  ]
+}

@@ -893,7 +893,6 @@
     "draft": "Draft",
     "notYours": "This isn't your route.",
     "cancel": "Cancel",
-    "outingsCount": "Outings: {count}",
     "units": {
       "m": "m",
       "km": "km",
@@ -1024,9 +1023,6 @@
       "downloadGpx": "Download GPX track",
       "segments": "Sections and times",
       "description": "About the route",
-      "outings": "Upcoming outings",
-      "noOutings": "Nobody's planning one yet. Organize an outing — people will join.",
-      "organize": "Organize an outing",
       "gear": "Gear",
       "seasons": "When to go",
       "gettingThere": "Getting there"

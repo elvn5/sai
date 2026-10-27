@@ -893,7 +893,6 @@
     "draft": "Entwurf",
     "notYours": "Das ist nicht Ihre Route.",
     "cancel": "Abbrechen",
-    "outingsCount": "Gruppentouren: {count}",
     "units": {
       "m": "m",
       "km": "km",
@@ -1024,9 +1023,6 @@
       "downloadGpx": "GPX-Track herunterladen",
       "segments": "Abschnitte und Zeiten",
       "description": "Über die Route",
-      "outings": "Nächste Gruppentouren",
-      "noOutings": "Noch plant niemand eine Tour. Organisieren Sie eine — Mitgehende finden sich.",
-      "organize": "Tour organisieren",
       "gear": "Ausrüstung",
       "seasons": "Beste Zeit",
       "gettingThere": "Anreise"

@@ -251,11 +251,11 @@ func (h *Handlers) tripAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQue
 	return h.show(ctx, q, screens.TourCard(l, t, from, h.Links, h.now()))
 }
 
-// stalePress answers a button of what is gone: an outing being put
-// together, a trail condition report.
+// stalePress answers a button of what is gone: an old draft, a trail
+// condition report.
 func (h *Handlers) stalePress(ctx *th.Context, q telego.CallbackQuery) error {
 	l := h.lang(ctx, &q.From)
-	return h.answer(ctx, q, l.T("Эта кнопка устарела: выходы теперь — туры. Откройте «🎒 Мои туры»."))
+	return h.answer(ctx, q, l.T("Эта кнопка устарела. Откройте «🎒 Мои туры»."))
 }
 
 // --- Tours ---

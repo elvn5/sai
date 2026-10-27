@@ -80,7 +80,7 @@ func TestSendsToMeasurementID(t *testing.T) {
 		slog.New(slog.DiscardHandler))
 	run(t, c)
 
-	c.Track(analytics.Event{ChatID: 42, Name: "join_outing", Lang: "ky", Params: map[string]any{"outing_id": "o1"}})
+	c.Track(analytics.Event{ChatID: 42, Name: "join_tour", Lang: "ky", Params: map[string]any{"tour_id": "o1"}})
 	r := next(t, got)
 	if r.query.Get("measurement_id") != "G-TEST" || r.query.Get("api_secret") != "s3cret" {
 		t.Errorf("query: %v", r.query)
@@ -92,7 +92,7 @@ func TestSendsToMeasurementID(t *testing.T) {
 	events := r.body["events"].([]any)
 	event := events[0].(map[string]any)
 	params := event["params"].(map[string]any)
-	if event["name"] != "join_outing" || params["outing_id"] != "o1" || params["lang"] != "ky" || params["engagement_time_msec"] != float64(1) {
+	if event["name"] != "join_tour" || params["tour_id"] != "o1" || params["lang"] != "ky" || params["engagement_time_msec"] != float64(1) {
 		t.Errorf("event: %v", event)
 	}
 	if props := r.body["user_properties"].(map[string]any); props["lang"].(map[string]any)["value"] != "ky" {

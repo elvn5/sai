@@ -226,12 +226,6 @@ func TestStartWithSections(t *testing.T) {
 	if text := h.expect("sendMessage")[0].text(); text != "Такого тура нет — возможно, его удалили." {
 		t.Errorf("unknown tour: %q", text)
 	}
-	// An outing shared before outings merged into tours: the user's tours.
-	h.message("/start outing_o1")
-	calls := h.expect("sendMessage", "sendMessage")
-	if !strings.HasPrefix(calls[0].text(), "Выходы теперь — туры") || !strings.HasPrefix(calls[1].text(), "🎒 <b>Мои туры</b>") {
-		t.Errorf("old outing link: %q / %q", calls[0].text(), calls[1].text())
-	}
 }
 
 func TestMyToursFlow(t *testing.T) {
@@ -242,12 +236,6 @@ func TestMyToursFlow(t *testing.T) {
 		!strings.Contains(list.markup(), `"callback_data":"o:view:u:o1"`) {
 		t.Errorf("my tours: %q %s", list.text(), list.markup())
 	}
-	// The button kept on keyboards from before the merge.
-	h.message("🥾 Мои выходы")
-	if text := h.expect("sendMessage")[0].text(); !strings.HasPrefix(text, "🎒 <b>Мои туры</b>") {
-		t.Errorf("old button: %q", text)
-	}
-
 	h.press("o:join:t:o2")
 	calls := h.expect("answerCallbackQuery", "editMessageText")
 	if calls[0].params["text"] != "✅ Вы записаны! Организатор получит уведомление." ||
@@ -288,7 +276,7 @@ func TestMyToursFlow(t *testing.T) {
 	}
 }
 
-// Buttons of what is gone (putting an outing together, a trail report)
+// Buttons of what is gone (an old draft, a trail report)
 // say so.
 func TestStaleButtons(t *testing.T) {
 	h, content, _ := newSections(t)
@@ -426,7 +414,7 @@ func TestCommands(t *testing.T) {
 	h, _, _ := newSections(t)
 	h.users.support = users.Support{Message: "Напишите нам"}
 	for cmd, want := range map[string]string{
-		"/mytours": "🎒 <b>Мои туры</b>", "/outings": "🎒 <b>Мои туры</b>", "/blog": "📰 <b>Блог Ermekten</b>",
+		"/mytours": "🎒 <b>Мои туры</b>", "/blog": "📰 <b>Блог Ermekten</b>",
 		"/notifications": "🔔 <b>Уведомления</b>", "/profile": "Ваш профиль:", "/support": "Напишите нам",
 	} {
 		h.message(cmd)
@@ -525,10 +513,9 @@ func TestToggles(t *testing.T) {
 func TestWithoutSections(t *testing.T) {
 	h := newHarness(t, miniApp)
 	h.message("🎒 Мои туры")
-	h.message("🥾 Мои выходы")
 	h.press("o:list:u")
 	h.quiet()
-	h.message("/start outing_o1")
+	h.message("/start tour_o1")
 	if text := h.expect("sendMessage")[0].text(); !strings.HasPrefix(text, "Здравствуйте, Айгерим! Я помогу") {
 		t.Errorf("deep link without sections: %q", text)
 	}

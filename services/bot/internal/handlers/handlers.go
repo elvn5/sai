@@ -31,8 +31,6 @@ const (
 	verifyPrefix = "verify_"
 	linkPrefix   = "link_"
 	tourPrefix   = "tour_"
-	// Shared before outings merged into tours: opens the user's tours.
-	outingPrefix = "outing_"
 )
 
 // Accounts is the users service, as the handlers use it.
@@ -87,7 +85,6 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 	bh.HandleCallbackQuery(h.languagePress, th.CallbackDataPrefix(keyboards.LanguagePrefix))
 	if h.sections() {
 		bh.HandleMessage(h.menu("my_tours", h.myToursMenu), menuButton(keyboards.MyTours, "mytours"))
-		bh.HandleMessage(h.menu("my_tours", h.myToursMenu), menuButton(keyboards.LegacyOutings, "outings"))
 		bh.HandleMessage(h.menu("tours", h.toursMenu), menuButton(keyboards.Tours, "tours"))
 		bh.HandleMessage(h.menu("blog", h.blogMenu), menuButton(keyboards.Blog, "blog"))
 		bh.HandleMessage(h.menu("notifications", h.notifyMenu), menuButton(keyboards.Notifications, "notifications"))
@@ -210,12 +207,6 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 	if h.sections() {
 		if id, ok := strings.CutPrefix(payload, tourPrefix); ok && id != "" {
 			return h.tourCard(ctx, l, msg.Chat.ID, from, id)
-		}
-		if strings.HasPrefix(payload, outingPrefix) {
-			if err := h.reply(ctx, msg.Chat.ID, l.T("Выходы теперь — туры: записывайтесь на них прямо здесь, в боте."), h.mainMenu(l)); err != nil {
-				return err
-			}
-			return h.myToursMenu(ctx, msg)
 		}
 	}
 	name := from.FirstName

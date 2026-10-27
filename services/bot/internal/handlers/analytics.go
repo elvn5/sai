@@ -18,7 +18,7 @@ type Tracker interface {
 
 // The events the bot reports; each carries the chat's language ("lang").
 const (
-	eventStart       = "bot_start"   // deep_link: verify, link, tour, outing (old) or none; tour_id
+	eventStart       = "bot_start"   // deep_link: verify, link, tour, other or none; tour_id
 	eventMenu        = "menu_select" // section
 	eventJoinTour    = "join_tour"   // tour_id
 	eventLeaveTour   = "leave_tour"  // tour_id
@@ -58,9 +58,6 @@ func startParams(payload string) map[string]any {
 	}
 	if id, ok := strings.CutPrefix(payload, tourPrefix); ok && id != "" {
 		return map[string]any{"deep_link": "tour", "tour_id": id}
-	}
-	if strings.HasPrefix(payload, outingPrefix) {
-		return map[string]any{"deep_link": "outing"}
 	}
 	if payload != "" {
 		return map[string]any{"deep_link": "other"}

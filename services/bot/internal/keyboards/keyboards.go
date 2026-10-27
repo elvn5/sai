@@ -22,9 +22,6 @@ const (
 	Profile       = "👤 Профиль"
 	Support       = "🆘 Поддержка"
 	MiniApp       = "🏔 Открыть Ermekten"
-	// The button before outings merged into tours: kept on keyboards sent
-	// back then, it opens the user's tours.
-	LegacyOutings = "🥾 Мои выходы"
 )
 
 // Callback data of inline buttons.
@@ -49,8 +46,8 @@ const (
 	BlogPrefix = "b:"
 	// Notification settings: "n:tours", "n:blog", "n:blog_off" (from a post).
 	NotifyPrefix = "n:"
-	// Buttons of what is gone (an outing being put together, a trail
-	// condition report): only answered.
+	// Buttons of what is gone (an old draft, a trail condition report):
+	// only answered.
 	DraftPrefix     = "d:"
 	ConditionPrefix = "c:"
 	// The organizer's room: "g:<action>[:<arg>…]".

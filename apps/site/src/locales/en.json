@@ -14,6 +14,8 @@
   "language": { "switch": "Language" },
   "home": {
     "tagline": "Guides, routes, and news for exploring the nature and culture of Kyrgyzstan.",
+    "metaTitle": "Tours and hikes in Kyrgyzstan",
+    "metaDescription": "Tours from vetted organizers, routes with GPS tracks and articles about the mountains, lakes and culture of Kyrgyzstan.",
     "ctaPrimary": "Browse guides",
     "latestNews": "Latest news",
     "viewAllPosts": "View all posts",

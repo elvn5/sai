@@ -21,13 +21,19 @@ export interface PageMeta {
   // The page's own title; the site name is appended. None on the home page.
   title?: string;
   description: string;
-  // Preview image (absolute, or an /uploads path of the API), ideally 1200×630.
+  // Preview image (absolute, or an /uploads path of the API), ideally
+  // 1200×630; the site's hero photo when there is none.
   image?: string | null;
   type?: 'website' | 'article' | 'profile';
   // The page's path in each language. By default it is the same path in
   // every language (hotels, trails); null for content that exists in one
   // language only (a blog post has its own slug per language).
   alternates?: Partial<Record<Lang, string>> | null;
+  // The language the text is written in, when it is the same text under
+  // every prefix (trails, legal documents): the canonical URL and the only
+  // hreflang are that language's address, so the other prefixes don't pass
+  // for translations.
+  contentLang?: Lang;
   // Query parameters that make a different page (?page=2): kept in the
   // canonical URL. Filters and sorting are not, so they are never passed.
   query?: Record<string, string | number>;
@@ -41,6 +47,8 @@ const PAGE_MARK = 'data-seo';
 // The brand is the same in every language, and site-wide JSON-LD is set
 // before a page's translations have loaded.
 const BRAND = 'Ermekten';
+// The preview image of pages without one of their own (public/media).
+const DEFAULT_IMAGE = '/media/hero-mountain-1920.webp';
 
 // Writes <head> for the current page: title, description, canonical,
 // hreflang, Open Graph, Twitter Card, robots and JSON-LD. Pages call
@@ -60,8 +68,9 @@ export class SeoService {
     const brand = this.transloco.translate('brand.name');
     const title = page.title
       ? `${page.title} — ${brand}`
-      : `${brand} — ${this.transloco.translate('home.tagline')}`;
-    const canonical = this.absolute(localizedPath(lang, path), page.query);
+      : `${brand} — ${this.transloco.translate('home.metaTitle')}`;
+    const pageLang = page.contentLang ?? lang;
+    const canonical = this.absolute(localizedPath(pageLang, path), page.query);
 
     this.title.setTitle(title);
     this.setName('description', page.description);
@@ -69,7 +78,9 @@ export class SeoService {
 
     this.clearLinks();
     this.addLink({ rel: 'canonical', href: canonical });
-    const alternates = this.alternates(path, page.alternates);
+    const alternates = page.contentLang
+      ? ([[page.contentLang, path]] as [Lang, string][])
+      : this.alternates(path, page.alternates);
     for (const [alternateLang, alternatePath] of alternates) {
       this.addLink({
         rel: 'alternate',
@@ -86,22 +97,25 @@ export class SeoService {
       });
     }
 
-    const image = page.image ? resolveMediaUrl(this.config.apiBaseUrl, page.image) : null;
+    const image = page.image
+      ? resolveMediaUrl(this.config.apiBaseUrl, page.image)
+      : `${this.config.siteUrl}${DEFAULT_IMAGE}`;
     this.setProperty('og:type', page.type ?? 'website');
     this.setProperty('og:title', page.title ?? title);
     this.setProperty('og:description', page.description);
     this.setProperty('og:url', canonical);
-    this.setProperty('og:locale', OG_LOCALES[lang]);
+    this.setProperty('og:locale', OG_LOCALES[pageLang]);
     for (const tag of this.meta.getTags('property="og:locale:alternate"')) {
       this.meta.removeTagElement(tag);
     }
     for (const [alternateLang] of alternates) {
-      if (alternateLang !== lang) {
+      if (alternateLang !== pageLang) {
         this.meta.addTag({ property: 'og:locale:alternate', content: OG_LOCALES[alternateLang] });
       }
     }
     this.setProperty('og:image', image);
-    this.setName('twitter:card', image ? 'summary_large_image' : 'summary');
+    // A profile's picture is a small square avatar.
+    this.setName('twitter:card', page.type === 'profile' ? 'summary' : 'summary_large_image');
     this.setName('twitter:title', page.title ?? title);
     this.setName('twitter:description', page.description);
     this.setName('twitter:image', image);

@@ -14,7 +14,7 @@ import { injectScrollSpy } from '@/core/lib/scroll-spy';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { tourCoverTransition } from '@/core/lib/view-transitions';
 import { Notify } from '@/core/notify/notify';
-import { plainText, touristTrip } from '@/core/seo/json-ld';
+import { metaDescription, touristTrip } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta } from '@/core/seo/seo.service';
 import { NotFoundPage } from '@/pages/not-found/not-found.page';
 import { TourProgram } from '@/pages/tours/tour-program';
@@ -76,7 +76,8 @@ import { firstValueFrom } from 'rxjs';
         <div class="relative aspect-[3/2] overflow-hidden bg-slate-200 lg:hidden dark:bg-slate-800">
           @if (item.coverImageUrl) {
             <div class="absolute inset-0" [appSharedTransition]="coverTransition(item.id)" [sharedAlways]="true" [sharedMedia]="'(width < 64rem)'">
-              <img [ngSrc]="media(item.coverImageUrl)" fill priority sizes="100vw" alt="" class="object-cover" />
+              <!-- The same sizes as the wide screens' cover: one file for both. -->
+              <img [ngSrc]="media(item.coverImageUrl)" fill priority [sizes]="coverSizes" [alt]="item.title" class="object-cover" />
             </div>
           }
           <div class="absolute inset-x-3 top-3 flex justify-between">
@@ -149,7 +150,7 @@ import { firstValueFrom } from 'rxjs';
                   <app-photo-grid class="hidden lg:block" variant="tour" [photos]="gallery()" [alt]="item.title" [sharedName]="item.coverImageUrl ? coverTransition(item.id) : null" sharedMedia="(width >= 64rem)" />
                 } @else if (item.coverImageUrl) {
                   <div class="relative hidden aspect-video overflow-hidden rounded-[0.875rem] lg:block" [appSharedTransition]="coverTransition(item.id)" [sharedAlways]="true" [sharedMedia]="'(width >= 64rem)'">
-                    <img [ngSrc]="media(item.coverImageUrl)" fill priority sizes="(min-width: 1024px) 60vw, 100vw" alt="" class="object-cover" />
+                    <img [ngSrc]="media(item.coverImageUrl)" fill priority [sizes]="coverSizes" [alt]="item.title" class="object-cover" />
                   </div>
                 }
                 <nav class="ui-tabs sticky top-15 z-10 -mx-4 bg-bg/92 px-4 backdrop-blur-sm lg:mx-0 lg:mt-4 lg:px-0" [attr.aria-label]="'tours.sections' | transloco">
@@ -317,6 +318,7 @@ export class TourPage {
         ? 'tours.places.few'
         : 'tours.places.free';
   });
+  protected readonly coverSizes = '(min-width: 1024px) 60vw, 100vw';
   // The tab of the section being read: description or reviews.
   protected readonly spy = injectScrollSpy(['about', 'program', 'reviews'] as const);
   private readonly confirm = injectConfirm();
@@ -331,8 +333,7 @@ export class TourPage {
       if (!item) return undefined;
       const path = `/tours/${item.slug}`;
       const description =
-        item.excerpt ||
-        plainText(item.content, 160) ||
+        metaDescription(item.excerpt, item.content) ||
         this.transloco.translate('tours.metaDescription');
       const image = item.coverImageUrl ? this.media(item.coverImageUrl) : null;
       return {

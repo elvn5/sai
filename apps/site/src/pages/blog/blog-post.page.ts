@@ -39,7 +39,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
         <div class="group mt-4"><app-post-badges [post]="item" /></div>
         @if (item.coverImageUrl) {
           <div class="relative mt-6 aspect-video overflow-hidden rounded-lg">
-            <img [ngSrc]="media(item.coverImageUrl)" fill priority sizes="(min-width: 768px) 50vw, 100vw" alt="" class="object-cover" />
+            <img [ngSrc]="media(item.coverImageUrl)" fill priority sizes="(min-width: 768px) 50vw, 100vw" [alt]="item.title" class="object-cover" />
           </div>
         }
         <div class="prose prose-neutral dark:prose-invert mt-8 max-w-none" [innerHTML]="item.content"></div>

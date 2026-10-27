@@ -49,7 +49,7 @@ const QUICK_LINKS = [
         <span class="motion-enter hidden size-14 items-center justify-center rounded-2xl bg-brand-600 lg:mx-auto lg:flex">
           <app-logo class="size-9 text-white" />
         </span>
-        <h1 class="motion-enter motion-enter-1 text-3xl font-extrabold tracking-tight sm:text-[2.875rem] lg:mt-3.5">{{ 'brand.name' | transloco }}</h1>
+        <h1 class="motion-enter motion-enter-1 text-3xl font-extrabold tracking-tight sm:text-[2.875rem] lg:mt-3.5">{{ 'brand.name' | transloco }}<span class="sr-only"> — {{ 'home.metaTitle' | transloco }}</span></h1>
         <p class="motion-enter motion-enter-2 mt-2 max-w-xl text-[0.9rem] text-white/92 sm:text-[1.0625rem] lg:mx-auto">{{ 'home.tagline' | transloco }}</p>
       </div>
     </section>
@@ -162,7 +162,7 @@ export class HomePage {
       const custom = overrides.hasValue() ? overrides.value() : null;
       return {
         title: custom?.title || undefined,
-        description: custom?.description || transloco.translate('home.tagline'),
+        description: custom?.description || transloco.translate('home.metaDescription'),
         image: custom?.ogImageUrl ?? `${this.config.siteUrl}/media/hero-mountain-1920.webp`,
       };
     });

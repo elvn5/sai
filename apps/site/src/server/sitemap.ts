@@ -14,17 +14,8 @@ export function isSitemapType(value: string): value is SitemapType {
   return (SITEMAP_TYPES as readonly string[]).includes(value);
 }
 
-// Section pages, the same in every language (plus the finished legal
-// documents).
-const SECTION_PATHS = [
-  '/',
-  '/tours',
-  '/trails',
-  '/blog',
-  '/gallery',
-  '/hall-of-fame',
-  ...publishedLegalPaths(),
-];
+// Section pages, the same in every language.
+const SECTION_PATHS = ['/', '/tours', '/trails', '/blog', '/gallery', '/hall-of-fame'];
 
 // A GET of the API returning parsed JSON; throws when the API fails.
 export type GetJson = (path: string) => Promise<unknown>;
@@ -75,7 +66,11 @@ async function organizers(getJson: GetJson): Promise<SitemapEntry[]> {
 export async function collectEntries(type: SitemapType, getJson: GetJson): Promise<SitemapEntry[]> {
   switch (type) {
     case 'pages':
-      return SECTION_PATHS.map((path) => ({ path }));
+      return [
+        ...SECTION_PATHS.map((path) => ({ path })),
+        // The finished legal documents, in Russian only.
+        ...publishedLegalPaths().map((path) => ({ path, lang: DEFAULT_LANG })),
+      ];
     case 'tours':
     case 'blog':
       return perLanguage(getJson, type);
@@ -83,7 +78,12 @@ export async function collectEntries(type: SitemapType, getJson: GetJson): Promi
       return organizers(getJson);
     case 'trails': {
       const trails = (await getJson('/trails')) as { slug: string; updatedAt: string }[];
-      return trails.map((trail) => ({ path: `/trails/${trail.slug}`, lastmod: trail.updatedAt }));
+      // Written in Russian only: the other prefixes point at the Russian page.
+      return trails.map((trail) => ({
+        path: `/trails/${trail.slug}`,
+        lastmod: trail.updatedAt,
+        lang: DEFAULT_LANG,
+      }));
     }
   }
 }

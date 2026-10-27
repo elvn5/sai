@@ -4,6 +4,8 @@ import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatInBishkek } from '@/core/lib/format';
 import { resolveMediaUrl } from '@/core/lib/media-url';
+import { loaded } from '@/core/lib/resource';
+import { itemList } from '@/core/seo/json-ld';
 import { SeoService, bindPageMeta, pageSeoResource } from '@/core/seo/seo.service';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
@@ -89,14 +91,25 @@ export class BlogListPage {
     const seo = inject(SeoService);
     const overrides = pageSeoResource(SeoPage.BLOG);
     bindPageMeta(() => {
-      if (overrides.isLoading()) return undefined;
+      if (overrides.isLoading() || this.posts.isLoading()) return undefined;
       const custom = overrides.hasValue() ? overrides.value() : null;
       const heading = transloco.translate('blog.heading');
+      const posts = loaded(this.posts);
       return {
         title: custom?.title || heading,
         description: custom?.description || transloco.translate('blog.metaDescription'),
         image: custom?.ogImageUrl,
-        jsonLd: [seo.breadcrumbs([{ name: heading, path: '/blog' }])],
+        // No posts in this language yet: nothing to find here.
+        robots: posts?.length === 0 ? 'noindex, follow' : undefined,
+        jsonLd: [
+          itemList(
+            (posts ?? []).map((post) => ({
+              url: seo.pageUrl(`/blog/${post.slug}`),
+              name: post.title,
+            })),
+          ),
+          seo.breadcrumbs([{ name: heading, path: '/blog' }]),
+        ],
       };
     });
   }

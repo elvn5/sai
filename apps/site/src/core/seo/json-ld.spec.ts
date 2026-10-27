@@ -1,4 +1,4 @@
-import { serializeJsonLd } from '@/core/seo/json-ld';
+import { metaDescription, serializeJsonLd } from '@/core/seo/json-ld';
 
 describe('serializeJsonLd', () => {
   it('cannot close its <script> early', () => {
@@ -101,5 +101,19 @@ describe('catalog JSON-LD', () => {
     const { plainText } = await import('@/core/seo/json-ld');
     expect(plainText('<p>Юрты&nbsp;у <b>озера</b></p><p>и баня</p>')).toBe('Юрты у озера и баня');
     expect(plainText('<p>abcdef</p>', 4)).toBe('abc…');
+  });
+});
+
+describe('metaDescription', () => {
+  it('keeps a lead that says enough', () => {
+    const lead = 'Three days across the Teleti pass from Karakol to the Jeti-Oguz resort.';
+    expect(metaDescription(lead, '<p>Day one</p>')).toBe(lead);
+  });
+
+  it('fills a short lead up from the text', () => {
+    expect(metaDescription('A moderate tour', '<p>Two days &amp; a pass.</p>')).toBe(
+      'A moderate tour. Two days & a pass.',
+    );
+    expect(metaDescription(null, `<p>${'a '.repeat(200)}</p>`)).toHaveLength(160);
   });
 });

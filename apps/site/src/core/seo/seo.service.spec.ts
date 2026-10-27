@@ -64,6 +64,20 @@ describe('SeoService', () => {
     expect(head.querySelector('meta[name=robots]')).toBeNull();
   });
 
+  it('points every prefix of a one-language page at that language', () => {
+    const { seo, head } = setup('/en/trails/ala-archa');
+    seo.setPage({ title: 'Ala-Archa', description: 'A trail', contentLang: 'ru' });
+
+    expect(attr(head, 'link[rel=canonical]', 'href')).toBe('https://ermekten.com/trails/ala-archa');
+    expect(head.querySelectorAll('link[rel=alternate]')).toHaveLength(2);
+    expect(attr(head, 'link[hreflang="ru"]', 'href')).toBe('https://ermekten.com/trails/ala-archa');
+    expect(attr(head, 'link[hreflang="x-default"]', 'href')).toBe(
+      'https://ermekten.com/trails/ala-archa',
+    );
+    expect(attr(head, 'meta[property="og:locale"]', 'content')).toBe('ru_RU');
+    expect(head.querySelectorAll('meta[property="og:locale:alternate"]')).toHaveLength(0);
+  });
+
   it('replaces the previous page instead of piling up tags', () => {
     const { seo, head } = setup('/blog/hello');
     seo.setPage({ title: 'A', description: 'a', image: '/a.webp', jsonLd: [{ '@type': 'A' }] });
@@ -77,7 +91,9 @@ describe('SeoService', () => {
 
     expect(head.querySelectorAll('link[rel=canonical]')).toHaveLength(1);
     expect(head.querySelectorAll('link[rel=alternate]')).toHaveLength(0);
-    expect(head.querySelector('meta[property="og:image"]')).toBeNull();
+    expect(attr(head, 'meta[property="og:image"]', 'content')).toBe(
+      'https://ermekten.com/media/hero-mountain-1920.webp',
+    );
     expect(attr(head, 'meta[name=robots]', 'content')).toBe('noindex');
     const scripts = head.querySelectorAll('script[data-seo="page"]');
     expect(scripts).toHaveLength(1);

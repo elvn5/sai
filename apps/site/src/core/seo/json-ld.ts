@@ -135,6 +135,20 @@ export function plainText(html: string, maxLength = 300): string {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
 }
 
+// A description for search results: the lead (an excerpt) when it says
+// enough, otherwise filled up from the text.
+export function metaDescription(
+  lead: string | null | undefined,
+  html: string,
+  maxLength = 160,
+): string {
+  const head = lead?.trim() ?? '';
+  if (head.length >= 70) return head;
+  const body = plainText(html, Number.POSITIVE_INFINITY);
+  if (!head || body.startsWith(head)) return plainText(body, maxLength);
+  return plainText(`${head}${/[.!?…]$/.test(head) ? '' : '.'} ${body}`, maxLength);
+}
+
 export interface RatedReview {
   author: string;
   rating: number;

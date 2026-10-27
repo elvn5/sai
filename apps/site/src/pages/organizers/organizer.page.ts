@@ -43,14 +43,14 @@ interface OrganizerReview {
           <app-person-avatar [person]="p" [size]="88" class="ring-4 ring-brand-500/15" />
           <div class="min-w-0 flex-1">
             <p class="text-xs font-semibold tracking-wide text-brand-700 uppercase dark:text-brand-300">{{ 'organizer.kicker' | transloco }}</p>
-            <h1 class="mt-1 flex flex-wrap items-center gap-2 text-2xl font-black text-text sm:text-3xl">
-              {{ name() }}
+            <div class="mt-1 flex flex-wrap items-center gap-2">
+              <h1 class="text-2xl font-black text-text sm:text-3xl">{{ name() }}</h1>
               @if (p.isVerified) {
                 <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                   <span class="icon-[heroicons--check-badge-solid] size-4" aria-hidden="true"></span>{{ 'organizer.verified' | transloco }}
                 </span>
               }
-            </h1>
+            </div>
             <p class="mt-1 text-sm text-text-muted">
               @if (p.username) {
                 <span>&#64;{{ p.username }} · </span>

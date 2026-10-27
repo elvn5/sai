@@ -44,12 +44,16 @@ describe('sitemap', () => {
     expect(tours).toHaveLength(4);
   });
 
-  it('includes published trails in all languages and adds the catalog', async () => {
+  it('includes published trails in Russian only and adds the catalog', async () => {
     const getJson = vi.fn(async () => [{ slug: 'own-route', updatedAt: '2026-10-24T10:00:00Z' }]);
     const trails = await collectEntries('trails', getJson);
     expect(getJson).toHaveBeenCalledWith('/trails');
-    expect(trails).toEqual([{ path: '/trails/own-route', lastmod: '2026-10-24T10:00:00Z' }]);
-    expect(renderUrlset(SITE, trails)).toContain('/ky/trails/own-route');
+    expect(trails).toEqual([
+      { path: '/trails/own-route', lastmod: '2026-10-24T10:00:00Z', lang: 'ru' },
+    ]);
+    const xml = renderUrlset(SITE, trails);
+    expect(xml).toContain('<loc>https://ermekten.com/trails/own-route</loc>');
+    expect(xml).not.toContain('/ky/trails/own-route');
     expect(await collectEntries('pages', getJson)).toContainEqual({ path: '/trails' });
   });
 

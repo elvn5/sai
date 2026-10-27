@@ -1,6 +1,7 @@
 import type { ConditionReport, Trail } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { APP_CONFIG } from '@/core/config/app-config';
+import { DEFAULT_LANG } from '@/core/i18n/langs';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
@@ -362,6 +363,8 @@ export class TrailPage {
         description,
         image: this.cover(),
         robots: tr.isPublished ? undefined : 'noindex',
+        // Trails are written in Russian only.
+        contentLang: DEFAULT_LANG,
         jsonLd: [
           touristAttraction({
             url: seo.pageUrl(path),

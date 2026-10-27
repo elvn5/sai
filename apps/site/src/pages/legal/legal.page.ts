@@ -1,4 +1,5 @@
 import { injectLang } from '@/core/i18n/current-lang';
+import { DEFAULT_LANG } from '@/core/i18n/langs';
 import { COMPANY } from '@/core/legal/company';
 import { LEGAL, type LegalDocument } from '@/core/legal/documents';
 import { formatDate } from '@/core/lib/format';
@@ -112,6 +113,7 @@ export class LegalPage {
         title: text.title,
         description: text.description,
         robots: this.draft() ? 'noindex' : undefined,
+        contentLang: DEFAULT_LANG,
         jsonLd: [seo.breadcrumbs([{ name: text.title, path: LEGAL[this.doc()].path }])],
       };
     });

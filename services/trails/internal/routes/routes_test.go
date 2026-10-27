@@ -247,3 +247,35 @@ func TestConditionReports(t *testing.T) {
 		t.Errorf("author delete: %d", status)
 	}
 }
+
+func TestTrailPostExtras(t *testing.T) {
+	c := setup(t)
+	payload := strings.TrimSuffix(komsomolets, "}") + `,"markers":[{"pointIndex":2,"label":"Крутой подъём"}],"checklistUrl":"/uploads/checklist.pdf"}`
+	status, body := c.do("POST", "/trails", payload, partner)
+	if status != 201 {
+		t.Fatalf("create: %d %s", status, body)
+	}
+	id := obj(t, body)["id"].(string)
+	for _, path := range []string{"/trails/komsomolets", "/trails"} {
+		status, body = c.do("GET", path, "", "")
+		if status != 200 || !strings.Contains(body, `"pointIndex":2`) || !strings.Contains(body, `"checklistUrl":"/uploads/checklist.pdf"`) {
+			t.Fatalf("persisted: %d %s", status, body)
+		}
+	}
+	for _, payload := range []string{`{"markers":[{"pointIndex":9,"label":"x"}]}`, `{"markers":[{"pointIndex":0,"label":" "}]}`, `{"checklistUrl":"/uploads/file.gpx"}`} {
+		if status, body = c.do("PUT", "/trails/"+id, payload, partner); status != 400 {
+			t.Errorf("invalid extras: %d %s", status, body)
+		}
+	}
+	if status, _ = c.do("PUT", "/trails/"+id, `{"markers":[]}`, other); status != 403 {
+		t.Errorf("other partner: %d", status)
+	}
+	status, body = c.do("PUT", "/trails/"+id, `{"name":"Updated"}`, partner)
+	if status != 200 || !strings.Contains(body, `"pointIndex":2`) {
+		t.Fatalf("partial update lost markers: %d %s", status, body)
+	}
+	status, body = c.do("PUT", "/trails/"+id, `{"track":[],"checklistUrl":null}`, partner)
+	if status != 200 || !strings.Contains(body, `"markers":[]`) || !strings.Contains(body, `"checklistUrl":null`) {
+		t.Fatalf("clear extras: %d %s", status, body)
+	}
+}

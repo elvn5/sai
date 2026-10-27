@@ -3,6 +3,9 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"net/url"
+	"path"
+	"reflect"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +27,8 @@ const (
 // trailRequest is the editable part of a route; create additionally
 // requires slug, name, area, kind and grade (see Refine).
 type trailRequest struct {
+	Markers         []models.TrailMarker      `json:"markers" binding:"omitempty,max=100,dive"`
+	ChecklistURL    validation.Field[string]  `json:"checklistUrl" binding:"omitempty,max=2000,mediaurl"`
 	Slug            *string                   `json:"slug" binding:"omitempty,min=1,max=120,slug"`
 	Name            *validation.Trimmed       `json:"name" binding:"omitempty,min=1,max=160"`
 	Summary         validation.Field[string]  `json:"summary" binding:"omitempty,max=300"`
@@ -111,9 +116,16 @@ func (r trailRequest) apply(t *models.Trail) {
 	applyField(&t.StartLatitude, r.StartLatitude)
 	applyField(&t.StartLongitude, r.StartLongitude)
 	if r.Track != nil {
+		if !reflect.DeepEqual(r.Track, t.Track) {
+			t.Markers = []models.TrailMarker{}
+		}
 		t.Track = r.Track
 	}
 	applyField(&t.GpxURL, r.GpxURL)
+	applyField(&t.ChecklistURL, r.ChecklistURL)
+	if r.Markers != nil {
+		t.Markers = r.Markers
+	}
 	applyField(&t.CoverImageURL, r.CoverImageURL)
 	if r.Photos != nil {
 		t.Photos = r.Photos
@@ -210,6 +222,9 @@ func (h *Trails) Create(c *gin.Context) {
 		trail.UserID = &userID
 	}
 	req.apply(&trail)
+	if !validTrailExtras(c, trail) {
+		return
+	}
 	saved, err := h.Store.InsertTrail(ctx, trail, h.now())
 	if err != nil {
 		h.slugConflict(c, err)
@@ -235,6 +250,9 @@ func (h *Trails) Update(c *gin.Context) {
 		}
 	}
 	req.apply(&trail)
+	if !validTrailExtras(c, trail) {
+		return
+	}
 	saved, err := h.Store.UpdateTrail(ctx, trail, h.now())
 	if err != nil {
 		h.slugConflict(c, err)
@@ -292,4 +310,22 @@ func (d Deps) trailByKey(c *gin.Context, key string) (models.Trail, error) {
 		return d.Store.Trail(c.Request.Context(), key, d.now())
 	}
 	return d.Store.TrailBySlug(c.Request.Context(), strings.ToLower(key), d.now())
+}
+
+// Validate references against the resulting track, including partial updates.
+func validTrailExtras(c *gin.Context, trail models.Trail) bool {
+	for _, marker := range trail.Markers {
+		if marker.PointIndex < 0 || marker.PointIndex >= len(trail.Track) || strings.TrimSpace(marker.Label) == "" {
+			httperr.Abort(c, http.StatusBadRequest, "Invalid route marker")
+			return false
+		}
+	}
+	if trail.ChecklistURL != nil {
+		u, err := url.Parse(*trail.ChecklistURL)
+		if err != nil || !strings.EqualFold(path.Ext(u.Path), ".pdf") {
+			httperr.Abort(c, http.StatusBadRequest, "Checklist must be a PDF file")
+			return false
+		}
+	}
+	return true
 }

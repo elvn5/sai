@@ -1,0 +1,30 @@
+{
+  "preparedAt": "2026-10-26",
+  "status": "Prepared, not published",
+  "geometry": "Derived from OpenStreetMap walking ways, shortest connected path through listed landmarks",
+  "license": "ODbL 1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "osmWays": [
+    27413617, 151522961, 300972650, 300972653, 300974249, 511794351, 511794352, 513084196,
+    513084197, 523508791, 528544627, 528544630, 528544634, 528544644, 528544646, 528544649,
+    528544651, 528544653, 528544655, 528820071, 528820075, 528820088, 528820092, 528820105,
+    610569458, 610569459, 766016603, 766016604, 803053638, 1086761352, 1086807208, 1099335696,
+    1099335699, 1099335700, 1099335703, 1099335705, 1099335706, 1099335712, 1303549813, 1425651040,
+    1425651041
+  ],
+  "elevationSource": "SRTM 30m via OpenTopoData; bilinear sampling, elevations interpolated between samples ~55m apart",
+  "elevationSamples": 486,
+  "sources": [
+    ["Asia Peaks: этапы и сезон Ала-Куля", "https://asiapeaks.com/ala-kul-trek-guide"],
+    ["Kyrgyzland: маршрут через Каракол и Арашан", "https://kyrgyzland.com/en/node/171"],
+    [
+      "CDC: высота и акклиматизация",
+      "https://www.cdc.gov/yellow-book/hcp/environmental-hazards-risks/high-altitude-travel-and-altitude-illness.html"
+    ],
+    [
+      "Картографические данные: © OpenStreetMap contributors, ODbL 1.0",
+      "https://www.openstreetmap.org/copyright"
+    ],
+    ["Высоты: SRTM 30 м через OpenTopoData", "https://www.opentopodata.org/datasets/srtm/"]
+  ]
+}

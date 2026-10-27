@@ -1,0 +1,22 @@
+{
+  "preparedAt": "2026-10-26",
+  "status": "Prepared, not published",
+  "geometry": "Derived from OpenStreetMap walking ways, shortest connected path through listed landmarks",
+  "license": "ODbL 1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "osmWays": [
+    23482585, 149834766, 151482105, 296741218, 529274831, 529274835, 683228717, 827664054,
+    1337785361, 1382345252, 1425379376, 1458026207
+  ],
+  "elevationSource": "SRTM 30m via OpenTopoData; bilinear sampling, elevations interpolated between samples ~55m apart",
+  "elevationSamples": 61,
+  "sources": [
+    ["Описание троп Ала-Арчи", "https://alaarchapark.com/trails"],
+    ["Карта троп парка", "https://alaarchapark.com/map"],
+    [
+      "Картографические данные: © OpenStreetMap contributors, ODbL 1.0",
+      "https://www.openstreetmap.org/copyright"
+    ],
+    ["Высоты: SRTM 30 м через OpenTopoData", "https://www.opentopodata.org/datasets/srtm/"]
+  ]
+}

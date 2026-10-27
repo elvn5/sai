@@ -37,7 +37,14 @@ type ConditionSummary struct {
 	Traction   string `json:"traction"`
 }
 
+type TrailMarker struct {
+	PointIndex int    `json:"pointIndex" binding:"gte=0,lte=4999"`
+	Label      string `json:"label" binding:"required,max=160"`
+}
+
 type Trail struct {
+	Markers         []TrailMarker     `json:"markers"`
+	ChecklistURL    *string           `json:"checklistUrl"`
 	ID              string            `json:"id"`
 	Slug            string            `json:"slug"`
 	Name            string            `json:"name"`

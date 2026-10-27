@@ -8,7 +8,6 @@ const PAUSED_SECTIONS: Record<string, string> = {
   hotels: '/tours',
   'local-guides': '/tours',
   guides: '/tours',
-  trails: '/tours',
   payments: '/tours',
   // The hiking hub only linked to sections the menu now has itself.
   hikes: '/tours',

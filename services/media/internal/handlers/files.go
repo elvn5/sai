@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -64,6 +65,9 @@ func (h *Files) Serve(c *gin.Context) {
 		contentType = "application/octet-stream"
 	}
 	header.Set("Content-Type", contentType)
+	if c.Query("download") == "1" {
+		header.Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": name}))
+	}
 
 	http.ServeContent(c.Writer, c.Request, name, info.ModTime(), f)
 }

@@ -56,6 +56,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
             <li><a appSiteLink="/" class="hover:text-text">{{ 'nav.feed' | transloco }}</a></li>
             <li><a appSiteLink="/gallery" class="hover:text-text">{{ 'nav.gallery' | transloco }}</a></li>
             <li><a appSiteLink="/blog" class="hover:text-text">{{ 'nav.blog' | transloco }}</a></li>
+            <li><a appSiteLink="/trails" class="hover:text-text">{{ 'nav.trails' | transloco }}</a></li>
           </ul>
         </nav>
 

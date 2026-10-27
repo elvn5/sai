@@ -58,6 +58,25 @@ const pages: Routes = [
     loadComponent: () => import('@/pages/organizers/organizer.page').then((m) => m.OrganizerPage),
   },
 
+  {
+    path: 'trails',
+    loadComponent: () => import('@/pages/trails/trails-list.page').then((m) => m.TrailsListPage),
+  },
+  {
+    path: 'trails/new',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/trails/trail-new.page').then((m) => m.TrailNewPage),
+  },
+  {
+    path: 'trails/:slug/edit',
+    canActivate: [requirePartner],
+    loadComponent: () => import('@/pages/trails/trail-edit.page').then((m) => m.TrailEditPage),
+  },
+  {
+    path: 'trails/:slug',
+    loadComponent: () => import('@/pages/trails/trail.page').then((m) => m.TrailPage),
+  },
+
   ...LEGAL_DOCUMENTS.map((doc) => ({
     path: LEGAL[doc].path.slice(1),
     data: { doc },

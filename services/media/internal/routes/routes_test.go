@@ -236,3 +236,14 @@ func TestStorageNotConfigured(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	assertNestError(t, e.do(req, true), 500, "Storage service is not configured")
 }
+
+func TestPDFDownload(t *testing.T) {
+	e := setup(t, config.Config{})
+	if err := os.WriteFile(filepath.Join(e.dir, "check.pdf"), []byte("%PDF-1.7\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	rec := e.do(httptest.NewRequest(http.MethodGet, "/uploads/check.pdf?download=1", nil), false)
+	if rec.Code != 200 || rec.Header().Get("Content-Disposition") != "attachment; filename=check.pdf" || rec.Header().Get("Content-Type") != "application/pdf" {
+		t.Fatalf("download: %d %v", rec.Code, rec.Header())
+	}
+}

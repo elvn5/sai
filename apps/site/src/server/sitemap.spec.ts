@@ -14,6 +14,7 @@ describe('sitemap', () => {
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/pages.xml</loc>');
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/tours.xml</loc>');
     expect(xml).toContain('<loc>https://ermekten.com/sitemaps/organizers.xml</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/trails.xml</loc>');
     expect(xml).not.toContain('hotels.xml');
   });
 
@@ -41,6 +42,15 @@ describe('sitemap', () => {
     const tours = await collectEntries('tours', getJson);
     expect(tours).toContainEqual({ path: '/tours/tour-ky', lastmod: null, lang: 'ky' });
     expect(tours).toHaveLength(4);
+  });
+
+  it('includes published trails in all languages and adds the catalog', async () => {
+    const getJson = vi.fn(async () => [{ slug: 'own-route', updatedAt: '2026-10-24T10:00:00Z' }]);
+    const trails = await collectEntries('trails', getJson);
+    expect(getJson).toHaveBeenCalledWith('/trails');
+    expect(trails).toEqual([{ path: '/trails/own-route', lastmod: '2026-10-24T10:00:00Z' }]);
+    expect(renderUrlset(SITE, trails)).toContain('/ky/trails/own-route');
+    expect(await collectEntries('pages', getJson)).toContainEqual({ path: '/trails' });
   });
 
   it('lists the organizers of tours once, with their latest tour', async () => {

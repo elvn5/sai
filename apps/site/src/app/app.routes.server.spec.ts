@@ -9,6 +9,8 @@ describe('serverRoutes', () => {
     expect(client).toContain('blog/new');
     expect(client).toContain('en/blog/edit/:id');
     expect(client).toContain('de/tours/new');
+    expect(client).toContain('trails/new');
+    expect(client).toContain('ky/trails/:slug/edit');
     expect(serverRoutes.at(-1)).toMatchObject({ path: '**', renderMode: RenderMode.Server });
   });
 });

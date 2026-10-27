@@ -15,7 +15,7 @@ import (
 const trailColumns = `t.id::text, t.slug, t.name, t.summary, t.description, t.area, t.kind, t.grade,
 	t.seasons, t.gear, t.summit_elevation, t.start_elevation, t.elevation_gain, t.distance_km::float8,
 	t.duration_hours::float8, t.days, t.segments, t.getting_there, t.start_latitude, t.start_longitude,
-	t.gpx_url, t.cover_image_url, t.photos, t.is_published, t.user_id::text, t.created_at, t.updated_at,
+	t.markers, t.checklist_url, t.gpx_url, t.cover_image_url, t.photos, t.is_published, t.user_id::text, t.created_at, t.updated_at,
 	lc.observed_on::text, lc.trail_state, lc.traction`
 
 // trailJoins adds the newest condition report.
@@ -30,7 +30,7 @@ func scanTrail(row pgx.Row, withTrack bool) (models.Trail, error) {
 	dest := []any{&t.ID, &t.Slug, &t.Name, &t.Summary, &t.Description, &t.Area, &t.Kind, &t.Grade,
 		&t.Seasons, &t.Gear, &t.SummitElevation, &t.StartElevation, &t.ElevationGain, &t.DistanceKm,
 		&t.DurationHours, &t.Days, &t.Segments, &t.GettingThere, &t.StartLatitude, &t.StartLongitude,
-		&t.GpxURL, &t.CoverImageURL, &t.Photos, &t.IsPublished, &t.UserID, &created, &updated,
+		&t.Markers, &t.ChecklistURL, &t.GpxURL, &t.CoverImageURL, &t.Photos, &t.IsPublished, &t.UserID, &created, &updated,
 		&observedOn, &state, &traction}
 	if withTrack {
 		dest = append(dest, &t.Track)
@@ -38,6 +38,7 @@ func scanTrail(row pgx.Row, withTrack bool) (models.Trail, error) {
 	if err := row.Scan(dest...); err != nil {
 		return t, notFound(err)
 	}
+	t.Markers = nonNil(t.Markers)
 	t.CreatedAt, t.UpdatedAt = jsontime.New(created), jsontime.New(updated)
 	t.Seasons, t.Gear, t.Photos, t.Segments = nonNil(t.Seasons), nonNil(t.Gear), nonNil(t.Photos), nonNil(t.Segments)
 	if observedOn != nil {
@@ -145,19 +146,19 @@ func (s *Store) SlugTaken(ctx context.Context, slug, excludeID string) (bool, er
 
 const trailWriteColumns = `slug, name, summary, description, area, kind, grade, seasons, gear, summit_elevation,
 	start_elevation, elevation_gain, distance_km, duration_hours, days, segments, getting_there, start_latitude,
-	start_longitude, track, gpx_url, cover_image_url, photos, is_published`
+	start_longitude, track, gpx_url, cover_image_url, photos, is_published, markers, checklist_url`
 
 func trailWriteArgs(t models.Trail) []any {
 	return []any{t.Slug, t.Name, t.Summary, t.Description, t.Area, t.Kind, t.Grade, t.Seasons, t.Gear,
 		t.SummitElevation, t.StartElevation, t.ElevationGain, t.DistanceKm, t.DurationHours, t.Days,
 		t.Segments, t.GettingThere, t.StartLatitude, t.StartLongitude, nonNil(t.Track), t.GpxURL,
-		t.CoverImageURL, t.Photos, t.IsPublished}
+		t.CoverImageURL, t.Photos, t.IsPublished, nonNil(t.Markers), t.ChecklistURL}
 }
 
 func (s *Store) InsertTrail(ctx context.Context, t models.Trail, now time.Time) (models.Trail, error) {
 	var id string
 	err := s.db.QueryRow(ctx, `INSERT INTO trails (`+trailWriteColumns+`, user_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
 		RETURNING id::text`, append(trailWriteArgs(t), t.UserID)...).Scan(&id)
 	if err != nil {
 		return models.Trail{}, duplicate(err)
@@ -167,7 +168,7 @@ func (s *Store) InsertTrail(ctx context.Context, t models.Trail, now time.Time) 
 
 func (s *Store) UpdateTrail(ctx context.Context, t models.Trail, now time.Time) (models.Trail, error) {
 	tag, err := s.db.Exec(ctx, `UPDATE trails SET (`+trailWriteColumns+`, updated_at) =
-		($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, now())
+		($2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, now())
 		WHERE id::text = $1`, append([]any{t.ID}, trailWriteArgs(t)...)...)
 	if err != nil {
 		return models.Trail{}, duplicate(err)

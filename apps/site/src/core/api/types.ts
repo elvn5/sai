@@ -505,7 +505,14 @@ export interface ConditionSummary {
   traction: string;
 }
 
+export interface TrailMarker {
+  pointIndex: number;
+  label: string;
+}
+
 export interface Trail {
+  markers?: TrailMarker[];
+  checklistUrl?: string | null;
   id: string;
   slug: string;
   name: string;

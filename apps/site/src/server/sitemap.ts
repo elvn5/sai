@@ -5,9 +5,9 @@ import { publishedLegalPaths } from '@/core/legal/documents';
 // content type (/sitemaps/<type>.xml), with lastmod and hreflang alternates
 // (docs/angular-migration-plan.md, section 4).
 
-// Hotels, local guides, trails and travel guides are paused for now
+// Hotels, local guides and travel guides are paused for now
 // (server/paused-sections.ts): no sitemaps of theirs.
-export const SITEMAP_TYPES = ['pages', 'tours', 'blog', 'organizers'] as const;
+export const SITEMAP_TYPES = ['pages', 'tours', 'blog', 'organizers', 'trails'] as const;
 export type SitemapType = (typeof SITEMAP_TYPES)[number];
 
 export function isSitemapType(value: string): value is SitemapType {
@@ -19,6 +19,7 @@ export function isSitemapType(value: string): value is SitemapType {
 const SECTION_PATHS = [
   '/',
   '/tours',
+  '/trails',
   '/blog',
   '/gallery',
   '/hall-of-fame',
@@ -80,6 +81,10 @@ export async function collectEntries(type: SitemapType, getJson: GetJson): Promi
       return perLanguage(getJson, type);
     case 'organizers':
       return organizers(getJson);
+    case 'trails': {
+      const trails = (await getJson('/trails')) as { slug: string; updatedAt: string }[];
+      return trails.map((trail) => ({ path: `/trails/${trail.slug}`, lastmod: trail.updatedAt }));
+    }
   }
 }
 

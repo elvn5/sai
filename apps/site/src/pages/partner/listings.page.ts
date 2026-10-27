@@ -1,4 +1,4 @@
-import type { BlogPost, StatsReport, Tour } from '@/core/api/types';
+import type { BlogPost, StatsReport, Tour, Trail } from '@/core/api/types';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatDateRange, todayInBishkek } from '@/core/lib/format';
 import { contentLang } from '@/core/lib/partner-cabinet';
@@ -13,7 +13,7 @@ import { firstValueFrom } from 'rxjs';
 
 // /partner/listings: what the partner publishes — tours (edit, repeat on
 // new dates, delete) and blog posts — with each listing's views over 30
-// days. (Places to stay, the guide profile and routes are paused for now.)
+// days. Routes also include drafts; places to stay and guide profiles are paused.
 @Component({
   selector: 'app-partner-listings-page',
   imports: [SiteLink, TranslocoPipe],
@@ -57,6 +57,30 @@ import { firstValueFrom } from 'rxjs';
         }
       </section>
 
+      <section class="flex flex-col gap-3" aria-labelledby="my-trails">
+        <div class="flex items-center justify-between gap-2">
+          <h2 id="my-trails" class="font-semibold text-text">{{ 'trails.title' | transloco }}</h2>
+          <a appSiteLink="/trails/new" class="ui-btn-primary">{{ 'trails.add' | transloco }}</a>
+        </div>
+        @for (trail of trailList(); track trail.id) {
+          <div class="ui-card flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div>
+              @if (trail.isPublished) {
+                <a [appSiteLink]="'/trails/' + trail.slug" class="font-medium text-text hover:underline">{{ trail.name }}</a>
+              } @else {
+                <p class="font-medium text-text">{{ trail.name }}</p>
+              }
+              <p class="text-xs text-text-muted">{{ (trail.isPublished ? 'profile.listings.published' : 'profile.listings.draft') | transloco }}</p>
+            </div>
+            <a [appSiteLink]="'/trails/' + trail.slug + '/edit'" class="ui-btn-soft">{{ 'listing.edit' | transloco }}</a>
+          </div>
+        } @empty {
+          @if (trails.hasValue()) {
+            <p class="text-sm text-text-muted">{{ 'trails.emptyAll' | transloco }}</p>
+          }
+        }
+      </section>
+
       <section class="flex flex-col gap-3" aria-labelledby="my-posts">
         <div class="flex items-center justify-between gap-2">
           <h2 id="my-posts" class="font-semibold text-text">{{ 'profile.listings.postsHeading' | transloco }}</h2>
@@ -96,6 +120,7 @@ export class PartnerListingsPage {
 
   protected readonly tours = httpResource<Tour[]>(() => '/tours/mine');
   protected readonly posts = httpResource<BlogPost[]>(() => '/blog/mine');
+  protected readonly trails = httpResource<Trail[]>(() => '/trails/mine');
   private readonly stats = httpResource<StatsReport>(() => ({
     url: '/listing-stats/mine',
     params: { days: 30 },
@@ -103,6 +128,7 @@ export class PartnerListingsPage {
 
   protected readonly tourList = computed(() => loaded(this.tours) ?? []);
   protected readonly postList = computed(() => loaded(this.posts) ?? []);
+  protected readonly trailList = computed(() => loaded(this.trails) ?? []);
   // Upcoming tours soonest first; past ones most recent first.
   protected readonly tourGroups = computed(() => {
     const today = todayInBishkek();

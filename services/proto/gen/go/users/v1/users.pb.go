@@ -85,8 +85,11 @@ type User struct {
 	Username      *string                `protobuf:"bytes,3,opt,name=username,proto3,oneof" json:"username,omitempty"`
 	AvatarUrl     *string                `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3,oneof" json:"avatar_url,omitempty"`
 	PartnerStatus PartnerStatus          `protobuf:"varint,5,opt,name=partner_status,json=partnerStatus,proto3,enum=users.v1.PartnerStatus" json:"partner_status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Sessions issued before this (unix seconds) are no longer valid: the
+	// password was reset then. 0 when there's no such cut-off.
+	SessionsValidAfter int64 `protobuf:"varint,6,opt,name=sessions_valid_after,json=sessionsValidAfter,proto3" json:"sessions_valid_after,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
@@ -152,6 +155,13 @@ func (x *User) GetPartnerStatus() PartnerStatus {
 		return x.PartnerStatus
 	}
 	return PartnerStatus_PARTNER_STATUS_UNSPECIFIED
+}
+
+func (x *User) GetSessionsValidAfter() int64 {
+	if x != nil {
+		return x.SessionsValidAfter
+	}
+	return 0
 }
 
 type GetUserRequest struct {
@@ -1163,7 +1173,7 @@ var File_users_v1_users_proto protoreflect.FileDescriptor
 
 const file_users_v1_users_proto_rawDesc = "" +
 	"\n" +
-	"\x14users/v1/users.proto\x12\busers.v1\"\xea\x01\n" +
+	"\x14users/v1/users.proto\x12\busers.v1\"\x9c\x02\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\"\n" +
 	"\n" +
@@ -1171,7 +1181,8 @@ const file_users_v1_users_proto_rawDesc = "" +
 	"\busername\x18\x03 \x01(\tH\x01R\busername\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"avatar_url\x18\x04 \x01(\tH\x02R\tavatarUrl\x88\x01\x01\x12>\n" +
-	"\x0epartner_status\x18\x05 \x01(\x0e2\x17.users.v1.PartnerStatusR\rpartnerStatusB\r\n" +
+	"\x0epartner_status\x18\x05 \x01(\x0e2\x17.users.v1.PartnerStatusR\rpartnerStatus\x120\n" +
+	"\x14sessions_valid_after\x18\x06 \x01(\x03R\x12sessionsValidAfterB\r\n" +
 	"\v_first_nameB\v\n" +
 	"\t_usernameB\r\n" +
 	"\v_avatar_url\" \n" +

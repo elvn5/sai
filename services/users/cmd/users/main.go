@@ -22,6 +22,7 @@ import (
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
+	"github.com/elvn5/sai/services/pkg/telegram"
 	usersv1 "github.com/elvn5/sai/services/proto/gen/go/users/v1"
 	"github.com/elvn5/sai/services/users/internal/config"
 	"github.com/elvn5/sai/services/users/internal/email"
@@ -72,13 +73,21 @@ func run(log *slog.Logger) error {
 		log.Warn("RESEND_API_KEY not set: email registrations will fail")
 	}
 
+	var tg handlers.TelegramSender
+	if cfg.BotToken != "" {
+		tg = telegram.New(cfg.BotToken, "")
+	} else {
+		log.Warn("BOT_TOKEN not set: password reset links can't be sent to Telegram")
+	}
+
 	st := store.New(db)
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: routes.Setup(handlers.Deps{
 			Store: st, Signer: signer, Cookies: session.NewCookies(cfg.CookieSecure),
-			Email:         email.NewResend(cfg.ResendAPIKey, cfg.EmailFrom, cfg.ResendBaseURL),
+			Email:    email.NewResend(cfg.ResendAPIKey, cfg.EmailFrom, cfg.ResendBaseURL),
+			Telegram: tg, SiteURL: cfg.SiteURL,
 			AdminPassword: cfg.AdminPassword, BotToken: cfg.BotToken, Log: log,
 		}, cfg.JWTSecret),
 		ReadHeaderTimeout: 10 * time.Second,

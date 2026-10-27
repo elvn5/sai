@@ -17,6 +17,7 @@ import (
 	"github.com/elvn5/sai/services/pkg/auth"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
+	"github.com/elvn5/sai/services/pkg/telegram"
 	"github.com/elvn5/sai/services/pkg/validation"
 	"github.com/elvn5/sai/services/users/internal/email"
 	"github.com/elvn5/sai/services/users/internal/session"
@@ -36,16 +37,27 @@ func init() {
 	validation.RegisterRule("bcryptpassword", func(s string) bool { return len(s) <= 72 }, "Password must contain at most 72 UTF-8 bytes")
 }
 
+// TelegramSender messages a Telegram chat as the bot (pkg/telegram.Client).
+type TelegramSender interface {
+	SendMessage(ctx context.Context, chatID int64, text string, button *telegram.Button) error
+}
+
 // Deps is what the handlers share.
 type Deps struct {
-	Store         *store.Store
-	Signer        *auth.Signer
-	Cookies       *session.Cookies
-	Email         email.Sender
+	Store   *store.Store
+	Signer  *auth.Signer
+	Cookies *session.Cookies
+	Email   email.Sender
+	// Nil without BOT_TOKEN: no reset links in Telegram.
+	Telegram      TelegramSender
+	SiteURL       string
 	AdminPassword string
 	BotToken      string
 	Log           *slog.Logger
 	Now           func() time.Time
+	// Background runs work that outlives the request (sending a reset
+	// link); nil means a goroutine. Tests run it inline.
+	Background func(func())
 }
 
 func (d Deps) now() time.Time {
@@ -53,6 +65,14 @@ func (d Deps) now() time.Time {
 		return d.Now()
 	}
 	return time.Now()
+}
+
+func (d Deps) background(work func()) {
+	if d.Background != nil {
+		d.Background(work)
+		return
+	}
+	go work()
 }
 
 // internalError logs err and answers NestJS's generic 500.
@@ -73,7 +93,11 @@ func (l Lookup) LookupUser(ctx context.Context, id string) (middleware.SessionUs
 	if err != nil {
 		return middleware.SessionUser{}, err
 	}
-	return middleware.SessionUser{ID: u.ID, PartnerStatus: u.PartnerStatus}, nil
+	out := middleware.SessionUser{ID: u.ID, PartnerStatus: u.PartnerStatus}
+	if u.SessionsValidAfter != nil {
+		out.SessionsValidAfter = *u.SessionsValidAfter
+	}
+	return out, nil
 }
 
 func currentUserID(c *gin.Context) string { return c.GetString(middleware.ContextUserID) }

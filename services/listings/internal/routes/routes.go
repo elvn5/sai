@@ -23,7 +23,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 
 	verifier := auth.NewVerifier(jwtSecret)
 	requireUser := middleware.RequireUser(verifier, users)
-	optionalUser := middleware.OptionalUser(verifier)
+	optionalUser := middleware.OptionalUser(verifier, users)
 	requirePartner := middleware.RequirePartner()
 
 	hotels := &handlers.Hotels{Deps: d}
@@ -88,7 +88,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 
 	// Partner cabinet: visits and contact clicks of listings.
 	stats := &handlers.Stats{Deps: d}
-	r.POST("/listing-stats/events", middleware.OptionalUser(verifier), stats.Record)
+	r.POST("/listing-stats/events", middleware.OptionalUser(verifier, users), stats.Record)
 	r.GET("/listing-stats/mine", requireUser, requirePartner, stats.Mine)
 
 	return r

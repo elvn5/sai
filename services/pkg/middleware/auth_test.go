@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -167,7 +168,7 @@ func TestRequireAdminOrPartner(t *testing.T) {
 func TestOptionalUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/x", middleware.OptionalUser(auth.NewVerifier(jwtSecret)), func(c *gin.Context) {
+	r.GET("/x", middleware.OptionalUser(auth.NewVerifier(jwtSecret), nil), func(c *gin.Context) {
 		c.String(http.StatusOK, "%s|%v", c.GetString(middleware.ContextUserID), c.GetBool(middleware.ContextIsAdmin))
 	})
 	cases := map[string]struct {
@@ -189,6 +190,66 @@ func TestOptionalUser(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			if rec.Code != 200 || rec.Body.String() != tc.want {
 				t.Fatalf("got %d %s, want %s", rec.Code, rec.Body.String(), tc.want)
+			}
+		})
+	}
+}
+
+// resetLookup knows one user whose password was reset at cutoff.
+type resetLookup struct{ cutoff time.Time }
+
+func (l resetLookup) LookupUser(_ context.Context, id string) (middleware.SessionUser, error) {
+	if id != "u1" {
+		return middleware.SessionUser{}, middleware.ErrUserNotFound
+	}
+	return middleware.SessionUser{ID: id, PartnerStatus: "none", SessionsValidAfter: l.cutoff}, nil
+}
+
+// A password reset ends the sessions issued before it, for the required
+// and the optional check alike.
+func TestSessionsBeforeResetAreRefused(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	cutoff := time.Now().Add(-time.Hour).Truncate(time.Second)
+	lookup := resetLookup{cutoff: cutoff}
+	v := auth.NewVerifier(jwtSecret)
+	r := gin.New()
+	r.GET("/me", middleware.RequireUser(v, lookup), func(c *gin.Context) { c.String(http.StatusOK, "ok") })
+	r.GET("/page", middleware.OptionalUser(v, lookup), func(c *gin.Context) {
+		c.String(http.StatusOK, "%s", c.GetString(middleware.ContextUserID))
+	})
+	session := func(iat time.Time, sub string) *http.Cookie {
+		claims := jwt.MapClaims{"sub": sub, "role": "user"}
+		if !iat.IsZero() {
+			claims["iat"] = iat.Unix()
+		}
+		return &http.Cookie{Name: "user_token", Value: token(t, claims)}
+	}
+	cases := map[string]struct {
+		cookie   *http.Cookie
+		meStatus int
+		pageUser string
+	}{
+		"issued before the reset": {session(cutoff.Add(-time.Second), "u1"), 401, ""},
+		"issued without iat":      {session(time.Time{}, "u1"), 401, ""},
+		"issued the same second":  {session(cutoff, "u1"), 200, "u1"},
+		"issued after":            {session(cutoff.Add(time.Minute), "u1"), 200, "u1"},
+		"deleted user":            {session(time.Now(), "ghost"), 401, ""},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/me", nil)
+			req.AddCookie(tc.cookie)
+			rec := httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+			if rec.Code != tc.meStatus {
+				t.Fatalf("/me: got %d %s, want %d", rec.Code, rec.Body.String(), tc.meStatus)
+			}
+			req = httptest.NewRequest(http.MethodGet, "/page", nil)
+			req.AddCookie(tc.cookie)
+			rec = httptest.NewRecorder()
+			r.ServeHTTP(rec, req)
+			if rec.Code != 200 || rec.Body.String() != tc.pageUser {
+				t.Fatalf("/page: got %d %q, want %q", rec.Code, rec.Body.String(), tc.pageUser)
 			}
 		})
 	}

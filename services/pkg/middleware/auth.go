@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -29,6 +30,15 @@ var ErrUserNotFound = errors.New("user not found")
 type SessionUser struct {
 	ID            string
 	PartnerStatus string // "none", "pending", "approved", "rejected"
+	// Sessions issued before this are refused (set when the password is
+	// reset); zero when there's no such cut-off.
+	SessionsValidAfter time.Time
+}
+
+// revoked: the session was issued before the account's cut-off. Token
+// times are whole seconds, so the cut-off is compared in seconds too.
+func (u SessionUser) revoked(issuedAt time.Time) bool {
+	return !u.SessionsValidAfter.IsZero() && issuedAt.Unix() < u.SessionsValidAfter.Unix()
 }
 
 // UserLookup confirms a session's user still exists (the users service).
@@ -62,7 +72,7 @@ func RequirePartner() gin.HandlerFunc {
 // authenticateUser validates the user cookie (and, with a lookup, the
 // account), records the user in the context, and aborts on failure.
 func authenticateUser(c *gin.Context, v *auth.Verifier, lookup UserLookup) bool {
-	userID, msg := checkUser(c, v)
+	userID, issuedAt, msg := checkUser(c, v)
 	if msg != "" {
 		httperr.Abort(c, http.StatusUnauthorized, msg)
 		return false
@@ -76,6 +86,9 @@ func authenticateUser(c *gin.Context, v *auth.Verifier, lookup UserLookup) bool 
 		case err != nil:
 			_ = c.Error(err)
 			c.AbortWithStatusJSON(http.StatusInternalServerError, httperr.InternalServerError())
+			return false
+		case user.revoked(issuedAt):
+			httperr.Abort(c, http.StatusUnauthorized, "Invalid or expired session")
 			return false
 		}
 		c.Set(ContextPartnerStatus, user.PartnerStatus)
@@ -105,11 +118,18 @@ func RequireAdminOrUser(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {
 
 // OptionalUser records the site user behind a valid session cookie, if
 // any, and always continues: for public pages that show more to members.
-// The account isn't looked up.
-func OptionalUser(v *auth.Verifier) gin.HandlerFunc {
+// With a lookup, a session of a missing account or one revoked by a
+// password reset counts as no session (as does a failed lookup).
+func OptionalUser(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if userID, msg := checkUser(c, v); msg == "" {
-			c.Set(ContextUserID, userID)
+		if userID, issuedAt, msg := checkUser(c, v); msg == "" {
+			if lookup == nil {
+				c.Set(ContextUserID, userID)
+			} else if user, err := lookup.LookupUser(c.Request.Context(), userID); err == nil && !user.revoked(issuedAt) {
+				c.Set(ContextUserID, userID)
+			} else if err != nil && !errors.Is(err, ErrUserNotFound) {
+				_ = c.Error(err)
+			}
 		}
 		if token, err := c.Cookie(auth.AdminCookie); err == nil && token != "" && v.Admin(token) == nil {
 			c.Set(ContextIsAdmin, true)
@@ -138,19 +158,19 @@ func RequireAdminOrPartner(v *auth.Verifier, lookup UserLookup) gin.HandlerFunc 
 	}
 }
 
-func checkUser(c *gin.Context, v *auth.Verifier) (userID, errMessage string) {
+func checkUser(c *gin.Context, v *auth.Verifier) (userID string, issuedAt time.Time, errMessage string) {
 	token, err := c.Cookie(auth.UserCookie)
 	if err != nil || token == "" {
-		return "", "Not authenticated"
+		return "", time.Time{}, "Not authenticated"
 	}
-	userID, err = v.UserID(token)
+	userID, issuedAt, err = v.UserSession(token)
 	switch {
 	case errors.Is(err, auth.ErrInvalidSession):
-		return "", "Invalid session"
+		return "", time.Time{}, "Invalid session"
 	case err != nil:
-		return "", "Invalid or expired session"
+		return "", time.Time{}, "Invalid or expired session"
 	}
-	return userID, ""
+	return userID, issuedAt, ""
 }
 
 // RequireAdmin admits only admin-panel sessions, failing with the same 401

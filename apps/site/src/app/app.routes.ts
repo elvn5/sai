@@ -88,6 +88,11 @@ const pages: Routes = [
     loadComponent: () => import('@/pages/login/login.page').then((m) => m.LoginPage),
   },
   {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('@/pages/login/reset-password.page').then((m) => m.ResetPasswordPage),
+  },
+  {
     path: 'profile',
     canActivate: [requireAuth],
     loadComponent: () => import('@/pages/profile/profile.page').then((m) => m.ProfilePage),

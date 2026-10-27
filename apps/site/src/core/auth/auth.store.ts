@@ -30,6 +30,23 @@ export interface VerifyCodePayload {
   code: string;
 }
 
+// Where a password reset link goes: the account's email, or the Telegram
+// chat linked to it.
+export type ResetChannel = 'email' | 'telegram';
+
+export interface ForgotPasswordPayload {
+  identifier: string;
+  channel: ResetChannel;
+  // The site's language, for the email and the link.
+  lang: string;
+}
+
+export interface ResetPasswordPayload {
+  // From the link's #fragment.
+  token: string;
+  password: string;
+}
+
 // The signed-in visitor (cookie user_token, set by the API). Pages render
 // on the server anonymously, so the session is only ever checked in the
 // browser, after hydration.
@@ -88,17 +105,15 @@ export class AuthStore {
     this.setUser((await this.post<{ user: AppUser }>('/auth/user/verify', payload)).user);
   }
 
-  // Emails a code for setting a new password (accounts with an email).
-  async forgotPassword(identifier: string): Promise<PendingVerification> {
-    const res = await this.post<{ verification: PendingVerification }>(
-      '/auth/user/password/forgot',
-      { identifier },
-    );
-    return res.verification;
+  // Asks for a one-time link for setting a new password. The answer is the
+  // same whether or not the account exists (or has that channel).
+  async forgotPassword(payload: ForgotPasswordPayload): Promise<void> {
+    await this.post('/auth/user/password/forgot', payload);
   }
 
-  // Sets the new password with the emailed code, and signs in.
-  async resetPassword(payload: VerifyCodePayload & { password: string }): Promise<void> {
+  // Sets the new password with the link's token, and signs in; the
+  // account's other sessions end.
+  async resetPassword(payload: ResetPasswordPayload): Promise<void> {
     this.setUser((await this.post<{ user: AppUser }>('/auth/user/password/reset', payload)).user);
   }
 

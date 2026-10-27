@@ -22,7 +22,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
 	verifier := auth.NewVerifier(jwtSecret)
-	optionalUser := middleware.OptionalUser(verifier)
+	optionalUser := middleware.OptionalUser(verifier, users)
 	requireUser := middleware.RequireUser(verifier, users)
 	requireAdmin := middleware.RequireAdmin(verifier)
 	requireAdminOrPartner := middleware.RequireAdminOrPartner(verifier, users)

@@ -16,8 +16,11 @@ type Config struct {
 
 	// Plain-text password for the admin panel.
 	AdminPassword string `env:"ADMIN_PASSWORD"`
-	// Verifies Telegram Login Widget and Mini App signatures.
+	// Verifies Telegram Login Widget and Mini App signatures, and sends
+	// password reset links to linked Telegram chats.
 	BotToken string `env:"BOT_TOKEN"`
+	// The public site, for the links in password reset messages.
+	SiteURL string `env:"SITE_URL" envDefault:"http://localhost:3002"`
 
 	// Email verification codes, sent through Resend.
 	ResendAPIKey string `env:"RESEND_API_KEY"`

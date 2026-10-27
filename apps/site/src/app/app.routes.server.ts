@@ -19,6 +19,7 @@ const CLIENT_PATHS = [
   'trails/new',
   'trails/:slug/edit',
   'login',
+  'reset-password',
   'profile',
   'achievements/award',
   'partner',

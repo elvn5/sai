@@ -1,6 +1,6 @@
 import { Analytics } from '@/core/analytics/analytics';
 import type { TelegramWidgetPayload } from '@/core/api/types';
-import { AuthStore, type PendingVerification } from '@/core/auth/auth.store';
+import { AuthStore, type PendingVerification, type ResetChannel } from '@/core/auth/auth.store';
 import { passwordFitsBcrypt } from '@/core/auth/password';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { FeatureFlags } from '@/core/feature-flags/feature-flags';
@@ -28,7 +28,14 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { FormField, form, maxLength, submit, validateStandardSchema } from '@angular/forms/signals';
+import {
+  FormField,
+  form,
+  maxLength,
+  submit,
+  validate,
+  validateStandardSchema,
+} from '@angular/forms/signals';
 import { Router } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { z } from 'zod/mini';
@@ -36,8 +43,11 @@ import { z } from 'zod/mini';
 const RESEND_COOLDOWN_S = 60;
 const VERIFY_POLL_MS = 3000;
 
-// forgot: asking for a code to set a new password; reset: typing it in.
-type Mode = 'login' | 'register' | 'verify' | 'forgot' | 'reset';
+// forgot: asking for a link to set a new password (it opens
+// /reset-password); forgotSent: told where it went.
+type Mode = 'login' | 'register' | 'verify' | 'forgot' | 'forgotSent';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // A path on this site only, so ?redirect can't send people elsewhere.
 export function safeRedirect(target: string | undefined): string | null {
@@ -88,12 +98,19 @@ export function safeRedirect(target: string | undefined): string | null {
             <h1 class="mt-1.5 text-[1.375rem] font-extrabold tracking-tight text-text">{{ 'login.forgot.title' | transloco }}</h1>
             <p class="mt-1 text-sm text-text-muted">{{ 'login.forgot.subtitle' | transloco }}</p>
             <form class="mt-5 flex flex-col gap-4" novalidate animate.enter="motion-drop-in" [class.motion-shake]="shake()" (animationend)="shake.set(false)" (submit)="requestReset($event)">
+              <div class="ui-segment text-xs" role="radiogroup" [attr.aria-label]="'login.forgot.channelLabel' | transloco">
+                <button type="button" role="radio" [attr.aria-checked]="forgotModel().channel === 'email'" (click)="setResetChannel('email')">{{ 'login.forgot.byEmail' | transloco }}</button>
+                <button type="button" role="radio" [attr.aria-checked]="forgotModel().channel === 'telegram'" (click)="setResetChannel('telegram')">{{ 'login.forgot.byTelegram' | transloco }}</button>
+              </div>
               <label class="block">
-                <span class="ui-label">{{ 'login.email' | transloco }}</span>
+                <span class="ui-label">{{ (forgotModel().channel === 'email' ? 'login.email' : 'login.identifierLabel') | transloco }}</span>
                 <span class="ui-input-icon">
                   <span class="icon-[heroicons--envelope]" aria-hidden="true"></span>
-                  <input class="ui-input" type="email" autocomplete="email" placeholder="you@example.com" [formField]="forgotForm.identifier" />
+                  <input class="ui-input" [type]="forgotModel().channel === 'email' ? 'email' : 'text'" autocomplete="username" placeholder="you@example.com" [formField]="forgotForm.identifier" />
                 </span>
+                @if (forgotModel().channel === 'telegram') {
+                  <span class="ui-hint mt-1 block">{{ 'login.forgot.telegramHint' | transloco }}</span>
+                }
                 <app-field-errors [state]="forgotForm.identifier()" />
               </label>
               @if (error(); as key) {
@@ -106,48 +123,37 @@ export function safeRedirect(target: string | undefined): string | null {
                 {{ 'login.forgot.submit' | transloco }}
               </button>
             </form>
-            <p class="ui-banner ui-banner-info mt-5 items-start text-[0.8rem]">
-              <span class="icon-[heroicons--information-circle]" aria-hidden="true"></span>{{ 'login.forgot.phoneHint' | transloco }}
-            </p>
-          } @else if (mode() === 'reset' && pending(); as verification) {
-            <button type="button" class="ui-icon-btn -ml-2 self-start" [attr.aria-label]="'login.verify.back' | transloco" (click)="mode.set('forgot')">
+          } @else if (mode() === 'forgotSent' && resetSentTo(); as sent) {
+            <button type="button" class="ui-icon-btn -ml-2 self-start" [attr.aria-label]="'login.verify.back' | transloco" (click)="backToLogin()">
               <span class="icon-[heroicons--chevron-left] size-5" aria-hidden="true"></span>
             </button>
-            <h1 class="mt-1.5 text-[1.375rem] font-extrabold tracking-tight text-text">{{ 'login.reset.title' | transloco }}</h1>
-            <p class="mt-1 text-sm text-text-muted">{{ 'login.verify.subtitleEmailLead' | transloco }} <b class="text-text">{{ verification.identifier }}</b></p>
-            <form class="mt-5 flex flex-col gap-4" novalidate (submit)="reset($event)">
-              <div>
-                <span class="ui-label">{{ 'login.verify.codeLabel' | transloco }}</span>
-                <app-code-input #code [formField]="resetForm.code" [label]="'login.verify.codeLabel' | transloco" [refused]="error() === 'login.verify.invalidCode'" />
-                <app-field-errors [state]="resetForm.code()" />
-              </div>
-              <label class="block">
-                <span class="ui-label">{{ 'login.reset.passwordLabel' | transloco }}</span>
-                <span class="ui-input-icon">
-                  <span class="icon-[heroicons--lock-closed]" aria-hidden="true"></span>
-                  <input class="ui-input pr-10" [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" [formField]="resetForm.password" />
-                  <ng-container *ngTemplateOutlet="eye" />
-                </span>
-                <app-field-errors [state]="resetForm.password()" />
-              </label>
-              @if (error(); as key) {
-                <p class="ui-error" role="alert"><span class="icon-[heroicons--exclamation-circle] size-4 shrink-0" aria-hidden="true"></span>{{ key | transloco }}</p>
+            <span class="mt-3 flex size-12 items-center justify-center rounded-full bg-brand-600/10 text-brand-700 dark:text-brand-300" animate.enter="motion-roll-in" aria-hidden="true">
+              @if (sent.channel === 'email') {
+                <span class="icon-[heroicons--envelope] size-6"></span>
+              } @else {
+                <span class="icon-[heroicons--paper-airplane] size-6"></span>
               }
-              <button type="submit" class="ui-btn-primary ui-btn-lg" [disabled]="resetForm().submitting() || resetModel().code.length < 6" [attr.aria-busy]="resetForm().submitting()">
-                @if (resetForm().submitting()) {
-                  <span class="icon-[heroicons--arrow-path] size-4 animate-spin" aria-hidden="true"></span>
-                }
-                {{ 'login.reset.submit' | transloco }}
-              </button>
-            </form>
-            <p class="mt-4 flex items-center justify-center gap-1.5 text-center text-[0.8rem] text-text-muted">
+            </span>
+            <h1 class="mt-3 text-[1.375rem] font-extrabold tracking-tight text-text">{{ (sent.channel === 'email' ? 'login.forgot.sentTitleEmail' : 'login.forgot.sentTitleTelegram') | transloco }}</h1>
+            <p class="mt-1 text-sm text-text-muted" role="status">{{ (sent.channel === 'email' ? 'login.forgot.sentEmail' : 'login.forgot.sentTelegram') | transloco: { identifier: sent.identifier } }}</p>
+            <p class="mt-2 text-sm text-text-muted">{{ 'login.forgot.sentValidity' | transloco }}</p>
+            <p class="mt-5 flex items-center justify-center gap-1.5 text-center text-[0.8rem] text-text-muted">
               @if (cooldown() > 0) {
-                <span class="icon-[heroicons--clock] size-4" aria-hidden="true"></span>{{ 'login.verify.resendIn' | transloco }}
+                <span class="icon-[heroicons--clock] size-4" aria-hidden="true"></span>{{ 'login.forgot.resendIn' | transloco }}
                 <b class="text-text tabular-nums">{{ cooldownLabel() }}</b>
               } @else {
-                <button type="button" class="font-medium text-brand-700 hover:underline dark:text-brand-300" (click)="resendReset()">{{ 'login.verify.resend' | transloco }}</button>
+                <button type="button" class="font-medium text-brand-700 hover:underline dark:text-brand-300" (click)="resendReset()">{{ 'login.forgot.resend' | transloco }}</button>
               }
             </p>
+            <button type="button" class="ui-btn-soft mt-3" (click)="switchMode('forgot')">{{ 'login.forgot.otherChannel' | transloco }}</button>
+            @if (error(); as key) {
+              <p class="ui-error mt-4 justify-center" role="alert"><span class="icon-[heroicons--exclamation-circle] size-4" aria-hidden="true"></span>{{ key | transloco }}</p>
+            }
+            @if (sent.channel === 'email') {
+              <p class="ui-banner ui-banner-info mt-5 items-start text-[0.8rem]">
+                <span class="icon-[heroicons--information-circle]" aria-hidden="true"></span>{{ 'login.forgot.noEmail' | transloco }}
+              </p>
+            }
           } @else if (mode() === 'verify' && pending(); as verification) {
             <button type="button" class="ui-icon-btn -ml-2 self-start" [attr.aria-label]="'login.verify.back' | transloco" (click)="backToLogin()">
               <span class="icon-[heroicons--chevron-left] size-5" aria-hidden="true"></span>
@@ -413,41 +419,27 @@ export class LoginPage {
     );
   });
 
-  private readonly forgotModel = signal({ identifier: '' });
+  protected readonly forgotModel = signal<{ identifier: string; channel: ResetChannel }>({
+    identifier: '',
+    channel: 'email',
+  });
   protected readonly forgotForm = form(this.forgotModel, (path) => {
-    validateStandardSchema(
-      path,
-      z.object({
-        identifier: z
-          .string()
-          .check(
-            z.trim(),
-            z.regex(
-              /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              this.transloco.translate('login.forgot.invalidEmail'),
-            ),
-          ),
-      }),
-    );
-  });
-
-  protected readonly resetModel = signal({ code: '', password: '' });
-  protected readonly resetForm = form(this.resetModel, (path) => {
     const t = (key: string): string => this.transloco.translate(key);
-    maxLength(path.code, 6);
     validateStandardSchema(
-      path,
-      z.object({
-        code: z.string().check(z.regex(/^\d{6}$/, t('login.verify.invalidFormat'))),
-        password: z
-          .string()
-          .check(
-            z.minLength(8, t('login.passwordTooShort')),
-            z.refine(passwordFitsBcrypt, t('login.passwordTooLong')),
-          ),
-      }),
+      path.identifier,
+      z.string().check(z.trim(), z.minLength(1, t('login.required')), z.maxLength(255)),
+    );
+    // By email: it has to be an email; to Telegram: an email or a phone.
+    validate(path.identifier, (field) =>
+      field.valueOf(path.channel) === 'email' && !EMAIL_PATTERN.test(field.value().trim())
+        ? { kind: 'email', message: t('login.forgot.invalidEmail') }
+        : undefined,
     );
   });
+  // Where the last reset link went (shown on the "sent" screen).
+  protected readonly resetSentTo = signal<{ identifier: string; channel: ResetChannel } | null>(
+    null,
+  );
 
   constructor() {
     afterNextRender(() => void this.signInInsideTelegram());
@@ -464,70 +456,59 @@ export class LoginPage {
     this.error.set(null);
   }
 
-  // "Forgot password?": the email typed so far, if it is one.
+  // "Forgot password?": what was typed so far; a phone gets its link in
+  // Telegram.
   protected openForgot(): void {
     const typed = this.loginModel().identifier.trim();
-    this.forgotModel.set({ identifier: typed.includes('@') ? typed : '' });
+    this.forgotModel.set({
+      identifier: typed,
+      channel: !typed || typed.includes('@') ? 'email' : 'telegram',
+    });
     this.switchMode('forgot');
+  }
+
+  protected setResetChannel(channel: ResetChannel): void {
+    this.forgotModel.update((model) => ({ ...model, channel }));
+    this.error.set(null);
   }
 
   protected async requestReset(event: Event): Promise<void> {
     event.preventDefault();
     this.error.set(null);
     const valid = await submit(this.forgotForm, async () => {
-      try {
-        const verification = await this.auth.forgotPassword(this.forgotModel().identifier.trim());
-        this.pending.set(verification);
-        this.resetModel.set({ code: '', password: '' });
-        this.mode.set('reset');
-        this.startCooldown();
-        this.notify.info({ title: 'notify.codeSent' });
-        setTimeout(() => this.codeInput()?.focus());
-      } catch (error) {
-        const status = error instanceof HttpErrorResponse ? error.status : 0;
-        this.error.set(
-          status === 429
-            ? 'login.forgot.tooOften'
-            : status === 422 || status === 400
-              ? 'login.forgot.invalidEmail'
-              : 'login.verify.sendError',
-        );
-        this.shake.set(true);
-      }
+      const { identifier, channel } = this.forgotModel();
+      if (await this.sendResetLink(identifier.trim(), channel)) this.mode.set('forgotSent');
+      else this.shake.set(true);
       return undefined;
     });
     if (!valid) this.shake.set(true);
   }
 
   protected async resendReset(): Promise<void> {
-    const verification = this.pending();
-    if (!verification || this.cooldown() > 0) return;
+    const sent = this.resetSentTo();
+    if (!sent || this.cooldown() > 0) return;
     this.error.set(null);
-    try {
-      this.pending.set(await this.auth.forgotPassword(verification.identifier));
-      this.startCooldown();
-      this.notify.info({ title: 'notify.codeSent' });
-    } catch {
-      this.error.set('login.verify.resendError');
-    }
+    await this.sendResetLink(sent.identifier, sent.channel);
   }
 
-  protected async reset(event: Event): Promise<void> {
-    event.preventDefault();
-    const verification = this.pending();
-    if (!verification) return;
-    this.error.set(null);
-    await submit(this.resetForm, async () => {
-      const { code, password } = this.resetModel();
-      try {
-        await this.auth.resetPassword({ identifier: verification.identifier, code, password });
-        this.notify.success({ title: 'login.reset.done' });
-        await this.leave();
-      } catch (error) {
-        this.error.set(this.isRejected(error) ? 'login.verify.invalidCode' : 'login.networkError');
-      }
-      return undefined;
-    });
+  // False (with the error set) when the request was refused or failed.
+  private async sendResetLink(identifier: string, channel: ResetChannel): Promise<boolean> {
+    try {
+      await this.auth.forgotPassword({ identifier, channel, lang: this.lang() });
+      this.resetSentTo.set({ identifier, channel });
+      this.startCooldown();
+      return true;
+    } catch (error) {
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      this.error.set(
+        status === 429
+          ? 'login.forgot.tooOften'
+          : status === 422 || status === 400
+            ? 'login.forgot.invalidEmail'
+            : 'login.forgot.sendError',
+      );
+      return false;
+    }
   }
 
   protected async signIn(event: Event): Promise<void> {
@@ -617,6 +598,7 @@ export class LoginPage {
   protected backToLogin(): void {
     this.stopTimers();
     this.pending.set(null);
+    this.resetSentTo.set(null);
     this.pendingPassword = '';
     this.error.set(null);
     this.mode.set('login');

@@ -454,17 +454,36 @@
     "forgot": {
       "link": "Passwort vergessen?",
       "title": "Passwort zurücksetzen",
-      "subtitle": "Wir senden dir einen Code per E-Mail, um ein neues Passwort festzulegen.",
-      "submit": "Code senden",
-      "phoneHint": "Mit Telefon registriert? Melde dich über Telegram an – ohne Passwort.",
+      "subtitle": "Wir senden dir einen Link für ein neues Passwort – per E-Mail oder an Telegram, wenn es mit deinem Konto verknüpft ist.",
+      "channelLabel": "Wohin der Link gehen soll",
+      "byEmail": "Per E-Mail",
+      "byTelegram": "An Telegram",
+      "telegramHint": "Der Link kommt in deinen Chat mit dem Ermekten-Bot, wenn dein Telegram mit dem Konto verknüpft ist.",
+      "submit": "Link senden",
       "invalidEmail": "Gib die E-Mail ein, mit der du dich registriert hast",
-      "tooOften": "Ein Code wurde gerade gesendet – warte eine Minute"
+      "tooOften": "Ein Link wurde gerade gesendet – warte eine Minute",
+      "sendError": "Der Link konnte nicht gesendet werden. Versuche es später erneut",
+      "sentTitleEmail": "Prüfe deine E-Mails",
+      "sentTitleTelegram": "Prüfe Telegram",
+      "sentEmail": "Wenn es ein Konto mit {identifier} gibt, haben wir dorthin einen Link für ein neues Passwort gesendet.",
+      "sentTelegram": "Wenn mit dem Konto {identifier} Telegram verknüpft ist, kommt der Link für ein neues Passwort in deinen Chat mit dem Bot.",
+      "sentValidity": "Der Link ist 30 Minuten gültig und funktioniert nur einmal.",
+      "noEmail": "Keine E-Mail erhalten? Sieh im Spam-Ordner nach oder versuche es über Telegram.",
+      "resend": "Erneut senden",
+      "resendIn": "Erneut senden in",
+      "otherChannel": "Anderen Weg wählen"
     },
     "reset": {
       "title": "Neues Passwort",
+      "subtitle": "Lege ein neues Passwort fest. Danach melden wir dich auf allen anderen Geräten ab.",
       "passwordLabel": "Neues Passwort",
+      "confirmLabel": "Passwort wiederholen",
+      "mismatch": "Die Passwörter stimmen nicht überein",
       "submit": "Speichern und anmelden",
-      "done": "Passwort geändert"
+      "done": "Passwort geändert",
+      "invalidTitle": "Dieser Link funktioniert nicht",
+      "invalidText": "Der Link ist abgelaufen oder wurde bereits verwendet. Fordere einen neuen an – er ist 30 Minuten gültig.",
+      "requestNew": "Neuen Link anfordern"
     }
   },
   "profile": {

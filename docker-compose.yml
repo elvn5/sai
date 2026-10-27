@@ -29,6 +29,8 @@ services:
       BOT_TOKEN: ${BOT_TOKEN}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-Ermekten <onboarding@resend.dev>}
+      # Links in password reset messages.
+      SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-parcel_bot}

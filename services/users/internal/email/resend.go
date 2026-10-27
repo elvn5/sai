@@ -1,4 +1,5 @@
-// Package email sends verification codes through Resend.
+// Package email sends verification codes and password reset links through
+// Resend.
 package email
 
 import (
@@ -10,6 +11,9 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/elvn5/sai/services/pkg/telegram"
+	"github.com/elvn5/sai/services/users/internal/resetmsg"
 )
 
 // ErrNotConfigured: RESEND_API_KEY is missing.
@@ -17,6 +21,8 @@ var ErrNotConfigured = errors.New("email service is not configured")
 
 type Sender interface {
 	SendVerificationCode(ctx context.Context, to, code string) error
+	// SendPasswordReset emails the link for setting a new password, in l.
+	SendPasswordReset(ctx context.Context, to string, l telegram.Lang, link string) error
 }
 
 type Resend struct {
@@ -29,14 +35,24 @@ func NewResend(apiKey, from, baseURL string) *Resend {
 }
 
 func (r *Resend) SendVerificationCode(ctx context.Context, to, code string) error {
+	return r.send(ctx, to, "Код подтверждения Ermekten",
+		"<p>Ваш код подтверждения: <strong>"+code+"</strong></p><p>Код действителен 10 минут.</p>")
+}
+
+func (r *Resend) SendPasswordReset(ctx context.Context, to string, l telegram.Lang, link string) error {
+	subject, body := resetmsg.Email(l, link)
+	return r.send(ctx, to, subject, body)
+}
+
+func (r *Resend) send(ctx context.Context, to, subject, html string) error {
 	if r.APIKey == "" {
 		return ErrNotConfigured
 	}
 	body, err := json.Marshal(map[string]any{
 		"from":    r.From,
 		"to":      []string{to},
-		"subject": "Код подтверждения Ermekten",
-		"html":    "<p>Ваш код подтверждения: <strong>" + code + "</strong></p><p>Код действителен 10 минут.</p>",
+		"subject": subject,
+		"html":    html,
 	})
 	if err != nil {
 		return err

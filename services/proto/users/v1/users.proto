@@ -58,6 +58,9 @@ message User {
   optional string username = 3;
   optional string avatar_url = 4;
   PartnerStatus partner_status = 5;
+  // Sessions issued before this (unix seconds) are no longer valid: the
+  // password was reset then. 0 when there's no such cut-off.
+  int64 sessions_valid_after = 6;
 }
 
 message GetUserRequest {

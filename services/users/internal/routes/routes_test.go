@@ -20,8 +20,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/elvn5/sai/services/pkg/auth"
+	"github.com/elvn5/sai/services/pkg/telegram"
 	"github.com/elvn5/sai/services/users/internal/handlers"
 	"github.com/elvn5/sai/services/users/internal/routes"
 	"github.com/elvn5/sai/services/users/internal/session"
@@ -37,7 +39,37 @@ const (
 type fakeEmail struct {
 	mu    sync.Mutex
 	codes map[string]string
-	fail  bool
+	// The last reset link emailed to each address, with its language.
+	resets map[string]string
+	fail   bool
+}
+
+func (f *fakeEmail) SendPasswordReset(_ context.Context, to string, l telegram.Lang, link string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.fail {
+		return context.DeadlineExceeded
+	}
+	f.resets[to] = string(l) + " " + link
+	return nil
+}
+
+type sentMessage struct {
+	chatID int64
+	text   string
+	button telegram.Button
+}
+
+type fakeTelegram struct {
+	mu   sync.Mutex
+	sent []sentMessage
+}
+
+func (f *fakeTelegram) SendMessage(_ context.Context, chatID int64, text string, button *telegram.Button) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.sent = append(f.sent, sentMessage{chatID, text, *button})
+	return nil
 }
 
 func (f *fakeEmail) SendVerificationCode(_ context.Context, to, code string) error {
@@ -54,9 +86,13 @@ type env struct {
 	t      *testing.T
 	router *gin.Engine
 	email  *fakeEmail
+	tg     *fakeTelegram
 	clock  *time.Time
 	store  *store.Store
+	db     *pgxpool.Pool
 }
+
+func (e *env) storeDB() *pgxpool.Pool { return e.db }
 
 func setup(t *testing.T) *env {
 	t.Helper()
@@ -66,12 +102,17 @@ func setup(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	now := time.Now()
-	e := &env{t: t, email: &fakeEmail{codes: map[string]string{}}, clock: &now, store: store.New(db)}
+	e := &env{
+		t: t, email: &fakeEmail{codes: map[string]string{}, resets: map[string]string{}}, tg: &fakeTelegram{},
+		clock: &now, store: store.New(db), db: db,
+	}
 	gin.SetMode(gin.TestMode)
 	e.router = routes.Setup(handlers.Deps{
 		Store: e.store, Signer: signer, Cookies: session.NewCookies(true), Email: e.email,
+		Telegram: e.tg, SiteURL: "https://ermekten.test",
 		AdminPassword: "admin-pass", BotToken: botToken, Log: slog.New(slog.DiscardHandler),
-		Now: func() time.Time { return *e.clock },
+		Now:        func() time.Time { return *e.clock },
+		Background: func(work func()) { work() },
 	}, secret)
 	return e
 }
@@ -376,93 +417,5 @@ func TestSupport(t *testing.T) {
 	}
 	if r := e.do("PUT", "/support", `{"message":"","email":"bad"}`, admin); r.status != 400 || r.body != `{"formErrors":[],"fieldErrors":{"email":["Invalid email"],"message":["String must contain at least 1 character(s)"]}}` {
 		t.Errorf("validation: %d %s", r.status, r.body)
-	}
-}
-
-func TestPasswordReset(t *testing.T) {
-	e := setup(t)
-	e.do("POST", "/auth/user/register", `{"email":"aida@example.kg","password":"old-secret"}`)
-	e.do("POST", "/auth/user/verify", `{"identifier":"aida@example.kg","code":"`+e.email.codes["aida@example.kg"]+`"}`)
-	delete(e.email.codes, "aida@example.kg")
-
-	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"+996700000000"}`); r.status != 422 {
-		t.Errorf("phone: %d %s", r.status, r.body)
-	}
-	// An unknown email looks the same as a known one, and gets no mail.
-	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"nobody@example.kg"}`); r.status != 200 || len(e.email.codes) != 0 {
-		t.Errorf("unknown: %d %s %v", r.status, r.body, e.email.codes)
-	}
-	*e.clock = e.clock.Add(2 * time.Minute)
-	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"aida@example.kg"}`); r.status != 200 ||
-		r.body != `{"verification":{"identifier":"aida@example.kg","method":"email"}}` {
-		t.Fatalf("forgot: %d %s", r.status, r.body)
-	}
-	code := e.email.codes["aida@example.kg"]
-	wrong := "000000"
-	if code == wrong {
-		wrong = "111111"
-	}
-	if r := e.do("POST", "/auth/user/password/reset", `{"identifier":"aida@example.kg","code":"`+wrong+`","password":"new-secret"}`); r.status != 401 {
-		t.Errorf("wrong code: %d %s", r.status, r.body)
-	}
-	if r := e.do("POST", "/auth/user/password/reset", `{"identifier":"aida@example.kg","code":"`+code+`","password":"short"}`); r.status != 400 {
-		t.Errorf("short password: %d %s", r.status, r.body)
-	}
-	r := e.do("POST", "/auth/user/password/reset", `{"identifier":"aida@example.kg","code":"`+code+`","password":"new-secret"}`)
-	if r.status != 200 || len(r.setCookie) != 1 {
-		t.Fatalf("reset: %d %s", r.status, r.body)
-	}
-	if r := e.do("POST", "/auth/user/login", `{"identifier":"aida@example.kg","password":"old-secret"}`); r.status != 401 {
-		t.Errorf("old password still works: %d", r.status)
-	}
-	if r := e.do("POST", "/auth/user/login", `{"identifier":"aida@example.kg","password":"new-secret"}`); r.status != 200 || len(r.setCookie) != 1 {
-		t.Errorf("new password: %d %s", r.status, r.body)
-	}
-	if r := e.do("POST", "/auth/user/password/reset", `{"identifier":"aida@example.kg","code":"`+code+`","password":"another-one"}`); r.status != 400 {
-		t.Errorf("code reused: %d %s", r.status, r.body)
-	}
-}
-
-// The reset code can't be brute-forced, requested in a loop or used late.
-func TestPasswordResetLimits(t *testing.T) {
-	e := setup(t)
-	e.do("POST", "/auth/user/register", `{"email":"bek@example.kg","password":"old-secret"}`)
-	e.do("POST", "/auth/user/verify", `{"identifier":"bek@example.kg","code":"`+e.email.codes["bek@example.kg"]+`"}`)
-	*e.clock = e.clock.Add(2 * time.Minute)
-
-	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"bek@example.kg"}`); r.status != 200 {
-		t.Fatalf("forgot: %d %s", r.status, r.body)
-	}
-	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"bek@example.kg"}`); r.status != 429 {
-		t.Errorf("resend within the cooldown: %d %s", r.status, r.body)
-	}
-	code := e.email.codes["bek@example.kg"]
-	wrong := "000000"
-	if code == wrong {
-		wrong = "111111"
-	}
-	reset := func(c string) int {
-		return e.do("POST", "/auth/user/password/reset", `{"identifier":"bek@example.kg","code":"`+c+`","password":"new-secret"}`).status
-	}
-	for range 5 {
-		if status := reset(wrong); status != 401 {
-			t.Fatalf("wrong code: %d", status)
-		}
-	}
-	// Five misses lock the code: even the right one fails now.
-	if status := reset(code); status != 400 {
-		t.Errorf("right code after five misses: %d", status)
-	}
-	if r := e.do("POST", "/auth/user/login", `{"identifier":"bek@example.kg","password":"old-secret"}`); r.status != 200 {
-		t.Errorf("password changed despite the lock: %d", r.status)
-	}
-
-	// A new code expires after ten minutes.
-	*e.clock = e.clock.Add(2 * time.Minute)
-	e.do("POST", "/auth/user/password/forgot", `{"identifier":"bek@example.kg"}`)
-	code = e.email.codes["bek@example.kg"]
-	*e.clock = e.clock.Add(11 * time.Minute)
-	if status := reset(code); status != 400 {
-		t.Errorf("expired code: %d", status)
 	}
 }

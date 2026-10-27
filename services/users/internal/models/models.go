@@ -27,8 +27,10 @@ type User struct {
 	VerificationAttempts      int
 	PartnerStatus             string
 	PartnerRequestedAt        *time.Time
-	CreatedAt                 time.Time
-	UpdatedAt                 time.Time
+	// Sessions issued before this are refused (the password was reset).
+	SessionsValidAfter *time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 // PublicUser is what the site sees about the signed-in user.

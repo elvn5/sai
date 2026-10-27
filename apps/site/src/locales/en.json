@@ -454,17 +454,36 @@
     "forgot": {
       "link": "Forgot password?",
       "title": "Reset your password",
-      "subtitle": "We'll email you a code to set a new password.",
-      "submit": "Send code",
-      "phoneHint": "Signed up with a phone? Sign in with Telegram — no password needed.",
+      "subtitle": "We'll send you a link to set a new password — by email, or to Telegram if it's linked to your account.",
+      "channelLabel": "Where to send the link",
+      "byEmail": "By email",
+      "byTelegram": "To Telegram",
+      "telegramHint": "The link comes to your chat with the Ermekten bot if your Telegram is linked to the account.",
+      "submit": "Send link",
       "invalidEmail": "Enter the email you signed up with",
-      "tooOften": "A code was just sent — wait a minute"
+      "tooOften": "A link was just sent — wait a minute",
+      "sendError": "Couldn't send the link. Try again later",
+      "sentTitleEmail": "Check your email",
+      "sentTitleTelegram": "Check Telegram",
+      "sentEmail": "If there's an account with {identifier}, we've sent it a link to set a new password.",
+      "sentTelegram": "If Telegram is linked to the account {identifier}, a link to set a new password will come to your chat with the bot.",
+      "sentValidity": "The link is valid for 30 minutes and works once.",
+      "noEmail": "No email? Check your spam folder or try Telegram.",
+      "resend": "Send again",
+      "resendIn": "Send again in",
+      "otherChannel": "Choose another way"
     },
     "reset": {
       "title": "New password",
+      "subtitle": "Choose a new password. Once it's saved, we'll sign you out on every other device.",
       "passwordLabel": "New password",
+      "confirmLabel": "Repeat the password",
+      "mismatch": "The passwords don't match",
       "submit": "Save and sign in",
-      "done": "Password changed"
+      "done": "Password changed",
+      "invalidTitle": "This link doesn't work",
+      "invalidText": "The link has expired or was already used. Ask for a new one — it's valid for 30 minutes.",
+      "requestNew": "Get a new link"
     }
   },
   "profile": {

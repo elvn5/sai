@@ -6,6 +6,7 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -45,14 +46,25 @@ func NewVerifier(secret string) *Verifier {
 
 // UserID validates a user session token and returns the user's id.
 func (v *Verifier) UserID(token string) (string, error) {
+	userID, _, err := v.UserSession(token)
+	return userID, err
+}
+
+// UserSession validates a user session token and returns the user's id
+// and when the token was issued (zero without an iat claim), so a session
+// from before a password reset can be refused.
+func (v *Verifier) UserSession(token string) (userID string, issuedAt time.Time, err error) {
 	claims, err := v.parse(token, RoleUser)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	if claims.Subject == "" {
-		return "", ErrInvalidSession
+		return "", time.Time{}, ErrInvalidSession
 	}
-	return claims.Subject, nil
+	if claims.IssuedAt != nil {
+		issuedAt = claims.IssuedAt.Time
+	}
+	return claims.Subject, issuedAt, nil
 }
 
 // Admin validates an admin session token.

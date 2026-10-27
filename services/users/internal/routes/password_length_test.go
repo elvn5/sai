@@ -3,7 +3,6 @@ package routes_test
 import (
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestPasswordByteLimit(t *testing.T) {
@@ -30,12 +29,9 @@ func TestPasswordByteLimit(t *testing.T) {
 				t.Fatalf("72-byte registration: %d %s", r.status, r.body)
 			}
 			e.do("POST", "/auth/user/verify", `{"identifier":"length@example.kg","code":"`+e.email.codes["length@example.kg"]+`"}`)
-			*e.clock = e.clock.Add(2 * time.Minute)
 			e.do("POST", "/auth/user/password/forgot", `{"identifier":"length@example.kg"}`)
-			code := e.email.codes["length@example.kg"]
-			reset := func(password string) response {
-				return e.do("POST", "/auth/user/password/reset", `{"identifier":"length@example.kg","code":"`+code+`","password":"`+password+`"}`)
-			}
+			token := e.resetToken("length@example.kg")
+			reset := func(password string) response { return e.resetWith(token, password) }
 			if r := reset(long); r.status != 400 || !strings.Contains(r.body, `"password"`) {
 				t.Fatalf("long reset: %d %s", r.status, r.body)
 			}

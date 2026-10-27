@@ -62,7 +62,11 @@ func (c *Client) LookupUser(ctx context.Context, id string) (middleware.SessionU
 	if err != nil {
 		return middleware.SessionUser{}, fmt.Errorf("get user: %w", err)
 	}
-	return middleware.SessionUser{ID: res.GetUser().GetId(), PartnerStatus: partnerStatuses[res.GetUser().GetPartnerStatus()]}, nil
+	user := middleware.SessionUser{ID: res.GetUser().GetId(), PartnerStatus: partnerStatuses[res.GetUser().GetPartnerStatus()]}
+	if after := res.GetUser().GetSessionsValidAfter(); after > 0 {
+		user.SessionsValidAfter = time.Unix(after, 0)
+	}
+	return user, nil
 }
 
 // Authors returns the public profiles for ids; unknown ids are absent.

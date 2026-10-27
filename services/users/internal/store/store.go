@@ -30,14 +30,14 @@ func New(db *pgxpool.Pool) *Store {
 const userColumns = `id::text, telegram_id::text, email, password_hash, username, first_name, last_name,
 	phone, avatar_url, is_verified, verification_code_hash, verification_code_expires_at,
 	verification_code_sent_at, verification_attempts, partner_status, partner_requested_at,
-	created_at, updated_at`
+	sessions_valid_after, created_at, updated_at`
 
 func scanUser(row pgx.Row) (models.User, error) {
 	var u models.User
 	err := row.Scan(&u.ID, &u.TelegramID, &u.Email, &u.PasswordHash, &u.Username, &u.FirstName,
 		&u.LastName, &u.Phone, &u.AvatarURL, &u.IsVerified, &u.VerificationCodeHash,
 		&u.VerificationCodeExpiresAt, &u.VerificationCodeSentAt, &u.VerificationAttempts,
-		&u.PartnerStatus, &u.PartnerRequestedAt, &u.CreatedAt, &u.UpdatedAt)
+		&u.PartnerStatus, &u.PartnerRequestedAt, &u.SessionsValidAfter, &u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return u, ErrNotFound
 	}
@@ -129,12 +129,6 @@ func (s *Store) Save(ctx context.Context, u models.User) (models.User, error) {
 		u.VerificationCodeExpiresAt, u.VerificationCodeSentAt, u.VerificationAttempts, u.PartnerStatus,
 		u.PartnerRequestedAt))
 	return saved, duplicate(err)
-}
-
-// SetPassword replaces the password hash.
-func (s *Store) SetPassword(ctx context.Context, id, hash string) error {
-	_, err := s.db.Exec(ctx, `UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1`, id, hash)
-	return err
 }
 
 func (s *Store) Delete(ctx context.Context, id string) error {

@@ -215,10 +215,14 @@ var partnerStatuses = map[string]usersv1.PartnerStatus{
 }
 
 func toProto(u models.User) *usersv1.User {
-	return &usersv1.User{
+	out := &usersv1.User{
 		Id: u.ID, FirstName: u.FirstName, Username: u.Username, AvatarUrl: u.AvatarURL,
 		PartnerStatus: partnerStatuses[u.PartnerStatus],
 	}
+	if u.SessionsValidAfter != nil {
+		out.SessionsValidAfter = u.SessionsValidAfter.Unix()
+	}
+	return out
 }
 
 func toAccount(u models.User) *usersv1.TelegramAccount {

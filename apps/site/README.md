@@ -18,7 +18,13 @@ replacing a track clears old markers. Automatic suggestions flag at least 20%
 grade over at least 100 m and require the author's review. The 3D viewer preserves
 metric height scale and builds a surrounding elevation mesh from Mapzen Terrarium
 (SRTM/GMTED2010, USGS). The route is sampled onto the mesh triangles; GPX data
-and the elevation profile remain unchanged. Colors indicate height, not snow.
+and the elevation profile remain unchanged. The default surface uses live Esri World Imagery tiles with Web Mercator UVs,
+visible provider attribution and a satellite/elevation toggle. At most 64 tiles
+are loaded with six concurrent requests into an in-memory atlas (up to 3072 px
+per side); imagery is never exported or archived. Textures are disposed on
+replacement. Imagery failures retain the elevation surface with retry. A dark
+casing under the bright route keeps it readable on snow, rock and forests.
+Elevation-mode colors indicate height, not snow.
 The viewer loads at most 16 tiles and a 192-cell-long mesh on demand. The fixed
 `/terrain/:z/:x/:y.png` proxy bounds coordinates, concurrency and memory, caches
 successful tiles and times out upstream requests. Failed loads retain the GPX-only

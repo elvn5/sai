@@ -37,7 +37,7 @@ export function terrainBounds(
   };
 }
 
-function tilePoint(lat: number, lon: number, zoom: number): [number, number] {
+export function tilePoint(lat: number, lon: number, zoom: number): [number, number] {
   const radians = (lat * Math.PI) / 180;
   return [
     ((lon + 180) / 360) * 2 ** zoom,

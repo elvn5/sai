@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { contextFromEnv } from '@/core/config/app-config';
 import { movedSectionRedirect, pausedSectionRedirect } from '@/server/paused-sections';
 import { SitemapCache, isSitemapType, renderIndex } from '@/server/sitemap';
+import { serveTerrain } from '@/server/terrain';
 import {
   AngularNodeAppEngine,
   createNodeRequestHandler,
@@ -30,6 +31,8 @@ app.disable('x-powered-by');
 // gzip HTML and assets (nginx may compress too; this keeps direct hits fast).
 app.use(compression());
 const angularApp = new AngularNodeAppEngine();
+
+app.get('/terrain/:z/:x/:y.png', serveTerrain);
 
 app.get('/healthz', (_req, res) => {
   res.json({ status: 'ok' });

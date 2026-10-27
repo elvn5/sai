@@ -16,10 +16,16 @@ and edit their own at `/trails/:slug/edit`. GPX imports feed the canvas, elevati
 profile and lazy Angular Three viewer. Markers reference track point indices;
 replacing a track clears old markers. Automatic suggestions flag at least 20%
 grade over at least 100 m and require the author's review. The 3D viewer preserves
-metric height scale and displays the track, not a terrain elevation mesh.
-Missing elevations are displayed at the track's minimum known elevation.
+metric height scale and builds a surrounding elevation mesh from Mapzen Terrarium
+(SRTM/GMTED2010, USGS). The route is sampled onto the mesh triangles; GPX data
+and the elevation profile remain unchanged. Colors indicate height, not snow.
+The viewer loads at most 16 tiles and a 192-cell-long mesh on demand. The fixed
+`/terrain/:z/:x/:y.png` proxy bounds coordinates, concurrency and memory, caches
+successful tiles and times out upstream requests. Failed loads retain the GPX-only
+view with an explicit message and retry. Without terrain, missing GPX elevations
+are displayed at the track's minimum known elevation.
 
-Deploy the trails service with migration `00006_trail_posts.sql` (applied on service
+Deploy the trails service with migration `00007_trail_posts.sql` (applied on service
 startup) for markers and PDF checklist URLs. The media service supports
 `?download=1` for attachment downloads, including when the API uses another origin.
 

@@ -26,6 +26,9 @@ export interface SitemapEntry {
   lastmod?: string | null;
   // One language only (its own slug), or every language (hreflang).
   lang?: Lang;
+  // With lang: every language the same path is published in, this one
+  // included (a blog post's translations share its slug), for hreflang.
+  translations?: Lang[];
 }
 
 interface Published {
@@ -45,6 +48,18 @@ async function perLanguage(getJson: GetJson, section: string): Promise<SitemapEn
   return lists.flatMap(({ lang, items }) =>
     items.map((item) => ({ path: `/${section}/${item.slug}`, lastmod: item.publishedAt, lang })),
   );
+}
+
+// Blog posts under the same slug are one article's translations.
+function withTranslations(entries: SitemapEntry[]): SitemapEntry[] {
+  const langs = new Map<string, Lang[]>();
+  for (const entry of entries) {
+    if (entry.lang) langs.set(entry.path, [...(langs.get(entry.path) ?? []), entry.lang]);
+  }
+  return entries.map((entry) => {
+    const translations = LANGS.filter((lang) => langs.get(entry.path)?.includes(lang));
+    return translations.length > 1 ? { ...entry, translations } : entry;
+  });
 }
 
 // Organizers' pages, one per partner running a published tour in any
@@ -72,8 +87,9 @@ export async function collectEntries(type: SitemapType, getJson: GetJson): Promi
         ...publishedLegalPaths().map((path) => ({ path, lang: DEFAULT_LANG })),
       ];
     case 'tours':
-    case 'blog':
       return perLanguage(getJson, type);
+    case 'blog':
+      return withTranslations(await perLanguage(getJson, type));
     case 'organizers':
       return organizers(getJson);
     case 'trails': {
@@ -115,7 +131,14 @@ export function renderUrlset(siteUrl: string, entries: SitemapEntry[]): string {
     const lastmod = lastmodTag(entry.lastmod);
     if (entry.lang) {
       const loc = `${siteUrl}${localizedPath(entry.lang, entry.path)}`;
-      return [`<url><loc>${escapeXml(loc)}</loc>${lastmod}</url>`];
+      const translations = entry.translations ?? [];
+      const links = translations.map((lang) =>
+        link(lang, `${siteUrl}${localizedPath(lang, entry.path)}`),
+      );
+      if (translations.includes(DEFAULT_LANG)) {
+        links.push(link('x-default', `${siteUrl}${localizedPath(DEFAULT_LANG, entry.path)}`));
+      }
+      return [`<url><loc>${escapeXml(loc)}</loc>${lastmod}${links.join('')}</url>`];
     }
     // Every language links to all of them (and itself), as Google asks.
     const alternates = [

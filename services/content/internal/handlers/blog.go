@@ -102,13 +102,26 @@ func (h *Blog) GetAdmin(c *gin.Context) {
 	respond.JSON(c, http.StatusOK, post)
 }
 
+// publishedPost is a post as its page reads it, with the locales the
+// article is published in (its own included), for hreflang.
+type publishedPost struct {
+	models.BlogPost
+	Translations []string `json:"translations"`
+}
+
 func (h *Blog) GetBySlug(c *gin.Context) {
-	post, err := h.Store.PublishedBlogPostBySlug(c.Request.Context(), c.Param("locale"), c.Param("slug"))
+	ctx := c.Request.Context()
+	post, err := h.Store.PublishedBlogPostBySlug(ctx, c.Param("locale"), c.Param("slug"))
 	if err != nil {
 		fail(c, h.Log, err, postNotFound)
 		return
 	}
-	respond.JSON(c, http.StatusOK, post)
+	locales, err := h.Store.PublishedBlogLocales(ctx, post.Slug)
+	if err != nil {
+		fail(c, h.Log, err, postNotFound)
+		return
+	}
+	respond.JSON(c, http.StatusOK, publishedPost{BlogPost: post, Translations: locales})
 }
 
 func (h *Blog) Create(c *gin.Context) {

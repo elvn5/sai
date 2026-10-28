@@ -64,6 +64,23 @@ describe('BlogPostPage', () => {
     );
   });
 
+  it('links the translations under the same slug with hreflang', async () => {
+    const { fixture, http } = await render();
+    http.expectOne('/blog/ru/son-kul').flush({ ...POST, translations: ['ru', 'en', 'de'] });
+    await fixture.whenStable();
+
+    const links = Array.from(
+      TestBed.inject(DOCUMENT).head.querySelectorAll('link[hreflang]'),
+      (link) => `${link.getAttribute('hreflang')} ${link.getAttribute('href')}`,
+    );
+    expect(links).toEqual([
+      'ru https://ermekten.com/blog/son-kul',
+      'en https://ermekten.com/en/blog/son-kul',
+      'de https://ermekten.com/de/blog/son-kul',
+      'x-default https://ermekten.com/blog/son-kul',
+    ]);
+  });
+
   it('answers 404 for an unknown slug', async () => {
     const response: ResponseInit = {};
     const { fixture, http } = await render(response);

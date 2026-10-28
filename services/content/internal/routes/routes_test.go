@@ -233,6 +233,17 @@ func TestBlogPublishingLifecycle(t *testing.T) {
 	if status, _ := c.do("PUT", "/blog/"+id, `{"difficulty":"extreme"}`, admin); status != 400 {
 		t.Errorf("unknown difficulty: %d", status)
 	}
+
+	// Posts under the same slug are one article's translations: the page
+	// lists the published ones, in the site's order, for hreflang.
+	if _, body := c.do("GET", "/blog/ru/first", ""); !strings.Contains(body, `"translations":["ru"]`) {
+		t.Errorf("translations, one locale: %s", body)
+	}
+	c.do("POST", "/blog", `{"locale":"en","slug":"first","title":"First EN","content":"x","isPublished":true}`, admin)
+	c.do("POST", "/blog", `{"locale":"de","slug":"first","title":"Entwurf","content":"x"}`, admin)
+	if _, body := c.do("GET", "/blog/en/first", ""); !strings.Contains(body, `"translations":["ru","en"]`) {
+		t.Errorf("translations without the draft: %s", body)
+	}
 	if status, _ := c.do("PUT", "/blog/"+id, `{"season":"monsoon"}`, admin); status != 400 {
 		t.Errorf("unknown season: %d", status)
 	}

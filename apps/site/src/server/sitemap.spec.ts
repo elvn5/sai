@@ -35,6 +35,30 @@ describe('sitemap', () => {
     expect(xml).not.toContain('lastmod');
   });
 
+  it('links a blog post to its translations under the same slug', async () => {
+    const getJson: GetJson = async (path) =>
+      path.endsWith('=ru') || path.endsWith('=en')
+        ? [{ slug: 'winter', publishedAt: null }]
+        : path.endsWith('=de')
+          ? [{ slug: 'nur-deutsch', publishedAt: null }]
+          : [];
+    const posts = await collectEntries('blog', getJson);
+    expect(posts).toContainEqual({
+      path: '/blog/winter',
+      lastmod: null,
+      lang: 'en',
+      translations: ['ru', 'en'],
+    });
+    expect(posts).toContainEqual({ path: '/blog/nur-deutsch', lastmod: null, lang: 'de' });
+    const xml = renderUrlset(SITE, posts);
+    expect(xml.match(/<url>/g)).toHaveLength(3);
+    expect(xml).toContain(
+      '<url><loc>https://ermekten.com/en/blog/winter</loc><xhtml:link rel="alternate" hreflang="ru" href="https://ermekten.com/blog/winter"/><xhtml:link rel="alternate" hreflang="en" href="https://ermekten.com/en/blog/winter"/><xhtml:link rel="alternate" hreflang="x-default" href="https://ermekten.com/blog/winter"/></url>',
+    );
+    expect(xml).not.toContain('hreflang="ky"');
+    expect(xml).toContain('<url><loc>https://ermekten.com/de/blog/nur-deutsch</loc></url>');
+  });
+
   it('asks for tours in each language', async () => {
     const getJson: GetJson = async (path) => [
       { slug: `tour-${path.split('=')[1]}`, publishedAt: null },

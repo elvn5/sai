@@ -1,6 +1,7 @@
 import { type BlogPost } from '@/core/api/types';
 import { APP_CONFIG } from '@/core/config/app-config';
 import { injectLang } from '@/core/i18n/current-lang';
+import { type Lang, isLang } from '@/core/i18n/langs';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { loaded } from '@/core/lib/resource';
 import { article } from '@/core/seo/json-ld';
@@ -14,8 +15,18 @@ import { HttpErrorResponse, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
-// One blog post. Posts are written per language, each with its own slug,
-// so the page has no hreflang alternates.
+// The post's path in each language it is published in; null (no hreflang)
+// when it exists in its own language only.
+export function postAlternates(
+  path: string,
+  translations: string[] | undefined,
+): Partial<Record<Lang, string>> | null {
+  const langs = (translations ?? []).filter(isLang);
+  return langs.length > 1 ? Object.fromEntries(langs.map((lang) => [lang, path])) : null;
+}
+
+// One blog post. Posts are written per language; those under the same slug
+// are one article's translations, linked to each other with hreflang.
 @Component({
   selector: 'app-blog-post-page',
   imports: [LoadError, NgOptimizedImage, NotFoundPage, PostBadges, SiteLink, TranslocoPipe],
@@ -79,7 +90,7 @@ export class BlogPostPage {
         description,
         image,
         type: 'article',
-        alternates: null,
+        alternates: postAlternates(path, item.translations),
         jsonLd: [
           article({
             type: 'BlogPosting',

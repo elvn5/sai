@@ -72,6 +72,9 @@ export interface BlogPost {
   // The partner who wrote it; null for posts from the editorial team.
   userId: string | null;
   updatedAt: string;
+  // The locales the article is published in, its own included: posts under
+  // the same slug are its translations. Only on GET /blog/:locale/:slug.
+  translations?: string[];
 }
 
 export enum GuideDifficulty {

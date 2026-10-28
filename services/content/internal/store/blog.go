@@ -68,6 +68,18 @@ func (s *Store) PublishedBlogPostBySlug(ctx context.Context, locale, slug string
 	return p, notFound(err)
 }
 
+// PublishedBlogLocales lists the locales a published post with slug is in,
+// in the site's order: posts under the same slug are translations of one
+// article.
+func (s *Store) PublishedBlogLocales(ctx context.Context, slug string) ([]string, error) {
+	rows, err := s.db.Query(ctx, `SELECT locale FROM blog_posts WHERE slug = $1 AND is_published
+		ORDER BY array_position(ARRAY['ru', 'ky', 'en', 'de'], locale)`, slug)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[string])
+}
+
 func (s *Store) BlogSlugTaken(ctx context.Context, locale, slug, excludeID string) (bool, error) {
 	return s.slugTaken(ctx, "blog_posts", locale, slug, excludeID)
 }

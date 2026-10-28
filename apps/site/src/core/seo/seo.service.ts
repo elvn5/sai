@@ -26,8 +26,9 @@ export interface PageMeta {
   image?: string | null;
   type?: 'website' | 'article' | 'profile';
   // The page's path in each language. By default it is the same path in
-  // every language (hotels, trails); null for content that exists in one
-  // language only (a blog post has its own slug per language).
+  // every language (hotels, trails); only the languages it exists in for
+  // per-language content (a blog post and its translations); null when it
+  // exists in one language only.
   alternates?: Partial<Record<Lang, string>> | null;
   // The language the text is written in, when it is the same text under
   // every prefix (trails, legal documents): the canonical URL and the only

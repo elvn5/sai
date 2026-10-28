@@ -43,6 +43,7 @@ import { firstValueFrom } from 'rxjs';
                 </p>
               </div>
               <div class="flex shrink-0 flex-wrap gap-2">
+                <a [appSiteLink]="'/partner/tours/' + tour.id + '/participants'" class="ui-btn-primary"><span class="icon-[heroicons--user-group] size-4" aria-hidden="true"></span>{{ 'crm.group.open' | transloco: { count: tour.taken } }}</a>
                 <a [appSiteLink]="'/partner/tours/' + tour.id" class="ui-btn-soft"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>{{ 'listing.edit' | transloco }}</a>
                 <a [appSiteLink]="'/tours/new?from=' + tour.id" class="ui-btn-soft"><span class="icon-[heroicons--document-duplicate] size-4" aria-hidden="true"></span>{{ 'cabinet.listings.duplicate' | transloco }}</a>
                 <button type="button" class="ui-btn-ghost" [attr.aria-label]="('tours.deleteButton' | transloco) + ': ' + tour.title" [disabled]="deleting() === tour.id" (click)="deleteTour(tour)">

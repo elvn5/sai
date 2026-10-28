@@ -1,5 +1,7 @@
 {
-  "brand": { "name": "Ermekten" },
+  "brand": {
+    "name": "Ermekten"
+  },
   "nav": {
     "trails": "Routes",
     "feed": "Feed",
@@ -9,9 +11,17 @@
     "menu": "Menu",
     "hallOfFame": "Hall of fame"
   },
-  "theme": { "toggle": "Theme", "light": "Light", "dark": "Dark" },
-  "colorTheme": { "toggle": "Color theme" },
-  "language": { "switch": "Language" },
+  "theme": {
+    "toggle": "Theme",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "colorTheme": {
+    "toggle": "Color theme"
+  },
+  "language": {
+    "switch": "Language"
+  },
   "home": {
     "tagline": "Guides, routes, and news for exploring the nature and culture of Kyrgyzstan.",
     "metaTitle": "Tours and hikes in Kyrgyzstan",
@@ -98,7 +108,9 @@
     "count": "{count} photos"
   },
   "guides": {
-    "editor": { "linkPrompt": "Link URL (leave empty to remove)" }
+    "editor": {
+      "linkPrompt": "Link URL (leave empty to remove)"
+    }
   },
   "tours": {
     "heading": "Tours",
@@ -210,7 +222,14 @@
         "linked": "You'll get tour notifications in Telegram: changes, a reminder the day before, a request to rate it after.",
         "startBot": "Open {bot} and press Start if you haven't yet.",
         "notLinked": "Tour notifications are sent in Telegram — link it to your account."
-      }
+      },
+      "manageGroup": "Manage the group",
+      "waitlistCount": "On the waitlist: {count}",
+      "waiting": "You're on the waitlist",
+      "waitingHint": "If a place opens up, it goes to the first on the list — we'll message you in Telegram.",
+      "leaveWaitlist": "Leave the waitlist",
+      "joinWaitlist": "Join the waitlist",
+      "waitlistHint": "No places left, but someone may drop out — then the first on the waitlist gets the place."
     }
   },
   "destinations": {
@@ -711,7 +730,9 @@
       "dashboard": "Overview",
       "stats": "Statistics",
       "listings": "Listings",
-      "reviews": "Reviews"
+      "reviews": "Reviews",
+      "clients": "Clients",
+      "messages": "Messages"
     },
     "kinds": {
       "hotel": "Stay",
@@ -829,9 +850,15 @@
     "failed": "Could not upload the file. Please try again."
   },
   "legal": {
-    "offer": { "title": "Public offer" },
-    "privacy": { "title": "Privacy policy" },
-    "refunds": { "title": "Cancellation and refund policy" },
+    "offer": {
+      "title": "Public offer"
+    },
+    "privacy": {
+      "title": "Privacy policy"
+    },
+    "refunds": {
+      "title": "Cancellation and refund policy"
+    },
     "draft": "Draft: this document is being prepared and is not in force yet. Highlighted parts will be filled in.",
     "russianOnly": "This document is available in Russian only.",
     "contents": "Contents",
@@ -1160,6 +1187,151 @@
       "pdfAttached": "PDF attached.",
       "pdfError": "Upload failed. Choose a PDF up to 20 MB and try again.",
       "downloadPdf": "Download checklist · PDF"
+    }
+  },
+  "chat": {
+    "title": "Messages",
+    "subtitle": "Your conversations with tour organizers",
+    "subtitlePartner": "Your conversations with clients",
+    "writeOrganizer": "Message the organizer",
+    "write": "Message",
+    "openError": "Couldn't open the chat. Please try again.",
+    "unread": "unread",
+    "none": "No messages yet",
+    "nonePartner": "Message a client from their card in Clients.",
+    "noneClient": "Ask the organizer a question on the tour page with “Message the organizer”.",
+    "back": "All messages",
+    "pick": "Pick a conversation on the left",
+    "notFound": "Chat not found",
+    "roleClient": "Client",
+    "roleOrganizer": "Tour organizer",
+    "messages": "Chat messages",
+    "read": "read",
+    "emptyPartner": "Write first: the meeting point and time, or what to bring.",
+    "emptyClient": "Ask about the tour — the organizer will get a Telegram notification.",
+    "loading": "Loading messages",
+    "placeholder": "Message",
+    "send": "Send",
+    "sendError": "The message wasn't sent. Please try again.",
+    "enterHint": "Enter sends, Shift+Enter adds a line",
+    "tooLong": "The message is too long"
+  },
+  "crm": {
+    "group": {
+      "open": "Participants · {count}",
+      "title": "Tour group",
+      "tourPage": "Tour page",
+      "export": "Download CSV",
+      "add": "Add a participant",
+      "places": "Places",
+      "arrived": "Arrived",
+      "fullHint": "No places left — new participants go on the waitlist.",
+      "addOne": "Add",
+      "addWaitlist": "To the waitlist",
+      "newClient": "New client",
+      "withPlace": "With a place",
+      "empty": "No one in the group yet",
+      "emptyHint": "Travelers sign up on the site and in the bot; add clients from WhatsApp by hand.",
+      "notFound": "Tour not found",
+      "added": "Participant added",
+      "addedWaitlist": "Added to the waitlist"
+    },
+    "clients": {
+      "subtitle": "Everyone who travelled or signed up with you, and clients you added yourself",
+      "search": "Name, phone, Telegram or note",
+      "count": "Clients: {count}",
+      "tours": "tours: {count}",
+      "more": "Show more",
+      "notFound": "No one found",
+      "empty": "No clients yet",
+      "emptyHint": "Everyone who signs up for your tours shows up here. Add clients from WhatsApp and calls yourself."
+    },
+    "client": {
+      "add": "Add a client",
+      "new": "New client",
+      "name": "Name",
+      "namePlaceholderAccount": "As in their account",
+      "phone": "Phone",
+      "telegram": "Telegram",
+      "tags": "Tags",
+      "tagsPlaceholder": "Comma-separated: vip, family, returning",
+      "note": "Note",
+      "notePlaceholder": "Mountain experience, health, wishes — only you see it",
+      "manual": "added by hand",
+      "manualLong": "Added by hand",
+      "account": "Ermekten account",
+      "since": "client since {date}",
+      "noContacts": "No contacts",
+      "delete": "Delete the client",
+      "deleteConfirm": "Delete the client “{name}”?",
+      "deleteHint": "Their places on tours and payments are deleted too.",
+      "deleted": "Client deleted",
+      "toursCount": "Tours with you",
+      "history": "Tours",
+      "noTours": "No tours yet",
+      "notFound": "Client not found"
+    },
+    "status": {
+      "new": "New",
+      "confirmed": "Confirmed",
+      "waitlist": "Waitlist",
+      "cancelled": "Cancelled"
+    },
+    "statusLabel": "Status",
+    "arrived": "Came",
+    "payments": "Payments",
+    "due": "Due",
+    "paid": "Paid",
+    "debt": "Owed",
+    "owes": "owes {amount}",
+    "method": {
+      "cash": "Cash",
+      "transfer": "Transfer",
+      "card": "Card",
+      "other": "Other"
+    },
+    "payment": {
+      "amount": "Amount",
+      "method": "Method",
+      "date": "Date",
+      "note": "Comment",
+      "add": "Record a payment",
+      "added": "Payment recorded",
+      "delete": "Delete the payment",
+      "deleteConfirm": "Delete this payment?"
+    },
+    "removeFromTour": "Remove from the tour",
+    "removeConfirm": "Remove “{name}” from the tour with their payments?",
+    "save": "Save",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "saveError": "Couldn't save. Please try again.",
+    "errors": {
+      "nameRequired": "Enter a name",
+      "tooLong": "Too long",
+      "phone": "This number looks wrong",
+      "telegram": "Telegram username: 5–32 Latin letters, digits or _",
+      "amount": "The amount must be above zero",
+      "date": "Enter a date",
+      "full": "No places left: free one first or use the waitlist",
+      "conflict": "The client is already on this tour, or it's full"
+    },
+    "csv": {
+      "number": "No.",
+      "name": "Name",
+      "phone": "Phone",
+      "telegram": "Telegram",
+      "status": "Status",
+      "arrived": "Came",
+      "due": "Due",
+      "paid": "Paid",
+      "debt": "Owed",
+      "yes": "yes"
+    },
+    "dashboard": {
+      "paidThisMonth": "Received this month",
+      "outstanding": "Awaiting payment",
+      "upcoming": "Next tours"
     }
   }
 }

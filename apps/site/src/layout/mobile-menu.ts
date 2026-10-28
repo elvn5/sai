@@ -1,4 +1,5 @@
 import { AuthStore } from '@/core/auth/auth.store';
+import { ChatUnread } from '@/core/chat/chats';
 import { Notify } from '@/core/notify/notify';
 import { ColorModeStore } from '@/core/theme/color-mode';
 import { LanguageSwitcher } from '@/layout/language-switcher';
@@ -59,6 +60,12 @@ export interface NavLink {
         <a appSiteLink="/profile" class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-2.5 font-medium hover:bg-text/5">
           <app-person-avatar [person]="user" [size]="30" />{{ auth.displayName() }}
         </a>
+        <a [appSiteLink]="auth.isPartner() ? '/partner/messages' : '/messages'" class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-2.5 font-medium hover:bg-text/5">
+          <span class="icon-[heroicons--chat-bubble-left-right] size-5 text-text-muted" aria-hidden="true"></span><span class="flex-1">{{ 'chat.title' | transloco }}</span>
+          @if (chats.count() > 0) {
+            <span class="ui-count">{{ chats.count() }}</span>
+          }
+        </a>
         @if (auth.isPartner()) {
           <a appSiteLink="/partner" class="flex items-center gap-3 rounded-[0.625rem] px-2.5 py-2.5 font-medium hover:bg-text/5">
             <span class="icon-[heroicons--squares-2x2] size-5 text-text-muted" aria-hidden="true"></span>{{ 'cabinet.title' | transloco }}
@@ -84,6 +91,7 @@ export class MobileMenu {
   readonly done = output();
 
   protected readonly auth = inject(AuthStore);
+  protected readonly chats = inject(ChatUnread);
   protected readonly colorMode = inject(ColorModeStore);
   private readonly notify = inject(Notify);
 

@@ -1,5 +1,7 @@
 {
-  "brand": { "name": "Ermekten" },
+  "brand": {
+    "name": "Ermekten"
+  },
   "nav": {
     "trails": "Routen",
     "feed": "Feed",
@@ -9,9 +11,17 @@
     "menu": "Menü",
     "hallOfFame": "Ruhmeshalle"
   },
-  "theme": { "toggle": "Design", "light": "Hell", "dark": "Dunkel" },
-  "colorTheme": { "toggle": "Farbthema" },
-  "language": { "switch": "Sprache" },
+  "theme": {
+    "toggle": "Design",
+    "light": "Hell",
+    "dark": "Dunkel"
+  },
+  "colorTheme": {
+    "toggle": "Farbthema"
+  },
+  "language": {
+    "switch": "Sprache"
+  },
   "home": {
     "tagline": "Guides, Routen und Neuigkeiten rund um Natur und Kultur Kirgisistans.",
     "metaTitle": "Touren und Wanderungen in Kirgisistan",
@@ -98,7 +108,9 @@
     "count": "{count} Fotos"
   },
   "guides": {
-    "editor": { "linkPrompt": "Link-URL (leer lassen zum Entfernen)" }
+    "editor": {
+      "linkPrompt": "Link-URL (leer lassen zum Entfernen)"
+    }
   },
   "tours": {
     "heading": "Touren",
@@ -210,7 +222,14 @@
         "linked": "Tour-Benachrichtigungen kommen per Telegram: Änderungen, eine Erinnerung am Vortag, danach die Bitte um eine Bewertung.",
         "startBot": "Öffnen Sie {bot} und tippen Sie auf „Start“, falls noch nicht geschehen.",
         "notLinked": "Tour-Benachrichtigungen kommen per Telegram – verknüpfen Sie es mit Ihrem Konto."
-      }
+      },
+      "manageGroup": "Gruppe verwalten",
+      "waitlistCount": "Auf der Warteliste: {count}",
+      "waiting": "Sie stehen auf der Warteliste",
+      "waitingHint": "Wird ein Platz frei, bekommt ihn der Erste auf der Liste — wir schreiben Ihnen in Telegram.",
+      "leaveWaitlist": "Warteliste verlassen",
+      "joinWaitlist": "Auf die Warteliste",
+      "waitlistHint": "Keine Plätze frei, aber jemand könnte absagen — dann bekommt der Erste auf der Warteliste den Platz."
     }
   },
   "destinations": {
@@ -711,7 +730,9 @@
       "dashboard": "Übersicht",
       "stats": "Statistik",
       "listings": "Angebote",
-      "reviews": "Bewertungen"
+      "reviews": "Bewertungen",
+      "clients": "Kunden",
+      "messages": "Nachrichten"
     },
     "kinds": {
       "hotel": "Unterkunft",
@@ -829,9 +850,15 @@
     "failed": "Die Datei konnte nicht hochgeladen werden. Bitte erneut versuchen."
   },
   "legal": {
-    "offer": { "title": "Öffentliches Angebot" },
-    "privacy": { "title": "Datenschutzerklärung" },
-    "refunds": { "title": "Storno- und Erstattungsbedingungen" },
+    "offer": {
+      "title": "Öffentliches Angebot"
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung"
+    },
+    "refunds": {
+      "title": "Storno- und Erstattungsbedingungen"
+    },
     "draft": "Entwurf: Dieses Dokument wird vorbereitet und ist noch nicht in Kraft. Markierte Stellen werden ergänzt.",
     "russianOnly": "Dieses Dokument ist nur auf Russisch verfügbar.",
     "contents": "Inhalt",
@@ -1160,6 +1187,151 @@
       "pdfAttached": "PDF angehängt.",
       "pdfError": "Upload fehlgeschlagen. Wählen Sie eine PDF bis 20 MB und versuchen Sie es erneut.",
       "downloadPdf": "Checkliste herunterladen · PDF"
+    }
+  },
+  "chat": {
+    "title": "Nachrichten",
+    "subtitle": "Ihre Unterhaltungen mit Tourveranstaltern",
+    "subtitlePartner": "Ihre Unterhaltungen mit Kunden",
+    "writeOrganizer": "Veranstalter anschreiben",
+    "write": "Schreiben",
+    "openError": "Der Chat konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.",
+    "unread": "ungelesen",
+    "none": "Noch keine Nachrichten",
+    "nonePartner": "Schreiben Sie einem Kunden über seine Karte unter „Kunden“.",
+    "noneClient": "Stellen Sie dem Veranstalter auf der Tourseite eine Frage — „Veranstalter anschreiben“.",
+    "back": "Alle Nachrichten",
+    "pick": "Wählen Sie links eine Unterhaltung",
+    "notFound": "Chat nicht gefunden",
+    "roleClient": "Kunde",
+    "roleOrganizer": "Tourveranstalter",
+    "messages": "Chatnachrichten",
+    "read": "gelesen",
+    "emptyPartner": "Schreiben Sie zuerst: Treffpunkt und Zeit oder was mitzubringen ist.",
+    "emptyClient": "Fragen Sie zur Tour — der Veranstalter bekommt eine Telegram-Benachrichtigung.",
+    "loading": "Nachrichten werden geladen",
+    "placeholder": "Nachricht",
+    "send": "Senden",
+    "sendError": "Die Nachricht wurde nicht gesendet. Bitte versuchen Sie es erneut.",
+    "enterHint": "Enter sendet, Umschalt+Enter fügt eine Zeile hinzu",
+    "tooLong": "Die Nachricht ist zu lang"
+  },
+  "crm": {
+    "group": {
+      "open": "Teilnehmer · {count}",
+      "title": "Tourgruppe",
+      "tourPage": "Tourseite",
+      "export": "CSV herunterladen",
+      "add": "Teilnehmer hinzufügen",
+      "places": "Plätze",
+      "arrived": "Erschienen",
+      "fullHint": "Keine Plätze frei — neue Teilnehmer kommen auf die Warteliste.",
+      "addOne": "Hinzufügen",
+      "addWaitlist": "Auf die Warteliste",
+      "newClient": "Neuer Kunde",
+      "withPlace": "Mit Platz",
+      "empty": "Noch niemand in der Gruppe",
+      "emptyHint": "Reisende melden sich auf der Website und im Bot an; Kunden aus WhatsApp fügen Sie von Hand hinzu.",
+      "notFound": "Tour nicht gefunden",
+      "added": "Teilnehmer hinzugefügt",
+      "addedWaitlist": "Auf die Warteliste gesetzt"
+    },
+    "clients": {
+      "subtitle": "Alle, die mit Ihnen gereist sind oder sich angemeldet haben, und selbst hinzugefügte Kunden",
+      "search": "Name, Telefon, Telegram oder Notiz",
+      "count": "Kunden: {count}",
+      "tours": "Touren: {count}",
+      "more": "Mehr anzeigen",
+      "notFound": "Niemand gefunden",
+      "empty": "Noch keine Kunden",
+      "emptyHint": "Hier erscheinen alle, die sich für Ihre Touren anmelden. Kunden aus WhatsApp und Anrufen fügen Sie selbst hinzu."
+    },
+    "client": {
+      "add": "Kunde hinzufügen",
+      "new": "Neuer Kunde",
+      "name": "Name",
+      "namePlaceholderAccount": "Wie im Konto",
+      "phone": "Telefon",
+      "telegram": "Telegram",
+      "tags": "Tags",
+      "tagsPlaceholder": "Kommagetrennt: vip, Familie, Stammkunde",
+      "note": "Notiz",
+      "notePlaceholder": "Bergerfahrung, Gesundheit, Wünsche — nur Sie sehen das",
+      "manual": "manuell",
+      "manualLong": "Manuell hinzugefügt",
+      "account": "Ermekten-Konto",
+      "since": "Kunde seit {date}",
+      "noContacts": "Keine Kontakte",
+      "delete": "Kunde löschen",
+      "deleteConfirm": "Kunde „{name}“ löschen?",
+      "deleteHint": "Seine Plätze in Touren und Zahlungen werden ebenfalls gelöscht.",
+      "deleted": "Kunde gelöscht",
+      "toursCount": "Touren mit Ihnen",
+      "history": "Touren",
+      "noTours": "Noch keine Touren",
+      "notFound": "Kunde nicht gefunden"
+    },
+    "status": {
+      "new": "Neu",
+      "confirmed": "Bestätigt",
+      "waitlist": "Warteliste",
+      "cancelled": "Storniert"
+    },
+    "statusLabel": "Status",
+    "arrived": "Da",
+    "payments": "Zahlungen",
+    "due": "Fällig",
+    "paid": "Bezahlt",
+    "debt": "Offen",
+    "owes": "offen {amount}",
+    "method": {
+      "cash": "Bar",
+      "transfer": "Überweisung",
+      "card": "Karte",
+      "other": "Sonstiges"
+    },
+    "payment": {
+      "amount": "Betrag",
+      "method": "Art",
+      "date": "Datum",
+      "note": "Kommentar",
+      "add": "Zahlung erfassen",
+      "added": "Zahlung erfasst",
+      "delete": "Zahlung löschen",
+      "deleteConfirm": "Diese Zahlung löschen?"
+    },
+    "removeFromTour": "Aus der Tour entfernen",
+    "removeConfirm": "„{name}“ samt Zahlungen aus der Tour entfernen?",
+    "save": "Speichern",
+    "saved": "Gespeichert",
+    "cancel": "Abbrechen",
+    "saveError": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "errors": {
+      "nameRequired": "Geben Sie einen Namen ein",
+      "tooLong": "Zu lang",
+      "phone": "Die Nummer scheint falsch zu sein",
+      "telegram": "Telegram-Name: 5–32 lateinische Buchstaben, Ziffern oder _",
+      "amount": "Der Betrag muss größer als null sein",
+      "date": "Geben Sie ein Datum ein",
+      "full": "Keine Plätze frei: erst einen Platz freigeben oder die Warteliste nutzen",
+      "conflict": "Der Kunde ist schon in der Tour, oder sie ist voll"
+    },
+    "csv": {
+      "number": "Nr.",
+      "name": "Name",
+      "phone": "Telefon",
+      "telegram": "Telegram",
+      "status": "Status",
+      "arrived": "Da",
+      "due": "Fällig",
+      "paid": "Bezahlt",
+      "debt": "Offen",
+      "yes": "ja"
+    },
+    "dashboard": {
+      "paidThisMonth": "Diesen Monat erhalten",
+      "outstanding": "Ausstehend",
+      "upcoming": "Nächste Touren"
     }
   }
 }

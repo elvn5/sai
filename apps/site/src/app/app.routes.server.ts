@@ -24,6 +24,8 @@ const CLIENT_PATHS = [
   'achievements/award',
   'partner',
   'partner/**',
+  'messages',
+  'messages/**',
 ];
 
 // The same route under every language prefix ("blog/new", "en/blog/new"…).

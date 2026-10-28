@@ -1,4 +1,5 @@
 import { AuthStore } from '@/core/auth/auth.store';
+import { ChatUnread } from '@/core/chat/chats';
 import { splitLang } from '@/core/i18n/langs';
 import { injectCurrentUrl } from '@/core/lib/current-url';
 import { PageChrome } from '@/core/lib/page-chrome';
@@ -104,6 +105,12 @@ const TUCK_AFTER = 240;
             <app-language-switcher />
             <app-theme-toggle />
             @if (auth.user(); as user) {
+              <a [appSiteLink]="auth.isPartner() ? '/partner/messages' : '/messages'" class="ui-icon-btn relative" [attr.aria-label]="'chat.title' | transloco">
+                <span class="icon-[heroicons--chat-bubble-left-right] size-[1.2rem]" aria-hidden="true"></span>
+                @if (chats.count() > 0) {
+                  <span class="ui-count absolute -top-1 -right-1">{{ chats.count() }}<span class="sr-only"> {{ 'chat.unread' | transloco }}</span></span>
+                }
+              </a>
               <div appMenu #account="appMenu" class="relative ml-1">
                 <button
                   type="button"
@@ -127,6 +134,12 @@ const TUCK_AFTER = 240;
                     <div class="my-1 h-px bg-border" role="separator"></div>
                     <a role="menuitem" appSiteLink="/profile" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
                       <span class="icon-[heroicons--user-circle] size-[1.1rem] text-text-muted" aria-hidden="true"></span>{{ 'profile.title' | transloco }}
+                    </a>
+                    <a role="menuitem" [appSiteLink]="auth.isPartner() ? '/partner/messages' : '/messages'" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
+                      <span class="icon-[heroicons--chat-bubble-left-right] size-[1.1rem] text-text-muted" aria-hidden="true"></span><span class="flex-1">{{ 'chat.title' | transloco }}</span>
+                      @if (chats.count() > 0) {
+                        <span class="ui-count">{{ chats.count() }}</span>
+                      }
                     </a>
                     @if (auth.isPartner()) {
                       <a role="menuitem" appSiteLink="/partner" class="flex items-center gap-2.5 rounded-lg px-3 py-2 hover:bg-text/5 focus:bg-text/5 focus:outline-none">
@@ -202,6 +215,7 @@ const TUCK_AFTER = 240;
 })
 export class Header {
   protected readonly auth = inject(AuthStore);
+  protected readonly chats = inject(ChatUnread);
   private readonly chrome = inject(PageChrome);
   private readonly notify = inject(Notify);
   protected readonly links = NAV_LINKS;

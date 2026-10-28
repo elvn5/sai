@@ -1,3 +1,4 @@
+import { ChatUnread } from '@/core/chat/chats';
 import { splitLang } from '@/core/i18n/langs';
 import { injectCurrentUrl } from '@/core/lib/current-url';
 import { CabinetStore } from '@/pages/partner/cabinet-store';
@@ -10,6 +11,13 @@ import { TranslocoPipe } from '@jsverse/transloco';
 const LINKS = [
   { path: '/partner', key: 'dashboard', icon: 'icon-[heroicons--squares-2x2]', exact: true },
   { path: '/partner/stats', key: 'stats', icon: 'icon-[heroicons--chart-bar]', exact: false },
+  { path: '/partner/clients', key: 'clients', icon: 'icon-[heroicons--users]', exact: false },
+  {
+    path: '/partner/messages',
+    key: 'messages',
+    icon: 'icon-[heroicons--chat-bubble-left-right]',
+    exact: false,
+  },
   {
     path: '/partner/listings',
     key: 'listings',
@@ -53,6 +61,9 @@ const LINKS = [
                 @if (link.key === 'reviews' && store.unansweredCount() > 0) {
                   <span class="ui-count">{{ store.unansweredCount() }}</span>
                 }
+                @if (link.key === 'messages' && chats.count() > 0) {
+                  <span class="ui-count">{{ chats.count() }}<span class="sr-only"> {{ 'chat.unread' | transloco }}</span></span>
+                }
               </a>
             }
           </nav>
@@ -65,6 +76,7 @@ const LINKS = [
 export class PartnerLayout {
   protected readonly links = LINKS;
   protected readonly store = inject(CabinetStore);
+  protected readonly chats = inject(ChatUnread);
   private readonly url = injectCurrentUrl();
   // The unprefixed path shown.
   private readonly path = computed(() => splitLang(this.url()).path);

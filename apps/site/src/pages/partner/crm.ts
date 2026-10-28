@@ -1,0 +1,57 @@
+import type { CrmClient, CrmGroup, CrmParticipant, ParticipantStatus } from '@/core/api/types';
+import { personName } from '@/core/lib/format';
+import type { CsvCell } from '@/core/lib/partner-cabinet';
+
+// The order statuses are offered in.
+export const PARTICIPANT_STATUSES: ParticipantStatus[] = [
+  'new',
+  'confirmed',
+  'waitlist',
+  'cancelled',
+];
+
+// The name a client goes by: the one the partner typed, else the account's.
+export function clientName(client: Pick<CrmClient, 'name' | 'account'>): string {
+  if (client.name) return client.name;
+  return client.account ? personName(client.account) : '—';
+}
+
+export function participantName(p: CrmParticipant): string {
+  return clientName(p);
+}
+
+// Badge class per status.
+export function statusBadge(status: ParticipantStatus): string {
+  switch (status) {
+    case 'confirmed':
+      return 'ui-badge ui-badge-success';
+    case 'waitlist':
+      return 'ui-badge ui-badge-warning';
+    case 'cancelled':
+      return 'ui-badge ui-badge-muted';
+    default:
+      return 'ui-badge ui-badge-info';
+  }
+}
+
+// The group as CSV rows (header labels given), for a spreadsheet or the
+// list for the border zone: everyone with a place, then the waitlist.
+export function groupRows(
+  group: CrmGroup,
+  labels: { headers: string[]; status: (s: ParticipantStatus) => string; yes: string },
+): CsvCell[][] {
+  const rows = group.participants
+    .filter((p) => p.status !== 'cancelled')
+    .map((p, i): CsvCell[] => [
+      i + 1,
+      participantName(p),
+      p.phone,
+      p.telegram ? `@${p.telegram}` : p.account?.username ? `@${p.account.username}` : null,
+      labels.status(p.status),
+      p.arrivedAt ? labels.yes : '',
+      p.due,
+      p.paid,
+      Math.max(p.due - p.paid, 0),
+    ]);
+  return [labels.headers, ...rows];
+}

@@ -1,0 +1,264 @@
+import type { CrmGroup, CrmParticipant, ParticipantStatus, PaymentMethod } from '@/core/api/types';
+import { injectLang } from '@/core/i18n/current-lang';
+import { formatAmount, formatDate, todayInBishkek } from '@/core/lib/format';
+import { Notify } from '@/core/notify/notify';
+import { PARTICIPANT_STATUSES, participantName, statusBadge } from '@/pages/partner/crm';
+import { injectConfirm } from '@/ui/confirm-dialog';
+import { FieldErrors } from '@/ui/field-errors';
+import { PersonAvatar } from '@/ui/person-avatar';
+import { SiteLink } from '@/ui/site-link';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+} from '@angular/core';
+import { FormField, form, submit, validateStandardSchema } from '@angular/forms/signals';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { type Observable, firstValueFrom } from 'rxjs';
+import { z } from 'zod/mini';
+
+const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
+
+// One participant of a tour's group in the CRM: status, check-in, what
+// they owe, and their payments (shown and added when opened). Every change
+// answers with the whole group, handed up through `changed`.
+@Component({
+  selector: 'app-participant-row',
+  imports: [FieldErrors, FormField, PersonAvatar, SiteLink, TranslocoPipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block' },
+  template: `
+    @let p = participant();
+    <div class="flex flex-col gap-3 px-4 py-3" [class.opacity-60]="p.status === 'cancelled'">
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="w-6 shrink-0 text-right text-sm text-text-muted tabular-nums">{{ index() }}</span>
+        @if (p.account) {
+          <app-person-avatar [person]="p.account" [size]="36" />
+        } @else {
+          <span class="flex size-9 shrink-0 items-center justify-center rounded-full bg-text/7 text-text-muted"><span class="icon-[heroicons--user] size-4.5" aria-hidden="true"></span></span>
+        }
+        <div class="min-w-0 flex-1">
+          <a [appSiteLink]="'/partner/clients/' + p.clientId" class="block truncate font-medium text-text hover:underline">{{ name() }}</a>
+          <p class="truncate text-xs text-text-muted">{{ contacts() }}</p>
+        </div>
+        <label class="sr-only" [for]="'status-' + p.id">{{ 'crm.statusLabel' | transloco }}</label>
+        <select class="ui-input w-auto py-1.5 text-sm" [id]="'status-' + p.id" [value]="p.status" [disabled]="busy()" (change)="setStatus($any($event.target).value)">
+          @for (s of statuses; track s) {
+            <option [value]="s">{{ 'crm.status.' + s | transloco }}</option>
+          }
+        </select>
+        @if (p.status === 'new' || p.status === 'confirmed') {
+          <button type="button" class="ui-btn-soft ui-btn-xs" [attr.aria-pressed]="!!p.arrivedAt" [disabled]="busy()" (click)="toggleArrived()">
+            <span [class]="(p.arrivedAt ? 'icon-[heroicons--check-circle-solid] text-success' : 'icon-[heroicons--minus-circle] text-text-muted') + ' size-4'" aria-hidden="true"></span>{{ 'crm.arrived' | transloco }}
+          </button>
+        }
+        <button type="button" class="ui-btn-ghost ui-btn-xs tabular-nums" [attr.aria-expanded]="open()" (click)="open.set(!open())">
+          <span [class]="debt() > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-text'">{{ amount(p.paid) }} / {{ amount(p.due) }}</span>
+          <span [class]="(open() ? 'icon-[heroicons--chevron-up]' : 'icon-[heroicons--chevron-down]') + ' size-4'" aria-hidden="true"></span>
+          <span class="sr-only">{{ 'crm.payments' | transloco }}</span>
+        </button>
+      </div>
+
+      @if (open()) {
+        <div class="ml-9 flex flex-col gap-3 rounded-lg bg-text/3 p-3">
+          <div class="flex flex-wrap items-end gap-3 text-sm">
+            <div class="ui-field w-36">
+              <label class="ui-label" [for]="'due-' + p.id">{{ 'crm.due' | transloco }}</label>
+              <input class="ui-input" type="number" min="0" inputmode="numeric" [id]="'due-' + p.id" [value]="p.amountDue ?? ''" [placeholder]="amount(p.due)" (change)="setDue($any($event.target).value)" />
+            </div>
+            <p class="pb-2 text-text-muted">
+              {{ 'crm.paid' | transloco }}: <b class="text-text">{{ amount(p.paid) }}</b>
+              · {{ 'crm.debt' | transloco }}: <b [class]="debt() > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-text'">{{ amount(debt()) }}</b>
+            </p>
+          </div>
+
+          @if (p.payments.length > 0) {
+            <ul class="flex flex-col gap-1 text-sm">
+              @for (pay of p.payments; track pay.id) {
+                <li class="flex items-center gap-2">
+                  <span class="icon-[heroicons--banknotes] size-4 text-text-muted" aria-hidden="true"></span>
+                  <span class="font-medium text-text tabular-nums">{{ amount(pay.amount) }}</span>
+                  <span class="text-text-muted">{{ 'crm.method.' + pay.method | transloco }} · {{ date(pay.paidOn) }}</span>
+                  @if (pay.note) {
+                    <span class="truncate text-text-muted">— {{ pay.note }}</span>
+                  }
+                  <button type="button" class="ui-icon-btn ml-auto size-7" [attr.aria-label]="'crm.payment.delete' | transloco" [disabled]="busy()" (click)="deletePayment(pay.id)"><span class="icon-[heroicons--x-mark] size-4" aria-hidden="true"></span></button>
+                </li>
+              }
+            </ul>
+          }
+
+          <form class="grid gap-2 sm:grid-cols-[8rem_9rem_10rem_1fr_auto] sm:items-end" novalidate (submit)="addPayment($event)">
+            <div class="ui-field">
+              <label class="ui-label" [for]="'amount-' + p.id">{{ 'crm.payment.amount' | transloco }}</label>
+              <input class="ui-input" type="number" inputmode="numeric" [id]="'amount-' + p.id" [formField]="paymentForm.amount" />
+            </div>
+            <div class="ui-field">
+              <label class="ui-label" [for]="'method-' + p.id">{{ 'crm.payment.method' | transloco }}</label>
+              <select class="ui-input" [id]="'method-' + p.id" [formField]="paymentForm.method">
+                @for (m of methods; track m) {
+                  <option [value]="m">{{ 'crm.method.' + m | transloco }}</option>
+                }
+              </select>
+            </div>
+            <div class="ui-field">
+              <label class="ui-label" [for]="'paid-on-' + p.id">{{ 'crm.payment.date' | transloco }}</label>
+              <input class="ui-input" type="date" [id]="'paid-on-' + p.id" [formField]="paymentForm.paidOn" />
+            </div>
+            <div class="ui-field">
+              <label class="ui-label" [for]="'note-' + p.id">{{ 'crm.payment.note' | transloco }}</label>
+              <input class="ui-input" [id]="'note-' + p.id" [formField]="paymentForm.note" />
+            </div>
+            <button type="submit" class="ui-btn-primary" [disabled]="paymentForm().submitting()">{{ 'crm.payment.add' | transloco }}</button>
+            <app-field-errors class="sm:col-span-5" [state]="paymentForm.amount()" />
+          </form>
+
+          @if (!p.userId) {
+            <button type="button" class="ui-btn-ghost ui-btn-xs self-start text-danger" [disabled]="busy()" (click)="remove()"><span class="icon-[heroicons--trash] size-4" aria-hidden="true"></span>{{ 'crm.removeFromTour' | transloco }}</button>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+export class ParticipantRow {
+  readonly tourId = input.required<string>();
+  readonly participant = input.required<CrmParticipant>();
+  readonly index = input.required<number>();
+  readonly changed = output<CrmGroup>();
+
+  private readonly http = inject(HttpClient);
+  private readonly notify = inject(Notify);
+  private readonly transloco = inject(TranslocoService);
+  private readonly confirm = injectConfirm();
+  private readonly lang = injectLang();
+  protected readonly statuses = PARTICIPANT_STATUSES;
+  protected readonly methods = METHODS;
+  protected readonly busy = signal(false);
+  protected readonly open = signal(false);
+  protected readonly statusBadge = statusBadge;
+
+  protected readonly name = computed(() => participantName(this.participant()));
+  protected readonly debt = computed(() =>
+    Math.max(this.participant().due - this.participant().paid, 0),
+  );
+  protected readonly contacts = computed(() => {
+    const p = this.participant();
+    const telegram = p.telegram ?? p.account?.username;
+    return [p.phone, telegram ? `@${telegram}` : null].filter(Boolean).join(' · ');
+  });
+
+  private readonly paymentModel = linkedSignal(() => ({
+    amount: this.debt() || 0,
+    method: 'cash' as PaymentMethod,
+    paidOn: todayInBishkek(),
+    note: '',
+  }));
+  protected readonly paymentForm = form(this.paymentModel, (path) => {
+    validateStandardSchema(
+      path,
+      z.object({
+        amount: z.number().check(z.gt(0, this.transloco.translate('crm.errors.amount'))),
+        method: z.string(),
+        paidOn: z.string().check(z.minLength(10, this.transloco.translate('crm.errors.date'))),
+        note: z.string().check(z.maxLength(500, this.transloco.translate('crm.errors.tooLong'))),
+      }),
+    );
+  });
+
+  protected amount(value: number): string {
+    return formatAmount(this.lang(), value);
+  }
+
+  protected date(day: string): string {
+    return formatDate(this.lang(), day, { day: 'numeric', month: 'short' });
+  }
+
+  private url(suffix = ''): string {
+    return `/crm/tours/${this.tourId()}/participants/${this.participant().id}${suffix}`;
+  }
+
+  protected setStatus(status: ParticipantStatus): void {
+    void this.run(this.http.patch<CrmGroup>(this.url(), { status }));
+  }
+
+  protected toggleArrived(): void {
+    void this.run(
+      this.http.patch<CrmGroup>(this.url(), { arrived: !this.participant().arrivedAt }),
+    );
+  }
+
+  protected setDue(raw: string): void {
+    const value = raw.trim() === '' ? null : Math.max(0, Math.round(Number(raw)));
+    if (value !== null && Number.isNaN(value)) return;
+    void this.run(this.http.patch<CrmGroup>(this.url(), { amountDue: value }));
+  }
+
+  protected async addPayment(event: Event): Promise<void> {
+    event.preventDefault();
+    await submit(this.paymentForm, async () => {
+      const v = this.paymentModel();
+      await this.run(
+        this.http.post<CrmGroup>(this.url('/payments'), {
+          amount: Math.round(v.amount),
+          method: v.method,
+          paidOn: v.paidOn,
+          note: v.note.trim() || null,
+        }),
+        'crm.payment.added',
+      );
+      return undefined;
+    });
+  }
+
+  protected async deletePayment(id: string): Promise<void> {
+    if (!(await this.confirm({ title: 'crm.payment.deleteConfirm', danger: true }))) return;
+    this.busy.set(true);
+    try {
+      await firstValueFrom(this.http.delete(`/crm/payments/${id}`));
+      this.changed.emit(
+        await firstValueFrom(this.http.get<CrmGroup>(`/crm/tours/${this.tourId()}/participants`)),
+      );
+    } catch {
+      this.notify.error({ title: 'crm.saveError' });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected async remove(): Promise<void> {
+    if (
+      !(await this.confirm({
+        title: 'crm.removeConfirm',
+        params: { name: this.name() },
+        danger: true,
+      }))
+    )
+      return;
+    await this.run(this.http.delete<CrmGroup>(this.url()));
+  }
+
+  // Sends a change; the API answers with the group.
+  private async run(request: Observable<CrmGroup>, success?: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      this.changed.emit(await firstValueFrom(request));
+      if (success) this.notify.success({ title: success });
+    } catch (error) {
+      this.notify.error({
+        title:
+          error instanceof HttpErrorResponse && error.status === 409
+            ? 'crm.errors.full'
+            : 'crm.saveError',
+      });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+}

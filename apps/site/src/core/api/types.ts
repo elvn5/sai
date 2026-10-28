@@ -320,12 +320,20 @@ export interface Tour extends ListingContacts {
   // /tours/by-id/:id and their own lists; re-read in the browser).
   isJoined?: boolean;
   isOrganizer?: boolean;
-  // The organizer's: who signed up and who came.
+  // The visitor's place: 'new' or 'confirmed' (isJoined), 'waitlist' while
+  // waiting for one; absent when they haven't signed up.
+  myStatus?: ParticipantStatus;
+  // The organizer's: who signed up and who came, and how many wait.
   roster?: TourParticipant[];
+  waitlist?: number;
   // A participant's: whether they can rate it now, and their rating.
   canRate?: boolean;
   myRating?: { rating: number; text: string | null } | null;
 }
+
+// A place on a tour: 'new' and 'confirmed' take one, 'waitlist' waits for
+// one, 'cancelled' stays in the partner's history.
+export type ParticipantStatus = 'new' | 'confirmed' | 'waitlist' | 'cancelled';
 
 // Someone signed up for a tour, as its organizer sees them.
 export interface TourParticipant extends PublicAuthor {
@@ -594,4 +602,120 @@ export interface OrganizerTours {
   reviews: (Review & {
     listing: { id: string; title: string; slug: string; locale: string | null };
   })[];
+}
+
+// --- The partner's CRM (/crm/*) ---
+
+// One of the partner's clients: an account that signed up for their tours
+// (account) or someone they added by hand. name, phone and telegram are
+// what the partner typed in.
+export interface CrmClient {
+  id: string;
+  userId: string | null;
+  account: Person | null;
+  name: string | null;
+  phone: string | null;
+  telegram: string | null;
+  note: string | null;
+  tags: string[];
+  createdAt: string;
+  // Places on the partner's tours (cancelled and waitlisted aside).
+  stats: { tours: number; lastTour: string | null; due: number; paid: number };
+  // On the card: their places, latest first, and the chat with them.
+  history?: CrmClientTour[];
+  chatId?: string;
+}
+
+export interface CrmClientTour {
+  participantId: string;
+  tourId: string;
+  title: string;
+  slug: string;
+  locale: string;
+  startDate: string;
+  status: ParticipantStatus;
+  due: number;
+  paid: number;
+  arrived: boolean;
+}
+
+export type PaymentMethod = 'cash' | 'transfer' | 'card' | 'other';
+
+export interface CrmPayment {
+  id: string;
+  amount: number;
+  method: PaymentMethod;
+  // YYYY-MM-DD
+  paidOn: string;
+  note: string | null;
+  createdAt: string;
+}
+
+// One row of a tour's group.
+export interface CrmParticipant {
+  id: string;
+  clientId: string;
+  userId: string | null;
+  account: Person | null;
+  name: string | null;
+  phone: string | null;
+  telegram: string | null;
+  status: ParticipantStatus;
+  joinedAt: string;
+  arrivedAt: string | null;
+  // Set by the partner; null: the tour's price applies.
+  amountDue: number | null;
+  due: number;
+  paid: number;
+  payments: CrmPayment[];
+}
+
+export interface CrmGroup {
+  tour: Tour;
+  participants: CrmParticipant[];
+  totals: { active: number; waitlist: number; arrived: number; due: number; paid: number };
+}
+
+export interface CrmSummary {
+  clients: number;
+  paidThisMonth: number;
+  outstanding: number;
+  upcoming: {
+    id: string;
+    title: string;
+    slug: string;
+    locale: string;
+    startDate: string;
+    capacity: number | null;
+    taken: number;
+    waitlist: number;
+    due: number;
+    paid: number;
+  }[];
+}
+
+// --- Chats between partners and travelers (/chats/*) ---
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+}
+
+// One of the visitor's chats: 'partner' when they write to a client,
+// 'client' when they write to an organizer.
+export interface ChatSummary {
+  id: string;
+  partnerId: string;
+  userId: string;
+  role: 'partner' | 'client';
+  peer: Person;
+  lastMessage: ChatMessage;
+  unread: number;
+}
+
+export interface ChatThread extends ChatSummary {
+  peerReadAt: string | null;
+  messages: ChatMessage[];
 }

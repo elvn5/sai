@@ -131,7 +131,41 @@ const pages: Routes = [
         loadComponent: () =>
           import('@/pages/partner/tour-edit.page').then((m) => m.PartnerTourEditPage),
       },
+      {
+        path: 'tours/:id/participants',
+        loadComponent: () =>
+          import('@/pages/partner/tour-group.page').then((m) => m.PartnerTourGroupPage),
+      },
+      {
+        path: 'clients',
+        loadComponent: () =>
+          import('@/pages/partner/clients.page').then((m) => m.PartnerClientsPage),
+      },
+      {
+        path: 'clients/:id',
+        loadComponent: () => import('@/pages/partner/client.page').then((m) => m.PartnerClientPage),
+      },
+      {
+        path: 'messages',
+        data: { scope: 'partner' },
+        loadComponent: () => import('@/pages/messages/messages.page').then((m) => m.MessagesPage),
+      },
+      {
+        path: 'messages/:id',
+        data: { scope: 'partner' },
+        loadComponent: () => import('@/pages/messages/messages.page').then((m) => m.MessagesPage),
+      },
     ],
+  },
+  {
+    path: 'messages',
+    canActivate: [requireAuth],
+    loadComponent: () => import('@/pages/messages/messages.page').then((m) => m.MessagesPage),
+  },
+  {
+    path: 'messages/:id',
+    canActivate: [requireAuth],
+    loadComponent: () => import('@/pages/messages/messages.page').then((m) => m.MessagesPage),
   },
 
   {

@@ -1,7 +1,7 @@
-import type { Paginated, PartnerReview, StatsReport } from '@/core/api/types';
+import type { CrmSummary, Paginated, PartnerReview, StatsReport } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { injectLang } from '@/core/i18n/current-lang';
-import { formatAmount } from '@/core/lib/format';
+import { formatAmount, formatDate } from '@/core/lib/format';
 import { contentLang, listingPath, percentChange, shareOf } from '@/core/lib/partner-cabinet';
 import { loaded } from '@/core/lib/resource';
 import { bindPageMeta } from '@/core/seo/seo.service';
@@ -19,8 +19,9 @@ const DAYS = 30;
 const PERIODS = [7, 30, 90];
 const TOP = 5;
 
-// /partner: the last 30 days at a glance, reviews waiting for an answer
-// and the most viewed listings. (Bookings and finances are paused for now.)
+// /partner: clients and money (the CRM), the next tours with their groups,
+// the last 30 days at a glance, reviews waiting for an answer and the most
+// viewed listings.
 @Component({
   selector: 'app-partner-dashboard-page',
   imports: [DailyBarChart, PersonAvatar, RatingStars, SiteLink, StatTile, TranslocoPipe],
@@ -55,6 +56,36 @@ const TOP = 5;
             }
           </ul>
         </div>
+      }
+
+      @if (crm(); as summary) {
+        <div class="grid grid-cols-3 gap-3">
+          <app-stat-tile [label]="'cabinet.nav.clients' | transloco" icon="icon-[heroicons--users]" [value]="number(summary.clients)" />
+          <app-stat-tile [label]="'crm.dashboard.paidThisMonth' | transloco" icon="icon-[heroicons--banknotes]" [value]="number(summary.paidThisMonth)" />
+          <app-stat-tile [label]="'crm.dashboard.outstanding' | transloco" icon="icon-[heroicons--clock]" [value]="number(summary.outstanding)" />
+        </div>
+        @if (summary.upcoming.length > 0) {
+          <section class="flex flex-col gap-3" aria-labelledby="upcoming-tours">
+            <div class="flex items-center justify-between">
+              <h2 id="upcoming-tours" class="font-semibold text-text">{{ 'crm.dashboard.upcoming' | transloco }}</h2>
+              <a appSiteLink="/partner/clients" class="text-sm text-brand-700 hover:underline dark:text-brand-300">{{ 'cabinet.nav.clients' | transloco }}</a>
+            </div>
+            <ul class="ui-card flex flex-col divide-y divide-border">
+              @for (tour of summary.upcoming; track tour.id) {
+                <li>
+                  <a [appSiteLink]="'/partner/tours/' + tour.id + '/participants'" class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-text/3">
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate font-medium text-text">{{ tour.title }}</span>
+                      <span class="text-xs text-text-muted">{{ day(tour.startDate) }}</span>
+                    </span>
+                    <span class="flex items-center gap-1 text-sm text-text-muted tabular-nums"><span class="icon-[heroicons--user-group] size-4" aria-hidden="true"></span>{{ tour.taken }}@if (tour.capacity !== null) { / {{ tour.capacity }}}@if (tour.waitlist > 0) { <span class="ui-badge ui-badge-warning">+{{ tour.waitlist }}</span>}</span>
+                    <span class="text-sm tabular-nums" [class]="tour.due > tour.paid ? 'text-amber-700 dark:text-amber-300' : 'text-text-muted'">{{ number(tour.paid) }} / {{ number(tour.due) }}</span>
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
       }
 
       <div class="grid grid-cols-2 gap-3">
@@ -135,6 +166,8 @@ export class PartnerDashboardPage {
     params: { limit: 3, unanswered: true },
   }));
 
+  private readonly crmSummary = httpResource<CrmSummary>(() => '/crm/summary');
+  protected readonly crm = computed(() => loaded(this.crmSummary));
   protected readonly report = computed(() => loaded(this.stats));
   protected readonly newReviews = computed(() => loaded(this.reviews)?.items ?? []);
   protected readonly unansweredTotal = computed(() => loaded(this.reviews)?.total ?? 0);
@@ -181,5 +214,13 @@ export class PartnerDashboardPage {
 
   protected number(value: number): string {
     return formatAmount(this.currentLang(), value);
+  }
+
+  protected day(date: string): string {
+    return formatDate(this.currentLang(), date, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
   }
 }

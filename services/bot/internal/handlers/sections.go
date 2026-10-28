@@ -202,11 +202,13 @@ func (h *Handlers) tripAction(ctx *th.Context, l i18n.Lang, q telego.CallbackQue
 	toast := ""
 	switch action {
 	case screens.ActJoin:
-		_, err := h.Content.JoinTour(ctx, userID, id)
+		joined, err := h.Content.JoinTour(ctx, userID, id)
 		if msg, known := joinErrors[api.MessageOf(err)]; known {
 			toast = l.T(msg)
 		} else if err != nil && !gone(err) {
 			return h.failedPress(ctx, l, q, err)
+		} else if err == nil && joined.Waiting() {
+			toast = l.T("⏳ Мест нет — вы в листе ожидания. Напишем, если место освободится.")
 		} else if err == nil {
 			toast = l.T("✅ Вы записаны! Организатор получит уведомление.")
 			h.track(&q.From, l, eventJoinTour, map[string]any{"tour_id": id})

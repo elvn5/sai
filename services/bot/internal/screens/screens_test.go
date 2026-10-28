@@ -127,10 +127,17 @@ func TestTourCardActions(t *testing.T) {
 	}
 	o.Taken = 10
 	full := screens.TourCard(i18n.RU, o, screens.FromMine, links, now)
-	if got := strings.Join(buttons(full), ","); strings.Contains(got, "o:join") || strings.Contains(got, "Позвать") ||
-		!strings.HasSuffix(full.Text, "Мест больше нет") {
+	if got := strings.Join(buttons(full), ","); !strings.Contains(got, "⏳ Встать в лист ожидания→o:join:u:t1") || strings.Contains(got, "Позвать") ||
+		!strings.HasSuffix(full.Text, "Мест больше нет — можно встать в лист ожидания") {
 		t.Errorf("full: %v\n%s", buttons(full), full.Text)
 	}
+	o.MyStatus = "waitlist"
+	waiting := screens.TourCard(i18n.RU, o, screens.FromMine, links, now)
+	if got := strings.Join(buttons(waiting), ","); !strings.Contains(got, "🙅 Выйти из листа ожидания→o:leave:u:t1") ||
+		!strings.HasSuffix(waiting.Text, "⏳ Вы в листе ожидания — напишем, если освободится место") {
+		t.Errorf("waiting: %v\n%s", buttons(waiting), waiting.Text)
+	}
+	o.MyStatus = ""
 	o.Taken, o.IsOrganizer = 3, true
 	o.Roster = []api.RosterEntry{{Person: api.Person{FirstName: str("Аня")}}, {Person: api.Person{Username: str("bob")}}, {}}
 	own := screens.TourCard(i18n.RU, o, screens.FromMine, links, now)

@@ -127,8 +127,12 @@ type Tour struct {
 	// As the user sees it (one tour by id, the user's own lists).
 	IsJoined    bool `json:"isJoined"`
 	IsOrganizer bool `json:"isOrganizer"`
-	// The organizer's: who signed up and who came.
-	Roster []RosterEntry `json:"roster"`
+	// The user's place on one tour: "waitlist" while waiting for one.
+	MyStatus string `json:"myStatus"`
+	// The organizer's: who signed up and who came, and how many wait for a
+	// place.
+	Roster   []RosterEntry `json:"roster"`
+	Waitlist int           `json:"waitlist"`
 	// A participant's: whether they can rate it now, and their rating.
 	CanRate  bool        `json:"canRate"`
 	MyRating *RatingMine `json:"myRating"`
@@ -157,6 +161,9 @@ func (t Tour) StartsAt() time.Time {
 
 // Full: every place is taken (a tour without a limit never is).
 func (t Tour) Full() bool { return t.Capacity != nil && t.Taken >= *t.Capacity }
+
+// Waiting reports whether the user is on the tour's waitlist.
+func (t Tour) Waiting() bool { return t.MyStatus == "waitlist" }
 
 // StatCounts are a listing's visits and contact-button clicks.
 type StatCounts struct {

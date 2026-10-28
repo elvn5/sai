@@ -229,8 +229,10 @@ func TourCard(l i18n.Lang, t api.Tour, from string, links Links, now time.Time) 
 		b.WriteString("\n\n" + l.T("⭐ Вы организатор"))
 	case t.IsJoined:
 		b.WriteString("\n\n" + l.T("✅ Вы записаны"))
+	case t.Waiting():
+		b.WriteString("\n\n" + l.T("⏳ Вы в листе ожидания — напишем, если освободится место"))
 	case t.Full():
-		b.WriteString("\n\n" + l.T("Мест больше нет"))
+		b.WriteString("\n\n" + l.T("Мест больше нет — можно встать в лист ожидания"))
 	default:
 		b.WriteString("\n\n" + l.T("Есть свободные места — записывайтесь!"))
 	}
@@ -242,7 +244,11 @@ func TourCard(l i18n.Lang, t api.Tour, from string, links Links, now time.Time) 
 	switch {
 	case upcoming && t.IsJoined:
 		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🙅 Отменить запись"), TripData(ActAsk, from, t.ID))})
-	case upcoming && !t.IsOrganizer && !t.Full():
+	case upcoming && t.Waiting():
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🙅 Выйти из листа ожидания"), TripData(ActLeave, from, t.ID))})
+	case upcoming && !t.IsOrganizer && t.Full():
+		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("⏳ Встать в лист ожидания"), TripData(ActJoin, from, t.ID))})
+	case upcoming && !t.IsOrganizer:
 		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("✋ Записаться"), TripData(ActJoin, from, t.ID))})
 	}
 	if t.CanRate || t.MyRating != nil {

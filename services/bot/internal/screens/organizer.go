@@ -164,6 +164,9 @@ func Roster(l i18n.Lang, t api.Tour, chats map[string]int64, links Links, now ti
 	if checkIn && len(t.Roster) > 0 {
 		b.WriteString(" · " + l.F("✅ на месте %d из %d", arrivedCount(t), len(t.Roster)))
 	}
+	if t.Waitlist > 0 {
+		b.WriteString("\n⏳ " + l.F("В листе ожидания: %d", t.Waitlist))
+	}
 
 	if len(t.Roster) == 0 {
 		b.WriteString("\n\n" + l.T("Пока никто не записался. Позовите друзей — участники появятся здесь."))

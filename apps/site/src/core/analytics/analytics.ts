@@ -35,11 +35,52 @@ export interface AnalyticsEvents {
 
 export type AnalyticsLoader = (config: FirebaseWebConfig) => Promise<AnalyticsBackend | null>;
 
-// Overridable in tests.
+// Overridable in tests. Firebase pulls in gtag.js (~160 kB): it waits until
+// the page has loaded and the visitor starts using it (or a few quiet
+// seconds pass), so it doesn't compete with the first render. Events wait
+// for it.
 export const ANALYTICS_LOADER = new InjectionToken<AnalyticsLoader>('ANALYTICS_LOADER', {
   providedIn: 'root',
-  factory: () => loadFirebaseAnalytics,
+  factory: () => {
+    const document = inject(DOCUMENT);
+    return async (config) => {
+      await pageSettled(document);
+      return loadFirebaseAnalytics(config);
+    };
+  },
 });
+
+const QUIET_DELAY_MS = 4000;
+
+// Resolves on the visitor's first interaction after the page's load event,
+// or once the browser has been idle for a while after it.
+function pageSettled(document: Document): Promise<void> {
+  const window = document.defaultView;
+  if (!window) return Promise.resolve();
+  const loaded =
+    document.readyState === 'complete'
+      ? Promise.resolve()
+      : new Promise<void>((resolve) =>
+          window.addEventListener('load', () => resolve(), { once: true }),
+        );
+  return loaded.then(
+    () =>
+      new Promise<void>((resolve) => {
+        const events = ['pointerdown', 'keydown', 'scroll', 'touchstart'] as const;
+        const done = (): void => {
+          clearTimeout(timer);
+          for (const name of events) window.removeEventListener(name, done);
+          resolve();
+        };
+        const timer = setTimeout(() => {
+          if ('requestIdleCallback' in window) window.requestIdleCallback(done, { timeout: 2000 });
+          else done();
+        }, QUIET_DELAY_MS);
+        for (const name of events)
+          window.addEventListener(name, done, { once: true, passive: true });
+      }),
+  );
+}
 
 // Firebase Analytics, in the browser only and only once the visitor allows
 // analytics cookies (core/analytics/consent.ts); off without the Firebase

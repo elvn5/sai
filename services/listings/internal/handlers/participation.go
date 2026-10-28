@@ -76,10 +76,8 @@ func (h *Participation) Join(c *gin.Context) {
 		httperr.Abort(c, http.StatusBadRequest, "You organize this tour")
 		return
 	}
-	switch err := h.Store.Join(c.Request.Context(), tour.ID, me, tour.StartsAt(), h.now()); {
-	case errors.Is(err, store.ErrFull):
-		httperr.Abort(c, http.StatusConflict, "No places left")
-		return
+	status, err := h.Store.Join(c.Request.Context(), tour.ID, me, tour.StartsAt(), h.now())
+	switch {
 	case errors.Is(err, store.ErrClosed):
 		httperr.Abort(c, http.StatusConflict, "Sign-up for this tour is closed")
 		return
@@ -90,7 +88,8 @@ func (h *Participation) Join(c *gin.Context) {
 		h.fail(c, err, tourNotFound, "")
 		return
 	}
-	if updated, ok := h.reload(c, tour.ID); ok && h.Notify != nil {
+	// The organizer hears of those who got a place.
+	if updated, ok := h.reload(c, tour.ID); ok && h.Notify != nil && status != store.StatusWaitlist {
 		h.Notify.Joined(c.Request.Context(), updated, me)
 	}
 }
@@ -100,13 +99,31 @@ func (h *Participation) Leave(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if err := h.Store.Leave(c.Request.Context(), tour.ID, currentUserID(c)); err != nil {
+	ctx := c.Request.Context()
+	me := currentUserID(c)
+	status, err := h.Store.MyStatus(ctx, tour.ID, me)
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	promoted, err := h.Store.Leave(ctx, tour.ID, me)
+	if err != nil {
 		h.fail(c, err, "You haven't signed up for this tour", "")
 		return
 	}
-	// Dropping out of a tour that took place isn't news.
-	if updated, ok := h.reload(c, tour.ID); ok && h.Notify != nil && updated.StartsAt().After(h.now()) {
-		h.Notify.Left(c.Request.Context(), updated, currentUserID(c))
+	// Dropping out of a tour that took place, or off the waitlist, isn't
+	// news.
+	updated, ok := h.reload(c, tour.ID)
+	if ok && h.Notify != nil && updated.StartsAt().After(h.now()) && status != store.StatusWaitlist {
+		h.Notify.Left(ctx, updated, me)
+	}
+	h.notifyPromoted(c, updated, promoted)
+}
+
+// notifyPromoted tells the one who got a freed place (an account) about it.
+func (d Deps) notifyPromoted(c *gin.Context, t models.Tour, promoted *store.Promoted) {
+	if promoted != nil && promoted.UserID != nil && d.Notify != nil {
+		d.Notify.Promoted(c.Request.Context(), t, *promoted.UserID)
 	}
 }
 
@@ -247,12 +264,25 @@ func (h *Participation) respondDetail(c *gin.Context, t models.Tour) bool {
 	}
 	me := currentUserID(c)
 	t.IsOrganizer = me != "" && ownedBy(t.UserID, me)
-	for _, p := range roster {
-		t.IsJoined = t.IsJoined || (me != "" && p.UserID == me)
+	if me != "" {
+		if t.MyStatus, err = h.Store.MyStatus(ctx, t.ID, me); err != nil {
+			h.fail(c, err, tourNotFound, "")
+			return false
+		}
+		if t.MyStatus == store.StatusCancelled {
+			t.MyStatus = ""
+		}
+		t.IsJoined = t.MyStatus == store.StatusNew || t.MyStatus == store.StatusConfirmed
 	}
 	tours := []models.Tour{t}
 	(&Tours{Deps: h.Deps}).withOrganizers(ctx, tours)
 	t = tours[0]
+	if t.IsOrganizer || isAdmin(c) {
+		if t.Waitlist, err = h.Store.WaitlistCount(ctx, t.ID); err != nil {
+			h.fail(c, err, tourNotFound, "")
+			return false
+		}
+	}
 	if (t.IsOrganizer || isAdmin(c)) && len(roster) > 0 {
 		ids := make([]string, len(roster))
 		for i, p := range roster {

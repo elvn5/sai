@@ -17,8 +17,10 @@ type Notification struct {
 	ButtonText *string
 	// Callback data the bot answers.
 	ButtonData *string
-	DedupKey   *string
-	Attempts   int
+	// Or a page of the site the button opens.
+	ButtonURL *string
+	DedupKey  *string
+	Attempts  int
 }
 
 // Enqueue adds notifications, due from sendAfter; ones whose dedup key is
@@ -29,9 +31,9 @@ func (s *Store) Enqueue(ctx context.Context, items []Notification, sendAfter tim
 	}
 	batch := &pgx.Batch{}
 	for _, n := range items {
-		batch.Queue(`INSERT INTO notifications (user_id, kind, tour_id, text, button_text, button_data, dedup_key, send_after)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (dedup_key) DO NOTHING`,
-			n.UserID, n.Kind, n.TourID, n.Text, n.ButtonText, n.ButtonData, n.DedupKey, sendAfter)
+		batch.Queue(`INSERT INTO notifications (user_id, kind, tour_id, text, button_text, button_data, button_url, dedup_key, send_after)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (dedup_key) DO NOTHING`,
+			n.UserID, n.Kind, n.TourID, n.Text, n.ButtonText, n.ButtonData, n.ButtonURL, n.DedupKey, sendAfter)
 	}
 	return s.db.SendBatch(ctx, batch).Close()
 }
@@ -39,14 +41,14 @@ func (s *Store) Enqueue(ctx context.Context, items []Notification, sendAfter tim
 // DueNotifications returns up to limit pending notifications ready to send.
 func (s *Store) DueNotifications(ctx context.Context, now time.Time, limit int) ([]Notification, error) {
 	rows, err := s.db.Query(ctx, `SELECT id::text, user_id::text, kind, tour_id::text, text, button_text,
-		button_data, dedup_key, attempts FROM notifications
+		button_data, button_url, dedup_key, attempts FROM notifications
 		WHERE status = 'pending' AND send_after <= $1 ORDER BY created_at LIMIT $2`, now, limit)
 	if err != nil {
 		return nil, err
 	}
 	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Notification, error) {
 		var n Notification
-		err := r.Scan(&n.ID, &n.UserID, &n.Kind, &n.TourID, &n.Text, &n.ButtonText, &n.ButtonData, &n.DedupKey, &n.Attempts)
+		err := r.Scan(&n.ID, &n.UserID, &n.Kind, &n.TourID, &n.Text, &n.ButtonText, &n.ButtonData, &n.ButtonURL, &n.DedupKey, &n.Attempts)
 		return n, err
 	})
 }
@@ -64,7 +66,8 @@ func (s *Store) MarkNotification(ctx context.Context, id, status string, attempt
 func (s *Store) ToursDueForReminder(ctx context.Context, now time.Time) ([]string, error) {
 	rows, err := s.db.Query(ctx, `SELECT id::text FROM tours WHERE is_published AND reminder_sent_at IS NULL
 		AND remind_at <= $1 AND remind_at + interval '12 hours' > $1
-		AND EXISTS (SELECT 1 FROM tour_participants p WHERE p.tour_id = tours.id)`, now)
+		AND EXISTS (SELECT 1 FROM tour_participants p WHERE p.tour_id = tours.id AND p.user_id IS NOT NULL
+			AND p.status IN ('new', 'confirmed'))`, now)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +80,8 @@ func (s *Store) ToursDueForReminder(ctx context.Context, now time.Time) ([]strin
 func (s *Store) ToursDueForFollowUp(ctx context.Context, now, staleBefore time.Time) ([]string, error) {
 	rows, err := s.db.Query(ctx, `SELECT id::text FROM tours WHERE is_published AND followup_sent_at IS NULL
 		AND followup_at <= $1 AND followup_at > $2
-		AND EXISTS (SELECT 1 FROM tour_participants p WHERE p.tour_id = tours.id)`, now, staleBefore)
+		AND EXISTS (SELECT 1 FROM tour_participants p WHERE p.tour_id = tours.id AND p.user_id IS NOT NULL
+			AND p.status IN ('new', 'confirmed'))`, now, staleBefore)
 	if err != nil {
 		return nil, err
 	}

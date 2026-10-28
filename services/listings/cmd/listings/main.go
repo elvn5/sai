@@ -80,7 +80,7 @@ func run(log *slog.Logger) error {
 	if cfg.BotToken != "" {
 		sender := telegram.New(cfg.BotToken, cfg.TelegramAPIURL)
 		deps.Alerts = &alerts.Notifier{Store: st, Chats: users, Sender: sender, Log: log}
-		notifier := &notify.Notifier{Store: st, Users: users, Sender: sender, Log: log}
+		notifier := &notify.Notifier{Store: st, Users: users, Sender: sender, Log: log, SiteURL: cfg.SiteURL}
 		deps.Notify = notifier
 		go notifier.Run(ctx)
 	} else {

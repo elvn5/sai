@@ -17,7 +17,7 @@ const tourColumns = `id, locale, slug, title, excerpt, content, price, duration_
 	to_char(start_date, 'YYYY-MM-DD'), to_char(end_date, 'YYYY-MM-DD'), destination,
 	cancellation_policy, cover_image_url, phone, whatsapp, telegram, rating_average, review_count,
 	is_published, published_at, user_id::text, created_at, updated_at, photos, program, capacity,
-	meeting_point, meeting_time, (SELECT count(*)::int FROM tour_participants p WHERE p.tour_id = tours.id),
+	meeting_point, meeting_time, (SELECT count(*)::int FROM tour_participants p WHERE p.tour_id = tours.id AND p.status IN ('new', 'confirmed')),
 	remind_at, followup_at`
 
 func scanTour(row pgx.Row) (models.Tour, error) {
@@ -121,7 +121,7 @@ func (s *Store) OrganizerTours(ctx context.Context, userID, locale string, today
 	var out models.OrganizerTours
 	day := today.Format(time.DateOnly)
 	err := s.db.QueryRow(ctx, `SELECT count(*)::int, coalesce(sum((SELECT count(*) FROM tour_participants p
-		WHERE p.tour_id = tours.id)), 0)::int FROM tours WHERE user_id = $1 AND is_published
+		WHERE p.tour_id = tours.id AND p.status IN ('new', 'confirmed'))), 0)::int FROM tours WHERE user_id = $1 AND is_published
 		AND locale = $2 AND start_date <= $3::date`, userID, locale, day).Scan(&out.Held, &out.Participants)
 	if err != nil {
 		return out, err

@@ -76,6 +76,19 @@ func changedText(l telegram.Lang, before, after models.Tour) string {
 	return texts.F(l, "✏️ Организатор изменил тур «%s»:\n%s", esc(after.Title), strings.Join(changes, "\n"))
 }
 
+// messageText tells about a chat message, quoting its start.
+func messageText(l telegram.Lang, from usersclient.Author, body string) string {
+	if runes := []rune(body); len(runes) > 500 {
+		body = string(runes[:500]) + "…"
+	}
+	return texts.F(l, "💬 Новое сообщение от <b>%s</b>:\n\n%s", esc(personName(l, from)), esc(body))
+}
+
+// promotedText tells someone on the waitlist a place freed up for them.
+func promotedText(l telegram.Lang, t models.Tour) string {
+	return texts.F(l, "🎉 Освободилось место на туре «%s» (%s) — вы в группе.", esc(t.Title), when(l, t.StartsAt()))
+}
+
 func cancelledText(l telegram.Lang, t models.Tour) string {
 	return texts.F(l, "❌ Тур «%s» (%s) отменён организатором.", esc(t.Title), when(l, t.StartsAt()))
 }

@@ -97,12 +97,16 @@ func TestSigningUpForTours(t *testing.T) {
 	}
 	id := tour["id"].(string)
 
-	// Places run out; the organizer can't sign up for their own tour.
-	if status, body := c.do("POST", "/tours/"+id+"/join", "", guest); status != 200 || obj(t, body)["isJoined"] != true || obj(t, body)["taken"] != float64(1) {
+	// Places run out, then travelers wait on the waitlist; the organizer
+	// can't sign up for their own tour.
+	if status, body := c.do("POST", "/tours/"+id+"/join", "", guest); status != 200 || obj(t, body)["isJoined"] != true || obj(t, body)["taken"] != float64(1) || obj(t, body)["myStatus"] != "new" {
 		t.Fatalf("join: %d %s", status, body)
 	}
 	c.do("POST", "/tours/"+id+"/join", "", owner)
-	for user, want := range map[string]string{regular: "No places left", partner: "You organize this tour", guest: "already signed up"} {
+	if status, body := c.do("POST", "/tours/"+id+"/join", "", regular); status != 200 || obj(t, body)["isJoined"] != false || obj(t, body)["myStatus"] != "waitlist" {
+		t.Fatalf("waitlist: %d %s", status, body)
+	}
+	for user, want := range map[string]string{partner: "You organize this tour", guest: "already signed up", regular: "already signed up"} {
 		if _, body := c.do("POST", "/tours/"+id+"/join", "", user); !strings.Contains(body, want) {
 			t.Errorf("join as %s: %s", user, body)
 		}
@@ -113,10 +117,19 @@ func TestSigningUpForTours(t *testing.T) {
 		!strings.Contains(sent[1].text, "Занято мест: 2 из 2.") || sent[0].button.Data != "o:view:n:"+id {
 		t.Fatalf("joined: %+v", sent)
 	}
+	// A freed place goes to the first on the waitlist.
 	c.do("DELETE", "/tours/"+id+"/join", "", owner)
 	notifier.Tick(ctx)
-	if sent := tg.take(); len(sent) != 1 || !strings.Contains(sent[0].text, "отменяет запись") || !strings.Contains(sent[0].text, "Занято мест: 1 из 2.") {
+	if sent := tg.take(); len(sent) != 1 || !strings.Contains(sent[0].text, "отменяет запись") || !strings.Contains(sent[0].text, "Занято мест: 2 из 2.") {
 		t.Fatalf("left: %+v", sent)
+	}
+	if _, body := c.do("GET", "/tours/by-id/"+id, "", regular); obj(t, body)["myStatus"] != "new" || obj(t, body)["isJoined"] != true {
+		t.Fatalf("promoted: %s", body)
+	}
+	c.do("DELETE", "/tours/"+id+"/join", "", regular)
+	notifier.Tick(ctx)
+	if sent := tg.take(); len(sent) != 1 || !strings.Contains(sent[0].text, "Занято мест: 1 из 2.") {
+		t.Fatalf("left again: %+v", sent)
 	}
 
 	// The organizer sees the roster; participants and visitors don't.

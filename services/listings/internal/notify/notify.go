@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/elvn5/sai/services/listings/internal/models"
@@ -48,6 +49,8 @@ type Notifier struct {
 	Now    func() time.Time
 	// Interval between worker passes.
 	Interval time.Duration
+	// The site, for the button of a chat message (no button when empty).
+	SiteURL string
 }
 
 func (n *Notifier) now() time.Time {
@@ -137,6 +140,38 @@ func (n *Notifier) Left(ctx context.Context, t models.Tour, userID string) {
 	}
 	l := n.langs(ctx, owner)(owner)
 	n.enqueue(ctx, []store.Notification{n.message(l, owner, "left", t, leftText(l, t, n.person(ctx, userID)))})
+}
+
+// Promoted tells userID, who waited on the waitlist, that they got a place.
+func (n *Notifier) Promoted(ctx context.Context, t models.Tour, userID string) {
+	l := n.langs(ctx, userID)(userID)
+	n.enqueue(ctx, []store.Notification{n.message(l, userID, "promoted", t, promotedText(l, t))})
+}
+
+// A chat's new messages are told about at most once per this long (the
+// first one).
+const messageWindow = 10 * time.Minute
+
+// Message tells the other side of a chat about a new message, with a
+// button that opens the chat on the site in their language.
+func (n *Notifier) Message(ctx context.Context, chat store.Chat, senderID, body string) {
+	to := chat.Other(senderID)
+	l := n.langs(ctx, to)(to)
+	item := store.Notification{UserID: to, Kind: "chat_message", Text: messageText(l, n.person(ctx, senderID), body)}
+	if n.SiteURL != "" {
+		path := "/messages/" + chat.ID
+		if to == chat.PartnerID {
+			path = "/partner/messages/" + chat.ID
+		}
+		if l != telegram.RU {
+			path = "/" + string(l) + path
+		}
+		text, url := texts.T(l, "💬 Ответить"), strings.TrimRight(n.SiteURL, "/")+path
+		item.ButtonText, item.ButtonURL = &text, &url
+	}
+	key := fmt.Sprintf("chat:%s:%s:%d", chat.ID, to, n.now().Unix()/int64(messageWindow.Seconds()))
+	item.DedupKey = &key
+	n.enqueue(ctx, []store.Notification{item})
 }
 
 // Changed tells participants when the start or the meeting point changed.
@@ -306,8 +341,11 @@ func (n *Notifier) deliverOne(ctx context.Context, item store.Notification, chat
 		return n.Store.MarkNotification(ctx, item.ID, "skipped", item.Attempts, &reason, n.now())
 	}
 	var button *telegram.Button
-	if item.ButtonText != nil && item.ButtonData != nil {
+	switch {
+	case item.ButtonText != nil && item.ButtonData != nil:
 		button = &telegram.Button{Text: *item.ButtonText, Data: *item.ButtonData}
+	case item.ButtonText != nil && item.ButtonURL != nil:
+		button = &telegram.Button{Text: *item.ButtonText, URL: *item.ButtonURL}
 	}
 	err := n.Sender.SendMessage(ctx, chat.ID, item.Text, button)
 	var rateLimited *telegram.RateLimitedError

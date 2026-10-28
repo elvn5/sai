@@ -108,8 +108,13 @@ type Tour struct {
 	// own lists: whether they signed up or run it.
 	IsJoined    bool `json:"isJoined"`
 	IsOrganizer bool `json:"isOrganizer"`
-	// Who signed up and who came: for the organizer, on one tour only.
-	Roster []RosterEntry `json:"roster,omitempty"`
+	// The visitor's place on one tour: "new" or "confirmed" (isJoined),
+	// "waitlist" while waiting for one; omitted when they haven't signed up.
+	MyStatus string `json:"myStatus,omitempty"`
+	// Who signed up and who came: for the organizer, on one tour only;
+	// with how many wait for a place.
+	Roster   []RosterEntry `json:"roster,omitempty"`
+	Waitlist int           `json:"waitlist,omitempty"`
 	// For a participant, on one tour: whether they can rate it now, and
 	// their rating if given (a review of the tour).
 	CanRate  bool        `json:"canRate,omitempty"`

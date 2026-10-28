@@ -102,6 +102,7 @@ services:
       LEGACY_DB_NAME: ${POSTGRES_DB:-parcel_bot}
       USERS_GRPC_ADDR: users:9083
       BOT_TOKEN: ${BOT_TOKEN:-}
+      SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
     depends_on:
       postgres:
         condition: service_healthy

@@ -49,6 +49,10 @@ type TourNotifier interface {
 	Left(ctx context.Context, t models.Tour, userID string)
 	Changed(ctx context.Context, before, after models.Tour, participantIDs []string)
 	Cancelled(ctx context.Context, t models.Tour, participantIDs []string)
+	// Promoted tells someone on the waitlist they got a place.
+	Promoted(ctx context.Context, t models.Tour, userID string)
+	// Message tells the other side of a chat about a new message.
+	Message(ctx context.Context, chat store.Chat, senderID, body string)
 }
 
 // Deps is what the handlers share.

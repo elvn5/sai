@@ -91,5 +91,31 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.POST("/listing-stats/events", middleware.OptionalUser(verifier, users), stats.Record)
 	r.GET("/listing-stats/mine", requireUser, requirePartner, stats.Mine)
 
+	// The partner's CRM: clients, each tour's group, payments.
+	crm := &handlers.CRM{Deps: d}
+	partnerOnly := r.Group("/crm", requireUser, requirePartner)
+	partnerOnly.GET("/summary", crm.Summary)
+	partnerOnly.GET("/clients", crm.Clients)
+	partnerOnly.GET("/clients/tags", crm.Tags)
+	partnerOnly.POST("/clients", crm.CreateClient)
+	partnerOnly.GET("/clients/:id", crm.Client)
+	partnerOnly.PUT("/clients/:id", crm.UpdateClient)
+	partnerOnly.DELETE("/clients/:id", crm.DeleteClient)
+	partnerOnly.GET("/tours/:id/participants", crm.Group)
+	partnerOnly.POST("/tours/:id/participants", crm.AddParticipant)
+	partnerOnly.PATCH("/tours/:id/participants/:pid", crm.UpdateParticipant)
+	partnerOnly.DELETE("/tours/:id/participants/:pid", crm.DeleteParticipant)
+	partnerOnly.POST("/tours/:id/participants/:pid/payments", crm.AddPayment)
+	partnerOnly.DELETE("/payments/:id", crm.DeletePayment)
+
+	// Chats between partners and travelers.
+	chats := &handlers.Chats{Deps: d}
+	r.GET("/chats", requireUser, chats.List)
+	r.GET("/chats/unread", requireUser, chats.Unread)
+	r.POST("/chats", requireUser, chats.Open)
+	r.GET("/chats/:id/messages", requireUser, chats.Messages)
+	r.POST("/chats/:id/messages", requireUser, chats.Send)
+	r.PUT("/chats/:id/read", requireUser, chats.Read)
+
 	return r
 }

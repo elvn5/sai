@@ -139,7 +139,8 @@ func (s *Store) IsClient(ctx context.Context, partnerID, userID string) (bool, e
 // cancelled, each in sign-up order) with their payments.
 func (s *Store) Group(ctx context.Context, tourID string) ([]models.CRMParticipant, error) {
 	rows, err := s.db.Query(ctx, `SELECT p.id::text, c.id::text, p.user_id::text, c.name, c.phone, c.telegram,
-		p.status, p.joined_at, p.arrived_at, p.amount_due, `+dueSQL+`, `+paidSQL+`::int
+		p.status, p.joined_at, p.arrived_at, p.amount_due, `+dueSQL+`, `+paidSQL+`::int,
+		p.form, p.form_at, p.waiver_at, p.waiver_version
 		FROM tour_participants p `+participantClientJoin+`
 		WHERE p.tour_id = $1
 		ORDER BY CASE p.status WHEN 'waitlist' THEN 1 WHEN 'cancelled' THEN 2 ELSE 0 END, p.joined_at`, tourID)
@@ -149,10 +150,11 @@ func (s *Store) Group(ctx context.Context, tourID string) ([]models.CRMParticipa
 	group, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (models.CRMParticipant, error) {
 		var p models.CRMParticipant
 		var joined time.Time
-		var arrived *time.Time
+		var arrived, formAt, waiverAt *time.Time
 		err := r.Scan(&p.ID, &p.ClientID, &p.UserID, &p.Name, &p.Phone, &p.Telegram, &p.Status, &joined, &arrived,
-			&p.AmountDue, &p.Due, &p.Paid)
+			&p.AmountDue, &p.Due, &p.Paid, &p.Form, &formAt, &waiverAt, &p.WaiverVersion)
 		p.JoinedAt, p.ArrivedAt = jsontime.New(joined), jsontime.Ptr(arrived)
+		p.FormAt, p.WaiverAt = jsontime.Ptr(formAt), jsontime.Ptr(waiverAt)
 		p.Payments = []models.CRMPayment{}
 		return p, err
 	})
@@ -410,4 +412,45 @@ func (s *Store) CRMSummary(ctx context.Context, partnerID string, today time.Tim
 		out.Upcoming = []models.CRMUpcomingTour{}
 	}
 	return out, err
+}
+
+// SaveForm stores userID's form on a tour (nil keeps the one there) and,
+// with acceptWaiver, that they accepted the rules (version) now.
+func (s *Store) SaveForm(ctx context.Context, tourID, userID string, form *models.ParticipantForm, acceptWaiver bool, now time.Time) error {
+	var waiver *string
+	if acceptWaiver {
+		v := models.WaiverVersion
+		waiver = &v
+	}
+	tag, err := s.db.Exec(ctx, `UPDATE tour_participants SET
+		form = coalesce($3, form), form_at = CASE WHEN $3::jsonb IS NULL THEN form_at ELSE $5 END,
+		waiver_version = coalesce($4, waiver_version), waiver_at = CASE WHEN $4::text IS NULL THEN waiver_at ELSE $5 END
+		WHERE tour_id = $1 AND user_id = $2 AND status <> 'cancelled'`, tourID, userID, form, waiver, now)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetParticipantForm stores a participant's form as the partner filled it
+// (a client added by hand, or what an account told them).
+func (s *Store) SetParticipantForm(ctx context.Context, participantID string, form *models.ParticipantForm, now time.Time) error {
+	_, err := s.db.Exec(ctx, `UPDATE tour_participants SET form = $2::jsonb, form_at = CASE WHEN $2::jsonb IS NULL THEN NULL ELSE $3::timestamptz END
+		WHERE id = $1`, participantID, form, now)
+	return err
+}
+
+// MyForm is userID's form on a tour and when they accepted the rules.
+func (s *Store) MyForm(ctx context.Context, tourID, userID string) (*models.ParticipantForm, *time.Time, error) {
+	var form *models.ParticipantForm
+	var waiverAt *time.Time
+	err := s.db.QueryRow(ctx, `SELECT form, waiver_at FROM tour_participants WHERE tour_id = $1 AND user_id = $2`,
+		tourID, userID).Scan(&form, &waiverAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil, nil
+	}
+	return form, waiverAt, err
 }

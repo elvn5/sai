@@ -1,10 +1,17 @@
-import type { CrmGroup, CrmParticipant, ParticipantStatus, PaymentMethod } from '@/core/api/types';
+import type {
+  CrmGroup,
+  CrmParticipant,
+  ParticipantForm,
+  ParticipantStatus,
+  PaymentMethod,
+} from '@/core/api/types';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount, formatDate, todayInBishkek } from '@/core/lib/format';
 import { Notify } from '@/core/notify/notify';
 import { PARTICIPANT_STATUSES, participantName, statusBadge } from '@/pages/partner/crm';
 import { injectConfirm } from '@/ui/confirm-dialog';
 import { FieldErrors } from '@/ui/field-errors';
+import { ParticipantFormView } from '@/ui/participant-form';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -30,7 +37,7 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
 // answers with the whole group, handed up through `changed`.
 @Component({
   selector: 'app-participant-row',
-  imports: [FieldErrors, FormField, PersonAvatar, SiteLink, TranslocoPipe],
+  imports: [FieldErrors, FormField, ParticipantFormView, PersonAvatar, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -45,7 +52,17 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
         }
         <div class="min-w-0 flex-1">
           <a [appSiteLink]="'/partner/clients/' + p.clientId" class="block truncate font-medium text-text hover:underline">{{ name() }}</a>
-          <p class="truncate text-xs text-text-muted">{{ contacts() }}</p>
+          <p class="flex flex-wrap items-center gap-x-2 text-xs text-text-muted">
+            <span class="truncate">{{ contacts() }}</span>
+            <span class="inline-flex items-center gap-0.5" [class]="p.form ? 'text-success' : 'text-amber-700 dark:text-amber-300'">
+              <span [class]="(p.form ? 'icon-[heroicons--clipboard-document-check]' : 'icon-[heroicons--clipboard-document]') + ' size-3.5'" aria-hidden="true"></span>{{ (p.form ? 'crm.form.filled' : 'crm.form.missing') | transloco }}
+            </span>
+            @if (p.userId) {
+              <span class="inline-flex items-center gap-0.5" [class]="p.waiverAt ? 'text-success' : 'text-amber-700 dark:text-amber-300'">
+                <span [class]="(p.waiverAt ? 'icon-[heroicons--shield-check]' : 'icon-[heroicons--shield-exclamation]') + ' size-3.5'" aria-hidden="true"></span>{{ (p.waiverAt ? 'crm.form.waiver' : 'crm.form.noWaiver') | transloco }}
+              </span>
+            }
+          </p>
         </div>
         <label class="sr-only" [for]="'status-' + p.id">{{ 'crm.statusLabel' | transloco }}</label>
         <select class="ui-input w-auto py-1.5 text-sm" [id]="'status-' + p.id" [value]="p.status" [disabled]="busy()" (change)="setStatus($any($event.target).value)">
@@ -119,6 +136,28 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
             <app-field-errors class="sm:col-span-5" [state]="paymentForm.amount()" />
           </form>
 
+          <div class="flex flex-col gap-2 border-t border-border pt-3">
+            <p class="text-sm font-semibold text-text">{{ 'participantForm.title' | transloco }}</p>
+            @if (editingForm()) {
+              <app-participant-form [value]="p.form" [busy]="busy()" (saved)="saveForm($event.form)" (cancelled)="editingForm.set(false)" />
+            } @else if (p.form; as f) {
+              <dl class="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
+                <div><dt class="text-xs text-text-muted">{{ 'participantForm.emergencyName' | transloco }}</dt><dd class="text-text">{{ f.emergencyName }} · <a class="hover:underline" [href]="'tel:' + f.emergencyPhone">{{ f.emergencyPhone }}</a></dd></div>
+                <div><dt class="text-xs text-text-muted">{{ 'participantForm.experience' | transloco }}</dt><dd class="text-text">{{ 'participantForm.levels.' + f.experience + '.title' | transloco }}</dd></div>
+                @if (f.health) {
+                  <div class="sm:col-span-2"><dt class="text-xs text-text-muted">{{ 'participantForm.health' | transloco }}</dt><dd class="whitespace-pre-line text-text">{{ f.health }}</dd></div>
+                }
+                @if (f.notes) {
+                  <div class="sm:col-span-2"><dt class="text-xs text-text-muted">{{ 'participantForm.notes' | transloco }}</dt><dd class="whitespace-pre-line text-text">{{ f.notes }}</dd></div>
+                }
+              </dl>
+              <button type="button" class="ui-btn-ghost ui-btn-xs self-start" (click)="editingForm.set(true)"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>{{ 'participantForm.edit' | transloco }}</button>
+            } @else {
+              <p class="text-sm text-text-muted">{{ (p.userId ? 'crm.form.askAccount' : 'crm.form.askManual') | transloco }}</p>
+              <button type="button" class="ui-btn-soft ui-btn-xs self-start" (click)="editingForm.set(true)">{{ 'participantForm.fill' | transloco }}</button>
+            }
+          </div>
+
           @if (!p.userId) {
             <button type="button" class="ui-btn-ghost ui-btn-xs self-start text-danger" [disabled]="busy()" (click)="remove()"><span class="icon-[heroicons--trash] size-4" aria-hidden="true"></span>{{ 'crm.removeFromTour' | transloco }}</button>
           }
@@ -142,6 +181,7 @@ export class ParticipantRow {
   protected readonly methods = METHODS;
   protected readonly busy = signal(false);
   protected readonly open = signal(false);
+  protected readonly editingForm = signal(false);
   protected readonly statusBadge = statusBadge;
 
   protected readonly name = computed(() => participantName(this.participant()));
@@ -198,6 +238,11 @@ export class ParticipantRow {
     const value = raw.trim() === '' ? null : Math.max(0, Math.round(Number(raw)));
     if (value !== null && Number.isNaN(value)) return;
     void this.run(this.http.patch<CrmGroup>(this.url(), { amountDue: value }));
+  }
+
+  protected async saveForm(form: ParticipantForm): Promise<void> {
+    await this.run(this.http.put<CrmGroup>(this.url('/form'), { form }), 'crm.saved');
+    this.editingForm.set(false);
   }
 
   protected async addPayment(event: Event): Promise<void> {

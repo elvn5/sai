@@ -355,6 +355,12 @@ func (h *CRM) respondGroup(c *gin.Context, status int, tour models.Tour) {
 			if p.ArrivedAt != nil {
 				out.Totals.Arrived++
 			}
+			if p.Form != nil {
+				out.Totals.Forms++
+			}
+			if p.WaiverAt != nil {
+				out.Totals.Waivers++
+			}
 		case store.StatusWaitlist:
 			out.Totals.Waitlist++
 		}
@@ -437,6 +443,29 @@ func (h *CRM) DeleteParticipant(c *gin.Context) {
 		return
 	}
 	h.notifyPromoted(c, tour, promoted)
+	h.respondGroup(c, http.StatusOK, tour)
+}
+
+type participantFormRequest struct {
+	// null clears it.
+	Form *formRequest `json:"form"`
+}
+
+// SetForm fills in a participant's form for them (a client added by
+// hand, or what an account told the partner).
+func (h *CRM) SetForm(c *gin.Context) {
+	var req participantFormRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	id, tour, ok := h.ownParticipant(c)
+	if !ok {
+		return
+	}
+	if err := h.Store.SetParticipantForm(c.Request.Context(), id, req.Form.model(), h.now()); err != nil {
+		h.fail(c, err, participantNotFound, "")
+		return
+	}
 	h.respondGroup(c, http.StatusOK, tour)
 }
 

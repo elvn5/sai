@@ -1,5 +1,5 @@
 import { Analytics } from '@/core/analytics/analytics';
-import type { Tour, TourParticipant } from '@/core/api/types';
+import type { ParticipantForm, Tour, TourParticipant } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { openChat } from '@/core/chat/chats';
 import { injectLang } from '@/core/i18n/current-lang';
@@ -7,6 +7,7 @@ import { formatInBishkek, personName } from '@/core/lib/format';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { TelegramNotice } from '@/pages/tours/telegram-notice';
 import { injectConfirm } from '@/ui/confirm-dialog';
+import { ParticipantFormView } from '@/ui/participant-form';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { RatingInput } from '@/ui/rating-input';
 import { SiteLink } from '@/ui/site-link';
@@ -47,7 +48,15 @@ const DEFAULT_MEETING_TIME = '09:00';
 // browser once the session is known.
 @Component({
   selector: 'app-tour-signup',
-  imports: [FormField, PersonAvatar, RatingInput, SiteLink, TelegramNotice, TranslocoPipe],
+  imports: [
+    FormField,
+    ParticipantFormView,
+    PersonAvatar,
+    RatingInput,
+    SiteLink,
+    TelegramNotice,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -110,6 +119,12 @@ const DEFAULT_MEETING_TIME = '09:00';
           @if (!t.isJoined) {
             <p class="text-sm text-text-muted">{{ 'tours.signup.closed' | transloco }}</p>
           }
+        } @else if (joining()) {
+          <div class="flex flex-col gap-2 border-t border-border pt-4">
+            <h3 class="font-semibold text-text">{{ 'participantForm.title' | transloco }}</h3>
+            <p class="text-sm text-text-muted">{{ 'participantForm.why' | transloco }}</p>
+            <app-participant-form [waiver]="true" [submitLabel]="full() ? 'tours.signup.joinWaitlist' : 'tours.signup.join'" [busy]="busy()" (saved)="join($event)" (cancelled)="joining.set(false)" />
+          </div>
         } @else if (t.myStatus === 'waitlist') {
           <p class="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-300">
             <span class="icon-[heroicons--clock] size-5" aria-hidden="true"></span>{{ 'tours.signup.waiting' | transloco }}
@@ -122,13 +137,32 @@ const DEFAULT_MEETING_TIME = '09:00';
           </p>
           <button type="button" class="ui-btn-soft self-start" [disabled]="busy()" (click)="leave()">{{ 'tours.signup.leave' | transloco }}</button>
         } @else {
-          <button type="button" class="py-2.5 text-base" [class]="full() ? 'ui-btn-soft' : 'ui-btn-primary'" [disabled]="busy()" (click)="join()">
+          <button type="button" class="py-2.5 text-base" [class]="full() ? 'ui-btn-soft' : 'ui-btn-primary'" [disabled]="busy()" (click)="startJoin()">
             <span [class]="(full() ? 'icon-[heroicons--clock]' : 'icon-[heroicons--hand-raised]') + ' size-5'" aria-hidden="true"></span>{{ (full() ? 'tours.signup.joinWaitlist' : 'tours.signup.join') | transloco }}
           </button>
           <p class="ui-hint -mt-2">{{ (full() ? 'tours.signup.waitlistHint' : 'tours.signup.joinHint') | transloco }}</p>
         }
         @if (actionError(); as key) {
           <p class="ui-error" role="alert">{{ key | transloco }}</p>
+        }
+
+        @if (t.myStatus && !t.isOrganizer && !started()) {
+          @if (editingForm()) {
+            <div class="flex flex-col gap-2 border-t border-border pt-4">
+              <h3 class="font-semibold text-text">{{ 'participantForm.title' | transloco }}</h3>
+              <app-participant-form [value]="t.myForm" [waiver]="!t.myWaiverAt" [busy]="busy()" (saved)="saveForm($event)" (cancelled)="editingForm.set(false)" />
+            </div>
+          } @else if (!t.myForm || !t.myWaiverAt) {
+            <div class="ui-banner ui-banner-warning flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>{{ 'participantForm.missing' | transloco }}</span>
+              <button type="button" class="ui-btn-primary ui-btn-xs" (click)="editingForm.set(true)">{{ 'participantForm.fill' | transloco }}</button>
+            </div>
+          } @else {
+            <p class="flex flex-wrap items-center gap-2 text-sm text-text-muted">
+              <span class="icon-[heroicons--clipboard-document-check] size-4 text-success" aria-hidden="true"></span>{{ 'participantForm.done' | transloco }}
+              <button type="button" class="text-brand-700 hover:underline dark:text-brand-300" (click)="editingForm.set(true)">{{ 'participantForm.edit' | transloco }}</button>
+            </p>
+          }
         }
 
         @if (t.canRate || t.myRating) {
@@ -202,6 +236,15 @@ export class TourSignup {
     return t.capacity ? Math.min(100, (t.taken / t.capacity) * 100) : 0;
   });
   protected readonly busy = signal(false);
+  // The form shown before signing up, and to fill it in afterwards.
+  protected readonly joining = linkedSignal({
+    source: () => this.tour().id,
+    computation: () => false,
+  });
+  protected readonly editingForm = linkedSignal({
+    source: () => this.tour().id,
+    computation: () => false,
+  });
   // Translation key of the last failed action.
   protected readonly actionError = signal<string | null>(null);
 
@@ -231,17 +274,33 @@ export class TourSignup {
     return personName(person);
   }
 
-  protected async join(): Promise<void> {
+  // Signing up starts with the participant's form (signed in first).
+  protected async startJoin(): Promise<void> {
     if (!(await this.auth.ensureSession())) {
       await this.navigate(`/login?redirect=${encodeURIComponent(this.router.url)}`);
       return;
     }
+    this.actionError.set(null);
+    this.joining.set(true);
+  }
+
+  protected async join(answers: { form: ParticipantForm; acceptWaiver: boolean }): Promise<void> {
     const id = this.tour().id;
-    if (
-      (await this.act(this.http.post<Tour>(`/tours/${id}/join`, {}))) &&
-      this.personal()?.myStatus !== 'waitlist'
-    ) {
-      this.analytics.track('join_tour', { tour_id: id });
+    if (await this.act(this.http.post<Tour>(`/tours/${id}/join`, answers))) {
+      this.joining.set(false);
+      if (this.personal()?.myStatus !== 'waitlist') {
+        this.analytics.track('join_tour', { tour_id: id });
+      }
+    }
+  }
+
+  protected async saveForm(answers: {
+    form: ParticipantForm;
+    acceptWaiver: boolean;
+  }): Promise<void> {
+    const id = this.tour().id;
+    if (await this.act(this.http.put<Tour>(`/tours/${id}/form`, answers))) {
+      this.editingForm.set(false);
     }
   }
 

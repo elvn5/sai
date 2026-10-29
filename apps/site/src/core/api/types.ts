@@ -326,9 +326,25 @@ export interface Tour extends ListingContacts {
   // The organizer's: who signed up and who came, and how many wait.
   roster?: TourParticipant[];
   waitlist?: number;
+  // A participant's own form, and when they accepted the rules.
+  myForm?: ParticipantForm;
+  myWaiverAt?: string;
   // A participant's: whether they can rate it now, and their rating.
   canRate?: boolean;
   myRating?: { rating: number; text: string | null } | null;
+}
+
+export type MountainExperience = 'none' | 'hiking' | 'trekking' | 'mountaineering';
+
+// What the organizer should know before the trip: whom to call in an
+// emergency, mountain experience, health. Only the participant and the
+// organizer see it.
+export interface ParticipantForm {
+  emergencyName: string;
+  emergencyPhone: string;
+  experience: MountainExperience;
+  health: string | null;
+  notes: string | null;
 }
 
 // A place on a tour: 'new' and 'confirmed' take one, 'waitlist' waits for
@@ -668,12 +684,25 @@ export interface CrmParticipant {
   due: number;
   paid: number;
   payments: CrmPayment[];
+  form: ParticipantForm | null;
+  formAt: string | null;
+  waiverAt: string | null;
+  waiverVersion: string | null;
 }
 
 export interface CrmGroup {
   tour: Tour;
   participants: CrmParticipant[];
-  totals: { active: number; waitlist: number; arrived: number; due: number; paid: number };
+  totals: {
+    active: number;
+    waitlist: number;
+    arrived: number;
+    due: number;
+    paid: number;
+    // Of those with a place: forms filled, rules accepted.
+    forms: number;
+    waivers: number;
+  };
 }
 
 export interface CrmSummary {

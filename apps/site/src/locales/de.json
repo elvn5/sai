@@ -1234,7 +1234,8 @@
       "emptyHint": "Reisende melden sich auf der Website und im Bot an; Kunden aus WhatsApp fügen Sie von Hand hinzu.",
       "notFound": "Tour nicht gefunden",
       "added": "Teilnehmer hinzugefügt",
-      "addedWaitlist": "Auf die Warteliste gesetzt"
+      "addedWaitlist": "Auf die Warteliste gesetzt",
+      "forms": "Formulare"
     },
     "clients": {
       "subtitle": "Alle, die mit Ihnen gereist sind oder sich angemeldet haben, und selbst hinzugefügte Kunden",
@@ -1326,12 +1327,76 @@
       "due": "Fällig",
       "paid": "Bezahlt",
       "debt": "Offen",
-      "yes": "ja"
+      "yes": "ja",
+      "emergency": "Notfallkontakt",
+      "experience": "Erfahrung",
+      "health": "Gesundheit",
+      "waiver": "Regeln akzeptiert"
     },
     "dashboard": {
       "paidThisMonth": "Diesen Monat erhalten",
       "outstanding": "Ausstehend",
       "upcoming": "Nächste Touren"
+    },
+    "form": {
+      "filled": "Formular",
+      "missing": "kein Formular",
+      "waiver": "Regeln akzeptiert",
+      "noWaiver": "Regeln nicht akzeptiert",
+      "askAccount": "Der Teilnehmer hat das Formular noch nicht ausgefüllt — schreiben Sie ihm oder füllen Sie es nach seinen Angaben aus.",
+      "askManual": "Füllen Sie das Formular nach Angaben des Kunden aus."
+    }
+  },
+  "participantForm": {
+    "title": "Teilnehmerformular",
+    "why": "Nur der Veranstalter dieser Tour sieht es: So kann er sich vorbereiten und weiß, wen er im Notfall anruft.",
+    "emergencyName": "Notfallkontakt",
+    "emergencyPhone": "Telefon",
+    "experience": "Bergerfahrung",
+    "levels": {
+      "none": {
+        "title": "Keine Erfahrung",
+        "hint": "Meine erste Wanderung"
+      },
+      "hiking": {
+        "title": "Tageswanderungen",
+        "hint": "Ich wandere tageweise in den Bergen"
+      },
+      "trekking": {
+        "title": "Mehrtägige Treks",
+        "hint": "Zeltnächte, Pässe"
+      },
+      "mountaineering": {
+        "title": "Bergsteigen",
+        "hint": "Besteigungen, Seiltechnik"
+      }
+    },
+    "health": "Gesundheit",
+    "healthPlaceholder": "Chronische Erkrankungen, Allergien, Medikamente — falls vorhanden",
+    "notes": "Was der Veranstalter noch wissen sollte",
+    "notesPlaceholder": "Verpflegung, Ausrüstungsverleih, Transfer…",
+    "save": "Formular speichern",
+    "missing": "Füllen Sie das Teilnehmerformular aus und akzeptieren Sie die Regeln — der Veranstalter braucht das vor der Abreise.",
+    "fill": "Formular ausfüllen",
+    "done": "Formular ausgefüllt, Regeln akzeptiert",
+    "edit": "Formular ändern",
+    "errors": {
+      "emergencyName": "Wen wir im Notfall anrufen sollen",
+      "phone": "Geben Sie eine Telefonnummer an, z. B. +996 555 123 456",
+      "experience": "Wählen Sie Ihre Erfahrung",
+      "waiver": "Akzeptieren Sie die Regeln, um sich anzumelden"
+    }
+  },
+  "waiver": {
+    "v1": {
+      "title": "Teilnahmeregeln und Risiken",
+      "health": "Ich bin gesund, habe keine Gegenanzeigen für Belastung und Höhe und habe Erkrankungen und Medikamente im Formular angegeben.",
+      "guide": "Ich folge den Anweisungen des Guides und verlasse die Gruppe nicht ohne Erlaubnis; der Guide kann mich aus Sicherheitsgründen von der Route nehmen.",
+      "gear": "Ich bringe Ausrüstung und Kleidung laut Liste des Veranstalters mit; ohne passende Ausrüstung darf ich eventuell nicht starten.",
+      "weather": "Route, Zeiten und Programm können sich wegen Wetter oder Wegzustand ändern — der Guide entscheidet.",
+      "risk": "Mir ist bewusst, dass Bergtouren Risiken bergen — Verletzungen, Wetterumschwünge, weite Wege zu medizinischer Hilfe — und ich nehme freiwillig teil.",
+      "insurance": "Wir empfehlen eine Versicherung für Bergaktivitäten; ohne sie trage ich die Kosten für Evakuierung und Behandlung.",
+      "accept": "Ich habe die Regeln gelesen, verstehe die Risiken und stimme zu"
     }
   }
 }

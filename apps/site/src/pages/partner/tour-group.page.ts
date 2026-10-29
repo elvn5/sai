@@ -45,10 +45,11 @@ import { firstValueFrom } from 'rxjs';
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="ui-card px-4 py-3"><p class="text-xs text-text-muted">{{ 'crm.group.places' | transloco }}</p><p class="text-xl font-extrabold text-text tabular-nums">{{ g.totals.active }}@if (g.tour.capacity !== null) {<span class="text-base font-semibold text-text-muted"> / {{ g.tour.capacity }}</span>}</p></div>
           <div class="ui-card px-4 py-3"><p class="text-xs text-text-muted">{{ 'crm.status.waitlist' | transloco }}</p><p class="text-xl font-extrabold text-text tabular-nums">{{ g.totals.waitlist }}</p></div>
           <div class="ui-card px-4 py-3"><p class="text-xs text-text-muted">{{ 'crm.paid' | transloco }}</p><p class="text-xl font-extrabold text-text tabular-nums">{{ amount(g.totals.paid) }}<span class="text-base font-semibold text-text-muted"> / {{ amount(g.totals.due) }}</span></p></div>
+          <div class="ui-card px-4 py-3"><p class="text-xs text-text-muted">{{ 'crm.group.forms' | transloco }}</p><p class="text-xl font-extrabold tabular-nums" [class]="g.totals.forms < g.totals.active ? 'text-amber-700 dark:text-amber-300' : 'text-text'">{{ g.totals.forms }} / {{ g.totals.active }}</p></div>
           <div class="ui-card px-4 py-3"><p class="text-xs text-text-muted">{{ 'crm.group.arrived' | transloco }}</p><p class="text-xl font-extrabold text-text tabular-nums">{{ g.totals.arrived }} / {{ g.totals.active }}</p></div>
         </div>
 
@@ -230,8 +231,13 @@ export class PartnerTourGroupPage {
         'due',
         'paid',
         'debt',
+        'emergency',
+        'experience',
+        'health',
+        'waiver',
       ].map((h) => t(`crm.csv.${h}`)),
       status: (s) => t(`crm.status.${s}`),
+      experience: (e) => t(`participantForm.levels.${e}.title`),
       yes: t('crm.csv.yes'),
     });
     downloadCsv(this.document, `${group.tour.slug}-${group.tour.startDate}.csv`, rows);

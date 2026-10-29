@@ -26,6 +26,39 @@ const (
 	ratingWindow = 30 * 24 * time.Hour
 )
 
+// formRequest is a participant's form (models.ParticipantForm).
+type formRequest struct {
+	EmergencyName  *validation.Trimmed      `json:"emergencyName" binding:"required,min=1,max=120"`
+	EmergencyPhone *string                  `json:"emergencyPhone" binding:"required,phone"`
+	Experience     *string                  `json:"experience" binding:"required,oneof=none hiking trekking mountaineering"`
+	Health         validation.Field[string] `json:"health" binding:"omitempty,max=2000"`
+	Notes          validation.Field[string] `json:"notes" binding:"omitempty,max=2000"`
+}
+
+func (r *formRequest) model() *models.ParticipantForm {
+	if r == nil {
+		return nil
+	}
+	text := func(f validation.Field[string]) *string {
+		if !f.Valid || strings.TrimSpace(f.Value) == "" {
+			return nil
+		}
+		v := strings.TrimSpace(f.Value)
+		return &v
+	}
+	return &models.ParticipantForm{
+		EmergencyName: string(*r.EmergencyName), EmergencyPhone: strings.TrimSpace(*r.EmergencyPhone),
+		Experience: *r.Experience, Health: text(r.Health), Notes: text(r.Notes),
+	}
+}
+
+// joinRequest: the form and the rules can come with the sign-up (the
+// site); the bot signs up without a body.
+type joinRequest struct {
+	Form         *formRequest `json:"form"`
+	AcceptWaiver bool         `json:"acceptWaiver"`
+}
+
 type ratingRequest struct {
 	Rating *int                     `json:"rating" binding:"required,gte=1,lte=5"`
 	Text   validation.Field[string] `json:"text" binding:"omitempty,max=1000"`
@@ -67,6 +100,10 @@ func (h *Participation) Joined(c *gin.Context) {
 }
 
 func (h *Participation) Join(c *gin.Context) {
+	var req joinRequest
+	if c.Request.ContentLength != 0 && !validation.BindJSON(c, &req) {
+		return
+	}
 	tour, ok := h.load(c)
 	if !ok {
 		return
@@ -87,6 +124,12 @@ func (h *Participation) Join(c *gin.Context) {
 	case err != nil:
 		h.fail(c, err, tourNotFound, "")
 		return
+	}
+	if req.Form != nil || req.AcceptWaiver {
+		if err := h.Store.SaveForm(c.Request.Context(), tour.ID, me, req.Form.model(), req.AcceptWaiver, h.now()); err != nil {
+			h.fail(c, err, tourNotFound, "")
+			return
+		}
 	}
 	// The organizer hears of those who got a place.
 	if updated, ok := h.reload(c, tour.ID); ok && h.Notify != nil && status != store.StatusWaitlist {
@@ -125,6 +168,28 @@ func (d Deps) notifyPromoted(c *gin.Context, t models.Tour, promoted *store.Prom
 	if promoted != nil && promoted.UserID != nil && d.Notify != nil {
 		d.Notify.Promoted(c.Request.Context(), t, *promoted.UserID)
 	}
+}
+
+// SaveForm fills in (or changes) the signed-in participant's form and
+// accepts the rules, after signing up.
+func (h *Participation) SaveForm(c *gin.Context) {
+	var req joinRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	tour, ok := h.load(c)
+	if !ok {
+		return
+	}
+	if req.Form == nil && !req.AcceptWaiver {
+		httperr.Abort(c, http.StatusBadRequest, "Nothing to save")
+		return
+	}
+	if err := h.Store.SaveForm(c.Request.Context(), tour.ID, currentUserID(c), req.Form.model(), req.AcceptWaiver, h.now()); err != nil {
+		h.fail(c, err, "You haven't signed up for this tour", "")
+		return
+	}
+	h.reload(c, tour.ID)
 }
 
 // SetArrival marks a participant as arrived at the meeting point (PUT) or
@@ -273,6 +338,14 @@ func (h *Participation) respondDetail(c *gin.Context, t models.Tour) bool {
 			t.MyStatus = ""
 		}
 		t.IsJoined = t.MyStatus == store.StatusNew || t.MyStatus == store.StatusConfirmed
+		if t.MyStatus != "" {
+			var waiverAt *time.Time
+			if t.MyForm, waiverAt, err = h.Store.MyForm(ctx, t.ID, me); err != nil {
+				h.fail(c, err, tourNotFound, "")
+				return false
+			}
+			t.MyWaiverAt = jsontime.Ptr(waiverAt)
+		}
 	}
 	tours := []models.Tour{t}
 	(&Tours{Deps: h.Deps}).withOrganizers(ctx, tours)

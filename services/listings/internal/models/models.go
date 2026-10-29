@@ -119,6 +119,10 @@ type Tour struct {
 	// their rating if given (a review of the tour).
 	CanRate  bool        `json:"canRate,omitempty"`
 	MyRating *RatingMine `json:"myRating,omitempty"`
+	// A participant's own form and when they accepted the rules (nil if
+	// not yet), on one tour.
+	MyForm     *ParticipantForm `json:"myForm,omitempty"`
+	MyWaiverAt *jsontime.Time   `json:"myWaiverAt,omitempty"`
 	// When the reminder and follow-up notifications are due (see Schedule).
 	RemindAt   *time.Time `json:"-"`
 	FollowUpAt *time.Time `json:"-"`
@@ -130,6 +134,22 @@ type RosterEntry struct {
 	JoinedAt  jsontime.Time  `json:"joinedAt"`
 	ArrivedAt *jsontime.Time `json:"arrivedAt"`
 }
+
+// ParticipantForm is what the organizer should know about a participant
+// before the trip: whom to call in an emergency, their mountain experience
+// and health. Only the participant and the tour's organizer see it.
+type ParticipantForm struct {
+	EmergencyName  string `json:"emergencyName"`
+	EmergencyPhone string `json:"emergencyPhone"`
+	// none, hiking (day hikes), trekking (multi-day treks) or mountaineering.
+	Experience string  `json:"experience"`
+	Health     *string `json:"health"`
+	Notes      *string `json:"notes"`
+}
+
+// WaiverVersion names the rules and risks text participants accept (the
+// site shows it, in each language); a new text gets a new version.
+const WaiverVersion = "v1"
 
 // RatingMine is the visitor's own rating of a tour they went on.
 type RatingMine struct {

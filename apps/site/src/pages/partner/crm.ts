@@ -1,4 +1,10 @@
-import type { CrmClient, CrmGroup, CrmParticipant, ParticipantStatus } from '@/core/api/types';
+import type {
+  CrmClient,
+  CrmGroup,
+  CrmParticipant,
+  MountainExperience,
+  ParticipantStatus,
+} from '@/core/api/types';
 import { personName } from '@/core/lib/format';
 import type { CsvCell } from '@/core/lib/partner-cabinet';
 
@@ -38,7 +44,12 @@ export function statusBadge(status: ParticipantStatus): string {
 // list for the border zone: everyone with a place, then the waitlist.
 export function groupRows(
   group: CrmGroup,
-  labels: { headers: string[]; status: (s: ParticipantStatus) => string; yes: string },
+  labels: {
+    headers: string[];
+    status: (s: ParticipantStatus) => string;
+    experience: (e: MountainExperience) => string;
+    yes: string;
+  },
 ): CsvCell[][] {
   const rows = group.participants
     .filter((p) => p.status !== 'cancelled')
@@ -52,6 +63,10 @@ export function groupRows(
       p.due,
       p.paid,
       Math.max(p.due - p.paid, 0),
+      p.form ? `${p.form.emergencyName} ${p.form.emergencyPhone}` : null,
+      p.form ? labels.experience(p.form.experience) : null,
+      p.form?.health ?? null,
+      p.waiverAt ? labels.yes : '',
     ]);
   return [labels.headers, ...rows];
 }

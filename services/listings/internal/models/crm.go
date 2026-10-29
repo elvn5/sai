@@ -63,6 +63,12 @@ type CRMParticipant struct {
 	Due       int          `json:"due"`
 	Paid      int          `json:"paid"`
 	Payments  []CRMPayment `json:"payments"`
+	// Their form and when it was filled, and when they accepted the rules
+	// (which version).
+	Form          *ParticipantForm `json:"form"`
+	FormAt        *jsontime.Time   `json:"formAt"`
+	WaiverAt      *jsontime.Time   `json:"waiverAt"`
+	WaiverVersion *string          `json:"waiverVersion"`
 }
 
 // CRMGroup is a tour's group: everyone on it with the totals of those who
@@ -79,6 +85,10 @@ type CRMTotals struct {
 	Arrived  int `json:"arrived"`
 	Due      int `json:"due"`
 	Paid     int `json:"paid"`
+	// Of those with a place: how many filled the form and accepted the
+	// rules.
+	Forms   int `json:"forms"`
+	Waivers int `json:"waivers"`
 }
 
 // CRMPayment is money the partner received from a participant.

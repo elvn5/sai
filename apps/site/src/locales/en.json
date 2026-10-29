@@ -1234,7 +1234,8 @@
       "emptyHint": "Travelers sign up on the site and in the bot; add clients from WhatsApp by hand.",
       "notFound": "Tour not found",
       "added": "Participant added",
-      "addedWaitlist": "Added to the waitlist"
+      "addedWaitlist": "Added to the waitlist",
+      "forms": "Forms"
     },
     "clients": {
       "subtitle": "Everyone who travelled or signed up with you, and clients you added yourself",
@@ -1326,12 +1327,76 @@
       "due": "Due",
       "paid": "Paid",
       "debt": "Owed",
-      "yes": "yes"
+      "yes": "yes",
+      "emergency": "Emergency contact",
+      "experience": "Experience",
+      "health": "Health",
+      "waiver": "Rules accepted"
     },
     "dashboard": {
       "paidThisMonth": "Received this month",
       "outstanding": "Awaiting payment",
       "upcoming": "Next tours"
+    },
+    "form": {
+      "filled": "form",
+      "missing": "no form",
+      "waiver": "rules accepted",
+      "noWaiver": "rules not accepted",
+      "askAccount": "The participant hasn't filled in the form yet — message them or fill it in from what they told you.",
+      "askManual": "Fill in the form from what the client told you."
+    }
+  },
+  "participantForm": {
+    "title": "Participant form",
+    "why": "Only the organizer of this tour sees it: it helps them prepare and know whom to call in an emergency.",
+    "emergencyName": "Emergency contact",
+    "emergencyPhone": "Their phone",
+    "experience": "Mountain experience",
+    "levels": {
+      "none": {
+        "title": "No experience",
+        "hint": "My first hike"
+      },
+      "hiking": {
+        "title": "Day hikes",
+        "hint": "I go to the mountains for a day"
+      },
+      "trekking": {
+        "title": "Multi-day treks",
+        "hint": "Nights in a tent, passes"
+      },
+      "mountaineering": {
+        "title": "Mountaineering",
+        "hint": "Ascents, rope work"
+      }
+    },
+    "health": "Health",
+    "healthPlaceholder": "Chronic conditions, allergies, medication — if any",
+    "notes": "Anything else the organizer should know",
+    "notesPlaceholder": "Food, gear rental, transfer…",
+    "save": "Save the form",
+    "missing": "Fill in the participant form and accept the rules — the organizer needs this before the trip.",
+    "fill": "Fill in the form",
+    "done": "Form filled, rules accepted",
+    "edit": "Edit the form",
+    "errors": {
+      "emergencyName": "Whom to call in an emergency",
+      "phone": "Enter a phone number, e.g. +996 555 123 456",
+      "experience": "Choose your experience",
+      "waiver": "Accept the rules to sign up"
+    }
+  },
+  "waiver": {
+    "v1": {
+      "title": "Rules of the trip and risks",
+      "health": "I'm healthy, have no reason to avoid exertion or altitude, and listed any conditions and medication in the form.",
+      "guide": "I follow the guide's instructions and don't leave the group without permission; the guide may take me off the route for safety.",
+      "gear": "I'll bring the gear and clothing on the organizer's list; without the right gear I may not be allowed to start.",
+      "weather": "The route, timing and programme may change because of the weather or the trail — the guide decides.",
+      "risk": "I understand that mountain trips carry risks — injuries, sudden weather changes, distance from medical help — and take part voluntarily.",
+      "insurance": "We recommend insurance that covers mountain activities; without it, evacuation and treatment costs are mine.",
+      "accept": "I've read the rules, understand the risks and agree"
     }
   }
 }

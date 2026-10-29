@@ -231,3 +231,55 @@ func TestChats(t *testing.T) {
 		t.Errorf("client's chat: %s", body)
 	}
 }
+
+func TestParticipantForm(t *testing.T) {
+	c, _, _, _ := setupTrips(t, telegram.RU)
+	_, body := c.do("POST", "/tours", tripTour, partner)
+	id := obj(t, body)["id"].(string)
+
+	// A bad form refuses the sign-up as a whole.
+	if status, body := c.do("POST", "/tours/"+id+"/join", `{"form":{"emergencyName":" ","emergencyPhone":"x","experience":"guru"},"acceptWaiver":true}`, guest); status != 400 ||
+		!strings.Contains(body, "form") {
+		t.Fatalf("bad form: %d %s", status, body)
+	}
+	if _, body := c.do("GET", "/tours/by-id/"+id, "", guest); obj(t, body)["myStatus"] != nil {
+		t.Fatalf("joined despite a bad form: %s", body)
+	}
+
+	// The form and the rules come with the sign-up; the participant sees
+	// their own.
+	status, body := c.do("POST", "/tours/"+id+"/join", `{"form":{"emergencyName":"  Мама ","emergencyPhone":"+996 555 000111","experience":"hiking","health":" астма "},"acceptWaiver":true}`, guest)
+	me := obj(t, body)
+	if status != 200 || me["myWaiverAt"] == nil || !strings.Contains(body, `"myForm":{"emergencyName":"Мама","emergencyPhone":"+996 555 000111","experience":"hiking","health":"астма","notes":null}`) {
+		t.Fatalf("join with a form: %d %s", status, body)
+	}
+	// The bot signs up without a body; the form comes later.
+	c.do("POST", "/tours/"+id+"/join", "", owner)
+	if _, body := c.do("GET", "/tours/by-id/"+id, "", owner); strings.Contains(body, "myForm") || strings.Contains(body, "myWaiverAt") {
+		t.Errorf("no form yet: %s", body)
+	}
+	if status, body := c.do("PUT", "/tours/"+id+"/form", `{"acceptWaiver":true}`, owner); status != 200 || obj(t, body)["myWaiverAt"] == nil {
+		t.Errorf("accept later: %d %s", status, body)
+	}
+	if status, _ := c.do("PUT", "/tours/"+id+"/form", `{"acceptWaiver":true}`, regular); status != 404 {
+		t.Errorf("form without signing up: %d", status)
+	}
+
+	// The organizer sees the forms in the group, and fills one in for a
+	// client added by hand.
+	_, body = c.do("POST", "/crm/clients", `{"name":"Айбек"}`, partner)
+	c.do("POST", "/crm/tours/"+id+"/participants", `{"clientId":"`+obj(t, body)["id"].(string)+`","status":"waitlist"}`, partner)
+	_, body = c.do("GET", "/crm/tours/"+id+"/participants", "", partner)
+	g := group(t, body)
+	if !strings.Contains(body, `"health":"астма"`) || !strings.Contains(body, `"waiverVersion":"v1"`) || !strings.Contains(body, `"forms":1,"waivers":2`) {
+		t.Fatalf("group forms: %s", body)
+	}
+	manual := g.Participants[2].ID
+	if status, body := c.do("PUT", "/crm/tours/"+id+"/participants/"+manual+"/form", `{"form":{"emergencyName":"Брат","emergencyPhone":"+996 700 1","experience":"none"}}`, partner); status != 200 ||
+		!strings.Contains(body, `"emergencyName":"Брат"`) {
+		t.Errorf("partner fills a form: %d %s", status, body)
+	}
+	if status, _ := c.do("PUT", "/crm/tours/"+id+"/participants/"+manual+"/form", `{"form":null}`, owner); status != 404 {
+		t.Errorf("another partner's participant: %d", status)
+	}
+}

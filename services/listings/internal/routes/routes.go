@@ -58,6 +58,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.GET("/tours/by-id/:id", optionalUser, trips.Get)
 	r.POST("/tours/:id/join", requireUser, trips.Join)
 	r.DELETE("/tours/:id/join", requireUser, trips.Leave)
+	r.PUT("/tours/:id/form", requireUser, trips.SaveForm)
 	r.PUT("/tours/:id/participants/:userId/arrival", requireUser, trips.SetArrival)
 	r.DELETE("/tours/:id/participants/:userId/arrival", requireUser, trips.SetArrival)
 	r.PUT("/tours/:id/rating", requireUser, trips.Rate)
@@ -105,6 +106,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	partnerOnly.POST("/tours/:id/participants", crm.AddParticipant)
 	partnerOnly.PATCH("/tours/:id/participants/:pid", crm.UpdateParticipant)
 	partnerOnly.DELETE("/tours/:id/participants/:pid", crm.DeleteParticipant)
+	partnerOnly.PUT("/tours/:id/participants/:pid/form", crm.SetForm)
 	partnerOnly.POST("/tours/:id/participants/:pid/payments", crm.AddPayment)
 	partnerOnly.DELETE("/payments/:id", crm.DeletePayment)
 

@@ -272,9 +272,7 @@ export class Header {
     // Things that stick under the header (a tour's tabs) follow it up
     // when it tucks away: --header-offset (styles.css).
     effect(() => {
-      const root = this.document.documentElement;
-      if (this.tucked()) root.dataset['headerTucked'] = '';
-      else delete root.dataset['headerTucked'];
+      this.document.documentElement.toggleAttribute('data-header-tucked', this.tucked());
     });
 
     // Close the panels after navigating.

@@ -3,6 +3,7 @@ import { injectLang } from '@/core/i18n/current-lang';
 import { formatAmount } from '@/core/lib/format';
 import { Notify } from '@/core/notify/notify';
 import { injectConfirm } from '@/ui/confirm-dialog';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -24,7 +25,7 @@ const ROLES: StaffRole[] = ['guide', 'assistant', 'driver', 'cook', 'other'];
 // Every change answers with the whole group, handed up through `changed`.
 @Component({
   selector: 'app-tour-ops',
-  imports: [TranslocoPipe],
+  imports: [SelectField, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'grid gap-4 lg:grid-cols-2' },
   template: `
@@ -50,14 +51,10 @@ const ROLES: StaffRole[] = ['guide', 'assistant', 'driver', 'cook', 'other'];
           }
         </ul>
       }
-      <form class="grid gap-2 sm:grid-cols-[9rem_7rem_1fr_auto] sm:items-end" novalidate (submit)="addExpense($event, category.value, expenseAmount.value, expenseNote.value)">
+      <form class="grid gap-2 sm:grid-cols-[9rem_7rem_1fr_auto] sm:items-end" novalidate (submit)="addExpense($event, category(), expenseAmount.value, expenseNote.value)">
         <div class="ui-field">
-          <label class="ui-label" for="expense-category">{{ 'crm.finance.category' | transloco }}</label>
-          <select #category id="expense-category" class="ui-input">
-            @for (c of categories; track c) {
-              <option [value]="c">{{ 'crm.expense.' + c | transloco }}</option>
-            }
-          </select>
+          <span class="ui-label" id="expense-category">{{ 'crm.finance.category' | transloco }}</span>
+          <app-select-field [options]="categoryOptions()" labelledBy="expense-category" [value]="category()" (valueChange)="category.set($event)" />
         </div>
         <div class="ui-field">
           <label class="ui-label" for="expense-amount">{{ 'crm.payment.amount' | transloco }}</label>
@@ -92,14 +89,10 @@ const ROLES: StaffRole[] = ['guide', 'assistant', 'driver', 'cook', 'other'];
       } @else {
         <p class="text-sm text-text-muted">{{ 'crm.staff.empty' | transloco }}</p>
       }
-      <form class="grid gap-2 sm:grid-cols-[8rem_1fr_9rem_auto] sm:items-end" novalidate (submit)="addStaff($event, role.value, staffName.value, staffPhone.value)">
+      <form class="grid gap-2 sm:grid-cols-[8rem_1fr_9rem_auto] sm:items-end" novalidate (submit)="addStaff($event, role(), staffName.value, staffPhone.value)">
         <div class="ui-field">
-          <label class="ui-label" for="staff-role">{{ 'crm.staff.role' | transloco }}</label>
-          <select #role id="staff-role" class="ui-input">
-            @for (r of roles; track r) {
-              <option [value]="r">{{ 'crm.staff.' + r | transloco }}</option>
-            }
-          </select>
+          <span class="ui-label" id="staff-role">{{ 'crm.staff.role' | transloco }}</span>
+          <app-select-field [options]="roleOptions()" labelledBy="staff-role" [value]="role()" (valueChange)="role.set($event)" />
         </div>
         <div class="ui-field">
           <label class="ui-label" for="staff-name">{{ 'crm.client.name' | transloco }}</label>
@@ -122,8 +115,14 @@ export class TourOps {
   private readonly notify = inject(Notify);
   private readonly confirm = injectConfirm();
   private readonly lang = injectLang();
-  protected readonly categories = CATEGORIES;
-  protected readonly roles = ROLES;
+  protected readonly categoryOptions = injectOptions(() =>
+    CATEGORIES.map((c) => ({ value: c, key: `crm.expense.${c}` })),
+  );
+  protected readonly roleOptions = injectOptions(() =>
+    ROLES.map((r) => ({ value: r, key: `crm.staff.${r}` })),
+  );
+  protected readonly category = signal<string>('transport');
+  protected readonly role = signal<string>('guide');
   protected readonly busy = signal(false);
 
   protected amount(value: number): string {

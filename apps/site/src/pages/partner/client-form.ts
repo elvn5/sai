@@ -1,6 +1,7 @@
 import type { CrmClient } from '@/core/api/types';
 import { CLIENT_SOURCES } from '@/pages/partner/crm';
 import { FieldErrors } from '@/ui/field-errors';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -25,7 +26,7 @@ const TELEGRAM = /^@?[A-Za-z0-9_]{5,32}$/;
 // one (for an account the name is optional: the account's shows).
 @Component({
   selector: 'app-client-form',
-  imports: [FieldErrors, FormField, TranslocoPipe],
+  imports: [FieldErrors, FormField, SelectField, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -48,13 +49,8 @@ const TELEGRAM = /^@?[A-Za-z0-9_]{5,32}$/;
         </div>
       </div>
       <div class="ui-field">
-        <label class="ui-label" [for]="prefix() + 'source'">{{ 'crm.client.source' | transloco }}</label>
-        <select class="ui-input" [id]="prefix() + 'source'" [formField]="clientForm.source">
-          <option value="">{{ 'crm.source.unknown' | transloco }}</option>
-          @for (s of sources; track s) {
-            <option [value]="s">{{ 'crm.source.' + s | transloco }}</option>
-          }
-        </select>
+        <span class="ui-label" [id]="prefix() + 'source'">{{ 'crm.client.source' | transloco }}</span>
+        <app-select-field [options]="sourceOptions()" [labelledBy]="prefix() + 'source'" [formField]="clientForm.source" />
       </div>
       <div class="ui-field">
         <label class="ui-label" [for]="prefix() + 'tags'">{{ 'crm.client.tags' | transloco }}</label>
@@ -84,7 +80,10 @@ export class ClientForm {
   private readonly http = inject(HttpClient);
   private readonly transloco = inject(TranslocoService);
   protected readonly failed = signal(false);
-  protected readonly sources = CLIENT_SOURCES;
+  protected readonly sourceOptions = injectOptions(() => [
+    { value: '', key: 'crm.source.unknown' },
+    ...CLIENT_SOURCES.map((s) => ({ value: s, key: `crm.source.${s}` })),
+  ]);
   protected readonly account = computed(() => this.client()?.userId != null);
   protected readonly prefix = computed(() => `client-${this.client()?.id ?? 'new'}-`);
 

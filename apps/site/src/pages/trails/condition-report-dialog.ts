@@ -4,6 +4,7 @@ import { AVALANCHE_RISKS, TRACTIONS, TRAIL_STATES } from '@/core/lib/trail-optio
 import { FieldErrors } from '@/ui/field-errors';
 import { type IconOption, IconPicker } from '@/ui/icon-picker';
 import { PhotoUploader } from '@/ui/photo-uploader';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
@@ -38,7 +39,7 @@ function daysBack(days: number): string {
 // after a trip. Closes with true once saved.
 @Component({
   selector: 'app-condition-report-dialog',
-  imports: [FieldErrors, FormField, IconPicker, PhotoUploader, TranslocoPipe],
+  imports: [FieldErrors, FormField, IconPicker, PhotoUploader, SelectField, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="ui-dialog flex flex-col gap-5" novalidate (submit)="send($event)">
@@ -60,15 +61,10 @@ function daysBack(days: number): string {
         <app-icon-picker [options]="tractionOptions" [formField]="reportForm.traction" />
       </div>
       <div class="grid gap-4 sm:grid-cols-2">
-        <label class="ui-field">
-          {{ 'trails.conditions.avalanche' | transloco }}
-          <select class="ui-input" [formField]="reportForm.avalancheRisk">
-            <option value="">{{ 'trails.conditions.avalancheUnknown' | transloco }}</option>
-            @for (risk of risks; track risk) {
-              <option [value]="risk">{{ 'trails.avalanche.' + risk | transloco }}</option>
-            }
-          </select>
-        </label>
+        <div class="ui-field">
+          <span id="report-avalanche">{{ 'trails.conditions.avalanche' | transloco }}</span>
+          <app-select-field [options]="riskOptions()" labelledBy="report-avalanche" [formField]="reportForm.avalancheRisk" />
+        </div>
         <label class="ui-field">
           {{ 'trails.conditions.snowLine' | transloco }}
           <input class="ui-input" type="number" inputmode="numeric" [placeholder]="'trails.conditions.snowLinePlaceholder' | transloco" [formField]="reportForm.snowLine" />
@@ -107,7 +103,10 @@ export class ConditionReportDialog {
 
   protected readonly today = todayInBishkek();
   protected readonly earliest = daysBack(REPORT_WINDOW_DAYS);
-  protected readonly risks = AVALANCHE_RISKS;
+  protected readonly riskOptions = injectOptions(() => [
+    { value: '', key: 'trails.conditions.avalancheUnknown' },
+    ...AVALANCHE_RISKS.map((risk) => ({ value: risk, key: `trails.avalanche.${risk}` })),
+  ]);
   protected readonly maxPhotos = MAX_PHOTOS;
   protected readonly stateOptions: IconOption[] = TRAIL_STATES.map((option) => ({
     ...option,

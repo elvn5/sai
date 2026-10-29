@@ -1,8 +1,15 @@
+import { injectLang } from '@/core/i18n/current-lang';
+import {
+  CdkConnectedOverlay,
+  CdkOverlayOrigin,
+  type ConnectedPosition,
+} from '@angular/cdk/overlay';
 import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
   Injector,
+  type Signal,
   afterNextRender,
   computed,
   inject,
@@ -10,9 +17,10 @@ import {
   model,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 export interface SelectOption {
   value: string;
@@ -22,6 +30,16 @@ export interface SelectOption {
 // Lists longer than this get a search box.
 const SEARCH_FROM = 8;
 
+// The list opens below the field, or above it when there's no room; it
+// floats over the page (an overlay), so scrolling boxes and cards don't
+// clip it.
+const POSITIONS: ConnectedPosition[] = [
+  { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 6 },
+  { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 6 },
+  { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -6 },
+  { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -6 },
+];
+
 let nextId = 0;
 
 // Search ignores case and «ё».
@@ -29,23 +47,28 @@ export function normalize(text: string): string {
   return text.toLocaleLowerCase().replaceAll('ё', 'е').trim();
 }
 
-// A select: the field shows the chosen label, a click opens the list (with
-// a search box for long lists). Keyboard: arrows, Home/End move, Enter
-// picks, Escape closes; without a search box, typing a letter jumps to it.
+// A select used everywhere instead of the browser's <select>: the field
+// shows the chosen label, a click opens the list (with a search box for
+// long lists). Keyboard: arrows, Home/End move, Enter picks, Escape
+// closes; without a search box, typing a letter jumps to it. size "sm"
+// fits table rows and cards. Works as a form control ([formField]) or with
+// [value] / (valueChange).
 @Component({
   selector: 'app-select-field',
-  imports: [TranslocoPipe],
+  imports: [CdkConnectedOverlay, CdkOverlayOrigin, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'relative block',
-    '(document:click)': 'onDocumentClick($event)',
     '(focusout)': 'onFocusOut($event)',
     '(keydown)': 'onKeydown($event)',
   },
   template: `
     <button
+      #origin="cdkOverlayOrigin"
+      cdkOverlayOrigin
       type="button"
       class="ui-input flex items-center gap-2 text-left"
+      [class.ui-select-sm]="size() === 'sm'"
       aria-haspopup="listbox"
       [attr.aria-expanded]="open()"
       [attr.aria-controls]="listId"
@@ -59,8 +82,17 @@ export function normalize(text: string): string {
       <span class="icon-[heroicons--chevron-up-down] size-4 shrink-0 text-text-muted" aria-hidden="true"></span>
     </button>
 
-    @if (open()) {
-      <div class="motion-drop-in absolute top-full right-0 left-0 z-50 mt-2 rounded-xl border border-border bg-surface p-1 shadow-lg">
+    <ng-template
+      cdkConnectedOverlay
+      [cdkConnectedOverlayOrigin]="origin"
+      [cdkConnectedOverlayOpen]="open()"
+      [cdkConnectedOverlayPositions]="positions"
+      [cdkConnectedOverlayMinWidth]="width()"
+      [cdkConnectedOverlayPush]="true"
+      (overlayOutsideClick)="onOutsideClick($event)"
+      (detach)="close(false)"
+    >
+      <div #panel tabindex="-1" class="motion-drop-in w-max outline-none max-w-[min(22rem,calc(100vw-2rem))] min-w-full rounded-xl border border-border bg-surface p-1 text-sm text-text shadow-lg" (keydown)="onKeydown($event)" (focusout)="onFocusOut($event)">
         @if (searchable()) {
           <label class="ui-input-icon m-1">
             <span class="icon-[heroicons--magnifying-glass]" aria-hidden="true"></span>
@@ -110,7 +142,7 @@ export function normalize(text: string): string {
           }
         </ul>
       </div>
-    }
+    </ng-template>
   `,
 })
 export class SelectField implements FormValueControl<string> {
@@ -124,6 +156,7 @@ export class SelectField implements FormValueControl<string> {
   readonly labelledBy = input<string | null>(null);
   readonly disabled = input(false);
   readonly invalid = input(false);
+  readonly size = input<'md' | 'sm'>('md');
   readonly touch = output<void>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -132,6 +165,10 @@ export class SelectField implements FormValueControl<string> {
   protected readonly triggerId = `select-${nextId}`;
   protected readonly listId = `select-list-${nextId++}`;
   protected readonly open = signal(false);
+  protected readonly positions = POSITIONS;
+  // The list is at least as wide as the field.
+  protected readonly width = signal(0);
+  private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
   protected readonly query = signal('');
   // Index of the highlighted option in the filtered list.
   protected readonly active = signal(0);
@@ -165,10 +202,12 @@ export class SelectField implements FormValueControl<string> {
         this.options().findIndex((option) => option.value === this.value()),
       ),
     );
+    this.width.set(this.trigger()?.offsetWidth ?? 0);
     this.open.set(true);
     afterNextRender(
       () => {
-        const panel = this.host.nativeElement;
+        const panel = this.panel()?.nativeElement;
+        if (!panel) return;
         (
           panel.querySelector<HTMLElement>('input[type="search"]') ??
           panel.querySelector<HTMLElement>('[role="listbox"]')
@@ -179,12 +218,15 @@ export class SelectField implements FormValueControl<string> {
     );
   }
 
-  private close(returnFocus: boolean): void {
+  private trigger(): HTMLElement | null {
+    return this.host.nativeElement.querySelector<HTMLElement>(`#${this.triggerId}`);
+  }
+
+  protected close(returnFocus: boolean): void {
     if (!this.open()) return;
     this.open.set(false);
     this.touch.emit();
-    if (returnFocus)
-      this.host.nativeElement.querySelector<HTMLElement>(`#${this.triggerId}`)?.focus();
+    if (returnFocus) this.trigger()?.focus();
   }
 
   protected pick(option: SelectOption): void {
@@ -242,20 +284,29 @@ export class SelectField implements FormValueControl<string> {
     }
   }
 
-  protected onDocumentClick(event: MouseEvent): void {
-    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) this.close(false);
+  // A click outside the list closes it; the field's own click toggles it.
+  protected onOutsideClick(event: MouseEvent): void {
+    if (!this.host.nativeElement.contains(event.target as Node)) this.close(false);
   }
 
+  // Focus leaving both the field and the list closes it.
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
-    if (next && !this.host.nativeElement.contains(next)) this.close(false);
+    if (
+      next &&
+      !this.host.nativeElement.contains(next) &&
+      !this.panel()?.nativeElement.contains(next)
+    )
+      this.close(false);
   }
 
   private scrollActiveIntoView(): void {
     afterNextRender(
       () => {
         const id = this.activeOptionId();
-        const option = id ? this.host.nativeElement.querySelector<HTMLElement>(`#${id}`) : null;
+        const option = id
+          ? (this.panel()?.nativeElement.querySelector<HTMLElement>(`#${id}`) ?? null)
+          : null;
         const list = option?.parentElement;
         if (!option || !list) return;
         if (option.offsetTop < list.scrollTop) list.scrollTop = option.offsetTop;
@@ -265,4 +316,20 @@ export class SelectField implements FormValueControl<string> {
       { injector: this.injector },
     );
   }
+}
+
+// Options whose labels are translation keys, translated again when the
+// language changes (call in an injection context). `label` wins over `key`.
+export function injectOptions(
+  source: () => { value: string; key?: string; label?: string }[],
+): Signal<SelectOption[]> {
+  const transloco = inject(TranslocoService);
+  const lang = injectLang();
+  return computed(() => {
+    lang();
+    return source().map((o) => ({
+      value: o.value,
+      label: o.label ?? transloco.translate(o.key ?? o.value),
+    }));
+  });
 }

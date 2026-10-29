@@ -4,6 +4,7 @@ import { formatInBishkek } from '@/core/lib/format';
 import { Notify } from '@/core/notify/notify';
 import { LEAD_STAGES, clientName } from '@/pages/partner/crm';
 import { injectConfirm } from '@/ui/confirm-dialog';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import { SiteLink } from '@/ui/site-link';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
@@ -15,7 +16,7 @@ import { firstValueFrom } from 'rxjs';
 // lead (null once deleted).
 @Component({
   selector: 'app-lead-card',
-  imports: [SiteLink, TranslocoPipe],
+  imports: [SelectField, SiteLink, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -38,12 +39,8 @@ import { firstValueFrom } from 'rxjs';
         <p class="text-danger">{{ 'crm.leads.reason' | transloco }}: {{ l.lostReason }}</p>
       }
       <div class="flex items-center gap-2">
-        <label class="sr-only" [for]="'stage-' + l.id">{{ 'crm.leads.stage' | transloco }}</label>
-        <select class="ui-input flex-1 py-1 text-sm" [id]="'stage-' + l.id" [value]="losing() ? 'lost' : l.stage" [disabled]="busy()" (change)="pick($any($event.target).value)">
-          @for (s of stages; track s) {
-            <option [value]="s">{{ 'crm.leads.stages.' + s | transloco }}</option>
-          }
-        </select>
+        <span class="sr-only" [id]="'stage-' + l.id">{{ 'crm.leads.stage' | transloco }}</span>
+        <app-select-field class="flex-1" size="sm" [options]="stageOptions()" [labelledBy]="'stage-' + l.id" [value]="losing() ? 'lost' : l.stage" [disabled]="busy()" (valueChange)="pick($any($event))" />
         <button type="button" class="ui-icon-btn size-7" [attr.aria-label]="'crm.leads.delete' | transloco" [disabled]="busy()" (click)="remove()"><span class="icon-[heroicons--trash] size-4" aria-hidden="true"></span></button>
       </div>
       @if (losing()) {
@@ -64,7 +61,9 @@ export class LeadCard {
   private readonly notify = inject(Notify);
   private readonly confirm = injectConfirm();
   private readonly lang = injectLang();
-  protected readonly stages = LEAD_STAGES;
+  protected readonly stageOptions = injectOptions(() =>
+    LEAD_STAGES.map((s) => ({ value: s, key: `crm.leads.stages.${s}` })),
+  );
   protected readonly busy = signal(false);
   protected readonly losing = signal(false);
 

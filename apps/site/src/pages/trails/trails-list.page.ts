@@ -10,6 +10,7 @@ import { TrailsMap } from '@/pages/trails/trails-map';
 import { BottomSheet } from '@/ui/bottom-sheet';
 import { ListSkeleton } from '@/ui/list-skeleton';
 import { LoadError } from '@/ui/load-error';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import { SiteLink } from '@/ui/site-link';
 import { StateBlock } from '@/ui/state-block';
 import { CdkMenu, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
@@ -47,6 +48,7 @@ const GRADE_GROUPS = [
     CdkMenuTrigger,
     ListSkeleton,
     LoadError,
+    SelectField,
     SiteLink,
     StateBlock,
     TrailCard,
@@ -141,23 +143,14 @@ const GRADE_GROUPS = [
       }
 
       <div class="mt-4 flex flex-wrap items-end gap-3">
-        <label class="flex min-w-40 flex-col gap-1 text-sm text-text">
-          {{ 'trails.form.kind' | transloco }}
-          <select class="ui-input" [value]="kind() ?? ''" (change)="set({ kind: $any($event.target).value })">
-            <option value="">{{ 'trails.catalog.allKinds' | transloco }}</option>
-            @for (option of kinds; track option.value) {
-              <option [value]="option.value">{{ 'trails.kind.' + option.value | transloco }}</option>
-            }
-          </select>
-        </label>
-        <label class="flex min-w-40 flex-col gap-1 text-sm text-text">
-          {{ 'trails.catalog.sort' | transloco }}
-          <select class="ui-input" [value]="sort() ?? 'popular'" (change)="set({ sort: $any($event.target).value })">
-            @for (value of sorts; track value) {
-              <option [value]="value">{{ 'trails.catalog.sorts.' + value | transloco }}</option>
-            }
-          </select>
-        </label>
+        <div class="flex min-w-40 flex-col gap-1 text-sm text-text">
+          <span id="trails-kind">{{ 'trails.form.kind' | transloco }}</span>
+          <app-select-field [options]="kindOptions()" labelledBy="trails-kind" [value]="kind() ?? ''" (valueChange)="set({ kind: $event || null })" />
+        </div>
+        <div class="flex min-w-40 flex-col gap-1 text-sm text-text">
+          <span id="trails-sort">{{ 'trails.catalog.sort' | transloco }}</span>
+          <app-select-field [options]="sortOptions()" labelledBy="trails-sort" [value]="sort() ?? 'popular'" (valueChange)="set({ sort: $event })" />
+        </div>
         <div class="ml-auto flex gap-1 rounded-xl border border-border p-1" role="group" [attr.aria-label]="'trails.catalog.view' | transloco">
           <button type="button" class="ui-btn-ghost" [attr.aria-pressed]="view() !== 'map'" (click)="set({ view: null })"><span class="icon-[heroicons--squares-2x2] size-4" aria-hidden="true"></span>{{ 'trails.catalog.list' | transloco }}</button>
           <button type="button" class="ui-btn-soft" [attr.aria-pressed]="view() === 'map'" (click)="set({ view: 'map' })"><span class="icon-[heroicons--map] size-4" aria-hidden="true"></span>{{ 'trails.map.title' | transloco }}</button>
@@ -282,8 +275,14 @@ export class TrailsListPage {
   private readonly transloco = inject(TranslocoService);
   protected readonly set = injectQueryFilters();
   protected readonly seasons = SEASONS;
-  protected readonly kinds = KINDS;
   protected readonly sorts = ['popular', 'name', 'elevation', 'newest'];
+  protected readonly kindOptions = injectOptions(() => [
+    { value: '', key: 'trails.catalog.allKinds' },
+    ...KINDS.map((option) => ({ value: option.value, key: `trails.kind.${option.value}` })),
+  ]);
+  protected readonly sortOptions = injectOptions(() =>
+    this.sorts.map((value) => ({ value, key: `trails.catalog.sorts.${value}` })),
+  );
   protected readonly gradeGroups = GRADE_GROUPS;
   // "3A and harder": the last grade group, also a pill of its own.
   protected readonly hardest = GRADE_GROUPS[3].value;

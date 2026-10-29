@@ -4,6 +4,7 @@ import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { LEAD_STAGES, clientName } from '@/pages/partner/crm';
 import { LeadCard } from '@/pages/partner/lead-card';
+import { SelectField } from '@/ui/select-field';
 import { StateBlock } from '@/ui/state-block';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
@@ -15,7 +16,7 @@ import { firstValueFrom } from 'rxjs';
 // opens one by itself; signing up for the partner's tour wins it.
 @Component({
   selector: 'app-partner-leads-page',
-  imports: [LeadCard, StateBlock, TranslocoPipe],
+  imports: [LeadCard, SelectField, StateBlock, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-5">
@@ -30,23 +31,14 @@ import { firstValueFrom } from 'rxjs';
       </div>
 
       @if (adding()) {
-        <form class="ui-card grid gap-3 p-4 sm:grid-cols-[1fr_1fr_1.5fr_auto] sm:items-end" (submit)="create($event, client.value, tour.value, note.value)">
+        <form class="ui-card grid gap-3 p-4 sm:grid-cols-[1fr_1fr_1.5fr_auto] sm:items-end" (submit)="create($event, leadClient(), leadTour(), note.value)">
           <div class="ui-field">
-            <label class="ui-label" for="lead-client">{{ 'crm.leads.client' | transloco }}</label>
-            <select #client id="lead-client" class="ui-input">
-              @for (c of clients(); track c.id) {
-                <option [value]="c.id">{{ name(c) }}</option>
-              }
-            </select>
+            <span class="ui-label" id="lead-client">{{ 'crm.leads.client' | transloco }}</span>
+            <app-select-field [options]="clientOptions()" labelledBy="lead-client" [placeholder]="'crm.leads.client' | transloco" [value]="leadClient()" (valueChange)="leadClient.set($event)" />
           </div>
           <div class="ui-field">
-            <label class="ui-label" for="lead-tour">{{ 'crm.leads.tour' | transloco }}</label>
-            <select #tour id="lead-tour" class="ui-input">
-              <option value="">—</option>
-              @for (t of tours(); track t.id) {
-                <option [value]="t.id">{{ t.title }} · {{ t.startDate }}</option>
-              }
-            </select>
+            <span class="ui-label" id="lead-tour">{{ 'crm.leads.tour' | transloco }}</span>
+            <app-select-field [options]="tourOptions()" labelledBy="lead-tour" [value]="leadTour()" (valueChange)="leadTour.set($event)" />
           </div>
           <div class="ui-field">
             <label class="ui-label" for="lead-note">{{ 'crm.payment.note' | transloco }}</label>
@@ -102,6 +94,15 @@ export class PartnerLeadsPage {
     this.adding() ? '/tours/mine' : undefined,
   );
   protected readonly tours = computed(() => loaded(this.tourList) ?? []);
+  protected readonly clientOptions = computed(() =>
+    this.clients().map((c) => ({ value: c.id, label: clientName(c) })),
+  );
+  protected readonly tourOptions = computed(() => [
+    { value: '', label: '—' },
+    ...this.tours().map((t) => ({ value: t.id, label: `${t.title} · ${t.startDate}` })),
+  ]);
+  protected readonly leadClient = signal('');
+  protected readonly leadTour = signal('');
 
   constructor() {
     bindPageMeta(() => ({
@@ -109,10 +110,6 @@ export class PartnerLeadsPage {
       description: this.transloco.translate('crm.leads.subtitle'),
       robots: 'noindex',
     }));
-  }
-
-  protected name(c: CrmClient): string {
-    return clientName(c);
   }
 
   protected changed(id: string, lead: CrmLead | null): void {
@@ -140,6 +137,8 @@ export class PartnerLeadsPage {
       );
       this.leads.update((list) => [lead, ...(list ?? [])]);
       this.adding.set(false);
+      this.leadClient.set('');
+      this.leadTour.set('');
     } catch {
       this.notify.error({ title: 'crm.saveError' });
     } finally {

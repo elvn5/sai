@@ -39,10 +39,17 @@ async function render(
 
 const trigger = (host: HTMLElement): HTMLButtonElement =>
   host.querySelector('button') as HTMLButtonElement;
-const labels = (host: HTMLElement): string[] =>
-  Array.from(host.querySelectorAll('[role="option"]')).map((o) => o.textContent?.trim() ?? '');
+// The open list floats in the CDK overlay container, outside the field.
+const overlay = (): HTMLElement =>
+  document.querySelector<HTMLElement>('.cdk-overlay-container') ?? document.body;
+const labels = (_host?: HTMLElement): string[] =>
+  Array.from(overlay().querySelectorAll('[role="option"]')).map((o) => o.textContent?.trim() ?? '');
+// Keys reach the field (focus on it) or the open list.
 const key = (host: HTMLElement, name: string): void => {
-  host.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true }));
+  const target = overlay().querySelector('[role="listbox"]')?.closest('div') ?? host;
+  target.dispatchEvent(
+    new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true }),
+  );
 };
 
 describe('SelectField', () => {
@@ -64,11 +71,11 @@ describe('SelectField', () => {
     trigger(host).click();
     await stable();
     // A short list has no search box.
-    expect(host.querySelector('input[type="search"]')).toBeNull();
-    (host.querySelectorAll('[role="option"]')[2] as HTMLElement).click();
+    expect(overlay().querySelector('input[type="search"]')).toBeNull();
+    (overlay().querySelectorAll('[role="option"]')[2] as HTMLElement).click();
     await stable();
     expect(field.value()).toBe('t1');
-    expect(host.querySelector('[role="listbox"]')).toBeNull();
+    expect(overlay().querySelector('[role="listbox"]')).toBeNull();
     expect(touched).toHaveBeenCalledTimes(1);
   });
 
@@ -76,7 +83,7 @@ describe('SelectField', () => {
     const { host, field, stable } = await render(ROUTES);
     key(host, 'ArrowDown'); // opens
     await stable();
-    const search = host.querySelector('input[type="search"]') as HTMLInputElement;
+    const search = overlay().querySelector('input[type="search"]') as HTMLInputElement;
     expect(search).not.toBeNull();
     search.value = 'кель';
     search.dispatchEvent(new Event('input'));
@@ -92,16 +99,16 @@ describe('SelectField', () => {
     trigger(host).click();
     await stable();
     search.value = 'нет такого';
-    (host.querySelector('input[type="search"]') as HTMLInputElement).value = 'нет такого';
-    host.querySelector('input[type="search"]')?.dispatchEvent(new Event('input'));
+    (overlay().querySelector('input[type="search"]') as HTMLInputElement).value = 'нет такого';
+    overlay().querySelector('input[type="search"]')?.dispatchEvent(new Event('input'));
     await stable();
     expect(labels(host)).toEqual([]);
-    expect(host.textContent).toContain('picker.noResults');
+    expect(overlay().textContent).toContain('picker.noResults');
     key(host, 'Enter');
     key(host, 'Escape');
     await stable();
     expect(field.value()).toBe('t3');
-    expect(host.querySelector('[role="listbox"]')).toBeNull();
+    expect(overlay().querySelector('[role="listbox"]')).toBeNull();
   });
 
   it('opens on the chosen option and jumps by first letter', async () => {
@@ -109,7 +116,7 @@ describe('SelectField', () => {
     trigger(host).click();
     await stable();
     const active = (): string | undefined =>
-      (host.querySelector('[data-active="true"]') as HTMLElement | null)?.textContent?.trim();
+      (overlay().querySelector('[data-active="true"]') as HTMLElement | null)?.textContent?.trim();
     expect(active()).toBe('Барскоон');
     key(host, 'к');
     await stable();
@@ -128,6 +135,6 @@ describe('SelectField', () => {
     await stable();
     document.body.click();
     await stable();
-    expect(host.querySelector('[role="listbox"]')).toBeNull();
+    expect(overlay().querySelector('[role="listbox"]')).toBeNull();
   });
 });

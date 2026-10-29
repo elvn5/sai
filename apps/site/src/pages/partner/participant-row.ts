@@ -13,6 +13,7 @@ import { injectConfirm } from '@/ui/confirm-dialog';
 import { FieldErrors } from '@/ui/field-errors';
 import { ParticipantFormView } from '@/ui/participant-form';
 import { PersonAvatar } from '@/ui/person-avatar';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import { SiteLink } from '@/ui/site-link';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import {
@@ -37,7 +38,15 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
 // answers with the whole group, handed up through `changed`.
 @Component({
   selector: 'app-participant-row',
-  imports: [FieldErrors, FormField, ParticipantFormView, PersonAvatar, SiteLink, TranslocoPipe],
+  imports: [
+    FieldErrors,
+    FormField,
+    ParticipantFormView,
+    PersonAvatar,
+    SelectField,
+    SiteLink,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -64,12 +73,8 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
             }
           </p>
         </div>
-        <label class="sr-only" [for]="'status-' + p.id">{{ 'crm.statusLabel' | transloco }}</label>
-        <select class="ui-input w-auto py-1.5 text-sm" [id]="'status-' + p.id" [value]="p.status" [disabled]="busy()" (change)="setStatus($any($event.target).value)">
-          @for (s of statuses; track s) {
-            <option [value]="s">{{ 'crm.status.' + s | transloco }}</option>
-          }
-        </select>
+        <span class="sr-only" [id]="'status-' + p.id">{{ 'crm.statusLabel' | transloco }}</span>
+        <app-select-field class="w-40" size="sm" [options]="statusOptions()" [labelledBy]="'status-' + p.id" [value]="p.status" [disabled]="busy()" (valueChange)="setStatus($any($event))" />
         @if (p.status === 'new' || p.status === 'confirmed') {
           <button type="button" class="ui-btn-soft ui-btn-xs" [attr.aria-pressed]="!!p.arrivedAt" [disabled]="busy()" (click)="toggleArrived()">
             <span [class]="(p.arrivedAt ? 'icon-[heroicons--check-circle-solid] text-success' : 'icon-[heroicons--minus-circle] text-text-muted') + ' size-4'" aria-hidden="true"></span>{{ 'crm.arrived' | transloco }}
@@ -116,23 +121,16 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
 
           <form class="grid gap-2 sm:grid-cols-[8rem_8rem_9rem_10rem_1fr_auto] sm:items-end" novalidate (submit)="addPayment($event)">
             <div class="ui-field">
-              <label class="ui-label" [for]="'kind-' + p.id">{{ 'crm.payment.kind' | transloco }}</label>
-              <select class="ui-input" [id]="'kind-' + p.id" [formField]="paymentForm.kind">
-                <option value="payment">{{ 'crm.payment.payment' | transloco }}</option>
-                <option value="refund">{{ 'crm.payment.refund' | transloco }}</option>
-              </select>
+              <span class="ui-label" [id]="'kind-' + p.id">{{ 'crm.payment.kind' | transloco }}</span>
+              <app-select-field [options]="kindOptions()" [labelledBy]="'kind-' + p.id" [formField]="paymentForm.kind" />
             </div>
             <div class="ui-field">
               <label class="ui-label" [for]="'amount-' + p.id">{{ 'crm.payment.amount' | transloco }}</label>
               <input class="ui-input" type="number" inputmode="numeric" [id]="'amount-' + p.id" [formField]="paymentForm.amount" />
             </div>
             <div class="ui-field">
-              <label class="ui-label" [for]="'method-' + p.id">{{ 'crm.payment.method' | transloco }}</label>
-              <select class="ui-input" [id]="'method-' + p.id" [formField]="paymentForm.method">
-                @for (m of methods; track m) {
-                  <option [value]="m">{{ 'crm.method.' + m | transloco }}</option>
-                }
-              </select>
+              <span class="ui-label" [id]="'method-' + p.id">{{ 'crm.payment.method' | transloco }}</span>
+              <app-select-field [options]="methodOptions()" [labelledBy]="'method-' + p.id" [formField]="paymentForm.method" />
             </div>
             <div class="ui-field">
               <label class="ui-label" [for]="'paid-on-' + p.id">{{ 'crm.payment.date' | transloco }}</label>
@@ -187,8 +185,16 @@ export class ParticipantRow {
   private readonly transloco = inject(TranslocoService);
   private readonly confirm = injectConfirm();
   private readonly lang = injectLang();
-  protected readonly statuses = PARTICIPANT_STATUSES;
-  protected readonly methods = METHODS;
+  protected readonly statusOptions = injectOptions(() =>
+    PARTICIPANT_STATUSES.map((s) => ({ value: s, key: `crm.status.${s}` })),
+  );
+  protected readonly kindOptions = injectOptions(() => [
+    { value: 'payment', key: 'crm.payment.payment' },
+    { value: 'refund', key: 'crm.payment.refund' },
+  ]);
+  protected readonly methodOptions = injectOptions(() =>
+    METHODS.map((m) => ({ value: m, key: `crm.method.${m}` })),
+  );
   protected readonly busy = signal(false);
   protected readonly open = signal(false);
   protected readonly editingForm = signal(false);

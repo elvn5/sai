@@ -11,6 +11,7 @@ import { FieldErrors } from '@/ui/field-errors';
 import { IconMultiPicker, type IconOption, IconPicker } from '@/ui/icon-picker';
 import { PhotoUploader } from '@/ui/photo-uploader';
 import { RichTextEditor } from '@/ui/rich-text-editor';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -133,6 +134,7 @@ function toModel(trail: Trail | undefined): TrailFormModel {
     IconPicker,
     PhotoUploader,
     RichTextEditor,
+    SelectField,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -151,24 +153,14 @@ function toModel(trail: Trail | undefined): TrailFormModel {
           <app-field-errors [state]="trailForm.summary()" />
         </label>
         <div class="grid gap-4 sm:grid-cols-2">
-          <label class="ui-field">
-            {{ 'trails.form.area' | transloco }}
-            <select class="ui-input" [formField]="trailForm.area">
-              @for (area of areas; track area) {
-                <option [value]="area">{{ 'trails.area.' + area | transloco }}</option>
-              }
-            </select>
-          </label>
-          <label class="ui-field">
-            {{ 'trails.form.grade' | transloco }}
-            <select class="ui-input" [formField]="trailForm.grade">
-              @for (grade of grades; track grade) {
-                <option [value]="grade">
-                  @if (grade === 'trail') { {{ 'trails.grade.trail' | transloco }} } @else { {{ gradeLabel(grade) }} }
-                </option>
-              }
-            </select>
-          </label>
+          <div class="ui-field">
+            <span id="trail-area">{{ 'trails.form.area' | transloco }}</span>
+            <app-select-field [options]="areaOptions()" labelledBy="trail-area" [formField]="trailForm.area" />
+          </div>
+          <div class="ui-field">
+            <span id="trail-grade">{{ 'trails.form.grade' | transloco }}</span>
+            <app-select-field [options]="gradeOptions()" labelledBy="trail-grade" [formField]="trailForm.grade" />
+          </div>
         </div>
         <div class="ui-field">
           <span>{{ 'trails.form.kind' | transloco }}</span>
@@ -317,8 +309,16 @@ export class TrailForm {
 
   private readonly transloco = inject(TranslocoService);
   private readonly uploads = inject(UploadApi);
-  protected readonly areas = AREAS;
-  protected readonly grades = GRADES;
+  protected readonly areaOptions = injectOptions(() =>
+    AREAS.map((area) => ({ value: area, key: `trails.area.${area}` })),
+  );
+  protected readonly gradeOptions = injectOptions(() =>
+    GRADES.map((grade) =>
+      grade === 'trail'
+        ? { value: grade, key: 'trails.grade.trail' }
+        : { value: grade, label: formatGrade(grade) },
+    ),
+  );
   protected readonly maxPhotos = MAX_PHOTOS;
   private readonly lang = injectLang();
   // Options read the language at render: labels follow the switcher.

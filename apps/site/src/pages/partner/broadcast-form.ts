@@ -2,6 +2,7 @@ import type { CrmTemplate } from '@/core/api/types';
 import { loaded } from '@/core/lib/resource';
 import { Notify } from '@/core/notify/notify';
 import { FieldErrors } from '@/ui/field-errors';
+import { SelectField, injectOptions } from '@/ui/select-field';
 import { HttpClient, httpResource } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -22,7 +23,7 @@ import { z } from 'zod/mini';
 // partner; the text can start from a saved template.
 @Component({
   selector: 'app-broadcast-form',
-  imports: [FieldErrors, FormField, TranslocoPipe],
+  imports: [FieldErrors, FormField, SelectField, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
@@ -30,16 +31,8 @@ import { z } from 'zod/mini';
       @if (!audience()) {
         <div class="grid gap-2 sm:grid-cols-2">
           <div class="ui-field">
-            <label class="ui-label" for="broadcast-audience">{{ 'crm.broadcast.audience' | transloco }}</label>
-            <select id="broadcast-audience" class="ui-input" [value]="target()" (change)="target.set($any($event.target).value)">
-              <option value="all">{{ 'crm.broadcast.all' | transloco }}</option>
-              @for (t of tags(); track t) {
-                <option [value]="'tag:' + t">{{ 'crm.broadcast.tag' | transloco: { tag: t } }}</option>
-              }
-              @for (tour of tours(); track tour.id) {
-                <option [value]="'tour:' + tour.id">{{ 'crm.broadcast.tour' | transloco: { title: tour.title } }}</option>
-              }
-            </select>
+            <span class="ui-label" id="broadcast-audience">{{ 'crm.broadcast.audience' | transloco }}</span>
+            <app-select-field [options]="audienceOptions()" labelledBy="broadcast-audience" [value]="target()" (valueChange)="target.set($event)" />
           </div>
         </div>
       }
@@ -79,6 +72,17 @@ export class BroadcastForm {
   private readonly notify = inject(Notify);
   private readonly transloco = inject(TranslocoService);
   protected readonly target = signal('all');
+  protected readonly audienceOptions = injectOptions(() => [
+    { value: 'all', key: 'crm.broadcast.all' },
+    ...this.tags().map((t) => ({
+      value: `tag:${t}`,
+      label: this.transloco.translate('crm.broadcast.tag', { tag: t }),
+    })),
+    ...this.tours().map((tour) => ({
+      value: `tour:${tour.id}`,
+      label: this.transloco.translate('crm.broadcast.tour', { title: tour.title }),
+    })),
+  ]);
   private readonly templates = httpResource<CrmTemplate[]>(() => '/crm/templates');
   protected readonly templateList = computed(() => loaded(this.templates) ?? []);
 

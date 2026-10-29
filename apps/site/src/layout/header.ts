@@ -12,6 +12,7 @@ import { DestinationSearch } from '@/ui/destination-search';
 import { Menu, MenuPanel, MenuTrigger } from '@/ui/menu';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
+import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -216,6 +217,7 @@ const TUCK_AFTER = 240;
 export class Header {
   protected readonly auth = inject(AuthStore);
   protected readonly chats = inject(ChatUnread);
+  private readonly document = inject(DOCUMENT);
   private readonly chrome = inject(PageChrome);
   private readonly notify = inject(Notify);
   protected readonly links = NAV_LINKS;
@@ -265,6 +267,14 @@ export class Header {
       onScroll();
       addEventListener('scroll', onScroll, { passive: true });
       destroyRef.onDestroy(() => removeEventListener('scroll', onScroll));
+    });
+
+    // Things that stick under the header (a tour's tabs) follow it up
+    // when it tucks away: --header-offset (styles.css).
+    effect(() => {
+      const root = this.document.documentElement;
+      if (this.tucked()) root.dataset['headerTucked'] = '';
+      else delete root.dataset['headerTucked'];
     });
 
     // Close the panels after navigating.

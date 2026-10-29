@@ -153,7 +153,7 @@ import { firstValueFrom } from 'rxjs';
                     <img [ngSrc]="media(item.coverImageUrl)" fill priority [sizes]="coverSizes" [alt]="item.title" class="object-cover" />
                   </div>
                 }
-                <nav class="ui-tabs sticky top-15 z-10 -mx-4 bg-bg/92 px-4 backdrop-blur-sm lg:mx-0 lg:mt-4 lg:px-0" [attr.aria-label]="'tours.sections' | transloco">
+                <nav class="ui-tabs sticky top-(--header-offset) z-10 transition-[top] duration-(--dur-base) ease-standard -mx-4 bg-bg/92 px-4 backdrop-blur-sm lg:mx-0 lg:mt-4 lg:px-0" [attr.aria-label]="'tours.sections' | transloco">
                   <a href="#about" class="ui-tab" [attr.aria-current]="spy.active() === 'about' ? 'true' : null" (click)="spy.go('about', $event)">{{ 'tours.tabs.about' | transloco }}</a>
                   @if (showProgram()) {
                     <a href="#program" class="ui-tab" [attr.aria-current]="spy.active() === 'program' ? 'true' : null" (click)="spy.go('program', $event)">{{ 'tours.tabs.program' | transloco }}</a>
@@ -197,7 +197,7 @@ import { firstValueFrom } from 'rxjs';
             </div>
 
             <aside>
-              <div class="flex flex-col gap-4 lg:sticky lg:top-20">
+              <div class="flex flex-col gap-4 transition-[top] duration-(--dur-base) ease-standard lg:sticky lg:top-[calc(var(--header-offset)+1.25rem)]">
                 <!-- Travelers sign up here; online booking (payment) is paused for now. -->
                 @defer (on idle; hydrate on idle) {
                   <app-tour-signup [tour]="item" (changed)="refresh()" />

@@ -13,6 +13,16 @@
 /* .prose for blog posts, guides and the editor. */
 @plugin "@tailwindcss/typography";
 
+/* How far below the top of the window sticky things sit: under the site
+   header (h-15), or at the top while it is tucked away on scrolling down
+   (layout/header.ts sets data-header-tucked). */
+:root {
+  --header-offset: 3.75rem;
+}
+:root[data-header-tucked] {
+  --header-offset: 0px;
+}
+
 /* The UI kit shared with apps/panel: plain elements with these classes.
    Tailwind 4 can't @apply one component class inside another, so shared
    bases are selector lists. */

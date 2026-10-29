@@ -30,6 +30,7 @@ type clientRequest struct {
 	Telegram validation.Field[string]             `json:"telegram" binding:"omitempty,telegram"`
 	Note     validation.Field[string]             `json:"note" binding:"omitempty,max=4000"`
 	Tags     []string                             `json:"tags" binding:"omitempty,max=20,dive,min=1,max=40"`
+	Source   validation.Field[string]             `json:"source" binding:"omitempty,oneof=ermekten instagram whatsapp telegram phone referral other"`
 	creating bool
 }
 
@@ -46,6 +47,7 @@ func (r clientRequest) apply(in *store.ClientInput) {
 	applyField(&in.Phone, r.Phone)
 	applyField(&in.Note, r.Note)
 	applyField(&in.Telegram, r.Telegram)
+	applyField(&in.Source, r.Source)
 	if in.Telegram != nil {
 		stripped := strings.TrimPrefix(*in.Telegram, "@")
 		in.Telegram = &stripped
@@ -79,6 +81,7 @@ type participantRequest struct {
 }
 
 type paymentRequest struct {
+	Kind   *string                  `json:"kind" binding:"omitempty,oneof=payment refund"`
 	Amount *int                     `json:"amount" binding:"required,gt=0,lte=100000000"`
 	Method *string                  `json:"method" binding:"required,oneof=cash transfer card other"`
 	PaidOn *string                  `json:"paidOn" binding:"required,isodate"`
@@ -216,6 +219,14 @@ func (h *CRM) respondClient(c *gin.Context, status int, id string) {
 		}
 		cl.Chat = chat
 	}
+	if cl.Leads, err = h.Store.Leads(ctx, me, cl.ID); err != nil {
+		h.fail(c, err, clientNotFound, "")
+		return
+	}
+	if cl.Tasks, err = h.Store.Tasks(ctx, me, cl.ID, false); err != nil {
+		h.fail(c, err, clientNotFound, "")
+		return
+	}
 	respond.JSON(c, status, cl)
 }
 
@@ -251,7 +262,7 @@ func (h *CRM) UpdateClient(c *gin.Context) {
 		h.fail(c, err, clientNotFound, "")
 		return
 	}
-	in := store.ClientInput{Name: cl.Name, Phone: cl.Phone, Telegram: cl.Telegram, Note: cl.Note, Tags: cl.Tags}
+	in := store.ClientInput{Name: cl.Name, Phone: cl.Phone, Telegram: cl.Telegram, Note: cl.Note, Tags: cl.Tags, Source: cl.Source}
 	req.apply(&in)
 	if cl.UserID == nil && in.Name == nil {
 		httperr.Abort(c, http.StatusBadRequest, "A client added by hand needs a name")
@@ -345,6 +356,16 @@ func (h *CRM) respondGroup(c *gin.Context, status int, tour models.Tour) {
 	}
 	people := h.accounts(ctx, ids)
 	out := models.CRMGroup{Tour: tour, Participants: group}
+	if out.Expenses, err = h.Store.TourExpenses(ctx, tour.ID); err == nil {
+		out.Staff, err = h.Store.TourStaff(ctx, tour.ID)
+	}
+	if err != nil {
+		h.fail(c, err, tourNotFound, "")
+		return
+	}
+	for _, e := range out.Expenses {
+		out.Totals.Expenses += e.Amount
+	}
 	for i, p := range group {
 		out.Participants[i].Account = accountOf(people, p.UserID)
 		switch p.Status {
@@ -365,6 +386,7 @@ func (h *CRM) respondGroup(c *gin.Context, status int, tour models.Tour) {
 			out.Totals.Waitlist++
 		}
 	}
+	out.Totals.Margin = out.Totals.Paid - out.Totals.Expenses
 	if out.Participants == nil {
 		out.Participants = []models.CRMParticipant{}
 	}
@@ -483,8 +505,12 @@ func (h *CRM) AddPayment(c *gin.Context) {
 		trimmed := strings.TrimSpace(req.Note.Value)
 		note = &trimmed
 	}
+	kind := "payment"
+	if req.Kind != nil {
+		kind = *req.Kind
+	}
 	if _, err := h.Store.AddPayment(c.Request.Context(), id, store.PaymentInput{
-		Amount: *req.Amount, Method: *req.Method, PaidOn: *req.PaidOn, Note: note,
+		Kind: kind, Amount: *req.Amount, Method: *req.Method, PaidOn: *req.PaidOn, Note: note,
 	}); err != nil {
 		h.fail(c, err, participantNotFound, "")
 		return

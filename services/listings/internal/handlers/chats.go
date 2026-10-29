@@ -119,6 +119,11 @@ func (h *Chats) Open(c *gin.Context) {
 			return
 		}
 		partner, traveler = *req.PartnerID, me
+		// A traveler writing to an organizer is a lead.
+		if err := h.Store.OpenInquiry(ctx, partner, traveler); err != nil {
+			h.fail(c, err, chatNotFound, "")
+			return
+		}
 	}
 	id, err := h.Store.OpenChat(ctx, partner, traveler)
 	if err != nil {

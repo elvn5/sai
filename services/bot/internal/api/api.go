@@ -129,6 +129,10 @@ type Tour struct {
 	IsOrganizer bool `json:"isOrganizer"`
 	// The user's place on one tour: "waitlist" while waiting for one.
 	MyStatus string `json:"myStatus"`
+	// Whether the participant filled in their form and accepted the rules
+	// (on the site).
+	MyForm     *json.RawMessage `json:"myForm"`
+	MyWaiverAt *string          `json:"myWaiverAt"`
 	// The organizer's: who signed up and who came, and how many wait for a
 	// place.
 	Roster   []RosterEntry `json:"roster"`
@@ -164,6 +168,12 @@ func (t Tour) Full() bool { return t.Capacity != nil && t.Taken >= *t.Capacity }
 
 // Waiting reports whether the user is on the tour's waitlist.
 func (t Tour) Waiting() bool { return t.MyStatus == "waitlist" }
+
+// FormMissing reports whether a participant still has to fill in their
+// form or accept the rules.
+func (t Tour) FormMissing() bool {
+	return (t.IsJoined || t.Waiting()) && (t.MyForm == nil || t.MyWaiverAt == nil)
+}
 
 // StatCounts are a listing's visits and contact-button clicks.
 type StatCounts struct {

@@ -9,18 +9,24 @@ import (
 // their tours (Account) or someone they added by hand. Name, phone and
 // Telegram are what the partner typed in.
 type CRMClient struct {
-	ID        string              `json:"id"`
-	UserID    *string             `json:"userId"`
-	Account   *usersclient.Author `json:"account"`
-	Name      *string             `json:"name"`
-	Phone     *string             `json:"phone"`
-	Telegram  *string             `json:"telegram"`
-	Note      *string             `json:"note"`
-	Tags      []string            `json:"tags"`
-	CreatedAt jsontime.Time       `json:"createdAt"`
-	Stats     CRMClientStats      `json:"stats"`
-	History   []CRMClientTour     `json:"history,omitempty"`
-	Chat      *string             `json:"chatId,omitempty"`
+	ID       string              `json:"id"`
+	UserID   *string             `json:"userId"`
+	Account  *usersclient.Author `json:"account"`
+	Name     *string             `json:"name"`
+	Phone    *string             `json:"phone"`
+	Telegram *string             `json:"telegram"`
+	Note     *string             `json:"note"`
+	Tags     []string            `json:"tags"`
+	// Where they came from (ermekten, instagram, whatsapp, ...); nil if
+	// not known.
+	Source    *string        `json:"source"`
+	CreatedAt jsontime.Time  `json:"createdAt"`
+	Stats     CRMClientStats `json:"stats"`
+	// On the card: their leads and open tasks.
+	Leads   []CRMLead       `json:"leads,omitempty"`
+	Tasks   []CRMTask       `json:"tasks,omitempty"`
+	History []CRMClientTour `json:"history,omitempty"`
+	Chat    *string         `json:"chatId,omitempty"`
 }
 
 // CRMClientStats sums up a client's places on the partner's tours
@@ -77,6 +83,8 @@ type CRMGroup struct {
 	Tour         Tour             `json:"tour"`
 	Participants []CRMParticipant `json:"participants"`
 	Totals       CRMTotals        `json:"totals"`
+	Expenses     []CRMExpense     `json:"expenses"`
+	Staff        []CRMStaff       `json:"staff"`
 }
 
 type CRMTotals struct {
@@ -89,11 +97,16 @@ type CRMTotals struct {
 	// rules.
 	Forms   int `json:"forms"`
 	Waivers int `json:"waivers"`
+	// What the tour cost, and what's left of what was paid.
+	Expenses int `json:"expenses"`
+	Margin   int `json:"margin"`
 }
 
 // CRMPayment is money the partner received from a participant.
 type CRMPayment struct {
-	ID        string        `json:"id"`
+	ID string `json:"id"`
+	// "payment", or "refund" (counts against what they paid).
+	Kind      string        `json:"kind"`
 	Amount    int           `json:"amount"`
 	Method    string        `json:"method"`
 	PaidOn    string        `json:"paidOn"`
@@ -150,4 +163,125 @@ type ChatThread struct {
 	ChatSummary
 	PeerReadAt *jsontime.Time `json:"peerReadAt"`
 	Messages   []ChatMessage  `json:"messages"`
+}
+
+// CRMExpense is what a departure cost the partner.
+type CRMExpense struct {
+	ID        string        `json:"id"`
+	Category  string        `json:"category"`
+	Amount    int           `json:"amount"`
+	Note      *string       `json:"note"`
+	CreatedAt jsontime.Time `json:"createdAt"`
+}
+
+// CRMStaff is someone who works on a departure: a guide, a driver...
+type CRMStaff struct {
+	ID    string  `json:"id"`
+	Role  string  `json:"role"`
+	Name  string  `json:"name"`
+	Phone *string `json:"phone"`
+	Note  *string `json:"note"`
+}
+
+// CRMClientRef names a client on a lead or a task.
+type CRMClientRef struct {
+	ID      string              `json:"id"`
+	UserID  *string             `json:"userId"`
+	Name    *string             `json:"name"`
+	Account *usersclient.Author `json:"account"`
+}
+
+// CRMTourRef names a tour on a lead or a task.
+type CRMTourRef struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	StartDate string `json:"startDate"`
+}
+
+// CRMLead is an inquiry on its way to a booking: new, working, offer,
+// then won or lost (with a reason).
+type CRMLead struct {
+	ID         string        `json:"id"`
+	Client     CRMClientRef  `json:"client"`
+	Source     *string       `json:"source"`
+	Tour       *CRMTourRef   `json:"tour"`
+	Stage      string        `json:"stage"`
+	LostReason *string       `json:"lostReason"`
+	Note       *string       `json:"note"`
+	CreatedAt  jsontime.Time `json:"createdAt"`
+	UpdatedAt  jsontime.Time `json:"updatedAt"`
+}
+
+// CRMTask is a to-do of the partner's, due on a day.
+type CRMTask struct {
+	ID     string         `json:"id"`
+	Title  string         `json:"title"`
+	DueOn  string         `json:"dueOn"`
+	Done   bool           `json:"done"`
+	Client *CRMClientRef  `json:"client"`
+	Tour   *CRMTourRef    `json:"tour"`
+	DoneAt *jsontime.Time `json:"doneAt"`
+}
+
+// CRMTemplate is a text the partner sends again and again.
+type CRMTemplate struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
+// CRMBroadcast is a message sent to many clients at once: how many got it
+// in their chat and how many were skipped (no account).
+type CRMBroadcast struct {
+	ID        string        `json:"id"`
+	Audience  string        `json:"audience"`
+	Body      string        `json:"body"`
+	Sent      int           `json:"sent"`
+	Skipped   int           `json:"skipped"`
+	CreatedAt jsontime.Time `json:"createdAt"`
+}
+
+// CRMReport sums up the partner's departures that started in a period
+// (from–to, YYYY-MM-DD), their money and their leads.
+type CRMReport struct {
+	From  string `json:"from"`
+	To    string `json:"to"`
+	Tours int    `json:"tours"`
+	// Places on tours with a capacity, and how many of them were taken.
+	Places int `json:"places"`
+	Taken  int `json:"taken"`
+	// Participants with a place; those marked as arrived and not (on
+	// tours where the organizer marked anyone); cancellations.
+	Participants int `json:"participants"`
+	Arrived      int `json:"arrived"`
+	NoShows      int `json:"noShows"`
+	Cancelled    int `json:"cancelled"`
+	// Clients with a place in the period, and those of them who had gone
+	// on one of the partner's tours before.
+	Clients       int `json:"clients"`
+	RepeatClients int `json:"repeatClients"`
+	Revenue       int `json:"revenue"`
+	Expenses      int `json:"expenses"`
+	// Leads opened in the period, by where the client came from.
+	Leads []CRMLeadSource `json:"leads"`
+	// The period's tours, latest first.
+	ByTour []CRMReportTour `json:"byTour"`
+}
+
+type CRMLeadSource struct {
+	Source *string `json:"source"`
+	Total  int     `json:"total"`
+	Won    int     `json:"won"`
+	Lost   int     `json:"lost"`
+}
+
+type CRMReportTour struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	StartDate string `json:"startDate"`
+	Capacity  *int   `json:"capacity"`
+	Taken     int    `json:"taken"`
+	Arrived   int    `json:"arrived"`
+	Revenue   int    `json:"revenue"`
+	Expenses  int    `json:"expenses"`
 }

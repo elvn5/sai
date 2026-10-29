@@ -22,9 +22,12 @@ const participantClientJoin = `JOIN tours t ON t.id = p.tour_id
 
 // What a participant owes and has paid.
 const dueSQL = `coalesce(p.amount_due, t.price, 0)`
-const paidSQL = `(SELECT coalesce(sum(amount), 0) FROM tour_payments pay WHERE pay.participant_id = p.id)`
 
-const clientColumns = `c.id::text, c.user_id::text, c.name, c.phone, c.telegram, c.note, c.tags, c.created_at,
+// signedSQL is a payment's amount with refunds negative.
+const signedSQL = `CASE WHEN pay.kind = 'refund' THEN -pay.amount ELSE pay.amount END`
+const paidSQL = `(SELECT coalesce(sum(` + signedSQL + `), 0) FROM tour_payments pay WHERE pay.participant_id = p.id)`
+
+const clientColumns = `c.id::text, c.user_id::text, c.name, c.phone, c.telegram, c.note, c.tags, c.source, c.created_at,
 	coalesce(a.tours, 0), a.last_tour, coalesce(a.due, 0), coalesce(a.paid, 0)`
 
 // clientStats sums a client's places with the partner (c.partner_id).
@@ -39,7 +42,7 @@ const clientStats = `LEFT JOIN LATERAL (
 func scanClient(r pgx.Row) (models.CRMClient, error) {
 	var c models.CRMClient
 	var created time.Time
-	err := r.Scan(&c.ID, &c.UserID, &c.Name, &c.Phone, &c.Telegram, &c.Note, &c.Tags, &created,
+	err := r.Scan(&c.ID, &c.UserID, &c.Name, &c.Phone, &c.Telegram, &c.Note, &c.Tags, &c.Source, &created,
 		&c.Stats.Tours, &c.Stats.LastTour, &c.Stats.Due, &c.Stats.Paid)
 	c.CreatedAt = jsontime.New(created)
 	c.Tags = nonNil(c.Tags)
@@ -84,24 +87,24 @@ func (s *Store) CRMClient(ctx context.Context, partnerID, id string) (models.CRM
 
 // ClientInput is what the partner types in about a client.
 type ClientInput struct {
-	Name, Phone, Telegram, Note *string
-	Tags                        []string
+	Name, Phone, Telegram, Note, Source *string
+	Tags                                []string
 }
 
 // CreateClient adds a client by hand (someone without an account here).
 func (s *Store) CreateClient(ctx context.Context, partnerID string, in ClientInput) (string, error) {
 	var id string
-	err := s.db.QueryRow(ctx, `INSERT INTO crm_clients (partner_id, name, phone, telegram, note, tags)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING id::text`,
-		partnerID, in.Name, in.Phone, in.Telegram, in.Note, nonNil(in.Tags)).Scan(&id)
+	err := s.db.QueryRow(ctx, `INSERT INTO crm_clients (partner_id, name, phone, telegram, note, tags, source)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id::text`,
+		partnerID, in.Name, in.Phone, in.Telegram, in.Note, nonNil(in.Tags), in.Source).Scan(&id)
 	return id, err
 }
 
 // UpdateClient replaces what the partner typed in about a client.
 func (s *Store) UpdateClient(ctx context.Context, partnerID, id string, in ClientInput) error {
 	tag, err := s.db.Exec(ctx, `UPDATE crm_clients SET name = $3, phone = $4, telegram = $5, note = $6, tags = $7,
-		updated_at = now() WHERE partner_id = $1 AND id = $2`,
-		partnerID, id, in.Name, in.Phone, in.Telegram, in.Note, nonNil(in.Tags))
+		source = $8, updated_at = now() WHERE partner_id = $1 AND id = $2`,
+		partnerID, id, in.Name, in.Phone, in.Telegram, in.Note, nonNil(in.Tags), in.Source)
 	if err != nil {
 		return err
 	}
@@ -161,7 +164,7 @@ func (s *Store) Group(ctx context.Context, tourID string) ([]models.CRMParticipa
 	if err != nil || len(group) == 0 {
 		return group, err
 	}
-	rows, err = s.db.Query(ctx, `SELECT pay.participant_id::text, pay.id::text, pay.amount, pay.method,
+	rows, err = s.db.Query(ctx, `SELECT pay.participant_id::text, pay.id::text, pay.kind, pay.amount, pay.method,
 		to_char(pay.paid_on, 'YYYY-MM-DD'), pay.note, pay.created_at
 		FROM tour_payments pay JOIN tour_participants p ON p.id = pay.participant_id
 		WHERE p.tour_id = $1 ORDER BY pay.paid_on, pay.created_at`, tourID)
@@ -176,7 +179,7 @@ func (s *Store) Group(ctx context.Context, tourID string) ([]models.CRMParticipa
 		var owner string
 		var pay models.CRMPayment
 		var created time.Time
-		if err := r.Scan(&owner, &pay.ID, &pay.Amount, &pay.Method, &pay.PaidOn, &pay.Note, &created); err != nil {
+		if err := r.Scan(&owner, &pay.ID, &pay.Kind, &pay.Amount, &pay.Method, &pay.PaidOn, &pay.Note, &created); err != nil {
 			return struct{}{}, err
 		}
 		pay.CreatedAt = jsontime.New(created)
@@ -348,6 +351,8 @@ func (s *Store) DeleteParticipant(ctx context.Context, participantID string) (*P
 
 // PaymentInput is a payment the partner records.
 type PaymentInput struct {
+	// "payment" or "refund".
+	Kind   string
 	Amount int
 	Method string
 	PaidOn string
@@ -357,9 +362,10 @@ type PaymentInput struct {
 func (s *Store) AddPayment(ctx context.Context, participantID string, in PaymentInput) (models.CRMPayment, error) {
 	var p models.CRMPayment
 	var created time.Time
-	err := s.db.QueryRow(ctx, `INSERT INTO tour_payments (participant_id, amount, method, paid_on, note)
-		VALUES ($1, $2, $3, $4::date, $5) RETURNING id::text, amount, method, to_char(paid_on, 'YYYY-MM-DD'), note, created_at`,
-		participantID, in.Amount, in.Method, in.PaidOn, in.Note).Scan(&p.ID, &p.Amount, &p.Method, &p.PaidOn, &p.Note, &created)
+	err := s.db.QueryRow(ctx, `INSERT INTO tour_payments (participant_id, kind, amount, method, paid_on, note)
+		VALUES ($1, $2, $3, $4, $5::date, $6)
+		RETURNING id::text, kind, amount, method, to_char(paid_on, 'YYYY-MM-DD'), note, created_at`,
+		participantID, in.Kind, in.Amount, in.Method, in.PaidOn, in.Note).Scan(&p.ID, &p.Kind, &p.Amount, &p.Method, &p.PaidOn, &p.Note, &created)
 	p.CreatedAt = jsontime.New(created)
 	return p, err
 }
@@ -383,7 +389,7 @@ func (s *Store) CRMSummary(ctx context.Context, partnerID string, today time.Tim
 	day := today.Format(time.DateOnly)
 	err := s.db.QueryRow(ctx, `SELECT
 		(SELECT count(*)::int FROM crm_clients WHERE partner_id = $1),
-		(SELECT coalesce(sum(pay.amount), 0)::int FROM tour_payments pay
+		(SELECT coalesce(sum(`+signedSQL+`), 0)::int FROM tour_payments pay
 			JOIN tour_participants p ON p.id = pay.participant_id JOIN tours t ON t.id = p.tour_id
 			WHERE t.user_id = $1 AND pay.paid_on >= date_trunc('month', $2::date)),
 		(SELECT coalesce(sum(greatest(`+dueSQL+` - `+paidSQL+`, 0)), 0)::int

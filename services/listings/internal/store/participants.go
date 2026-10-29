@@ -74,8 +74,11 @@ func (s *Store) Join(ctx context.Context, tourID, userID string, startsAt, now t
 		return "", duplicate(err)
 	}
 	if owner != nil {
-		if _, err := tx.Exec(ctx, `INSERT INTO crm_clients (partner_id, user_id) VALUES ($1, $2)
+		if _, err := tx.Exec(ctx, `INSERT INTO crm_clients (partner_id, user_id, source) VALUES ($1, $2, 'ermekten')
 			ON CONFLICT (partner_id, user_id) DO NOTHING`, *owner, userID); err != nil {
+			return "", err
+		}
+		if err := winLeads(ctx, tx, *owner, userID, tourID); err != nil {
 			return "", err
 		}
 	}

@@ -283,3 +283,117 @@ func TestParticipantForm(t *testing.T) {
 		t.Errorf("another partner's participant: %d", status)
 	}
 }
+
+func TestCRMTools(t *testing.T) {
+	c, notifier, tg, clock := setupTrips(t, telegram.RU)
+	ctx := context.Background()
+	_, body := c.do("POST", "/tours", strings.Replace(tripTour, `"capacity":2`, `"capacity":3,"price":5000`, 1), partner)
+	id := obj(t, body)["id"].(string)
+
+	// A traveler who writes to the organizer becomes a client with a lead;
+	// signing up wins it.
+	c.do("POST", "/chats", `{"partnerId":"`+partner+`"}`, guest)
+	c.do("POST", "/chats", `{"partnerId":"`+partner+`"}`, guest) // no second lead
+	_, body = c.do("GET", "/crm/leads", "", partner)
+	if strings.Count(body, `"stage":"new"`) != 1 || !strings.Contains(body, `"source":"ermekten"`) || !strings.Contains(body, `"firstName":"User 2222"`) {
+		t.Fatalf("inquiry lead: %s", body)
+	}
+	c.do("POST", "/tours/"+id+"/join", "", guest)
+	if _, body := c.do("GET", "/crm/leads", "", partner); !strings.Contains(body, `"stage":"won"`) || !strings.Contains(body, `"tour":{"id":"`+id) {
+		t.Fatalf("won lead: %s", body)
+	}
+
+	// A lead by hand, moved through the stages; lost needs no tour.
+	_, body = c.do("POST", "/crm/clients", `{"name":"Айбек","source":"instagram","tags":["vip"]}`, partner)
+	manual := obj(t, body)["id"].(string)
+	if obj(t, body)["source"] != "instagram" {
+		t.Errorf("client source: %s", body)
+	}
+	status, body := c.do("POST", "/crm/leads", `{"clientId":"`+manual+`","tourId":"`+id+`","note":"звонил"}`, partner)
+	lead := obj(t, body)
+	if status != 201 || lead["stage"] != "new" || lead["note"] != "звонил" {
+		t.Fatalf("create lead: %d %s", status, body)
+	}
+	if _, body := c.do("PATCH", "/crm/leads/"+lead["id"].(string), `{"stage":"lost","lostReason":"дорого"}`, partner); obj(t, body)["lostReason"] != "дорого" {
+		t.Errorf("lose lead: %s", body)
+	}
+	if status, _ := c.do("POST", "/crm/leads", `{"clientId":"`+manual+`"}`, owner); status != 404 {
+		t.Errorf("lead on another partner's client: %d", status)
+	}
+
+	// Tasks: open ones by due day; done ones drop out.
+	c.do("POST", "/crm/tasks", `{"title":"Напомнить о доплате","dueOn":"2026-10-12","clientId":"`+manual+`"}`, partner)
+	_, body = c.do("POST", "/crm/tasks", `{"title":"Купить газ","dueOn":"2026-10-11","tourId":"`+id+`"}`, partner)
+	var tasks []map[string]any
+	_ = json.Unmarshal([]byte(body), &tasks)
+	if len(tasks) != 2 || tasks[0]["title"] != "Купить газ" || tasks[1]["client"].(map[string]any)["name"] != "Айбек" {
+		t.Fatalf("tasks: %s", body)
+	}
+	if _, body := c.do("PATCH", "/crm/tasks/"+tasks[0]["id"].(string), `{"done":true}`, partner); strings.Contains(body, "Купить газ") {
+		t.Errorf("done task still open: %s", body)
+	}
+	if _, body := c.do("GET", "/crm/clients/"+manual, "", partner); !strings.Contains(body, "Напомнить о доплате") || !strings.Contains(body, `"lostReason":"дорого"`) {
+		t.Errorf("client card: %s", body)
+	}
+
+	// The tour's money: a payment, a refund, expenses; staff.
+	_, body = c.do("GET", "/crm/tours/"+id+"/participants", "", partner)
+	pid := group(t, body).Participants[0].ID
+	c.do("POST", "/crm/tours/"+id+"/participants/"+pid+"/payments", `{"amount":5000,"method":"cash","paidOn":"2026-10-09"}`, partner)
+	c.do("POST", "/crm/tours/"+id+"/participants/"+pid+"/payments", `{"kind":"refund","amount":1000,"method":"transfer","paidOn":"2026-10-10"}`, partner)
+	c.do("POST", "/crm/tours/"+id+"/expenses", `{"category":"transport","amount":2500,"note":"Спринтер"}`, partner)
+	_, body = c.do("POST", "/crm/tours/"+id+"/staff", `{"role":"guide","name":" Азамат ","phone":"+996 555 7"}`, partner)
+	if !strings.Contains(body, `"paid":4000`) || !strings.Contains(body, `"expenses":2500,"margin":1500`) || !strings.Contains(body, `"name":"Азамат"`) {
+		t.Fatalf("tour money: %s", body)
+	}
+	g := obj(t, body)
+	expense := g["expenses"].([]any)[0].(map[string]any)["id"].(string)
+	if status, _ := c.do("DELETE", "/crm/expenses/"+expense, "", owner); status != 404 {
+		t.Errorf("another partner's expense: %d", status)
+	}
+	if _, body := c.do("DELETE", "/crm/expenses/"+expense, "", partner); !strings.Contains(body, `"expenses":[]`) {
+		t.Errorf("delete expense: %s", body)
+	}
+
+	// Templates and a broadcast to clients with a tag: accounts get it in
+	// their chat, clients added by hand are skipped.
+	_, body = c.do("POST", "/crm/templates", `{"title":"Список вещей","body":"Ботинки, куртка, вода"}`, partner)
+	if !strings.Contains(body, "Список вещей") {
+		t.Errorf("template: %s", body)
+	}
+	_, body = c.do("GET", "/crm/clients?q=user%202222", "", partner)
+	var page struct {
+		Items []struct {
+			ID string `json:"id"`
+		} `json:"items"`
+	}
+	_ = json.Unmarshal([]byte(body), &page)
+	c.do("PUT", "/crm/clients/"+page.Items[0].ID, `{"tags":["vip"]}`, partner)
+	*clock = clock.Add(time.Hour)
+	notifier.Tick(ctx)
+	tg.take()
+	if status, body := c.do("POST", "/crm/broadcasts", `{"audience":"tag:vip","body":"Скидка 10% на зимние туры"}`, partner); status != 201 || body != `{"sent":1,"skipped":1}` {
+		t.Fatalf("broadcast: %d %s", status, body)
+	}
+	notifier.Tick(ctx)
+	if sent := tg.take(); len(sent) != 1 || sent[0].chat != 1002 || !strings.Contains(sent[0].text, "Скидка 10%") {
+		t.Fatalf("broadcast message: %+v", sent)
+	}
+	if _, body := c.do("GET", "/crm/broadcasts", "", partner); !strings.Contains(body, `"audience":"tag:vip"`) {
+		t.Errorf("broadcasts: %s", body)
+	}
+	if status, _ := c.do("POST", "/crm/broadcasts", `{"audience":"tour:`+id+`","body":"x"}`, owner); status != 404 {
+		t.Errorf("broadcast to another partner's tour: %d", status)
+	}
+
+	// The report over the tour's dates.
+	_, body = c.do("GET", "/crm/reports?from=2026-10-01&to=2026-10-31", "", partner)
+	report := obj(t, body)
+	if report["tours"] != float64(1) || report["participants"] != float64(1) || report["revenue"] != float64(4000) ||
+		report["places"] != float64(3) || report["clients"] != float64(1) || !strings.Contains(body, `{"source":"instagram","total":1,"won":0,"lost":1}`) {
+		t.Errorf("report: %s", body)
+	}
+	if status, _ := c.do("GET", "/crm/reports?from=2026-10-31&to=2026-10-01", "", partner); status != 400 {
+		t.Errorf("bad period: %d", status)
+	}
+}

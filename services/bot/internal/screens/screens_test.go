@@ -106,6 +106,11 @@ func TestTourCardActions(t *testing.T) {
 	o.EndDate, o.Price, o.Telegram = "2026-10-25", num(500), str("aigul_trek")
 	o.Organizer = &api.Person{FirstName: str("Айгуль")}
 	o.IsJoined = true
+	if missing := screens.TourCard(i18n.RU, o, screens.FromTours, links, now); !strings.HasSuffix(missing.Text, "Организатору важно знать это до выезда.") {
+		t.Errorf("form missing:\n%s", missing.Text)
+	}
+	form, accepted := json.RawMessage(`{}`), "2026-10-10T00:00:00Z"
+	o.MyForm, o.MyWaiverAt = &form, &accepted
 
 	s := screens.TourCard(i18n.RU, o, screens.FromTours, links, now)
 	want := "🧭 <b>Пик Учитель</b>\n📅 24 — 25 октября\n\n🕕 Сбор: сб, 24 окт., 10:00\n📍 ТЦ «Вефа»\n" +

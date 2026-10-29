@@ -5,6 +5,7 @@ package screens_test
 // match the sketch exactly. Changing a screen means changing its sketch.
 
 import (
+	"encoding/json"
 	"net/url"
 	"strings"
 	"testing"
@@ -59,12 +60,17 @@ func checkScreen(t *testing.T, s screens.Screen, text string, rows ...string) {
 // run.
 var (
 	uchitel = api.Tour{ID: "o1", Title: "Пик Учитель", StartDate: "2026-10-24", EndDate: "2026-10-24", MeetingTime: str("06:00"),
-		MeetingPoint: str("ТЦ «Вефа», парковка"), Capacity: num(10), Taken: 7, IsJoined: true}
+		MeetingPoint: str("ТЦ «Вефа», парковка"), Capacity: num(10), Taken: 7, IsJoined: true,
+		MyForm: &filledForm, MyWaiverAt: str("2026-10-10T00:00:00Z")}
 	barskoon = api.Tour{ID: "o2", Title: "Водопад Барскоон", StartDate: "2026-11-01", EndDate: "2026-11-01", MeetingTime: str("07:30"),
 		Capacity: num(12), Taken: 4, IsOrganizer: true}
 	alaKol = api.Tour{ID: "o3", Title: "Озеро Ала-Кёль", StartDate: "2026-11-07", EndDate: "2026-11-08", MeetingTime: str("05:30"),
-		Taken: 9, IsJoined: true}
+		Taken: 9, IsJoined: true, MyForm: &filledForm, MyWaiverAt: str("2026-10-10T00:00:00Z")}
 )
+
+// The participant's form as the API returns it (its fields don't matter to
+// the bot).
+var filledForm = json.RawMessage(`{}`)
 
 func TestSketchMain(t *testing.T) {
 	next := uchitel

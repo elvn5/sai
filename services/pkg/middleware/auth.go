@@ -77,7 +77,11 @@ func RequirePartner() gin.HandlerFunc {
 // it runs after RequireUser with a lookup.
 func RequireOrganizer() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.GetString(ContextPartnerStatus) != "approved" || IsDriver(c) {
+		if c.GetString(ContextPartnerStatus) != "approved" {
+			httperr.Abort(c, http.StatusForbidden, "Only approved partners can do this")
+			return
+		}
+		if IsDriver(c) {
 			httperr.Abort(c, http.StatusForbidden, "Only approved tour organizers can do this")
 			return
 		}

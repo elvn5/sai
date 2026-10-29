@@ -36,7 +36,7 @@ const (
 	// regular is the only account that isn't an approved partner.
 	regular = "44444444-4444-4444-4444-444444444444"
 	// driver is an approved partner who carries tour groups.
-	driver = "55555555-5555-5555-5555-555555555555"
+	driver = "66666666-6666-6666-6666-666666666666"
 )
 
 func createDatabase(t *testing.T, migrate bool) (*pgxpool.Pool, string) {

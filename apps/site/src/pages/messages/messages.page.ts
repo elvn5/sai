@@ -77,7 +77,8 @@ const LIST_EVERY_MS = 15_000;
 export class MessagesPage {
   // The open chat (route parameter), if any.
   readonly id = input<string>();
-  // 'partner' in the partner cabinet: only chats with clients.
+  // 'partner' in the partner cabinet (links stay in it). Every chat shows:
+  // a partner also writes as a client (an organizer to a driver).
   readonly scope = input<'partner' | 'all'>('all');
 
   protected readonly auth = inject(AuthStore);
@@ -87,10 +88,7 @@ export class MessagesPage {
   protected readonly partner = computed(() => this.scope() === 'partner');
   protected readonly base = computed(() => (this.partner() ? '/partner/messages' : '/messages'));
   protected readonly chats = httpResource<ChatSummary[]>(() => '/chats');
-  protected readonly list = computed(() => {
-    const chats = loaded(this.chats) ?? [];
-    return this.partner() ? chats.filter((c) => c.role === 'partner') : chats;
-  });
+  protected readonly list = computed(() => loaded(this.chats) ?? []);
 
   constructor() {
     whileVisible(LIST_EVERY_MS, () => this.chats.reload());

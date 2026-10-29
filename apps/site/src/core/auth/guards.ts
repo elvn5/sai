@@ -5,6 +5,7 @@ import { PLATFORM_ID, inject } from '@angular/core';
 import {
   type ActivatedRouteSnapshot,
   type CanActivateFn,
+  type CanMatchFn,
   Router,
   type UrlTree,
 } from '@angular/router';
@@ -42,4 +43,12 @@ export const requirePartner: CanActivateFn = async (route, state): Promise<boole
   const redirect = injectRedirect(route);
   if (!(await auth.ensureSession())) return redirect('/login', { redirect: state.url });
   return auth.isPartner() || redirect('/profile', { tab: 'partner' });
+};
+
+// Matches the partner cabinet's driver pages (and the driver's dashboard
+// at /partner) for drivers only; organizers fall through to their own.
+export const matchDriver: CanMatchFn = async (): Promise<boolean> => {
+  if (isPlatformServer(inject(PLATFORM_ID))) return false;
+  const auth = inject(AuthStore);
+  return (await auth.ensureSession()) && auth.isDriver();
 };

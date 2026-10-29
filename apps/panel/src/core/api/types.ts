@@ -27,6 +27,8 @@ export interface AppUser {
   createdAt: string;
   partnerStatus: PartnerStatus;
   partnerRequestedAt: string | null;
+  // A tour organizer or a driver who carries tour groups.
+  partnerKind: 'organizer' | 'driver';
 }
 
 export enum Locale {

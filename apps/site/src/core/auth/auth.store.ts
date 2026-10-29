@@ -1,4 +1,9 @@
-import { type AppUser, PartnerStatus, type TelegramWidgetPayload } from '@/core/api/types';
+import {
+  type AppUser,
+  type PartnerKind,
+  PartnerStatus,
+  type TelegramWidgetPayload,
+} from '@/core/api/types';
 import { TelegramWebAppStore } from '@/core/telegram/telegram-web-app';
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
@@ -63,6 +68,11 @@ export class AuthStore {
   readonly checked = this.checkedSignal.asReadonly();
   // Only approved partners publish hotels, guides, photos and posts.
   readonly isPartner = computed(() => this.userSignal()?.partnerStatus === PartnerStatus.APPROVED);
+  // An approved partner who carries tour groups: their cabinet is the
+  // driver's CRM, and they don't publish tours.
+  readonly isDriver = computed(
+    () => this.isPartner() && this.userSignal()?.partnerKind === 'driver',
+  );
   readonly displayName = computed(() => {
     const user = this.userSignal();
     return user?.firstName ?? user?.username ?? '';
@@ -162,8 +172,8 @@ export class AuthStore {
   }
 
   // Asks the admin to make this account a partner (status becomes pending).
-  async applyAsPartner(): Promise<void> {
-    this.setUser((await this.post<{ user: AppUser }>('/partners/apply', {})).user);
+  async applyAsPartner(kind: PartnerKind = 'organizer'): Promise<void> {
+    this.setUser((await this.post<{ user: AppUser }>('/partners/apply', { kind })).user);
   }
 
   async logout(): Promise<void> {

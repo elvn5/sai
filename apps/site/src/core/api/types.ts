@@ -17,7 +17,11 @@ export interface AppUser {
   phone: string | null;
   avatarUrl: string | null;
   partnerStatus: PartnerStatus;
+  // A tour organizer or a driver who carries tour groups.
+  partnerKind: PartnerKind;
 }
+
+export type PartnerKind = 'organizer' | 'driver';
 
 // What the Telegram Login Widget hands to its callback.
 export interface TelegramWidgetPayload {
@@ -875,4 +879,168 @@ export interface CrmReport {
     revenue: number;
     expenses: number;
   }[];
+}
+
+// --- The driver's CRM ---
+
+export interface DriverProfile {
+  userId: string;
+  name: string;
+  phone: string | null;
+  region: string | null;
+  about: string | null;
+  published: boolean;
+}
+
+export type VehicleKind = 'sedan' | 'minivan' | 'minibus' | 'bus' | 'offroad' | 'other';
+
+export interface DriverVehicle {
+  id: string;
+  kind: VehicleKind;
+  model: string;
+  plate: string | null;
+  seats: number;
+  year: number | null;
+  // YYYY-MM-DD: when the insurance and the roadworthiness check run out.
+  insuranceUntil: string | null;
+  inspectionUntil: string | null;
+  note: string | null;
+  active: boolean;
+}
+
+export type TripStatus = 'requested' | 'accepted' | 'declined' | 'done' | 'cancelled';
+
+export interface DriverTripTour {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  meetingPoint: string | null;
+  meetingTime: string | null;
+  participants: number;
+}
+
+export interface DriverTripClient {
+  id: string;
+  userId: string | null;
+  account: Person | null;
+  name: string | null;
+  phone: string | null;
+}
+
+export interface DriverPayment {
+  id: string;
+  amount: number;
+  method: PaymentMethod;
+  paidOn: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export type DriverExpenseCategory =
+  | 'fuel'
+  | 'repair'
+  | 'maintenance'
+  | 'wash'
+  | 'parking'
+  | 'fines'
+  | 'insurance'
+  | 'other';
+
+export interface DriverExpense {
+  id: string;
+  category: DriverExpenseCategory;
+  amount: number;
+  spentOn: string;
+  note: string | null;
+  vehicleId: string | null;
+  vehicle: string | null;
+  tripId: string | null;
+}
+
+export interface DriverTrip {
+  id: string;
+  status: TripStatus;
+  startsAt: string;
+  endsAt: string | null;
+  routeFrom: string;
+  routeTo: string;
+  passengers: number | null;
+  price: number | null;
+  paid: number;
+  // The price less what was paid, for accepted and done trips.
+  due: number;
+  note: string | null;
+  declineReason: string | null;
+  vehicle: DriverVehicle | null;
+  client: DriverTripClient | null;
+  // Set when an organizer asked for the trip for one of their tours.
+  tour: DriverTripTour | null;
+  expenses: number;
+  createdAt: string;
+  payments?: DriverPayment[];
+  expenseList?: DriverExpense[];
+  chatId?: string | null;
+}
+
+export interface DriverDocument {
+  vehicleId: string;
+  vehicle: string;
+  kind: 'insurance' | 'inspection';
+  until: string;
+}
+
+export interface DriverSummary {
+  requests: number;
+  upcoming: DriverTrip[];
+  monthIncome: number;
+  monthExpenses: number;
+  due: number;
+  documents: DriverDocument[];
+  hasProfile: boolean;
+  published: boolean;
+  vehicles: number;
+}
+
+export interface DriverReport {
+  from: string;
+  to: string;
+  trips: number;
+  cancelled: number;
+  passengers: number;
+  income: number;
+  expenses: number;
+  profit: number;
+  byMonth: { month: string; trips: number; income: number; expenses: number }[];
+  byCategory: Partial<Record<DriverExpenseCategory, number>>;
+  byVehicle: {
+    id: string | null;
+    model: string | null;
+    trips: number;
+    income: number;
+    expenses: number;
+  }[];
+}
+
+// A driver in the organizers' catalog; busy on the day asked about.
+export interface CatalogDriver extends DriverProfile {
+  account: Person | null;
+  vehicles: DriverVehicle[];
+  trips: number;
+  busy: boolean;
+}
+
+// Transport asked for a tour, on its group page.
+export interface TransportRequest {
+  id: string;
+  status: TripStatus;
+  startsAt: string;
+  routeFrom: string;
+  routeTo: string;
+  passengers: number | null;
+  price: number | null;
+  note: string | null;
+  declineReason: string | null;
+  driver: DriverProfile;
+  vehicle: DriverVehicle | null;
 }

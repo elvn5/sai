@@ -14,6 +14,7 @@ import { firstValueFrom } from 'rxjs';
         <thead>
           <tr>
             <th>Имя</th>
+            <th>Тип</th>
             <th>Контакты</th>
             <th>Подана</th>
             <th><span class="sr-only">Действия</span></th>
@@ -23,6 +24,7 @@ import { firstValueFrom } from 'rxjs';
           @for (user of requests.value() ?? []; track user.id) {
             <tr>
               <td>{{ fullName(user) }}</td>
+              <td><span class="ui-badge">{{ user.partnerKind === 'driver' ? 'Водитель' : 'Организатор туров' }}</span></td>
               <td class="text-text-muted">{{ contact(user) }}</td>
               <td class="text-text-muted">{{ user.partnerRequestedAt ? formatDate(user.partnerRequestedAt) : '—' }}</td>
               <td class="whitespace-nowrap text-right">
@@ -36,7 +38,7 @@ import { firstValueFrom } from 'rxjs';
             </tr>
           } @empty {
             @if (!requests.isLoading()) {
-              <tr><td colspan="4" class="ui-empty">Заявок нет</td></tr>
+              <tr><td colspan="5" class="ui-empty">Заявок нет</td></tr>
             }
           }
         </tbody>

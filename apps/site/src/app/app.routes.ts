@@ -1,4 +1,4 @@
-import { requireAuth, requirePartner } from '@/core/auth/guards';
+import { matchDriver, requireAuth, requirePartner } from '@/core/auth/guards';
 import { localizedRoutes } from '@/core/i18n/i18n';
 import { LEGAL, LEGAL_DOCUMENTS } from '@/core/legal/documents';
 import { prefetchTour } from '@/pages/tours/tour-prefetch';
@@ -107,10 +107,54 @@ const pages: Routes = [
     canActivate: [requirePartner],
     loadComponent: () => import('@/pages/partner/partner-layout').then((m) => m.PartnerLayout),
     children: [
+      // A driver's cabinet: their own dashboard and pages.
+      {
+        path: '',
+        pathMatch: 'full',
+        canMatch: [matchDriver],
+        loadComponent: () =>
+          import('@/pages/partner/driver/driver-dashboard.page').then((m) => m.DriverDashboardPage),
+      },
       {
         path: '',
         loadComponent: () =>
           import('@/pages/partner/dashboard.page').then((m) => m.PartnerDashboardPage),
+      },
+      {
+        path: 'trips',
+        canMatch: [matchDriver],
+        loadComponent: () =>
+          import('@/pages/partner/driver/trips.page').then((m) => m.DriverTripsPage),
+      },
+      {
+        path: 'trips/:id',
+        canMatch: [matchDriver],
+        loadComponent: () =>
+          import('@/pages/partner/driver/trip.page').then((m) => m.DriverTripPage),
+      },
+      {
+        path: 'fleet',
+        canMatch: [matchDriver],
+        loadComponent: () =>
+          import('@/pages/partner/driver/fleet.page').then((m) => m.DriverFleetPage),
+      },
+      {
+        path: 'costs',
+        canMatch: [matchDriver],
+        loadComponent: () =>
+          import('@/pages/partner/driver/costs.page').then((m) => m.DriverCostsPage),
+      },
+      {
+        path: 'earnings',
+        canMatch: [matchDriver],
+        loadComponent: () =>
+          import('@/pages/partner/driver/earnings.page').then((m) => m.DriverEarningsPage),
+      },
+      {
+        path: 'driver-profile',
+        canMatch: [matchDriver],
+        loadComponent: () =>
+          import('@/pages/partner/driver/driver-profile.page').then((m) => m.DriverProfilePage),
       },
       {
         path: 'stats',

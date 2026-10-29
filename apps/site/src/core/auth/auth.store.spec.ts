@@ -15,6 +15,7 @@ const USER = {
   phone: null,
   avatarUrl: null,
   partnerStatus: PartnerStatus.APPROVED,
+  partnerKind: 'organizer',
 };
 
 function setup(initData?: string): { auth: AuthStore; http: HttpTestingController } {

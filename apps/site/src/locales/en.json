@@ -553,7 +553,17 @@
       "awardCta": "Award an achievement",
       "publishOnly": "Only partners can publish stays, guides, local-guide profiles, photos and blog posts.",
       "pitchTitle": "Become a partner",
-      "applied": "Application sent"
+      "applied": "Application sent",
+      "approvedDriver": "You're an Ermekten driver partner: tour organizers find you in the catalog and send you requests to carry their groups.",
+      "kindLabel": "What kind of partner",
+      "kind": {
+        "organizer": "Tour organizer",
+        "driver": "Driver"
+      },
+      "kindHint": {
+        "organizer": "Publish tours, run groups, clients and payments.",
+        "driver": "Carry tour groups: requests from organizers, trips, vehicles and earnings."
+      }
     },
     "achievements": {
       "summary": "Achievements earned: {count}",
@@ -736,7 +746,12 @@
       "leads": "Leads",
       "tasks": "Tasks",
       "broadcasts": "Broadcasts",
-      "reports": "Reports"
+      "reports": "Reports",
+      "trips": "Trips",
+      "fleet": "Vehicles",
+      "costs": "Costs",
+      "earnings": "Earnings",
+      "driverProfile": "Driver profile"
     },
     "kinds": {
       "hotel": "Stay",
@@ -1531,6 +1546,191 @@
       "risk": "I understand that mountain trips carry risks — injuries, sudden weather changes, distance from medical help — and take part voluntarily.",
       "insurance": "We recommend insurance that covers mountain activities; without it, evacuation and treatment costs are mine.",
       "accept": "I've read the rules, understand the risks and agree"
+    }
+  },
+  "driver": {
+    "dashboard": {
+      "subtitle": "Requests, the next trips and this month's money",
+      "requests": "New requests from organizers: {count} — answer them",
+      "income": "Received this month",
+      "expenses": "Costs this month",
+      "upcoming": "Next trips",
+      "noUpcoming": "No trips ahead. Write one down or wait for a request from an organizer."
+    },
+    "onboarding": {
+      "title": "So organizers can find you",
+      "profile": "Fill in your profile and show it in the catalog",
+      "vehicle": "Add a vehicle"
+    },
+    "documents": {
+      "insurance": "Insurance",
+      "inspection": "Roadworthiness check",
+      "unknown": "not set",
+      "soon": "{vehicle}: {document} runs out on {date} (in {days} d)",
+      "expired": "{vehicle}: {document} ran out on {date}"
+    },
+    "status": {
+      "requested": "Request",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "trips": {
+      "subtitle": "Organizers' requests and your own trips: who, where, when and what was paid",
+      "filter": "Trip status",
+      "all": "All",
+      "empty": "No trips",
+      "emptyHint": "Organizers' requests show up here. Write down trips taken by phone or WhatsApp yourself."
+    },
+    "trip": {
+      "add": "Add a trip",
+      "new": "New trip",
+      "edit": "Edit the trip",
+      "delete": "Delete the trip",
+      "deleteConfirm": "Delete this trip with its payments?",
+      "from": "From",
+      "to": "To",
+      "fromPlaceholder": "Bishkek, South Gate",
+      "toPlaceholder": "Ala-Archa, Karakol…",
+      "startsAt": "Pickup",
+      "endsAt": "Return",
+      "vehicle": "Vehicle",
+      "noVehicle": "None",
+      "client": "Customer",
+      "noClient": "No customer",
+      "passengers": "Passengers",
+      "price": "Price",
+      "people": "people: {count}",
+      "tour": "Tour",
+      "status": "Status",
+      "requestedHint": "The organizer is waiting for an answer. Pick a vehicle and accept, or decline with a reason.",
+      "reason": "Reason",
+      "reasonPlaceholder": "Busy those days, not enough seats…",
+      "accept": "Accept",
+      "decline": "Decline",
+      "cancel": "Cancel the trip",
+      "markDone": "Trip done",
+      "reopen": "Back to accepted",
+      "declinedConfirm": "Decline the request? The organizer will be told.",
+      "cancelledConfirm": "Cancel the trip? If an organizer asked for it, they'll be told.",
+      "dates": "Dates",
+      "meetingPoint": "Meeting point",
+      "group": "Group",
+      "expenses": "Trip costs",
+      "margin": "Left after costs"
+    },
+    "errors": {
+      "place": "Enter a place",
+      "number": "A whole number",
+      "startsAt": "Enter the pickup time",
+      "endsAt": "Return can't be before pickup",
+      "model": "Enter the make and model",
+      "seats": "1 to 80 seats",
+      "year": "Check the year"
+    },
+    "vehicle": {
+      "kind": "Type",
+      "model": "Make and model",
+      "plate": "Plate",
+      "seats": "Passenger seats",
+      "seatsCount": "seats: {count}",
+      "year": "Year",
+      "insuranceUntil": "Insurance until",
+      "inspectionUntil": "Roadworthy until",
+      "active": "In service",
+      "inactive": "Out of service",
+      "notePlaceholder": "Air conditioning, roof rack, 4×4…",
+      "add": "Add a vehicle",
+      "new": "New vehicle",
+      "saved": "Vehicle saved",
+      "delete": "Delete the vehicle",
+      "deleteConfirm": "Delete the vehicle? Its trips and costs stay, without it.",
+      "kinds": {
+        "sedan": "Car",
+        "minivan": "Minivan",
+        "minibus": "Minibus",
+        "bus": "Bus",
+        "offroad": "4×4",
+        "other": "Other"
+      }
+    },
+    "fleet": {
+      "subtitle": "Vehicles, seats and when insurance and roadworthiness run out — reminded a month ahead",
+      "empty": "No vehicles yet",
+      "emptyHint": "Add a vehicle: organizers look for drivers by the number of seats."
+    },
+    "expense": {
+      "fuel": "Fuel",
+      "repair": "Repairs",
+      "maintenance": "Servicing",
+      "wash": "Washing",
+      "parking": "Parking and tolls",
+      "fines": "Fines",
+      "insurance": "Insurance",
+      "other": "Other"
+    },
+    "costs": {
+      "subtitle": "Fuel, repairs and the rest by month, vehicle and trip",
+      "previous": "Previous month",
+      "next": "Next month",
+      "notePlaceholder": "Gas station, what was fixed…",
+      "empty": "No costs",
+      "emptyHint": "Write down fuel and repairs — the report shows what's left.",
+      "total": "Total",
+      "trip": "trip",
+      "anyVehicle": "No vehicle"
+    },
+    "earnings": {
+      "subtitle": "Trips done, money received, costs and what's left",
+      "months": "{count} mo",
+      "trips": "Trips",
+      "cancelled": "cancelled: {count}",
+      "income": "Received",
+      "profit": "Left",
+      "byMonth": "By month",
+      "month": "Month",
+      "byVehicle": "By vehicle",
+      "noVehicle": "No vehicle",
+      "empty": "No trips in the period",
+      "byCategory": "Where the money went",
+      "howCounted": "Trips count by pickup day, money by payment day, costs by the day spent."
+    },
+    "profile": {
+      "subtitle": "How tour organizers see you in the drivers' catalog",
+      "region": "Where you work",
+      "regionPlaceholder": "Bishkek, Issyk-Kul, all of Kyrgyzstan",
+      "about": "About you",
+      "aboutPlaceholder": "Experience, mountain roads, languages, what to know about the vehicle…",
+      "published": "Show in the drivers' catalog",
+      "publishedHint": "Organizers see your name, phone, region and vehicles and can send you a request.",
+      "saved": "Profile saved"
+    }
+  },
+  "transport": {
+    "title": "Transport",
+    "ask": "Find a driver",
+    "empty": "No driver yet. Find one in the catalog and send a request — they answer in their cabinet.",
+    "driver": "Driver",
+    "pickDriver": "Pick a driver",
+    "trips": "trips on Ermekten: {count}",
+    "noDrivers": "No drivers with a vehicle for a group this size.",
+    "pickup": "Pickup",
+    "notePlaceholder": "Luggage, stops, the way back…",
+    "send": "Send the request",
+    "sent": "Request sent to the driver",
+    "busy": "busy that day",
+    "callOff": "Call off the request",
+    "callOffConfirm": "Call off the request? The driver will be told.",
+    "errors": {
+      "required": "Enter from, to and the pickup time"
+    },
+    "status": {
+      "requested": "Waiting",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "done": "Done",
+      "cancelled": "Cancelled"
     }
   }
 }

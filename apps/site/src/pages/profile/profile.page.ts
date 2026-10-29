@@ -3,6 +3,7 @@ import {
   type BlogPost,
   type HallOfFame,
   type MyAchievements,
+  type PartnerKind,
   PartnerStatus,
   type Tour,
 } from '@/core/api/types';
@@ -349,6 +350,17 @@ interface ListingItem {
               <div class="flex flex-col gap-4">
                 @switch (user.partnerStatus) {
                   @case (statuses.APPROVED) {
+                    @if (auth.isDriver()) {
+                      <div class="ui-banner ui-banner-success">
+                        <span class="icon-[heroicons--check-badge]" aria-hidden="true"></span>
+                        <span>{{ 'profile.partner.approvedDriver' | transloco }}</span>
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        <a appSiteLink="/partner" class="ui-btn-primary"><span class="icon-[heroicons--squares-2x2] size-4" aria-hidden="true"></span>{{ 'cabinet.open' | transloco }}</a>
+                        <a appSiteLink="/partner/fleet" class="ui-btn-soft"><span class="icon-[heroicons--truck] size-4" aria-hidden="true"></span>{{ 'cabinet.nav.fleet' | transloco }}</a>
+                        <a appSiteLink="/partner/driver-profile" class="ui-btn-soft"><span class="icon-[heroicons--identification] size-4" aria-hidden="true"></span>{{ 'cabinet.nav.driverProfile' | transloco }}</a>
+                      </div>
+                    } @else {
                     <div class="ui-banner ui-banner-success">
                       <span class="icon-[heroicons--check-badge]" aria-hidden="true"></span>
                       <span>{{ 'profile.partner.approved' | transloco }}</span>
@@ -359,11 +371,12 @@ interface ListingItem {
                       <a appSiteLink="/tours/new" class="ui-btn-soft"><span class="icon-[heroicons--map] size-4" aria-hidden="true"></span>{{ 'profile.partner.addTourCta' | transloco }}</a>
                       <a appSiteLink="/blog/new" class="ui-btn-soft"><span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>{{ 'blog.form.newTitle' | transloco }}</a>
                     </div>
+                    }
                   }
                   @case (statuses.PENDING) {
                     <div class="ui-banner ui-banner-info">
                       <span class="icon-[heroicons--clock]" aria-hidden="true"></span>
-                      <span>{{ 'profile.partner.pending' | transloco }}</span>
+                      <span>{{ 'profile.partner.pending' | transloco }} {{ (user.partnerKind === 'driver' ? 'profile.partner.kind.driver' : 'profile.partner.kind.organizer') | transloco }}.</span>
                     </div>
                   }
                   @default {
@@ -374,6 +387,14 @@ interface ListingItem {
                       </div>
                     }
                     <app-state-block icon="icon-[heroicons--briefcase]" title="profile.partner.pitchTitle" text="profile.partner.pitch">
+                      <div class="grid w-full max-w-md gap-2 text-left sm:grid-cols-2" role="radiogroup" [attr.aria-label]="'profile.partner.kindLabel' | transloco">
+                        @for (option of kinds; track option.kind) {
+                          <button type="button" role="radio" class="ui-card flex flex-col gap-1 p-3 text-sm transition-colors" [class.ring-2]="kind() === option.kind" [class.ring-brand-500]="kind() === option.kind" [attr.aria-checked]="kind() === option.kind" (click)="kind.set(option.kind)">
+                            <span class="flex items-center gap-2 font-semibold text-text"><span [class]="option.icon + ' size-5 text-brand-600 dark:text-brand-300'" aria-hidden="true"></span>{{ 'profile.partner.kind.' + option.kind | transloco }}</span>
+                            <span class="text-xs text-text-muted">{{ 'profile.partner.kindHint.' + option.kind | transloco }}</span>
+                          </button>
+                        }
+                      </div>
                       <button type="button" class="ui-btn-primary" [disabled]="applying()" [attr.aria-busy]="applying()" (click)="apply()">
                         @if (applying()) {
                           <span class="icon-[heroicons--arrow-path] size-4 animate-spin" aria-hidden="true"></span>
@@ -401,6 +422,12 @@ export class ProfilePage {
   protected readonly tabs = TABS;
   private readonly notify = inject(Notify);
   protected readonly statuses = PartnerStatus;
+  // What kind of partner the visitor applies as.
+  protected readonly kind = signal<PartnerKind>('organizer');
+  protected readonly kinds = [
+    { kind: 'organizer', icon: 'icon-[heroicons--map]' },
+    { kind: 'driver', icon: 'icon-[heroicons--truck]' },
+  ] as const;
 
   protected readonly active = computed(
     (): Tab => TABS.find((item) => item.key === this.tab())?.key ?? 'info',
@@ -532,7 +559,7 @@ export class ProfilePage {
     this.applying.set(true);
     this.applyFailed.set(false);
     try {
-      await this.auth.applyAsPartner();
+      await this.auth.applyAsPartner(this.kind());
       this.notify.success({ title: 'profile.partner.applied' });
     } catch {
       this.applyFailed.set(true);

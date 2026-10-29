@@ -10,6 +10,7 @@ import { ClientForm } from '@/pages/partner/client-form';
 import { clientName, groupRows } from '@/pages/partner/crm';
 import { ParticipantRow } from '@/pages/partner/participant-row';
 import { TourOps } from '@/pages/partner/tour-ops';
+import { TourTransport } from '@/pages/partner/tour-transport';
 import { SiteLink } from '@/ui/site-link';
 import { StateBlock } from '@/ui/state-block';
 import { DOCUMENT } from '@angular/common';
@@ -30,6 +31,7 @@ import { firstValueFrom } from 'rxjs';
     SiteLink,
     StateBlock,
     TourOps,
+    TourTransport,
     TranslocoPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -118,6 +120,7 @@ import { firstValueFrom } from 'rxjs';
         }
 
         <app-tour-ops [group]="g" (changed)="set($event)" />
+        <app-tour-transport [group]="g" />
       } @else if (group.error()) {
         <app-state-block icon="icon-[heroicons--user-group]" tone="danger" title="crm.group.notFound" />
       }

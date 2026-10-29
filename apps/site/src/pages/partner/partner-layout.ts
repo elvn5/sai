@@ -1,3 +1,4 @@
+import { AuthStore } from '@/core/auth/auth.store';
 import { ChatUnread } from '@/core/chat/chats';
 import { splitLang } from '@/core/i18n/langs';
 import { injectCurrentUrl } from '@/core/lib/current-url';
@@ -8,7 +9,14 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { RouterOutlet } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-const LINKS = [
+interface CabinetLink {
+  path: string;
+  key: string;
+  icon: string;
+  exact: boolean;
+}
+
+const LINKS: CabinetLink[] = [
   { path: '/partner', key: 'dashboard', icon: 'icon-[heroicons--squares-2x2]', exact: true },
   { path: '/partner/stats', key: 'stats', icon: 'icon-[heroicons--chart-bar]', exact: false },
   { path: '/partner/clients', key: 'clients', icon: 'icon-[heroicons--users]', exact: false },
@@ -44,7 +52,41 @@ const LINKS = [
     icon: 'icon-[heroicons--chat-bubble-left-ellipsis]',
     exact: false,
   },
-] as const;
+];
+
+// A driver's cabinet: trips and vehicles instead of tours and listings.
+const DRIVER_LINKS: CabinetLink[] = [
+  { path: '/partner', key: 'dashboard', icon: 'icon-[heroicons--squares-2x2]', exact: true },
+  { path: '/partner/trips', key: 'trips', icon: 'icon-[heroicons--map-pin]', exact: false },
+  { path: '/partner/fleet', key: 'fleet', icon: 'icon-[heroicons--truck]', exact: false },
+  { path: '/partner/clients', key: 'clients', icon: 'icon-[heroicons--users]', exact: false },
+  { path: '/partner/tasks', key: 'tasks', icon: 'icon-[heroicons--check-circle]', exact: false },
+  {
+    path: '/partner/messages',
+    key: 'messages',
+    icon: 'icon-[heroicons--chat-bubble-left-right]',
+    exact: false,
+  },
+  {
+    path: '/partner/broadcasts',
+    key: 'broadcasts',
+    icon: 'icon-[heroicons--megaphone]',
+    exact: false,
+  },
+  { path: '/partner/costs', key: 'costs', icon: 'icon-[heroicons--receipt-percent]', exact: false },
+  {
+    path: '/partner/earnings',
+    key: 'earnings',
+    icon: 'icon-[heroicons--presentation-chart-line]',
+    exact: false,
+  },
+  {
+    path: '/partner/driver-profile',
+    key: 'driverProfile',
+    icon: 'icon-[heroicons--identification]',
+    exact: false,
+  },
+];
 
 // The partner cabinet (/partner/**): a section menu (a sidebar on wide
 // screens, a scrolling row on phones and in the Telegram Mini App) next to
@@ -63,7 +105,7 @@ const LINKS = [
             {{ 'cabinet.short' | transloco }}
           </p>
           <nav class="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0" [attr.aria-label]="'cabinet.title' | transloco">
-            @for (link of links; track link.key) {
+            @for (link of links(); track link.key) {
               <a
                 [appSiteLink]="link.path"
                 [attr.aria-current]="isActive(link) ? 'page' : null"
@@ -88,14 +130,15 @@ const LINKS = [
   `,
 })
 export class PartnerLayout {
-  protected readonly links = LINKS;
+  private readonly auth = inject(AuthStore);
+  protected readonly links = computed(() => (this.auth.isDriver() ? DRIVER_LINKS : LINKS));
   protected readonly store = inject(CabinetStore);
   protected readonly chats = inject(ChatUnread);
   private readonly url = injectCurrentUrl();
   // The unprefixed path shown.
   private readonly path = computed(() => splitLang(this.url()).path);
 
-  protected isActive(link: (typeof LINKS)[number]): boolean {
+  protected isActive(link: CabinetLink): boolean {
     const path = this.path();
     return link.exact ? path === link.path : path === link.path || path.startsWith(`${link.path}/`);
   }

@@ -553,7 +553,17 @@
       "awardCta": "Erfolg verleihen",
       "publishOnly": "Nur Partner können Unterkünfte, Guides, Bergführer-Profile, Fotos und Blogbeiträge veröffentlichen.",
       "pitchTitle": "Partner werden",
-      "applied": "Antrag gesendet"
+      "applied": "Antrag gesendet",
+      "approvedDriver": "Sie sind Fahrer-Partner bei Ermekten: Reiseveranstalter finden Sie im Katalog und schicken Ihnen Anfragen für ihre Gruppen.",
+      "kindLabel": "Art der Partnerschaft",
+      "kind": {
+        "organizer": "Reiseveranstalter",
+        "driver": "Fahrer"
+      },
+      "kindHint": {
+        "organizer": "Touren veröffentlichen, Gruppen, Kunden und Zahlungen führen.",
+        "driver": "Reisegruppen fahren: Anfragen von Veranstaltern, Fahrten, Fahrzeuge und Einnahmen."
+      }
     },
     "achievements": {
       "summary": "Erhaltene Erfolge: {count}",
@@ -736,7 +746,12 @@
       "leads": "Anfragen",
       "tasks": "Aufgaben",
       "broadcasts": "Rundschreiben",
-      "reports": "Berichte"
+      "reports": "Berichte",
+      "trips": "Fahrten",
+      "fleet": "Fahrzeuge",
+      "costs": "Kosten",
+      "earnings": "Einnahmen",
+      "driverProfile": "Fahrerprofil"
     },
     "kinds": {
       "hotel": "Unterkunft",
@@ -1531,6 +1546,191 @@
       "risk": "Mir ist bewusst, dass Bergtouren Risiken bergen — Verletzungen, Wetterumschwünge, weite Wege zu medizinischer Hilfe — und ich nehme freiwillig teil.",
       "insurance": "Wir empfehlen eine Versicherung für Bergaktivitäten; ohne sie trage ich die Kosten für Evakuierung und Behandlung.",
       "accept": "Ich habe die Regeln gelesen, verstehe die Risiken und stimme zu"
+    }
+  },
+  "driver": {
+    "dashboard": {
+      "subtitle": "Anfragen, die nächsten Fahrten und das Geld dieses Monats",
+      "requests": "Neue Anfragen von Veranstaltern: {count} — beantworten Sie sie",
+      "income": "Diesen Monat erhalten",
+      "expenses": "Kosten diesen Monat",
+      "upcoming": "Nächste Fahrten",
+      "noUpcoming": "Keine Fahrten geplant. Tragen Sie eine ein oder warten Sie auf eine Anfrage."
+    },
+    "onboarding": {
+      "title": "Damit Veranstalter Sie finden",
+      "profile": "Profil ausfüllen und im Katalog zeigen",
+      "vehicle": "Fahrzeug hinzufügen"
+    },
+    "documents": {
+      "insurance": "Versicherung",
+      "inspection": "TÜV",
+      "unknown": "nicht angegeben",
+      "soon": "{vehicle}: {document} läuft am {date} ab (in {days} T.)",
+      "expired": "{vehicle}: {document} ist am {date} abgelaufen"
+    },
+    "status": {
+      "requested": "Anfrage",
+      "accepted": "Angenommen",
+      "declined": "Abgelehnt",
+      "done": "Erledigt",
+      "cancelled": "Abgesagt"
+    },
+    "trips": {
+      "subtitle": "Anfragen der Veranstalter und eigene Fahrten: wer, wohin, wann, was bezahlt wurde",
+      "filter": "Status der Fahrt",
+      "all": "Alle",
+      "empty": "Keine Fahrten",
+      "emptyHint": "Anfragen erscheinen hier. Fahrten per Telefon oder WhatsApp tragen Sie selbst ein."
+    },
+    "trip": {
+      "add": "Fahrt eintragen",
+      "new": "Neue Fahrt",
+      "edit": "Fahrt bearbeiten",
+      "delete": "Fahrt löschen",
+      "deleteConfirm": "Diese Fahrt samt Zahlungen löschen?",
+      "from": "Von",
+      "to": "Nach",
+      "fromPlaceholder": "Bischkek, Südtor",
+      "toPlaceholder": "Ala-Artscha, Karakol…",
+      "startsAt": "Abholung",
+      "endsAt": "Rückkehr",
+      "vehicle": "Fahrzeug",
+      "noVehicle": "Keins",
+      "client": "Auftraggeber",
+      "noClient": "Ohne Auftraggeber",
+      "passengers": "Fahrgäste",
+      "price": "Preis",
+      "people": "Personen: {count}",
+      "tour": "Tour",
+      "status": "Status",
+      "requestedHint": "Der Veranstalter wartet auf Antwort. Fahrzeug wählen und annehmen oder mit Grund ablehnen.",
+      "reason": "Grund",
+      "reasonPlaceholder": "An den Tagen belegt, zu wenig Plätze…",
+      "accept": "Annehmen",
+      "decline": "Ablehnen",
+      "cancel": "Fahrt absagen",
+      "markDone": "Fahrt erledigt",
+      "reopen": "Wieder aufnehmen",
+      "declinedConfirm": "Anfrage ablehnen? Der Veranstalter wird informiert.",
+      "cancelledConfirm": "Fahrt absagen? Stammt sie von einem Veranstalter, wird er informiert.",
+      "dates": "Daten",
+      "meetingPoint": "Treffpunkt",
+      "group": "Gruppe",
+      "expenses": "Kosten der Fahrt",
+      "margin": "Nach Kosten bleibt"
+    },
+    "errors": {
+      "place": "Ort angeben",
+      "number": "Eine ganze Zahl",
+      "startsAt": "Abholzeit angeben",
+      "endsAt": "Rückkehr nicht vor der Abholung",
+      "model": "Marke und Modell angeben",
+      "seats": "1 bis 80 Plätze",
+      "year": "Jahr prüfen"
+    },
+    "vehicle": {
+      "kind": "Typ",
+      "model": "Marke und Modell",
+      "plate": "Kennzeichen",
+      "seats": "Sitzplätze",
+      "seatsCount": "Plätze: {count}",
+      "year": "Baujahr",
+      "insuranceUntil": "Versicherung bis",
+      "inspectionUntil": "TÜV bis",
+      "active": "Im Einsatz",
+      "inactive": "Außer Betrieb",
+      "notePlaceholder": "Klimaanlage, Dachträger, 4×4…",
+      "add": "Fahrzeug hinzufügen",
+      "new": "Neues Fahrzeug",
+      "saved": "Fahrzeug gespeichert",
+      "delete": "Fahrzeug löschen",
+      "deleteConfirm": "Fahrzeug löschen? Fahrten und Kosten bleiben, ohne Fahrzeug.",
+      "kinds": {
+        "sedan": "Pkw",
+        "minivan": "Minivan",
+        "minibus": "Kleinbus",
+        "bus": "Bus",
+        "offroad": "Geländewagen",
+        "other": "Sonstiges"
+      }
+    },
+    "fleet": {
+      "subtitle": "Fahrzeuge, Plätze und Fristen für Versicherung und TÜV — Erinnerung einen Monat vorher",
+      "empty": "Noch keine Fahrzeuge",
+      "emptyHint": "Fügen Sie ein Fahrzeug hinzu: Veranstalter suchen nach Sitzplätzen."
+    },
+    "expense": {
+      "fuel": "Kraftstoff",
+      "repair": "Reparatur",
+      "maintenance": "Wartung",
+      "wash": "Wäsche",
+      "parking": "Parken und Maut",
+      "fines": "Bußgelder",
+      "insurance": "Versicherung",
+      "other": "Sonstiges"
+    },
+    "costs": {
+      "subtitle": "Kraftstoff, Reparaturen und mehr nach Monat, Fahrzeug und Fahrt",
+      "previous": "Vormonat",
+      "next": "Nächster Monat",
+      "notePlaceholder": "Tankstelle, was repariert wurde…",
+      "empty": "Keine Kosten",
+      "emptyHint": "Tragen Sie Tanken und Reparaturen ein — der Bericht zeigt, was bleibt.",
+      "total": "Gesamt",
+      "trip": "Fahrt",
+      "anyVehicle": "Ohne Fahrzeug"
+    },
+    "earnings": {
+      "subtitle": "Erledigte Fahrten, erhaltenes Geld, Kosten und was bleibt",
+      "months": "{count} Mon.",
+      "trips": "Fahrten",
+      "cancelled": "abgesagt: {count}",
+      "income": "Erhalten",
+      "profit": "Bleibt",
+      "byMonth": "Nach Monat",
+      "month": "Monat",
+      "byVehicle": "Nach Fahrzeug",
+      "noVehicle": "Ohne Fahrzeug",
+      "empty": "Keine Fahrten im Zeitraum",
+      "byCategory": "Wohin das Geld ging",
+      "howCounted": "Fahrten zählen nach Abholtag, Geld nach Zahlungstag, Kosten nach Ausgabetag."
+    },
+    "profile": {
+      "subtitle": "So sehen Reiseveranstalter Sie im Fahrerkatalog",
+      "region": "Wo Sie fahren",
+      "regionPlaceholder": "Bischkek, Issyk-Kul, ganz Kirgistan",
+      "about": "Über Sie",
+      "aboutPlaceholder": "Erfahrung, Bergstraßen, Sprachen, Wissenswertes zum Fahrzeug…",
+      "published": "Im Fahrerkatalog zeigen",
+      "publishedHint": "Veranstalter sehen Name, Telefon, Region und Fahrzeuge und können Anfragen senden.",
+      "saved": "Profil gespeichert"
+    }
+  },
+  "transport": {
+    "title": "Transport",
+    "ask": "Fahrer finden",
+    "empty": "Noch kein Fahrer. Finden Sie einen im Katalog und senden Sie eine Anfrage.",
+    "driver": "Fahrer",
+    "pickDriver": "Fahrer wählen",
+    "trips": "Fahrten auf Ermekten: {count}",
+    "noDrivers": "Keine Fahrer mit Fahrzeug für diese Gruppengröße.",
+    "pickup": "Abholung",
+    "notePlaceholder": "Gepäck, Stopps, Rückweg…",
+    "send": "Anfrage senden",
+    "sent": "Anfrage an den Fahrer gesendet",
+    "busy": "an dem Tag belegt",
+    "callOff": "Anfrage zurückziehen",
+    "callOffConfirm": "Anfrage zurückziehen? Der Fahrer wird informiert.",
+    "errors": {
+      "required": "Von, nach und Abholzeit angeben"
+    },
+    "status": {
+      "requested": "Wartet",
+      "accepted": "Angenommen",
+      "declined": "Abgelehnt",
+      "done": "Erledigt",
+      "cancelled": "Abgesagt"
     }
   }
 }

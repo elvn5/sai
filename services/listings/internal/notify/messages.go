@@ -125,3 +125,22 @@ func reminderText(l telegram.Lang, t models.Tour, forOrganizer bool) string {
 func rateText(l telegram.Lang, t models.Tour) string {
 	return texts.F(l, "🏔 Как прошёл тур «%s»?\n\nОцените его — так другие поймут, с кем ехать в горы.", esc(t.Title))
 }
+
+func transportRequestedText(l telegram.Lang, t models.Tour, from usersclient.Author, startsAt time.Time) string {
+	return texts.F(l, "🚐 <b>%s</b> просит транспорт для тура «%s» — подача %s.",
+		esc(personName(l, from)), esc(t.Title), when(l, startsAt))
+}
+
+func transportAnsweredText(l telegram.Lang, t models.Tour, driver, status string) string {
+	switch status {
+	case "accepted":
+		return texts.F(l, "✅ Водитель <b>%s</b> принял заявку на транспорт для тура «%s».", esc(driver), esc(t.Title))
+	case "declined":
+		return texts.F(l, "❌ Водитель <b>%s</b> отклонил заявку на транспорт для тура «%s».", esc(driver), esc(t.Title))
+	}
+	return texts.F(l, "⚠️ Водитель <b>%s</b> отменил поездку для тура «%s».", esc(driver), esc(t.Title))
+}
+
+func transportCancelledText(l telegram.Lang, t models.Tour) string {
+	return texts.F(l, "❌ Организатор отменил заявку на транспорт для тура «%s».", esc(t.Title))
+}

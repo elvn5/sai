@@ -25,6 +25,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	requireUser := middleware.RequireUser(verifier, users)
 	optionalUser := middleware.OptionalUser(verifier, users)
 	requirePartner := middleware.RequirePartner()
+	requireOrganizer := middleware.RequireOrganizer()
 
 	hotels := &handlers.Hotels{Deps: d}
 	r.GET("/hotels", hotels.List)
@@ -47,7 +48,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.GET("/tours/mine", requireUser, tours.ListMine)
 	r.GET("/tours/organizers/:userId", tours.Organizer)
 	r.GET("/tours/:locale/:slug", tours.GetBySlug)
-	r.POST("/tours", requireUser, requirePartner, tours.Create)
+	r.POST("/tours", requireUser, requireOrganizer, tours.Create)
 	r.PUT("/tours/:id", requireUser, tours.Update)
 	r.DELETE("/tours/:id", requireUser, tours.Delete)
 
@@ -128,6 +129,37 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	partnerOnly.GET("/broadcasts", crm.Broadcasts)
 	partnerOnly.POST("/broadcasts", crm.Broadcast)
 	partnerOnly.GET("/reports", crm.Report)
+
+	// Organizers find drivers and ask them for transport for a tour.
+	drivers := &handlers.Drivers{Deps: d}
+	organizerOnly := r.Group("/crm", requireUser, requireOrganizer)
+	organizerOnly.GET("/drivers", drivers.Catalog)
+	organizerOnly.GET("/tours/:id/transport", drivers.Transport)
+	organizerOnly.POST("/tours/:id/transport", drivers.RequestTransport)
+	organizerOnly.DELETE("/transport/:id", drivers.CancelTransport)
+
+	// The driver's CRM; their clients, tasks, templates and broadcasts are
+	// the shared /crm ones.
+	driverOnly := r.Group("/driver", requireUser, middleware.RequireDriver())
+	driverOnly.GET("/summary", drivers.Summary)
+	driverOnly.GET("/profile", drivers.Profile)
+	driverOnly.PUT("/profile", drivers.SaveProfile)
+	driverOnly.GET("/vehicles", drivers.Vehicles)
+	driverOnly.POST("/vehicles", drivers.AddVehicle)
+	driverOnly.PUT("/vehicles/:id", drivers.UpdateVehicle)
+	driverOnly.DELETE("/vehicles/:id", drivers.DeleteVehicle)
+	driverOnly.GET("/trips", drivers.Trips)
+	driverOnly.POST("/trips", drivers.AddTrip)
+	driverOnly.GET("/trips/:id", drivers.Trip)
+	driverOnly.PUT("/trips/:id", drivers.UpdateTrip)
+	driverOnly.PUT("/trips/:id/status", drivers.SetStatus)
+	driverOnly.DELETE("/trips/:id", drivers.DeleteTrip)
+	driverOnly.POST("/trips/:id/payments", drivers.AddPayment)
+	driverOnly.DELETE("/payments/:id", drivers.DeletePayment)
+	driverOnly.GET("/expenses", drivers.Expenses)
+	driverOnly.POST("/expenses", drivers.AddExpense)
+	driverOnly.DELETE("/expenses/:id", drivers.DeleteExpense)
+	driverOnly.GET("/reports", drivers.Report)
 
 	// Chats between partners and travelers.
 	chats := &handlers.Chats{Deps: d}

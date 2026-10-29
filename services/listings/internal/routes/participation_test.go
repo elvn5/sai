@@ -52,7 +52,7 @@ type usersWithChats struct {
 	partnerLang telegram.Lang
 }
 
-var chatOf = map[string]int64{owner: 1001, guest: 1002, partner: 1003}
+var chatOf = map[string]int64{owner: 1001, guest: 1002, partner: 1003, driver: 1005}
 
 func (u usersWithChats) TelegramRecipients(_ context.Context, ids []string) (map[string]usersclient.TelegramChat, error) {
 	out := map[string]usersclient.TelegramChat{}

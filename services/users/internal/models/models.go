@@ -27,6 +27,7 @@ type User struct {
 	VerificationAttempts      int
 	PartnerStatus             string
 	PartnerRequestedAt        *time.Time
+	PartnerKind               string // "organizer" or "driver"
 	// Sessions issued before this are refused (the password was reset).
 	SessionsValidAfter *time.Time
 	CreatedAt          time.Time
@@ -44,12 +45,14 @@ type PublicUser struct {
 	Phone         *string `json:"phone"`
 	AvatarURL     *string `json:"avatarUrl"`
 	PartnerStatus string  `json:"partnerStatus"`
+	PartnerKind   string  `json:"partnerKind"`
 }
 
 func (u User) Public() PublicUser {
 	return PublicUser{
 		ID: u.ID, TelegramID: u.TelegramID, Email: u.Email, Username: u.Username, FirstName: u.FirstName,
 		LastName: u.LastName, Phone: u.Phone, AvatarURL: u.AvatarURL, PartnerStatus: u.PartnerStatus,
+		PartnerKind: u.PartnerKind,
 	}
 }
 
@@ -70,6 +73,7 @@ type AdminUser struct {
 	VerificationAttempts      int            `json:"verificationAttempts"`
 	PartnerStatus             string         `json:"partnerStatus"`
 	PartnerRequestedAt        *jsontime.Time `json:"partnerRequestedAt"`
+	PartnerKind               string         `json:"partnerKind"`
 	CreatedAt                 jsontime.Time  `json:"createdAt"`
 	UpdatedAt                 jsontime.Time  `json:"updatedAt"`
 }
@@ -81,8 +85,8 @@ func (u User) Admin() AdminUser {
 		VerificationCodeExpiresAt: jsontime.Ptr(u.VerificationCodeExpiresAt),
 		VerificationCodeSentAt:    jsontime.Ptr(u.VerificationCodeSentAt),
 		VerificationAttempts:      u.VerificationAttempts, PartnerStatus: u.PartnerStatus,
-		PartnerRequestedAt: jsontime.Ptr(u.PartnerRequestedAt),
-		CreatedAt:          jsontime.New(u.CreatedAt), UpdatedAt: jsontime.New(u.UpdatedAt),
+		PartnerRequestedAt: jsontime.Ptr(u.PartnerRequestedAt), PartnerKind: u.PartnerKind,
+		CreatedAt: jsontime.New(u.CreatedAt), UpdatedAt: jsontime.New(u.UpdatedAt),
 	}
 }
 

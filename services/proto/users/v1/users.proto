@@ -61,6 +61,8 @@ message User {
   // Sessions issued before this (unix seconds) are no longer valid: the
   // password was reset then. 0 when there's no such cut-off.
   int64 sessions_valid_after = 6;
+  // "organizer" (runs tours) or "driver" (carries tour groups).
+  string partner_kind = 7;
 }
 
 message GetUserRequest {

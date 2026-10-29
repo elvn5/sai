@@ -217,7 +217,7 @@ var partnerStatuses = map[string]usersv1.PartnerStatus{
 func toProto(u models.User) *usersv1.User {
 	out := &usersv1.User{
 		Id: u.ID, FirstName: u.FirstName, Username: u.Username, AvatarUrl: u.AvatarURL,
-		PartnerStatus: partnerStatuses[u.PartnerStatus],
+		PartnerStatus: partnerStatuses[u.PartnerStatus], PartnerKind: u.PartnerKind,
 	}
 	if u.SessionsValidAfter != nil {
 		out.SessionsValidAfter = u.SessionsValidAfter.Unix()

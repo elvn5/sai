@@ -9,6 +9,7 @@ import (
 	"github.com/elvn5/sai/services/pkg/auth"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/respond"
+	"github.com/elvn5/sai/services/pkg/validation"
 	"github.com/elvn5/sai/services/users/internal/session"
 	"github.com/elvn5/sai/services/users/internal/store"
 )
@@ -35,8 +36,21 @@ func (h *Account) Logout(c *gin.Context) {
 	respond.JSON(c, http.StatusOK, gin.H{"success": true})
 }
 
-// ApplyForPartnership runs behind RequireUser.
+type partnerApplication struct {
+	// "organizer" (the default) runs tours; "driver" carries tour groups.
+	Kind string `json:"kind" binding:"omitempty,oneof=organizer driver"`
+}
+
+// ApplyForPartnership runs behind RequireUser. The body is optional: older
+// clients send none and apply as organizers.
 func (h *Account) ApplyForPartnership(c *gin.Context) {
+	var req partnerApplication
+	if c.Request.ContentLength > 0 && !validation.BindJSON(c, &req) {
+		return
+	}
+	if req.Kind == "" {
+		req.Kind = "organizer"
+	}
 	ctx := c.Request.Context()
 	user, err := h.Store.ByID(ctx, currentUserID(c))
 	if errors.Is(err, store.ErrNotFound) {
@@ -51,6 +65,7 @@ func (h *Account) ApplyForPartnership(c *gin.Context) {
 		return
 	}
 	user.PartnerStatus = "pending"
+	user.PartnerKind = req.Kind
 	user.PartnerRequestedAt = ptr(h.now())
 	saved, err := h.Store.Save(ctx, user)
 	if err != nil {

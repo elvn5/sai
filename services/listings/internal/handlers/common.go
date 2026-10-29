@@ -53,6 +53,11 @@ type TourNotifier interface {
 	Promoted(ctx context.Context, t models.Tour, userID string)
 	// Message tells the other side of a chat about a new message.
 	Message(ctx context.Context, chat store.Chat, senderID, body string)
+	// Transport for a tour: an organizer asks a driver, the driver answers
+	// (accepted, declined, cancelled), the organizer calls it off.
+	TransportRequested(ctx context.Context, t models.Tour, tripID, driverID string, startsAt time.Time)
+	TransportAnswered(ctx context.Context, t models.Tour, driverName, status string)
+	TransportCancelled(ctx context.Context, t models.Tour, tripID, driverID string)
 }
 
 // Deps is what the handlers share.

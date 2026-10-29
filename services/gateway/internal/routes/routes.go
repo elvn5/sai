@@ -41,7 +41,7 @@ func Setup(cfg config.Config, log *slog.Logger) (*gin.Engine, error) {
 	}{
 		{"MEDIA_URL", cfg.MediaURL, []string{"/uploads", "/storage", "/images"}},
 		{"CONTENT_URL", cfg.ContentURL, []string{"/blog", "/guides", "/gallery", "/page-seo"}},
-		{"LISTINGS_URL", cfg.ListingsURL, []string{"/hotels", "/local-guides", "/tours", "/reviews", "/listing-posts", "/listing-stats", "/favorites", "/tour-alerts", "/crm", "/chats"}},
+		{"LISTINGS_URL", cfg.ListingsURL, []string{"/hotels", "/local-guides", "/tours", "/reviews", "/listing-posts", "/listing-stats", "/favorites", "/tour-alerts", "/crm", "/chats", "/driver"}},
 		{"USERS_URL", cfg.UsersURL, []string{"/auth", "/users", "/partners", "/support", "/achievements", "/hall-of-fame"}},
 		{"TRAILS_URL", cfg.TrailsURL, []string{"/trails", "/conditions"}},
 		{"PAYMENTS_URL", cfg.PaymentsURL, []string{"/orders", "/payouts", "/payments"}},

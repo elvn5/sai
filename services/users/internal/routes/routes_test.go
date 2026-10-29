@@ -366,7 +366,11 @@ func TestAdminAndPartners(t *testing.T) {
 	if r := e.do("GET", "/users", "", user); r.status != 401 {
 		t.Errorf("user listing users: %d", r.status)
 	}
-	if r := e.do("POST", "/partners/apply", "", user); r.status != 201 || !strings.Contains(r.body, `"partnerStatus":"pending"`) {
+	if r := e.do("POST", "/partners/apply", `{"kind":"pilot"}`, user); r.status != 400 {
+		t.Errorf("apply as an unknown kind: %d %s", r.status, r.body)
+	}
+	if r := e.do("POST", "/partners/apply", "", user); r.status != 201 || !strings.Contains(r.body, `"partnerStatus":"pending"`) ||
+		!strings.Contains(r.body, `"partnerKind":"organizer"`) {
 		t.Fatalf("apply: %d %s", r.status, r.body)
 	}
 	if r := e.do("POST", "/partners/apply", "", user); r.status != 409 {

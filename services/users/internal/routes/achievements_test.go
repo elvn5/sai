@@ -48,6 +48,10 @@ func TestAchievements(t *testing.T) {
 		t.Fatalf("approve %q: %d %s", partnerID, r.status, r.body)
 	}
 	traveler, travelerID := e.signUp("aiza@x.kg")
+	driver, _ := e.signUp("driver@x.kg")
+	if r := e.do("POST", "/partners/apply", `{"kind":"driver"}`, driver); r.status != 201 || !strings.Contains(r.body, `"partnerKind":"driver"`) {
+		t.Errorf("apply as a driver: %d %s", r.status, r.body)
+	}
 
 	// The admin builds the catalog.
 	if r := e.do("POST", "/achievements", `{"title":{"en":"Peak"},"icon":"trophy","rarity":"mythic"}`, admin); r.status != 400 ||

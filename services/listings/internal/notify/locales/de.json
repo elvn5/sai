@@ -2,10 +2,15 @@
   "Занято мест: %d из %d.": "Belegte Plätze: %d von %d.",
   "Записались: %d.": "Angemeldet: %d.",
   "Кто-то": "Jemand",
+  "Открыть группу": "Gruppe öffnen",
   "Открыть тур": "Tour öffnen",
   "Проверьте прогноз погоды и снаряжение перед выездом.": "Prüfen Sie vor der Abfahrt die Wettervorhersage und Ihre Ausrüstung.",
   "⏰ Скоро тур «%s»\n\n🕕 Сбор: %s": "⏰ Bald startet die Tour „%s“\n\n🕕 Treffen: %s",
+  "⚠️ Водитель <b>%s</b> отменил поездку для тура «%s».": "⚠️ Fahrer <b>%s</b> hat die Fahrt für die Tour „%s“ abgesagt.",
+  "✅ Водитель <b>%s</b> принял заявку на транспорт для тура «%s».": "✅ Fahrer <b>%s</b> hat die Transportanfrage für die Tour „%s“ angenommen.",
   "✏️ Организатор изменил тур «%s»:\n%s": "✏️ Der Organisator hat die Tour „%s“ geändert:\n%s",
+  "❌ Водитель <b>%s</b> отклонил заявку на транспорт для тура «%s».": "❌ Fahrer <b>%s</b> hat die Transportanfrage für die Tour „%s“ abgelehnt.",
+  "❌ Организатор отменил заявку на транспорт для тура «%s».": "❌ Der Veranstalter hat die Transportanfrage für die Tour „%s“ zurückgezogen.",
   "❌ Тур «%s» (%s) отменён организатором.": "❌ Die Tour „%s“ (%s) wurde vom Organisator abgesagt.",
   "⭐ Оценить тур": "⭐ Tour bewerten",
   "🎉 Освободилось место на туре «%s» (%s) — вы в группе.": "🎉 Auf der Tour „%s“ (%s) ist ein Platz frei geworden — Sie sind in der Gruppe.",
@@ -18,5 +23,7 @@
   "📋 Отметить прибывших": "📋 Anwesenheit erfassen",
   "📍 Место сбора: <b>%s</b>": "📍 Treffpunkt: <b>%s</b>",
   "🕕 Сбор: <b>%s</b> (было %s)": "🕕 Treffen: <b>%s</b> (vorher %s)",
-  "🙋 <b>%s</b> записывается на тур «%s» (%s).": "🙋 <b>%s</b> meldet sich für die Tour „%s“ (%s) an."
+  "🙋 <b>%s</b> записывается на тур «%s» (%s).": "🙋 <b>%s</b> meldet sich für die Tour „%s“ (%s) an.",
+  "🚐 <b>%s</b> просит транспорт для тура «%s» — подача %s.": "🚐 <b>%s</b> bittet um Transport für die Tour „%s“ — Abholung %s.",
+  "🚐 Открыть заявку": "🚐 Anfrage öffnen"
 }

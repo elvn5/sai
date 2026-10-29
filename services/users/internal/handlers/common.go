@@ -93,7 +93,7 @@ func (l Lookup) LookupUser(ctx context.Context, id string) (middleware.SessionUs
 	if err != nil {
 		return middleware.SessionUser{}, err
 	}
-	out := middleware.SessionUser{ID: u.ID, PartnerStatus: u.PartnerStatus}
+	out := middleware.SessionUser{ID: u.ID, PartnerStatus: u.PartnerStatus, PartnerKind: u.PartnerKind}
 	if u.SessionsValidAfter != nil {
 		out.SessionsValidAfter = *u.SessionsValidAfter
 	}

@@ -252,6 +252,7 @@ func TestServiceRouting(t *testing.T) {
 		"GET /trails/komsomolets":    "trails",
 		"GET /conditions":            "trails",
 		"GET /crm/clients":           "listings",
+		"GET /driver/trips":          "listings",
 		"POST /chats/x/messages":     "listings",
 		"POST /tours/x/join":         "listings",
 		"POST /orders":               "payments",

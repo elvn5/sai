@@ -62,7 +62,10 @@ func (c *Client) LookupUser(ctx context.Context, id string) (middleware.SessionU
 	if err != nil {
 		return middleware.SessionUser{}, fmt.Errorf("get user: %w", err)
 	}
-	user := middleware.SessionUser{ID: res.GetUser().GetId(), PartnerStatus: partnerStatuses[res.GetUser().GetPartnerStatus()]}
+	user := middleware.SessionUser{
+		ID: res.GetUser().GetId(), PartnerStatus: partnerStatuses[res.GetUser().GetPartnerStatus()],
+		PartnerKind: res.GetUser().GetPartnerKind(),
+	}
 	if after := res.GetUser().GetSessionsValidAfter(); after > 0 {
 		user.SessionsValidAfter = time.Unix(after, 0)
 	}

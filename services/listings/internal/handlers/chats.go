@@ -23,7 +23,7 @@ const (
 
 type openChatRequest struct {
 	// A partner writes to one of their clients; a traveler to a partner
-	// who runs tours.
+	// who runs tours, an organizer also to a driver.
 	UserID    *string `json:"userId" binding:"omitempty,uuid"`
 	PartnerID *string `json:"partnerId" binding:"omitempty,uuid"`
 }
@@ -109,18 +109,28 @@ func (h *Chats) Open(c *gin.Context) {
 		}
 		partner, traveler = me, *req.UserID
 	} else {
-		ok, err := h.Store.OrganizesTours(ctx, *req.PartnerID)
+		organizer, err := h.Store.OrganizesTours(ctx, *req.PartnerID)
+		driver := false
+		if err == nil && !organizer {
+			// Organizers also write to the drivers in their catalog.
+			driver, err = h.Store.IsPublishedDriver(ctx, *req.PartnerID)
+		}
 		if err != nil {
 			h.fail(c, err, chatNotFound, "")
 			return
 		}
-		if !ok || *req.PartnerID == me {
+		if (!organizer && !driver) || *req.PartnerID == me {
 			httperr.Abort(c, http.StatusNotFound, "Organizer not found")
 			return
 		}
 		partner, traveler = *req.PartnerID, me
 		// A traveler writing to an organizer is a lead.
-		if err := h.Store.OpenInquiry(ctx, partner, traveler); err != nil {
+		if organizer {
+			err = h.Store.OpenInquiry(ctx, partner, traveler)
+		} else {
+			err = h.Store.AddAccountClient(ctx, partner, traveler)
+		}
+		if err != nil {
 			h.fail(c, err, chatNotFound, "")
 			return
 		}

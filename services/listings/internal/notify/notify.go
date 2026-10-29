@@ -158,19 +158,58 @@ func (n *Notifier) Message(ctx context.Context, chat store.Chat, senderID, body 
 	to := chat.Other(senderID)
 	l := n.langs(ctx, to)(to)
 	item := store.Notification{UserID: to, Kind: "chat_message", Text: messageText(l, n.person(ctx, senderID), body)}
-	if n.SiteURL != "" {
-		path := "/messages/" + chat.ID
-		if to == chat.PartnerID {
-			path = "/partner/messages/" + chat.ID
-		}
-		if l != telegram.RU {
-			path = "/" + string(l) + path
-		}
-		text, url := texts.T(l, "💬 Ответить"), strings.TrimRight(n.SiteURL, "/")+path
-		item.ButtonText, item.ButtonURL = &text, &url
+	path := "/messages/" + chat.ID
+	if to == chat.PartnerID {
+		path = "/partner/messages/" + chat.ID
 	}
+	item.ButtonText, item.ButtonURL = n.siteButton(l, "💬 Ответить", path)
 	key := fmt.Sprintf("chat:%s:%s:%d", chat.ID, to, n.now().Unix()/int64(messageWindow.Seconds()))
 	item.DedupKey = &key
+	n.enqueue(ctx, []store.Notification{item})
+}
+
+// siteButton links to a page of the site in the recipient's language;
+// none without SITE_URL.
+func (n *Notifier) siteButton(l telegram.Lang, text, path string) (*string, *string) {
+	if n.SiteURL == "" {
+		return nil, nil
+	}
+	if l != telegram.RU {
+		path = "/" + string(l) + path
+	}
+	text, url := texts.T(l, text), strings.TrimRight(n.SiteURL, "/")+path
+	return &text, &url
+}
+
+// TransportRequested tells a driver an organizer asked them for a trip.
+func (n *Notifier) TransportRequested(ctx context.Context, t models.Tour, tripID, driverID string, startsAt time.Time) {
+	l := n.langs(ctx, driverID)(driverID)
+	item := store.Notification{UserID: driverID, Kind: "transport_requested", TourID: &t.ID,
+		Text: transportRequestedText(l, t, n.person(ctx, organizerOf(t)), startsAt)}
+	item.ButtonText, item.ButtonURL = n.siteButton(l, "🚐 Открыть заявку", "/partner/trips/"+tripID)
+	n.enqueue(ctx, []store.Notification{item})
+}
+
+// TransportAnswered tells the organizer the driver accepted, declined or
+// cancelled a trip for their tour.
+func (n *Notifier) TransportAnswered(ctx context.Context, t models.Tour, driverName, status string) {
+	owner := organizerOf(t)
+	if owner == "" {
+		return
+	}
+	l := n.langs(ctx, owner)(owner)
+	item := store.Notification{UserID: owner, Kind: "transport_" + status, TourID: &t.ID,
+		Text: transportAnsweredText(l, t, driverName, status)}
+	item.ButtonText, item.ButtonURL = n.siteButton(l, "Открыть группу", "/partner/tours/"+t.ID+"/participants")
+	n.enqueue(ctx, []store.Notification{item})
+}
+
+// TransportCancelled tells a driver the organizer called a trip off.
+func (n *Notifier) TransportCancelled(ctx context.Context, t models.Tour, tripID, driverID string) {
+	l := n.langs(ctx, driverID)(driverID)
+	item := store.Notification{UserID: driverID, Kind: "transport_called_off", TourID: &t.ID,
+		Text: transportCancelledText(l, t)}
+	item.ButtonText, item.ButtonURL = n.siteButton(l, "🚐 Открыть заявку", "/partner/trips/"+tripID)
 	n.enqueue(ctx, []store.Notification{item})
 }
 

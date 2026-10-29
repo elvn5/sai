@@ -18,6 +18,9 @@ const (
 	// ContextPartnerStatus holds the signed-in user's partner status, when
 	// a UserLookup is configured.
 	ContextPartnerStatus = "auth.partnerStatus"
+	// ContextPartnerKind holds what kind of partner the user is
+	// ("organizer" or "driver"), when a UserLookup is configured.
+	ContextPartnerKind = "auth.partnerKind"
 	// ContextIsAdmin is true when the request carries an admin session.
 	ContextIsAdmin = "auth.isAdmin"
 )
@@ -30,6 +33,7 @@ var ErrUserNotFound = errors.New("user not found")
 type SessionUser struct {
 	ID            string
 	PartnerStatus string // "none", "pending", "approved", "rejected"
+	PartnerKind   string // "organizer" or "driver"; empty means organizer
 	// Sessions issued before this are refused (set when the password is
 	// reset); zero when there's no such cut-off.
 	SessionsValidAfter time.Time
@@ -69,6 +73,33 @@ func RequirePartner() gin.HandlerFunc {
 	}
 }
 
+// RequireOrganizer admits approved partners who run tours (not drivers);
+// it runs after RequireUser with a lookup.
+func RequireOrganizer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString(ContextPartnerStatus) != "approved" || IsDriver(c) {
+			httperr.Abort(c, http.StatusForbidden, "Only approved tour organizers can do this")
+			return
+		}
+		c.Next()
+	}
+}
+
+// RequireDriver admits approved partners who are drivers; it runs after
+// RequireUser with a lookup.
+func RequireDriver() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString(ContextPartnerStatus) != "approved" || !IsDriver(c) {
+			httperr.Abort(c, http.StatusForbidden, "Only approved drivers can do this")
+			return
+		}
+		c.Next()
+	}
+}
+
+// IsDriver: the signed-in user is a driver partner.
+func IsDriver(c *gin.Context) bool { return c.GetString(ContextPartnerKind) == "driver" }
+
 // authenticateUser validates the user cookie (and, with a lookup, the
 // account), records the user in the context, and aborts on failure.
 func authenticateUser(c *gin.Context, v *auth.Verifier, lookup UserLookup) bool {
@@ -92,6 +123,7 @@ func authenticateUser(c *gin.Context, v *auth.Verifier, lookup UserLookup) bool 
 			return false
 		}
 		c.Set(ContextPartnerStatus, user.PartnerStatus)
+		c.Set(ContextPartnerKind, user.PartnerKind)
 	}
 	c.Set(ContextUserID, userID)
 	return true

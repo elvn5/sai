@@ -35,6 +35,8 @@ const (
 	partner = "33333333-3333-3333-3333-333333333333"
 	// regular is the only account that isn't an approved partner.
 	regular = "44444444-4444-4444-4444-444444444444"
+	// driver is an approved partner who carries tour groups.
+	driver = "55555555-5555-5555-5555-555555555555"
 )
 
 func createDatabase(t *testing.T, migrate bool) (*pgxpool.Pool, string) {
@@ -80,17 +82,18 @@ func createDatabase(t *testing.T, migrate bool) (*pgxpool.Pool, string) {
 	return db, dsn
 }
 
-var testUsers = fakeUsers{owner: "approved", guest: "approved", partner: "approved", regular: "none"}
+var testUsers = fakeUsers{owner: "approved", guest: "approved", partner: "approved", regular: "none", driver: "approved/driver"}
 
 // fakeUsers stands in for the users service.
-type fakeUsers map[string]string // id → partner status
+type fakeUsers map[string]string // id → partner status[/kind]
 
 func (f fakeUsers) LookupUser(_ context.Context, id string) (middleware.SessionUser, error) {
 	s, ok := f[id]
 	if !ok {
 		return middleware.SessionUser{}, middleware.ErrUserNotFound
 	}
-	return middleware.SessionUser{ID: id, PartnerStatus: s}, nil
+	status, kind, _ := strings.Cut(s, "/")
+	return middleware.SessionUser{ID: id, PartnerStatus: status, PartnerKind: kind}, nil
 }
 
 func (f fakeUsers) Authors(_ context.Context, ids []string) (map[string]usersclient.Author, error) {

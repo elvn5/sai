@@ -7,6 +7,7 @@ import { loaded } from '@/core/lib/resource';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { DailyBarChart } from '@/pages/partner/daily-bar-chart';
 import { StatTile } from '@/pages/partner/stat-tile';
+import { TaskList } from '@/pages/partner/task-list';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { RatingStars } from '@/ui/rating-stars';
 import { SiteLink } from '@/ui/site-link';
@@ -24,7 +25,7 @@ const TOP = 5;
 // viewed listings.
 @Component({
   selector: 'app-partner-dashboard-page',
-  imports: [DailyBarChart, PersonAvatar, RatingStars, SiteLink, StatTile, TranslocoPipe],
+  imports: [DailyBarChart, PersonAvatar, RatingStars, SiteLink, StatTile, TaskList, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-6">
@@ -57,6 +58,14 @@ const TOP = 5;
           </ul>
         </div>
       }
+
+      <section class="ui-card flex flex-col gap-2 p-4" aria-labelledby="dashboard-tasks">
+        <div class="flex items-center justify-between">
+          <h2 id="dashboard-tasks" class="font-semibold text-text">{{ 'crm.tasks.dashboard' | transloco }}</h2>
+          <a appSiteLink="/partner/tasks" class="text-sm text-brand-700 hover:underline dark:text-brand-300">{{ 'crm.tasks.all' | transloco }}</a>
+        </div>
+        <app-task-list [limit]="5" />
+      </section>
 
       @if (crm(); as summary) {
         <div class="grid grid-cols-3 gap-3">

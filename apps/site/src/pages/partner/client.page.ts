@@ -8,6 +8,8 @@ import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
 import { ClientForm } from '@/pages/partner/client-form';
 import { clientName, statusBadge } from '@/pages/partner/crm';
+import { LeadCard } from '@/pages/partner/lead-card';
+import { TaskList } from '@/pages/partner/task-list';
 import { injectConfirm } from '@/ui/confirm-dialog';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { SiteLink } from '@/ui/site-link';
@@ -22,7 +24,7 @@ import { firstValueFrom } from 'rxjs';
 // (accounts only).
 @Component({
   selector: 'app-partner-client-page',
-  imports: [ClientForm, PersonAvatar, SiteLink, StateBlock, TranslocoPipe],
+  imports: [ClientForm, LeadCard, PersonAvatar, SiteLink, StateBlock, TaskList, TranslocoPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-5">
@@ -60,10 +62,11 @@ import { firstValueFrom } from 'rxjs';
           @if (editing()) {
             <app-client-form [client]="c" (saved)="saved()" (cancelled)="editing.set(false)" />
           } @else {
-            <dl class="grid gap-3 text-sm sm:grid-cols-3">
+            <dl class="grid gap-3 text-sm sm:grid-cols-4">
               <div><dt class="text-text-muted">{{ 'crm.client.phone' | transloco }}</dt><dd class="text-text">@if (c.phone) {<a class="hover:underline" [href]="'tel:' + c.phone">{{ c.phone }}</a>} @else {—}</dd></div>
               <div><dt class="text-text-muted">{{ 'crm.client.telegram' | transloco }}</dt><dd class="text-text">@if (telegram(c); as tg) {<a class="hover:underline" [href]="'https://t.me/' + tg" target="_blank" rel="noopener">&#64;{{ tg }}</a>} @else {—}</dd></div>
               <div><dt class="text-text-muted">{{ 'crm.client.tags' | transloco }}</dt><dd class="text-text">@for (t of c.tags; track t) {<span class="mr-1.5 text-brand-700 dark:text-brand-300">#{{ t }}</span>} @empty {—}</dd></div>
+              <div><dt class="text-text-muted">{{ 'crm.client.source' | transloco }}</dt><dd class="text-text">{{ 'crm.source.' + (c.source ?? 'unknown') | transloco }}</dd></div>
             </dl>
             @if (c.note) {
               <p class="rounded-lg bg-text/4 px-3 py-2 text-sm whitespace-pre-line text-text">{{ c.note }}</p>
@@ -101,6 +104,24 @@ import { firstValueFrom } from 'rxjs';
             <p class="text-sm text-text-muted">{{ 'crm.client.noTours' | transloco }}</p>
           }
         </section>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+          <section class="flex flex-col gap-2" aria-labelledby="client-leads">
+            <div class="flex items-center justify-between">
+              <h2 id="client-leads" class="font-semibold text-text">{{ 'cabinet.nav.leads' | transloco }}</h2>
+              <button type="button" class="ui-btn-soft ui-btn-xs" [disabled]="busy()" (click)="newLead(c)"><span class="icon-[heroicons--plus] size-4" aria-hidden="true"></span>{{ 'crm.leads.add' | transloco }}</button>
+            </div>
+            @for (lead of c.leads ?? []; track lead.id) {
+              <app-lead-card [lead]="lead" (changed)="client.reload()" />
+            } @empty {
+              <p class="text-sm text-text-muted">{{ 'crm.leads.none' | transloco }}</p>
+            }
+          </section>
+          <section class="ui-card flex flex-col gap-2 p-4" aria-labelledby="client-tasks">
+            <h2 id="client-tasks" class="font-semibold text-text">{{ 'cabinet.nav.tasks' | transloco }}</h2>
+            <app-task-list [clientId]="c.id" />
+          </section>
+        </div>
       } @else if (client.error()) {
         <app-state-block icon="icon-[heroicons--user]" tone="danger" title="crm.client.notFound" />
       }
@@ -167,6 +188,18 @@ export class PartnerClientPage {
       await this.navigate(`/partner/messages/${chat.id}`);
     } catch {
       this.notify.error({ title: 'chat.openError' });
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  protected async newLead(c: CrmClient): Promise<void> {
+    this.busy.set(true);
+    try {
+      await firstValueFrom(this.http.post('/crm/leads', { clientId: c.id }));
+      this.client.reload();
+    } catch {
+      this.notify.error({ title: 'crm.saveError' });
     } finally {
       this.busy.set(false);
     }

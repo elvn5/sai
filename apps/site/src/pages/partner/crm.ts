@@ -1,12 +1,27 @@
 import type {
+  ClientSource,
   CrmClient,
   CrmGroup,
   CrmParticipant,
+  LeadStage,
   MountainExperience,
   ParticipantStatus,
 } from '@/core/api/types';
+import type { Person } from '@/core/api/types';
 import { personName } from '@/core/lib/format';
 import type { CsvCell } from '@/core/lib/partner-cabinet';
+
+export const CLIENT_SOURCES: ClientSource[] = [
+  'ermekten',
+  'instagram',
+  'whatsapp',
+  'telegram',
+  'phone',
+  'referral',
+  'other',
+];
+
+export const LEAD_STAGES: LeadStage[] = ['new', 'working', 'offer', 'won', 'lost'];
 
 // The order statuses are offered in.
 export const PARTICIPANT_STATUSES: ParticipantStatus[] = [
@@ -17,7 +32,7 @@ export const PARTICIPANT_STATUSES: ParticipantStatus[] = [
 ];
 
 // The name a client goes by: the one the partner typed, else the account's.
-export function clientName(client: Pick<CrmClient, 'name' | 'account'>): string {
+export function clientName(client: Pick<CrmClient, 'name'> & { account: Person | null }): string {
   if (client.name) return client.name;
   return client.account ? personName(client.account) : '—';
 }

@@ -5,9 +5,11 @@ import { contentLang, downloadCsv } from '@/core/lib/partner-cabinet';
 import { loaded } from '@/core/lib/resource';
 import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
+import { BroadcastForm } from '@/pages/partner/broadcast-form';
 import { ClientForm } from '@/pages/partner/client-form';
 import { clientName, groupRows } from '@/pages/partner/crm';
 import { ParticipantRow } from '@/pages/partner/participant-row';
+import { TourOps } from '@/pages/partner/tour-ops';
 import { SiteLink } from '@/ui/site-link';
 import { StateBlock } from '@/ui/state-block';
 import { DOCUMENT } from '@angular/common';
@@ -21,7 +23,15 @@ import { firstValueFrom } from 'rxjs';
 // adding clients (from the base or new ones). Exports the group as CSV.
 @Component({
   selector: 'app-partner-tour-group-page',
-  imports: [ClientForm, ParticipantRow, SiteLink, StateBlock, TranslocoPipe],
+  imports: [
+    BroadcastForm,
+    ClientForm,
+    ParticipantRow,
+    SiteLink,
+    StateBlock,
+    TourOps,
+    TranslocoPipe,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-5">
@@ -38,6 +48,7 @@ import { firstValueFrom } from 'rxjs';
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
+            <button type="button" class="ui-btn-soft" [disabled]="g.participants.length === 0" (click)="writing.set(!writing())"><span class="icon-[heroicons--megaphone] size-4" aria-hidden="true"></span>{{ 'crm.group.write' | transloco }}</button>
             <button type="button" class="ui-btn-soft" [disabled]="g.participants.length === 0" (click)="exportCsv(g)"><span class="icon-[heroicons--arrow-down-tray] size-4" aria-hidden="true"></span>{{ 'crm.group.export' | transloco }}</button>
             @if (!adding()) {
               <button type="button" class="ui-btn-primary" (click)="adding.set(true)"><span class="icon-[heroicons--user-plus] size-4" aria-hidden="true"></span>{{ 'crm.group.add' | transloco }}</button>
@@ -52,6 +63,13 @@ import { firstValueFrom } from 'rxjs';
           <div class="ui-card px-4 py-3"><p class="text-xs text-text-muted">{{ 'crm.group.forms' | transloco }}</p><p class="text-xl font-extrabold tabular-nums" [class]="g.totals.forms < g.totals.active ? 'text-amber-700 dark:text-amber-300' : 'text-text'">{{ g.totals.forms }} / {{ g.totals.active }}</p></div>
           <div class="ui-card px-4 py-3"><p class="text-xs text-text-muted">{{ 'crm.group.arrived' | transloco }}</p><p class="text-xl font-extrabold text-text tabular-nums">{{ g.totals.arrived }} / {{ g.totals.active }}</p></div>
         </div>
+
+        @if (writing()) {
+          <section class="ui-card p-4" aria-labelledby="write-group">
+            <h2 id="write-group" class="mb-3 font-semibold text-text">{{ 'crm.group.write' | transloco }}</h2>
+            <app-broadcast-form [audience]="'tour:' + g.tour.id" [cancellable]="true" (sent)="writing.set(false)" (cancelled)="writing.set(false)" />
+          </section>
+        }
 
         @if (adding()) {
           <section class="ui-card flex flex-col gap-3 p-4" aria-labelledby="add-participant">
@@ -98,6 +116,8 @@ import { firstValueFrom } from 'rxjs';
             <button type="button" class="ui-btn-primary" (click)="adding.set(true)">{{ 'crm.group.add' | transloco }}</button>
           </app-state-block>
         }
+
+        <app-tour-ops [group]="g" (changed)="set($event)" />
       } @else if (group.error()) {
         <app-state-block icon="icon-[heroicons--user-group]" tone="danger" title="crm.group.notFound" />
       }
@@ -116,6 +136,7 @@ export class PartnerTourGroupPage {
   protected readonly group = httpResource<CrmGroup>(() => `/crm/tours/${this.id()}/participants`);
   protected readonly data = computed(() => loaded(this.group) ?? null);
   protected readonly adding = signal(false);
+  protected readonly writing = signal(false);
   protected readonly newClient = signal(false);
   protected readonly pick = signal('');
   protected readonly busy = signal(false);

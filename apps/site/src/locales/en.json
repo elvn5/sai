@@ -732,7 +732,11 @@
       "listings": "Listings",
       "reviews": "Reviews",
       "clients": "Clients",
-      "messages": "Messages"
+      "messages": "Messages",
+      "leads": "Leads",
+      "tasks": "Tasks",
+      "broadcasts": "Broadcasts",
+      "reports": "Reports"
     },
     "kinds": {
       "hotel": "Stay",
@@ -1235,7 +1239,8 @@
       "notFound": "Tour not found",
       "added": "Participant added",
       "addedWaitlist": "Added to the waitlist",
-      "forms": "Forms"
+      "forms": "Forms",
+      "write": "Message the group"
     },
     "clients": {
       "subtitle": "Everyone who travelled or signed up with you, and clients you added yourself",
@@ -1270,7 +1275,8 @@
       "toursCount": "Tours with you",
       "history": "Tours",
       "noTours": "No tours yet",
-      "notFound": "Client not found"
+      "notFound": "Client not found",
+      "source": "Source"
     },
     "status": {
       "new": "New",
@@ -1299,7 +1305,11 @@
       "add": "Record a payment",
       "added": "Payment recorded",
       "delete": "Delete the payment",
-      "deleteConfirm": "Delete this payment?"
+      "deleteConfirm": "Delete this payment?",
+      "kind": "Type",
+      "payment": "Payment",
+      "refund": "Refund",
+      "refunded": "Refund recorded"
     },
     "removeFromTour": "Remove from the tour",
     "removeConfirm": "Remove “{name}” from the tour with their payments?",
@@ -1345,6 +1355,130 @@
       "noWaiver": "rules not accepted",
       "askAccount": "The participant hasn't filled in the form yet — message them or fill it in from what they told you.",
       "askManual": "Fill in the form from what the client told you."
+    },
+    "finance": {
+      "title": "Tour finances",
+      "expenses": "Expenses",
+      "margin": "Margin",
+      "category": "Category",
+      "add": "Add expense",
+      "delete": "Delete expense",
+      "deleteConfirm": "Delete this entry?"
+    },
+    "expense": {
+      "transport": "Transport",
+      "guides": "Guides",
+      "food": "Food",
+      "accommodation": "Accommodation",
+      "permits": "Permits and fees",
+      "gear": "Gear",
+      "other": "Other"
+    },
+    "staff": {
+      "title": "Guides and transport",
+      "empty": "No one yet — add a guide and a driver.",
+      "role": "Role",
+      "add": "Add",
+      "delete": "Remove from the tour",
+      "guide": "Guide",
+      "assistant": "Assistant guide",
+      "driver": "Driver",
+      "cook": "Cook",
+      "other": "Other"
+    },
+    "broadcast": {
+      "audience": "To",
+      "all": "All clients",
+      "tag": "Tagged #{tag}",
+      "tour": "Group: {title}",
+      "text": "Message",
+      "hint": "Every client with an account gets it in their chat with you and a Telegram notification. Clients added by hand are skipped.",
+      "send": "Send",
+      "empty": "Write a message",
+      "done": "Sent: {sent}, skipped: {skipped}",
+      "subtitle": "A message to a tour's group, tagged clients or everyone — and templates for frequent messages",
+      "new": "New broadcast",
+      "history": "Sent",
+      "result": "delivered {sent}, skipped {skipped}"
+    },
+    "templates": {
+      "insert": "Templates:",
+      "title": "Message templates",
+      "empty": "No templates yet: a packing list, payment details, how to get there.",
+      "name": "Title",
+      "bodyPlaceholder": "Template text",
+      "add": "Save template",
+      "delete": "Delete template",
+      "deleteConfirm": "Delete the template?",
+      "required": "Enter a title and a text"
+    },
+    "source": {
+      "ermekten": "Ermekten",
+      "instagram": "Instagram",
+      "whatsapp": "WhatsApp",
+      "telegram": "Telegram",
+      "phone": "Phone call",
+      "referral": "Referral",
+      "other": "Other",
+      "unknown": "Not set"
+    },
+    "tasks": {
+      "done": "Done",
+      "delete": "Delete task",
+      "none": "No tasks",
+      "title": "Task",
+      "placeholder": "Call back, remind about the balance…",
+      "due": "Due",
+      "add": "Add",
+      "empty": "Write a task",
+      "today": "today",
+      "subtitle": "What to do and when: calls, balances, trip preparation",
+      "dashboard": "Tasks",
+      "all": "All tasks"
+    },
+    "leads": {
+      "reason": "Reason",
+      "reasonPlaceholder": "Too expensive, dates didn't fit…",
+      "stage": "Stage",
+      "delete": "Delete lead",
+      "deleteConfirm": "Delete the lead?",
+      "stages": {
+        "new": "New",
+        "working": "In progress",
+        "offer": "Offer sent",
+        "won": "Booked",
+        "lost": "Lost"
+      },
+      "subtitle": "Inquiries before a booking: who wrote, what they asked and how it ended",
+      "add": "New lead",
+      "client": "Client",
+      "tour": "Tour",
+      "notePlaceholder": "What they asked, when to call back",
+      "noClients": "Add a client in Clients first.",
+      "empty": "No leads yet",
+      "emptyHint": "When a traveler writes to you, a lead appears here. Add inquiries from WhatsApp and calls yourself.",
+      "none": "No leads"
+    },
+    "reports": {
+      "subtitle": "Tours that started in the period: fill rate, no-shows, money and leads",
+      "tours": "Tours",
+      "fill": "Fill rate",
+      "fillHint": "{taken} of {places} places",
+      "noShows": "No-shows",
+      "count": "people: {count}",
+      "repeat": "Repeat clients",
+      "repeatHint": "{repeat} of {clients}",
+      "revenue": "Revenue",
+      "cancelled": "Cancellations",
+      "participants": "participants: {count}",
+      "leads": "Leads by source",
+      "leadsTotal": "Leads",
+      "conversion": "Conversion",
+      "noLeads": "No leads in the period",
+      "byTour": "By tour",
+      "tour": "Tour",
+      "noTours": "No tours in the period",
+      "howCounted": "Revenue is payments minus refunds on the period's tours. No-shows only count on tours where you marked arrivals. A repeat client has travelled with you before."
     }
   },
   "participantForm": {

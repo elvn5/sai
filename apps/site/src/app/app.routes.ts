@@ -146,6 +146,24 @@ const pages: Routes = [
         loadComponent: () => import('@/pages/partner/client.page').then((m) => m.PartnerClientPage),
       },
       {
+        path: 'leads',
+        loadComponent: () => import('@/pages/partner/leads.page').then((m) => m.PartnerLeadsPage),
+      },
+      {
+        path: 'tasks',
+        loadComponent: () => import('@/pages/partner/tasks.page').then((m) => m.PartnerTasksPage),
+      },
+      {
+        path: 'broadcasts',
+        loadComponent: () =>
+          import('@/pages/partner/broadcasts.page').then((m) => m.PartnerBroadcastsPage),
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('@/pages/partner/reports.page').then((m) => m.PartnerReportsPage),
+      },
+      {
         path: 'messages',
         data: { scope: 'partner' },
         loadComponent: () => import('@/pages/messages/messages.page').then((m) => m.MessagesPage),

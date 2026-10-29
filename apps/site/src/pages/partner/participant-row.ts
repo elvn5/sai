@@ -99,8 +99,11 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
             <ul class="flex flex-col gap-1 text-sm">
               @for (pay of p.payments; track pay.id) {
                 <li class="flex items-center gap-2">
-                  <span class="icon-[heroicons--banknotes] size-4 text-text-muted" aria-hidden="true"></span>
-                  <span class="font-medium text-text tabular-nums">{{ amount(pay.amount) }}</span>
+                  <span [class]="(pay.kind === 'refund' ? 'icon-[heroicons--arrow-uturn-left] text-danger' : 'icon-[heroicons--banknotes] text-text-muted') + ' size-4'" aria-hidden="true"></span>
+                  <span class="font-medium tabular-nums" [class]="pay.kind === 'refund' ? 'text-danger' : 'text-text'">@if (pay.kind === 'refund') {−}{{ amount(pay.amount) }}</span>
+                  @if (pay.kind === 'refund') {
+                    <span class="ui-badge ui-badge-danger">{{ 'crm.payment.refund' | transloco }}</span>
+                  }
                   <span class="text-text-muted">{{ 'crm.method.' + pay.method | transloco }} · {{ date(pay.paidOn) }}</span>
                   @if (pay.note) {
                     <span class="truncate text-text-muted">— {{ pay.note }}</span>
@@ -111,7 +114,14 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
             </ul>
           }
 
-          <form class="grid gap-2 sm:grid-cols-[8rem_9rem_10rem_1fr_auto] sm:items-end" novalidate (submit)="addPayment($event)">
+          <form class="grid gap-2 sm:grid-cols-[8rem_8rem_9rem_10rem_1fr_auto] sm:items-end" novalidate (submit)="addPayment($event)">
+            <div class="ui-field">
+              <label class="ui-label" [for]="'kind-' + p.id">{{ 'crm.payment.kind' | transloco }}</label>
+              <select class="ui-input" [id]="'kind-' + p.id" [formField]="paymentForm.kind">
+                <option value="payment">{{ 'crm.payment.payment' | transloco }}</option>
+                <option value="refund">{{ 'crm.payment.refund' | transloco }}</option>
+              </select>
+            </div>
             <div class="ui-field">
               <label class="ui-label" [for]="'amount-' + p.id">{{ 'crm.payment.amount' | transloco }}</label>
               <input class="ui-input" type="number" inputmode="numeric" [id]="'amount-' + p.id" [formField]="paymentForm.amount" />
@@ -133,7 +143,7 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
               <input class="ui-input" [id]="'note-' + p.id" [formField]="paymentForm.note" />
             </div>
             <button type="submit" class="ui-btn-primary" [disabled]="paymentForm().submitting()">{{ 'crm.payment.add' | transloco }}</button>
-            <app-field-errors class="sm:col-span-5" [state]="paymentForm.amount()" />
+            <app-field-errors class="sm:col-span-6" [state]="paymentForm.amount()" />
           </form>
 
           <div class="flex flex-col gap-2 border-t border-border pt-3">
@@ -195,6 +205,7 @@ export class ParticipantRow {
   });
 
   private readonly paymentModel = linkedSignal(() => ({
+    kind: 'payment' as 'payment' | 'refund',
     amount: this.debt() || 0,
     method: 'cash' as PaymentMethod,
     paidOn: todayInBishkek(),
@@ -204,6 +215,7 @@ export class ParticipantRow {
     validateStandardSchema(
       path,
       z.object({
+        kind: z.string(),
         amount: z.number().check(z.gt(0, this.transloco.translate('crm.errors.amount'))),
         method: z.string(),
         paidOn: z.string().check(z.minLength(10, this.transloco.translate('crm.errors.date'))),
@@ -251,12 +263,13 @@ export class ParticipantRow {
       const v = this.paymentModel();
       await this.run(
         this.http.post<CrmGroup>(this.url('/payments'), {
+          kind: v.kind,
           amount: Math.round(v.amount),
           method: v.method,
           paidOn: v.paidOn,
           note: v.note.trim() || null,
         }),
-        'crm.payment.added',
+        v.kind === 'refund' ? 'crm.payment.refunded' : 'crm.payment.added',
       );
       return undefined;
     });

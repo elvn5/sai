@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatThread } from '@/core/api/types';
+import type { ChatMessage, ChatThread, CrmTemplate } from '@/core/api/types';
 import { ChatUnread, whileVisible } from '@/core/chat/chats';
 import { injectLang } from '@/core/i18n/current-lang';
 import { formatInBishkek, personName } from '@/core/lib/format';
@@ -77,6 +77,14 @@ interface DayGroup {
         }
       </div>
       <form class="flex flex-col gap-1 border-t border-border p-3" novalidate (submit)="send($event)">
+        @if (templateList().length > 0) {
+          <div class="flex flex-wrap items-center gap-1.5 pb-1">
+            <span class="text-xs text-text-muted">{{ 'crm.templates.insert' | transloco }}</span>
+            @for (t of templateList(); track t.id) {
+              <button type="button" class="ui-pill px-2.5 py-1 text-xs" (click)="useTemplate(t.body)">{{ t.title }}</button>
+            }
+          </div>
+        }
         <div class="flex items-end gap-2">
           <label class="sr-only" for="chat-message">{{ 'chat.placeholder' | transloco }}</label>
           <textarea id="chat-message" class="ui-input max-h-40 min-h-11 flex-1 resize-none" rows="1" [placeholder]="'chat.placeholder' | transloco" [formField]="messageForm.body" (keydown.enter)="enter($event)"></textarea>
@@ -107,6 +115,13 @@ export class ChatThreadView {
   protected readonly thread = httpResource<ChatThread>(() => `/chats/${this.chatId()}/messages`);
   protected readonly data = computed(() => (this.thread.hasValue() ? this.thread.value() : null));
   protected readonly failed = signal(false);
+  // The partner's saved texts, offered in chats with clients.
+  private readonly templates = httpResource<CrmTemplate[]>(() =>
+    this.data()?.role === 'partner' ? '/crm/templates' : undefined,
+  );
+  protected readonly templateList = computed(() =>
+    this.templates.hasValue() ? this.templates.value() : [],
+  );
 
   protected readonly days = computed<DayGroup[]>(() => {
     const groups: DayGroup[] = [];
@@ -162,6 +177,10 @@ export class ChatThreadView {
 
   protected time(iso: string): string {
     return formatInBishkek(this.lang(), iso, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  protected useTemplate(body: string): void {
+    this.model.update((m) => ({ body: m.body.trim() ? `${m.body.trim()}\n\n${body}` : body }));
   }
 
   // Enter sends, Shift+Enter starts a new line.

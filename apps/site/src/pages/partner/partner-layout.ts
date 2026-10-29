@@ -12,10 +12,24 @@ const LINKS = [
   { path: '/partner', key: 'dashboard', icon: 'icon-[heroicons--squares-2x2]', exact: true },
   { path: '/partner/stats', key: 'stats', icon: 'icon-[heroicons--chart-bar]', exact: false },
   { path: '/partner/clients', key: 'clients', icon: 'icon-[heroicons--users]', exact: false },
+  { path: '/partner/leads', key: 'leads', icon: 'icon-[heroicons--funnel]', exact: false },
+  { path: '/partner/tasks', key: 'tasks', icon: 'icon-[heroicons--check-circle]', exact: false },
   {
     path: '/partner/messages',
     key: 'messages',
     icon: 'icon-[heroicons--chat-bubble-left-right]',
+    exact: false,
+  },
+  {
+    path: '/partner/broadcasts',
+    key: 'broadcasts',
+    icon: 'icon-[heroicons--megaphone]',
+    exact: false,
+  },
+  {
+    path: '/partner/reports',
+    key: 'reports',
+    icon: 'icon-[heroicons--presentation-chart-line]',
     exact: false,
   },
   {

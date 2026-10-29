@@ -634,12 +634,15 @@ export interface CrmClient {
   telegram: string | null;
   note: string | null;
   tags: string[];
+  source: ClientSource | null;
   createdAt: string;
   // Places on the partner's tours (cancelled and waitlisted aside).
   stats: { tours: number; lastTour: string | null; due: number; paid: number };
   // On the card: their places, latest first, and the chat with them.
   history?: CrmClientTour[];
   chatId?: string;
+  leads?: CrmLead[];
+  tasks?: CrmTask[];
 }
 
 export interface CrmClientTour {
@@ -659,6 +662,8 @@ export type PaymentMethod = 'cash' | 'transfer' | 'card' | 'other';
 
 export interface CrmPayment {
   id: string;
+  // A refund counts against what they paid.
+  kind: 'payment' | 'refund';
   amount: number;
   method: PaymentMethod;
   // YYYY-MM-DD
@@ -702,7 +707,12 @@ export interface CrmGroup {
     // Of those with a place: forms filled, rules accepted.
     forms: number;
     waivers: number;
+    expenses: number;
+    // What's left of what was paid after the expenses.
+    margin: number;
   };
+  expenses: CrmExpense[];
+  staff: CrmStaff[];
 }
 
 export interface CrmSummary {
@@ -747,4 +757,122 @@ export interface ChatSummary {
 export interface ChatThread extends ChatSummary {
   peerReadAt: string | null;
   messages: ChatMessage[];
+}
+
+export type ClientSource =
+  | 'ermekten'
+  | 'instagram'
+  | 'whatsapp'
+  | 'telegram'
+  | 'phone'
+  | 'referral'
+  | 'other';
+
+export type ExpenseCategory =
+  | 'transport'
+  | 'guides'
+  | 'food'
+  | 'accommodation'
+  | 'permits'
+  | 'gear'
+  | 'other';
+
+export interface CrmExpense {
+  id: string;
+  category: ExpenseCategory;
+  amount: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export type StaffRole = 'guide' | 'assistant' | 'driver' | 'cook' | 'other';
+
+export interface CrmStaff {
+  id: string;
+  role: StaffRole;
+  name: string;
+  phone: string | null;
+  note: string | null;
+}
+
+// A client or a tour named on a lead or a task.
+export interface CrmClientRef {
+  id: string;
+  userId: string | null;
+  name: string | null;
+  account: Person | null;
+}
+
+export interface CrmTourRef {
+  id: string;
+  title: string;
+  startDate: string;
+}
+
+export type LeadStage = 'new' | 'working' | 'offer' | 'won' | 'lost';
+
+export interface CrmLead {
+  id: string;
+  client: CrmClientRef;
+  source: ClientSource | null;
+  tour: CrmTourRef | null;
+  stage: LeadStage;
+  lostReason: string | null;
+  note: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CrmTask {
+  id: string;
+  title: string;
+  // YYYY-MM-DD
+  dueOn: string;
+  done: boolean;
+  client: CrmClientRef | null;
+  tour: CrmTourRef | null;
+  doneAt: string | null;
+}
+
+export interface CrmTemplate {
+  id: string;
+  title: string;
+  body: string;
+}
+
+export interface CrmBroadcast {
+  id: string;
+  // 'all', 'tour:<id>' or 'tag:<tag>'.
+  audience: string;
+  body: string;
+  sent: number;
+  skipped: number;
+  createdAt: string;
+}
+
+export interface CrmReport {
+  from: string;
+  to: string;
+  tours: number;
+  places: number;
+  taken: number;
+  participants: number;
+  arrived: number;
+  noShows: number;
+  cancelled: number;
+  clients: number;
+  repeatClients: number;
+  revenue: number;
+  expenses: number;
+  leads: { source: ClientSource | null; total: number; won: number; lost: number }[];
+  byTour: {
+    id: string;
+    title: string;
+    startDate: string;
+    capacity: number | null;
+    taken: number;
+    arrived: number;
+    revenue: number;
+    expenses: number;
+  }[];
 }

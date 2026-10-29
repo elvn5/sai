@@ -732,7 +732,11 @@
       "listings": "Angebote",
       "reviews": "Bewertungen",
       "clients": "Kunden",
-      "messages": "Nachrichten"
+      "messages": "Nachrichten",
+      "leads": "Anfragen",
+      "tasks": "Aufgaben",
+      "broadcasts": "Rundschreiben",
+      "reports": "Berichte"
     },
     "kinds": {
       "hotel": "Unterkunft",
@@ -1235,7 +1239,8 @@
       "notFound": "Tour nicht gefunden",
       "added": "Teilnehmer hinzugefügt",
       "addedWaitlist": "Auf die Warteliste gesetzt",
-      "forms": "Formulare"
+      "forms": "Formulare",
+      "write": "Gruppe anschreiben"
     },
     "clients": {
       "subtitle": "Alle, die mit Ihnen gereist sind oder sich angemeldet haben, und selbst hinzugefügte Kunden",
@@ -1270,7 +1275,8 @@
       "toursCount": "Touren mit Ihnen",
       "history": "Touren",
       "noTours": "Noch keine Touren",
-      "notFound": "Kunde nicht gefunden"
+      "notFound": "Kunde nicht gefunden",
+      "source": "Quelle"
     },
     "status": {
       "new": "Neu",
@@ -1299,7 +1305,11 @@
       "add": "Zahlung erfassen",
       "added": "Zahlung erfasst",
       "delete": "Zahlung löschen",
-      "deleteConfirm": "Diese Zahlung löschen?"
+      "deleteConfirm": "Diese Zahlung löschen?",
+      "kind": "Art",
+      "payment": "Zahlung",
+      "refund": "Erstattung",
+      "refunded": "Erstattung erfasst"
     },
     "removeFromTour": "Aus der Tour entfernen",
     "removeConfirm": "„{name}“ samt Zahlungen aus der Tour entfernen?",
@@ -1345,6 +1355,130 @@
       "noWaiver": "Regeln nicht akzeptiert",
       "askAccount": "Der Teilnehmer hat das Formular noch nicht ausgefüllt — schreiben Sie ihm oder füllen Sie es nach seinen Angaben aus.",
       "askManual": "Füllen Sie das Formular nach Angaben des Kunden aus."
+    },
+    "finance": {
+      "title": "Tourfinanzen",
+      "expenses": "Ausgaben",
+      "margin": "Marge",
+      "category": "Kategorie",
+      "add": "Ausgabe hinzufügen",
+      "delete": "Ausgabe löschen",
+      "deleteConfirm": "Diesen Eintrag löschen?"
+    },
+    "expense": {
+      "transport": "Transport",
+      "guides": "Guides",
+      "food": "Verpflegung",
+      "accommodation": "Unterkunft",
+      "permits": "Genehmigungen und Gebühren",
+      "gear": "Ausrüstung",
+      "other": "Sonstiges"
+    },
+    "staff": {
+      "title": "Guides und Transport",
+      "empty": "Noch niemand — fügen Sie Guide und Fahrer hinzu.",
+      "role": "Rolle",
+      "add": "Hinzufügen",
+      "delete": "Aus der Tour entfernen",
+      "guide": "Guide",
+      "assistant": "Hilfsguide",
+      "driver": "Fahrer",
+      "cook": "Koch",
+      "other": "Sonstiges"
+    },
+    "broadcast": {
+      "audience": "An",
+      "all": "Alle Kunden",
+      "tag": "Mit Tag #{tag}",
+      "tour": "Gruppe: {title}",
+      "text": "Nachricht",
+      "hint": "Jeder Kunde mit Konto erhält die Nachricht im Chat mit Ihnen und eine Telegram-Benachrichtigung. Manuell hinzugefügte Kunden werden übersprungen.",
+      "send": "Senden",
+      "empty": "Schreiben Sie eine Nachricht",
+      "done": "Gesendet: {sent}, übersprungen: {skipped}",
+      "subtitle": "Eine Nachricht an eine Tourgruppe, getaggte Kunden oder alle — und Vorlagen für häufige Nachrichten",
+      "new": "Neues Rundschreiben",
+      "history": "Gesendet",
+      "result": "zugestellt {sent}, übersprungen {skipped}"
+    },
+    "templates": {
+      "insert": "Vorlagen:",
+      "title": "Nachrichtenvorlagen",
+      "empty": "Noch keine Vorlagen: Packliste, Zahlungsdaten, Anfahrt.",
+      "name": "Titel",
+      "bodyPlaceholder": "Vorlagentext",
+      "add": "Vorlage speichern",
+      "delete": "Vorlage löschen",
+      "deleteConfirm": "Vorlage löschen?",
+      "required": "Titel und Text angeben"
+    },
+    "source": {
+      "ermekten": "Ermekten",
+      "instagram": "Instagram",
+      "whatsapp": "WhatsApp",
+      "telegram": "Telegram",
+      "phone": "Anruf",
+      "referral": "Empfehlung",
+      "other": "Sonstiges",
+      "unknown": "Nicht angegeben"
+    },
+    "tasks": {
+      "done": "Erledigt",
+      "delete": "Aufgabe löschen",
+      "none": "Keine Aufgaben",
+      "title": "Aufgabe",
+      "placeholder": "Zurückrufen, an die Restzahlung erinnern…",
+      "due": "Fällig",
+      "add": "Hinzufügen",
+      "empty": "Aufgabe eingeben",
+      "today": "heute",
+      "subtitle": "Was wann zu tun ist: Anrufe, Restzahlungen, Reisevorbereitung",
+      "dashboard": "Aufgaben",
+      "all": "Alle Aufgaben"
+    },
+    "leads": {
+      "reason": "Grund",
+      "reasonPlaceholder": "Zu teuer, Termine passten nicht…",
+      "stage": "Phase",
+      "delete": "Anfrage löschen",
+      "deleteConfirm": "Anfrage löschen?",
+      "stages": {
+        "new": "Neu",
+        "working": "In Arbeit",
+        "offer": "Angebot",
+        "won": "Gebucht",
+        "lost": "Verloren"
+      },
+      "subtitle": "Anfragen vor der Buchung: wer schrieb, was gefragt wurde und wie es endete",
+      "add": "Neue Anfrage",
+      "client": "Kunde",
+      "tour": "Tour",
+      "notePlaceholder": "Was gefragt wurde, wann zurückrufen",
+      "noClients": "Fügen Sie zuerst unter „Kunden“ einen Kunden hinzu.",
+      "empty": "Noch keine Anfragen",
+      "emptyHint": "Schreibt Ihnen ein Reisender, erscheint hier eine Anfrage. Anfragen aus WhatsApp und Anrufen fügen Sie selbst hinzu.",
+      "none": "Keine Anfragen"
+    },
+    "reports": {
+      "subtitle": "Touren, die im Zeitraum begannen: Auslastung, Nichterscheinen, Geld und Anfragen",
+      "tours": "Touren",
+      "fill": "Auslastung",
+      "fillHint": "{taken} von {places} Plätzen",
+      "noShows": "Nichterscheinen",
+      "count": "Personen: {count}",
+      "repeat": "Stammkunden",
+      "repeatHint": "{repeat} von {clients}",
+      "revenue": "Umsatz",
+      "cancelled": "Stornierungen",
+      "participants": "Teilnehmer: {count}",
+      "leads": "Anfragen nach Quelle",
+      "leadsTotal": "Anfragen",
+      "conversion": "Konversion",
+      "noLeads": "Keine Anfragen im Zeitraum",
+      "byTour": "Nach Tour",
+      "tour": "Tour",
+      "noTours": "Keine Touren im Zeitraum",
+      "howCounted": "Umsatz sind Zahlungen minus Erstattungen der Touren im Zeitraum. Nichterscheinen zählt nur bei Touren, in denen Sie Ankünfte markiert haben. Stammkunden sind schon früher mit Ihnen gereist."
     }
   },
   "participantForm": {

@@ -236,7 +236,7 @@ func TourCard(l i18n.Lang, t api.Tour, from string, links Links, now time.Time) 
 		b.WriteString("\n\n" + l.T("Есть свободные места — записывайтесь!"))
 	}
 	if upcoming && t.FormMissing() {
-		b.WriteString("\n\n" + l.T("📝 Заполните анкету участника и примите правила — на странице тура в «🏔 Открыть Ermekten». Организатору важно знать это до выезда."))
+		b.WriteString("\n\n" + l.T("📝 Заполните анкету участника в профиле и примите правила на странице тура — в «🏔 Открыть Ermekten». Организатору важно знать это до выезда."))
 	}
 
 	var buttons [][]telego.InlineKeyboardButton

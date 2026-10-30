@@ -195,3 +195,51 @@ func (h *Credentials) ResetPassword(c *gin.Context) {
 	h.Log.InfoContext(ctx, "password reset", slog.String("userId", user.ID))
 	h.startSession(c, user)
 }
+
+type changePasswordRequest struct {
+	// Asked for when the account has a password.
+	CurrentPassword *string `json:"currentPassword" binding:"omitnil,max=200"`
+	Password        *string `json:"password" binding:"required,min=8,bcryptpassword"`
+}
+
+// ChangePassword sets a new password for the signed-in account (behind
+// RequireUser): the current one must match when there is one; an account
+// without a password (Telegram) sets its first, if it has an email or a
+// phone to sign in with. Other sessions end; this one gets a new cookie.
+func (h *Credentials) ChangePassword(c *gin.Context) {
+	var req changePasswordRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	ctx := c.Request.Context()
+	user, err := h.Store.ByID(ctx, currentUserID(c))
+	if errors.Is(err, store.ErrNotFound) {
+		httperr.Abort(c, http.StatusUnauthorized, "User not found")
+		return
+	} else if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	switch {
+	case user.PasswordHash != nil && (req.CurrentPassword == nil ||
+		bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(*req.CurrentPassword)) != nil):
+		httperr.Abort(c, http.StatusBadRequest, "Current password is incorrect")
+		return
+	case user.PasswordHash == nil && user.Email == nil && user.Phone == nil:
+		httperr.Abort(c, http.StatusConflict, "Add an email or a phone to sign in with a password")
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), passwordCost)
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	// As on a reset: whole seconds, so the session started below stays.
+	user, err = h.Store.SetPassword(ctx, user.ID, string(hash), time.Now().Truncate(time.Second))
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	h.Log.InfoContext(ctx, "password changed", slog.String("userId", user.ID))
+	h.startSession(c, user)
+}

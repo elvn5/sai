@@ -127,6 +127,12 @@ export class AuthStore {
     this.setUser((await this.post<{ user: AppUser }>('/auth/user/password/reset', payload)).user);
   }
 
+  // Sets a new password (the current one is needed when there is one); the
+  // account's other sessions end, this one goes on.
+  async changePassword(payload: { currentPassword?: string; password: string }): Promise<void> {
+    this.setUser((await this.post<{ user: AppUser }>('/auth/user/password/change', payload)).user);
+  }
+
   async resendCode(identifier: string): Promise<PendingVerification> {
     const res = await this.post<{ verification: PendingVerification }>('/auth/user/resend-code', {
       identifier,

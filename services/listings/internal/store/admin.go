@@ -16,7 +16,8 @@ func (s *Store) AdminTours(ctx context.Context) ([]models.AdminTour, error) {
 			SELECT count(*) FILTER (WHERE p.status = 'waitlist')::int AS waitlist,
 				count(*) FILTER (WHERE p.status = 'cancelled')::int AS cancelled,
 				count(*) FILTER (WHERE p.`+activeSQL+` AND p.arrived_at IS NOT NULL)::int AS arrived,
-				count(*) FILTER (WHERE p.`+activeSQL+` AND p.form IS NOT NULL)::int AS forms,
+				count(*) FILTER (WHERE p.`+activeSQL+` AND (p.form IS NOT NULL OR EXISTS (
+					SELECT 1 FROM participant_profiles pp WHERE pp.user_id = p.user_id)))::int AS forms,
 				count(*) FILTER (WHERE p.`+activeSQL+` AND p.waiver_at IS NOT NULL)::int AS waivers,
 				coalesce(sum(coalesce(p.amount_due, tours.price, 0)) FILTER (WHERE p.`+activeSQL+`), 0)::int AS due,
 				coalesce(sum(`+paidSQL+`) FILTER (WHERE p.`+activeSQL+`), 0)::int AS paid

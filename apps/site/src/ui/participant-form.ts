@@ -7,7 +7,6 @@ import {
   input,
   linkedSignal,
   output,
-  signal,
 } from '@angular/core';
 import { FormField, form, submit, validateStandardSchema } from '@angular/forms/signals';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -15,15 +14,10 @@ import { z } from 'zod/mini';
 
 const PHONE = /^\+?[0-9\s\-()]{5,32}$/;
 export const EXPERIENCE: MountainExperience[] = ['none', 'hiking', 'trekking', 'mountaineering'];
-// The rules and risks text participants accept (the API's WaiverVersion):
-// its points are translated under waiver.v1.
-export const WAIVER_VERSION = 'v1';
-const WAIVER_POINTS = ['health', 'guide', 'gear', 'weather', 'risk', 'insurance'];
 
-// What a participant accepts and fills in: the form (emergency contact,
-// experience, health) and — when `waiver` is on — the rules and risks of
-// the trip. Used when signing up, to fill it in later, and by the partner
-// for a client added by hand (no waiver).
+// The participant's form: emergency contact, experience, health. A
+// traveler keeps it in their profile; a partner fills it in for a client
+// added by hand.
 @Component({
   selector: 'app-participant-form',
   imports: [FieldErrors, FormField, TranslocoPipe],
@@ -69,24 +63,6 @@ const WAIVER_POINTS = ['health', 'guide', 'gear', 'weather', 'risk', 'insurance'
         <app-field-errors [state]="pf.notes()" />
       </div>
 
-      @if (waiver()) {
-        <div class="rounded-lg border border-border bg-text/3 p-3">
-          <p class="font-semibold text-text">{{ 'waiver.v1.title' | transloco }}</p>
-          <ul class="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted">
-            @for (point of points; track point) {
-              <li>{{ 'waiver.v1.' + point | transloco }}</li>
-            }
-          </ul>
-          <label class="mt-3 flex cursor-pointer items-start gap-2 text-sm font-medium text-text">
-            <input type="checkbox" class="mt-0.5" [checked]="accepted()" (change)="accepted.set($any($event.target).checked)" />
-            {{ 'waiver.v1.accept' | transloco }}
-          </label>
-          @if (waiverMissing()) {
-            <p class="ui-error mt-1" role="alert">{{ 'participantForm.errors.waiver' | transloco }}</p>
-          }
-        </div>
-      }
-
       @if (failed()) {
         <p class="ui-error" role="alert">{{ failed() | transloco }}</p>
       }
@@ -102,23 +78,18 @@ const WAIVER_POINTS = ['health', 'guide', 'gear', 'weather', 'risk', 'insurance'
 export class ParticipantFormView {
   // The form to edit (prefilled), if any.
   readonly value = input<ParticipantForm | null | undefined>(null);
-  // Ask to accept the rules and risks too.
-  readonly waiver = input(false);
   readonly submitLabel = input('participantForm.save');
   readonly cancellable = input(true);
   readonly busy = input(false);
   // Translation key of an error to show (set by the caller).
   readonly failed = input<string | null>(null);
-  readonly saved = output<{ form: ParticipantForm; acceptWaiver: boolean }>();
+  readonly saved = output<ParticipantForm>();
   readonly cancelled = output();
 
   private readonly transloco = inject(TranslocoService);
   private static next = 0;
   private readonly uid = `pf-${ParticipantFormView.next++}`;
   protected readonly levels = EXPERIENCE;
-  protected readonly points = WAIVER_POINTS;
-  protected readonly accepted = signal(false);
-  protected readonly waiverMissing = signal(false);
 
   protected readonly model = linkedSignal(() => {
     const v = this.value();
@@ -163,19 +134,14 @@ export class ParticipantFormView {
 
   protected async save(event: Event): Promise<void> {
     event.preventDefault();
-    this.waiverMissing.set(this.waiver() && !this.accepted());
     await submit(this.pf, async () => {
-      if (this.waiverMissing()) return undefined;
       const v = this.model();
       this.saved.emit({
-        form: {
-          emergencyName: v.emergencyName.trim(),
-          emergencyPhone: v.emergencyPhone.trim(),
-          experience: v.experience as MountainExperience,
-          health: v.health.trim() || null,
-          notes: v.notes.trim() || null,
-        },
-        acceptWaiver: this.waiver() && this.accepted(),
+        emergencyName: v.emergencyName.trim(),
+        emergencyPhone: v.emergencyPhone.trim(),
+        experience: v.experience as MountainExperience,
+        health: v.health.trim() || null,
+        notes: v.notes.trim() || null,
       });
       return undefined;
     });

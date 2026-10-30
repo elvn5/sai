@@ -9,10 +9,9 @@ function type(element: HTMLElement, selector: string, value: string): void {
 }
 
 describe('ParticipantFormView', () => {
-  it('asks to accept the rules, then hands up the trimmed form', async () => {
+  it('hands up the trimmed form', async () => {
     TestBed.configureTestingModule({ providers: pageTestProviders() });
     const fixture = TestBed.createComponent(ParticipantFormView);
-    fixture.componentRef.setInput('waiver', true);
     const saved: unknown[] = [];
     fixture.componentInstance.saved.subscribe((value) => saved.push(value));
     fixture.detectChanges();
@@ -24,30 +23,15 @@ describe('ParticipantFormView', () => {
       new Event('change'),
     );
     type(element, 'textarea[id$="-health"]', ' астма ');
-    const submit = async (): Promise<void> => {
-      element.querySelector('form')?.dispatchEvent(new Event('submit'));
-      await fixture.whenStable();
-      fixture.detectChanges();
-    };
-
-    await submit();
-    expect(saved).toEqual([]);
-    expect(element.textContent).toContain('participantForm.errors.waiver');
-
-    const box = element.querySelector('input[type="checkbox"]') as HTMLInputElement;
-    box.checked = true;
-    box.dispatchEvent(new Event('change'));
-    await submit();
+    element.querySelector('form')?.dispatchEvent(new Event('submit'));
+    await fixture.whenStable();
     expect(saved).toEqual([
       {
-        form: {
-          emergencyName: 'Мама',
-          emergencyPhone: '+996 555 000111',
-          experience: 'trekking',
-          health: 'астма',
-          notes: null,
-        },
-        acceptWaiver: true,
+        emergencyName: 'Мама',
+        emergencyPhone: '+996 555 000111',
+        experience: 'trekking',
+        health: 'астма',
+        notes: null,
       },
     ]);
   });

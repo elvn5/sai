@@ -143,8 +143,10 @@ func (s *Store) IsClient(ctx context.Context, partnerID, userID string) (bool, e
 func (s *Store) Group(ctx context.Context, tourID string) ([]models.CRMParticipant, error) {
 	rows, err := s.db.Query(ctx, `SELECT p.id::text, c.id::text, p.user_id::text, c.name, c.phone, c.telegram,
 		p.status, p.joined_at, p.arrived_at, p.amount_due, `+dueSQL+`, `+paidSQL+`::int,
-		p.form, p.form_at, p.waiver_at, p.waiver_version
+		CASE WHEN `+profileFormWins+` THEN pp.form ELSE p.form END,
+		CASE WHEN `+profileFormWins+` THEN pp.updated_at ELSE p.form_at END, p.waiver_at, p.waiver_version
 		FROM tour_participants p `+participantClientJoin+`
+		LEFT JOIN participant_profiles pp ON pp.user_id = p.user_id
 		WHERE p.tour_id = $1
 		ORDER BY CASE p.status WHEN 'waitlist' THEN 1 WHEN 'cancelled' THEN 2 ELSE 0 END, p.joined_at`, tourID)
 	if err != nil {
@@ -449,14 +451,46 @@ func (s *Store) SetParticipantForm(ctx context.Context, participantID string, fo
 	return err
 }
 
-// MyForm is userID's form on a tour and when they accepted the rules.
+// profileFormWins: the participant's profile form (pp) is shown instead of
+// the one on the tour (p) — there is none there, or the profile's is newer.
+const profileFormWins = `pp.form IS NOT NULL AND (p.form IS NULL OR p.form_at IS NULL OR pp.updated_at > p.form_at)`
+
+// MyForm is userID's form: the tour's or their profile's, whichever is
+// newer; and when they accepted the rules.
 func (s *Store) MyForm(ctx context.Context, tourID, userID string) (*models.ParticipantForm, *time.Time, error) {
 	var form *models.ParticipantForm
 	var waiverAt *time.Time
-	err := s.db.QueryRow(ctx, `SELECT form, waiver_at FROM tour_participants WHERE tour_id = $1 AND user_id = $2`,
-		tourID, userID).Scan(&form, &waiverAt)
+	err := s.db.QueryRow(ctx, `SELECT CASE WHEN `+profileFormWins+` THEN pp.form ELSE p.form END, p.waiver_at FROM tour_participants p
+		LEFT JOIN participant_profiles pp ON pp.user_id = p.user_id
+		WHERE p.tour_id = $1 AND p.user_id = $2`, tourID, userID).Scan(&form, &waiverAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil, nil
 	}
 	return form, waiverAt, err
+}
+
+// ProfileForm is the form userID keeps in their profile and when they
+// last saved it (nil, nil if none).
+func (s *Store) ProfileForm(ctx context.Context, userID string) (*models.ParticipantForm, *time.Time, error) {
+	var form models.ParticipantForm
+	var updated time.Time
+	err := s.db.QueryRow(ctx, `SELECT form, updated_at FROM participant_profiles WHERE user_id = $1`, userID).Scan(&form, &updated)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	return &form, &updated, nil
+}
+
+// SaveProfileForm keeps userID's form in their profile; nil removes it.
+func (s *Store) SaveProfileForm(ctx context.Context, userID string, form *models.ParticipantForm, now time.Time) error {
+	if form == nil {
+		_, err := s.db.Exec(ctx, `DELETE FROM participant_profiles WHERE user_id = $1`, userID)
+		return err
+	}
+	_, err := s.db.Exec(ctx, `INSERT INTO participant_profiles (user_id, form, updated_at) VALUES ($1, $2, $3)
+		ON CONFLICT (user_id) DO UPDATE SET form = EXCLUDED.form, updated_at = EXCLUDED.updated_at`, userID, form, now)
+	return err
 }

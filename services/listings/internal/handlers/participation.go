@@ -402,3 +402,40 @@ func (h *Tours) notifyParticipants(c *gin.Context, tourID string, send func(ids 
 		send(ids)
 	}
 }
+
+// profileForm is the form a traveler keeps in their profile.
+type profileForm struct {
+	Form      *models.ParticipantForm `json:"form"`
+	UpdatedAt *jsontime.Time          `json:"updatedAt"`
+}
+
+// ProfileForm is the signed-in traveler's form from their profile: the
+// organizers of the tours they sign up for see it.
+func (h *Participation) ProfileForm(c *gin.Context) {
+	form, updated, err := h.Store.ProfileForm(c.Request.Context(), currentUserID(c))
+	if err != nil {
+		h.fail(c, err, "", "")
+		return
+	}
+	respond.JSON(c, http.StatusOK, profileForm{Form: form, UpdatedAt: jsontime.Ptr(updated)})
+}
+
+type profileFormRequest struct {
+	// null removes it.
+	Form *formRequest `json:"form"`
+}
+
+// SaveProfileForm fills in, changes or (null) removes the form in the
+// traveler's profile.
+func (h *Participation) SaveProfileForm(c *gin.Context) {
+	var req profileFormRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	ctx := c.Request.Context()
+	if err := h.Store.SaveProfileForm(ctx, currentUserID(c), req.Form.model(), h.now()); err != nil {
+		h.fail(c, err, "", "")
+		return
+	}
+	h.ProfileForm(c)
+}

@@ -1,5 +1,5 @@
 import { Analytics } from '@/core/analytics/analytics';
-import type { ParticipantForm, Tour, TourParticipant } from '@/core/api/types';
+import type { Tour, TourParticipant } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
 import { openChat } from '@/core/chat/chats';
 import { injectLang } from '@/core/i18n/current-lang';
@@ -7,10 +7,10 @@ import { formatInBishkek, personName } from '@/core/lib/format';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { TelegramNotice } from '@/pages/tours/telegram-notice';
 import { injectConfirm } from '@/ui/confirm-dialog';
-import { ParticipantFormView } from '@/ui/participant-form';
 import { PersonAvatar } from '@/ui/person-avatar';
 import { RatingInput } from '@/ui/rating-input';
 import { SiteLink } from '@/ui/site-link';
+import { WaiverAccept } from '@/ui/waiver-accept';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import {
@@ -52,12 +52,12 @@ const TOUR_END_TIME = '18:00';
   selector: 'app-tour-signup',
   imports: [
     FormField,
-    ParticipantFormView,
     PersonAvatar,
     RatingInput,
     SiteLink,
     TelegramNotice,
     TranslocoPipe,
+    WaiverAccept,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
@@ -122,10 +122,16 @@ const TOUR_END_TIME = '18:00';
             <p class="text-sm text-text-muted">{{ 'tours.signup.closed' | transloco }}</p>
           }
         } @else if (joining()) {
-          <div class="flex flex-col gap-2 border-t border-border pt-4">
-            <h3 class="font-semibold text-text">{{ 'participantForm.title' | transloco }}</h3>
-            <p class="text-sm text-text-muted">{{ 'participantForm.why' | transloco }}</p>
-            <app-participant-form [waiver]="true" [submitLabel]="full() ? 'tours.signup.joinWaitlist' : 'tours.signup.join'" [busy]="busy()" (saved)="join($event)" (cancelled)="joining.set(false)" />
+          <div class="flex flex-col gap-3 border-t border-border pt-4">
+            <app-waiver-accept [(accepted)]="waiverAccepted" [missing]="waiverMissing()" />
+            <p class="ui-hint">
+              {{ 'tours.signup.formOptional' | transloco }}
+              <a appSiteLink="/profile" class="text-brand-700 hover:underline dark:text-brand-300">{{ 'tours.signup.openProfile' | transloco }}</a>
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="ui-btn-primary" [disabled]="busy()" (click)="join()">{{ (full() ? 'tours.signup.joinWaitlist' : 'tours.signup.join') | transloco }}</button>
+              <button type="button" class="ui-btn-ghost" (click)="joining.set(false)">{{ 'crm.cancel' | transloco }}</button>
+            </div>
           </div>
         } @else if (t.myStatus === 'waitlist') {
           <p class="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-300">
@@ -149,21 +155,23 @@ const TOUR_END_TIME = '18:00';
         }
 
         @if (t.myStatus && !t.isOrganizer && !ended()) {
-          @if (editingForm()) {
+          @if (!t.myWaiverAt) {
+            <!-- A sign-up from the bot hasn't accepted the rules yet. -->
             <div class="flex flex-col gap-2 border-t border-border pt-4">
-              <h3 class="font-semibold text-text">{{ 'participantForm.title' | transloco }}</h3>
-              <app-participant-form [value]="t.myForm" [waiver]="!t.myWaiverAt" [busy]="busy()" (saved)="saveForm($event)" (cancelled)="editingForm.set(false)" />
+              <app-waiver-accept [(accepted)]="waiverAccepted" [missing]="waiverMissing()" />
+              <button type="button" class="ui-btn-primary self-start" [disabled]="busy()" (click)="acceptWaiver()">{{ 'participantForm.acceptRules' | transloco }}</button>
             </div>
-          } @else if (!t.myForm || !t.myWaiverAt) {
-            <div class="ui-banner ui-banner-warning flex flex-wrap items-center justify-between gap-2 text-sm">
-              <span>{{ 'participantForm.missing' | transloco }}</span>
-              <button type="button" class="ui-btn-primary ui-btn-xs" (click)="editingForm.set(true)">{{ 'participantForm.fill' | transloco }}</button>
-            </div>
-          } @else {
+          }
+          @if (t.myForm) {
             <p class="flex flex-wrap items-center gap-2 text-sm text-text-muted">
-              <span class="icon-[heroicons--clipboard-document-check] size-4 text-success" aria-hidden="true"></span>{{ 'participantForm.done' | transloco }}
-              <button type="button" class="text-brand-700 hover:underline dark:text-brand-300" (click)="editingForm.set(true)">{{ 'participantForm.edit' | transloco }}</button>
+              <span class="icon-[heroicons--clipboard-document-check] size-4 text-success" aria-hidden="true"></span>{{ 'participantForm.filled' | transloco }}
+              <a appSiteLink="/profile" class="text-brand-700 hover:underline dark:text-brand-300">{{ 'participantForm.editInProfile' | transloco }}</a>
             </p>
+          } @else {
+            <div class="ui-banner ui-banner-info flex flex-wrap items-center justify-between gap-2 text-sm">
+              <span>{{ 'participantForm.missingProfile' | transloco }}</span>
+              <a appSiteLink="/profile" class="ui-btn-soft ui-btn-xs">{{ 'participantForm.fillInProfile' | transloco }}</a>
+            </div>
           }
         }
 
@@ -247,15 +255,14 @@ export class TourSignup {
     return t.capacity ? Math.min(100, (t.taken / t.capacity) * 100) : 0;
   });
   protected readonly busy = signal(false);
-  // The form shown before signing up, and to fill it in afterwards.
+  // The rules shown before signing up.
   protected readonly joining = linkedSignal({
     source: () => this.tour().id,
     computation: () => false,
   });
-  protected readonly editingForm = linkedSignal({
-    source: () => this.tour().id,
-    computation: () => false,
-  });
+  protected readonly waiverAccepted = signal(false);
+  // A try to go on without accepting the rules.
+  protected readonly waiverMissing = signal(false);
   // Translation key of the last failed action.
   protected readonly actionError = signal<string | null>(null);
 
@@ -285,19 +292,22 @@ export class TourSignup {
     return personName(person);
   }
 
-  // Signing up starts with the participant's form (signed in first).
+  // Signing up starts with the rules of the trip (signed in first); the
+  // participant's form is optional, kept in the profile.
   protected async startJoin(): Promise<void> {
     if (!(await this.auth.ensureSession())) {
       await this.navigate(`/login?redirect=${encodeURIComponent(this.router.url)}`);
       return;
     }
     this.actionError.set(null);
+    this.waiverMissing.set(false);
     this.joining.set(true);
   }
 
-  protected async join(answers: { form: ParticipantForm; acceptWaiver: boolean }): Promise<void> {
+  protected async join(): Promise<void> {
+    if (!this.rulesAccepted()) return;
     const id = this.tour().id;
-    if (await this.act(this.http.post<Tour>(`/tours/${id}/join`, answers))) {
+    if (await this.act(this.http.post<Tour>(`/tours/${id}/join`, { acceptWaiver: true }))) {
       this.joining.set(false);
       if (this.personal()?.myStatus !== 'waitlist') {
         this.analytics.track('join_tour', { tour_id: id });
@@ -305,14 +315,16 @@ export class TourSignup {
     }
   }
 
-  protected async saveForm(answers: {
-    form: ParticipantForm;
-    acceptWaiver: boolean;
-  }): Promise<void> {
-    const id = this.tour().id;
-    if (await this.act(this.http.put<Tour>(`/tours/${id}/form`, answers))) {
-      this.editingForm.set(false);
-    }
+  // Accepts the rules after signing up (in the bot).
+  protected async acceptWaiver(): Promise<void> {
+    if (!this.rulesAccepted()) return;
+    await this.act(this.http.put<Tour>(`/tours/${this.tour().id}/form`, { acceptWaiver: true }));
+  }
+
+  // Whether the box is ticked; if not, says it's needed.
+  private rulesAccepted(): boolean {
+    this.waiverMissing.set(!this.waiverAccepted());
+    return this.waiverAccepted();
   }
 
   // Opens the chat with the organizer (signing in first).

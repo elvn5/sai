@@ -15,6 +15,8 @@ import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
+import { ParticipantFormCard } from '@/pages/profile/participant-form-card';
+import { PasswordCard } from '@/pages/profile/password-card';
 import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
 import { AwardCodeCard } from '@/ui/achievements/award-code-card';
 import { HallPodium } from '@/ui/achievements/hall-podium';
@@ -70,6 +72,8 @@ interface ListingItem {
     MountainScene,
     ListSkeleton,
     LoadError,
+    ParticipantFormCard,
+    PasswordCard,
     PersonAvatar,
     SiteLink,
     StateBlock,
@@ -199,6 +203,7 @@ interface ListingItem {
         <div class="mt-5" role="tabpanel" [id]="'panel-' + active()" [attr.aria-labelledby]="'tab-' + active()">
           @switch (active()) {
             @case ('info') {
+              <div class="flex flex-col gap-4">
               <dl class="ui-card flex flex-col divide-y divide-border">
                 <div class="flex items-center justify-between px-4 py-3">
                   <dt class="text-sm text-text-muted">{{ 'profile.fields.email' | transloco }}</dt>
@@ -213,6 +218,9 @@ interface ListingItem {
                   <dd><app-telegram-link /></dd>
                 </div>
               </dl>
+              <app-participant-form-card />
+              <app-password-card [user]="user" />
+              </div>
               <button type="button" class="ui-btn-soft mt-4 sm:hidden" (click)="logout()">
                 <span class="icon-[heroicons--arrow-right-start-on-rectangle] size-4" aria-hidden="true"></span>{{ 'profile.logout' | transloco }}
               </button>

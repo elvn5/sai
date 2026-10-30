@@ -44,6 +44,7 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	r.GET("/auth/user/verification-status", creds.VerificationStatus)
 	r.POST("/auth/user/password/forgot", creds.ForgotPassword)
 	r.POST("/auth/user/password/reset", creds.ResetPassword)
+	r.POST("/auth/user/password/change", requireUser, creds.ChangePassword)
 
 	account := &handlers.Account{Deps: d}
 	r.GET("/auth/user/me", requireUser, account.Me)

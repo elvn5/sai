@@ -171,11 +171,11 @@ func TestSketchTourMore(t *testing.T) {
 			"<b>День 1. Бишкек — Кочкор</b>\nВыезд в 8:00, обед в Кочкоре.\n\n"+
 			"<b>День 2. Сон-Кёль</b>\nКонная прогулка, закат.\n\n"+
 			"📞 <b>Связь с организатором</b>\nTelegram: @sonkol_tours\nТелефон: +996 555 123 456",
-		"✋ Записаться→o:join:t:t2",
+		"✋ Записаться→o:join:t:t2 | 📤 Поделиться→share:https://t.me/ermekten_bot?start=tour_t2",
 		"💔 Из избранного→t:drop:f:1:t2:more | ⬅️ К турам→t:f:1",
 	)
 	tour.IsJoined = true
-	if got := layout(screens.TourMore(i18n.RU, tour, screens.TabFavorites, 1, 0, true, links, at(10, 20, 10, 0))); got[0] != "🎒 Моя запись→o:view:t:t2" {
+	if got := layout(screens.TourMore(i18n.RU, tour, screens.TabFavorites, 1, 0, true, links, at(10, 20, 10, 0))); got[0] != "🎒 Моя запись→o:view:t:t2 | 📤 Поделиться→share:https://t.me/ermekten_bot?start=tour_t2" {
 		t.Errorf("joined: %v", got)
 	}
 }
@@ -198,7 +198,7 @@ func TestSketchTours(t *testing.T) {
 			"⭐ 4.8 · 23 отзыва\n\n"+
 			"<i>Перевал Калмак-Ашуу, табуны на джайлоо и звёзды над озером на высоте 3 016 м.</i>",
 		"◀️→t:f:0 | 2 / 5→noop | ▶️→t:f:2",
-		"✋ Записаться→o:join:t:t2",
+		"✋ Записаться→o:join:t:t2 | 📤 Поделиться→share:https://t.me/ermekten_bot?start=tour_t2",
 		"📖 Подробнее→t:more:f:1:0 | 💔 Из избранного→t:drop:f:1:t2",
 		"• ❤️ Избранное •→t:f:0 | 🆕 Ближайшие→t:n:0",
 		"🔔 Сообщать о новых турах→t:alert:f:1",

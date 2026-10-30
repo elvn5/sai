@@ -3,6 +3,7 @@ package routes_test
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -207,5 +208,64 @@ func TestPasswordResetLimits(t *testing.T) {
 	}
 	if r := e.do("POST", "/auth/user/login", `{"identifier":"cholpon@example.kg","password":"old-secret"}`); r.status != 200 {
 		t.Errorf("password changed: %d", r.status)
+	}
+}
+
+func TestChangePassword(t *testing.T) {
+	e := setup(t)
+	e.registerVerified("bek@example.kg", "old-secret")
+	login := func(password string) response {
+		return e.do("POST", "/auth/user/login", `{"identifier":"bek@example.kg","password":"`+password+`"}`)
+	}
+	session := login("old-secret").cookie(t, "user_token")
+	other := login("old-secret").cookie(t, "user_token")
+	if me := e.do("GET", "/auth/user/me", "", session); !strings.Contains(me.body, `"hasPassword":true`) {
+		t.Fatalf("me: %s", me.body)
+	}
+
+	if r := e.do("POST", "/auth/user/password/change", `{"currentPassword":"old-secret","password":"new-secret"}`); r.status != 401 {
+		t.Errorf("signed out: %d", r.status)
+	}
+	if r := e.do("POST", "/auth/user/password/change", `{"currentPassword":"wrong","password":"new-secret"}`, session); r.status != 400 ||
+		!strings.Contains(r.body, "Current password is incorrect") {
+		t.Errorf("wrong current: %d %s", r.status, r.body)
+	}
+	if r := e.do("POST", "/auth/user/password/change", `{"password":"new-secret"}`, session); r.status != 400 {
+		t.Errorf("no current: %d %s", r.status, r.body)
+	}
+	if r := e.do("POST", "/auth/user/password/change", `{"currentPassword":"old-secret","password":"short"}`, session); r.status != 400 ||
+		!strings.Contains(r.body, `"password"`) {
+		t.Errorf("short: %d %s", r.status, r.body)
+	}
+
+	// Other sessions end; this one goes on with a new cookie.
+	time.Sleep(1100 * time.Millisecond) // token times are whole seconds
+	r := e.do("POST", "/auth/user/password/change", `{"currentPassword":"old-secret","password":"new-secret"}`, session)
+	if r.status != 200 || len(r.setCookie) != 1 {
+		t.Fatalf("change: %d %s", r.status, r.body)
+	}
+	if me := e.do("GET", "/auth/user/me", "", other); me.status != 401 {
+		t.Errorf("another session still works: %d", me.status)
+	}
+	if me := e.do("GET", "/auth/user/me", "", r.cookie(t, "user_token")); me.status != 200 {
+		t.Errorf("new cookie: %d", me.status)
+	}
+	if login("old-secret").status != 401 || login("new-secret").status != 200 {
+		t.Error("the new password isn't the one that works")
+	}
+}
+
+func TestSetFirstPassword(t *testing.T) {
+	e := setup(t)
+	authDate := strconv.FormatInt(e.clock.Unix(), 10)
+	fields := map[string]string{"id": "123456789", "first_name": "Ulan", "auth_date": authDate}
+	body := `{"id":123456789,"first_name":"Ulan","auth_date":` + authDate + `,"hash":"` + signWidget(fields) + `"}`
+	r := e.do("POST", "/auth/telegram/widget", body)
+	if !strings.Contains(r.body, `"hasPassword":false`) {
+		t.Fatalf("telegram account: %s", r.body)
+	}
+	// Nothing to sign in with but Telegram: no password to set.
+	if r := e.do("POST", "/auth/user/password/change", `{"password":"first-secret"}`, r.cookie(t, "user_token")); r.status != 409 {
+		t.Errorf("without email or phone: %d %s", r.status, r.body)
 	}
 }

@@ -240,8 +240,12 @@ func TestToursCarousel(t *testing.T) {
 		}
 	}
 	over := screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabFavorites, Tours: tours[1:2], Now: now.AddDate(0, 0, 3)}, links)
-	if g := buttons(over); has(g, "✋ Записаться→o:join:t:t2") {
-		t.Errorf("sign-up after the end: %v", g)
+	if g := buttons(over); has(g, "✋ Записаться→o:join:t:t2") || strings.Contains(strings.Join(g, " "), "Поделиться") {
+		t.Errorf("sign-up or sharing after the end: %v", g)
+	}
+	// Sharing sends the bot's link to the tour's card.
+	if g := buttons(screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabUpcoming, Tours: tours[1:2], Now: now}, links)); !strings.Contains(strings.Join(g, " "), "📤 Поделиться→https://t.me/share/url?url=https%3A%2F%2Ft.me%2Fermekten_bot%3Fstart%3Dtour_t2&text=") {
+		t.Errorf("share: %v", g)
 	}
 	empty := screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabFavorites}, links)
 	if !strings.Contains(empty.Text, "В избранном пока пусто") {

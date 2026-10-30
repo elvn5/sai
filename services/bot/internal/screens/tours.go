@@ -63,19 +63,32 @@ type ToursView struct {
 	Now time.Time
 }
 
-// signUpRow is a tour's sign-up button in the tours section: the user's
-// own sign-up, a place or the waitlist while the tour isn't over, else
-// nothing.
-func signUpRow(l i18n.Lang, t api.Tour, now time.Time) []telego.InlineKeyboardButton {
+// signUpRow is a tour's sign-up button in the tours section — the user's
+// own sign-up, a place or the waitlist while the tour isn't over — and,
+// until then, sharing it: a friend's link opens the tour in the bot.
+func signUpRow(l i18n.Lang, t api.Tour, links Links, now time.Time) []telego.InlineKeyboardButton {
+	var row []telego.InlineKeyboardButton
 	switch {
 	case t.IsJoined || t.IsOrganizer || t.Waiting():
-		return []telego.InlineKeyboardButton{keyboards.Button(l.T("🎒 Моя запись"), TripData(ActView, FromTours, t.ID))}
+		row = append(row, keyboards.Button(l.T("🎒 Моя запись"), TripData(ActView, FromTours, t.ID)))
 	case !IsUpcoming(t, now):
-		return nil
 	case t.Full():
-		return []telego.InlineKeyboardButton{keyboards.Button(l.T("⏳ Встать в лист ожидания"), TripData(ActJoin, FromTours, t.ID))}
+		row = append(row, keyboards.Button(l.T("⏳ Встать в лист ожидания"), TripData(ActJoin, FromTours, t.ID)))
+	default:
+		row = append(row, keyboards.Button(l.T("✋ Записаться"), TripData(ActJoin, FromTours, t.ID)))
 	}
-	return []telego.InlineKeyboardButton{keyboards.Button(l.T("✋ Записаться"), TripData(ActJoin, FromTours, t.ID))}
+	if IsUpcoming(t, now) {
+		if share := shareTour(l, t, links); share != nil {
+			row = append(row, *share)
+		}
+	}
+	return row
+}
+
+// shareTour shares a tour with Telegram's share dialog: the link opens its
+// card in the bot.
+func shareTour(l i18n.Lang, t api.Tour, links Links) *telego.InlineKeyboardButton {
+	return links.Share(l.T("📤 Поделиться"), TourDeepLink(t.ID), l.F("Поехали в тур: «%s», %s", t.Title, When(l, t.StartsAt())))
 }
 
 // tourFacts are a tour's place, length, dates, price and rating lines.
@@ -142,7 +155,7 @@ func Tours(l i18n.Lang, v ToursView, links Links) Screen {
 		if n > 1 {
 			buttons = append(buttons, keyboards.Pager(index, n, func(i int) string { return TourData(v.Tab, i) }))
 		}
-		if row := signUpRow(l, t, v.Now); row != nil {
+		if row := signUpRow(l, t, links, v.Now); row != nil {
 			buttons = append(buttons, row)
 		}
 		save := keyboards.Button(l.T("❤️ В избранное"), tourAction(ActSave, v.Tab, index, t.ID))
@@ -229,7 +242,7 @@ func TourMore(l i18n.Lang, t api.Tour, tab string, index, page int, favorite boo
 		}
 		buttons = append(buttons, row)
 	}
-	if row := signUpRow(l, t, now); row != nil {
+	if row := signUpRow(l, t, links, now); row != nil {
 		buttons = append(buttons, row)
 	}
 	save := keyboards.Button(l.T("❤️ В избранное"), tourAction(ActSave, tab, index, t.ID)+":"+ActMore)

@@ -229,7 +229,9 @@
       "waitingHint": "Wird ein Platz frei, bekommt ihn der Erste auf der Liste — wir schreiben Ihnen in Telegram.",
       "leaveWaitlist": "Warteliste verlassen",
       "joinWaitlist": "Auf die Warteliste",
-      "waitlistHint": "Keine Plätze frei, aber jemand könnte absagen — dann bekommt der Erste auf der Warteliste den Platz."
+      "waitlistHint": "Keine Plätze frei, aber jemand könnte absagen — dann bekommt der Erste auf der Warteliste den Platz.",
+      "formOptional": "Das Teilnehmerformular können Sie in Ihrem Profil ausfüllen — der Veranstalter sieht es.",
+      "openProfile": "Profil öffnen"
     }
   },
   "destinations": {
@@ -575,6 +577,19 @@
       "awards": "Erfolge",
       "tours": "Touren",
       "upcoming": "Bevorstehend"
+    },
+    "password": {
+      "title": "Passwort",
+      "hint": "Nach der Änderung melden wir Sie auf allen anderen Geräten ab.",
+      "setHint": "Legen Sie ein Passwort fest, um sich mit E-Mail oder Telefon anzumelden.",
+      "needContact": "Sie melden sich über Telegram an. Für die Anmeldung mit Passwort braucht Ihr Konto eine E-Mail oder eine Telefonnummer.",
+      "change": "Passwort ändern",
+      "set": "Passwort festlegen",
+      "current": "Aktuelles Passwort",
+      "currentRequired": "Geben Sie Ihr aktuelles Passwort ein",
+      "done": "Passwort geändert",
+      "wrongCurrent": "Das aktuelle Passwort ist falsch",
+      "error": "Das Passwort konnte nicht geändert werden. Bitte versuchen Sie es erneut."
     }
   },
   "footer": {
@@ -1498,7 +1513,6 @@
   },
   "participantForm": {
     "title": "Teilnehmerformular",
-    "why": "Nur der Veranstalter dieser Tour sieht es: So kann er sich vorbereiten und weiß, wen er im Notfall anruft.",
     "emergencyName": "Notfallkontakt",
     "emergencyPhone": "Telefon",
     "experience": "Bergerfahrung",
@@ -1525,16 +1539,24 @@
     "notes": "Was der Veranstalter noch wissen sollte",
     "notesPlaceholder": "Verpflegung, Ausrüstungsverleih, Transfer…",
     "save": "Formular speichern",
-    "missing": "Füllen Sie das Teilnehmerformular aus und akzeptieren Sie die Regeln — der Veranstalter braucht das vor der Abreise.",
     "fill": "Formular ausfüllen",
-    "done": "Formular ausgefüllt, Regeln akzeptiert",
     "edit": "Formular ändern",
     "errors": {
       "emergencyName": "Wen wir im Notfall anrufen sollen",
       "phone": "Geben Sie eine Telefonnummer an, z. B. +996 555 123 456",
       "experience": "Wählen Sie Ihre Erfahrung",
       "waiver": "Akzeptieren Sie die Regeln, um sich anzumelden"
-    }
+    },
+    "profileWhy": "Einmal ausfüllen — die Veranstalter der Touren, für die Sie sich anmelden, sehen es: So können sie sich vorbereiten und wissen, wen sie im Notfall anrufen.",
+    "empty": "Das Formular ist noch nicht ausgefüllt. Es ist freiwillig, aber der Veranstalter sollte das vor der Abreise wissen.",
+    "saved": "Formular gespeichert",
+    "saveError": "Das Formular konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    "loadError": "Das Formular konnte nicht geladen werden.",
+    "acceptRules": "Regeln akzeptieren",
+    "filled": "Teilnehmerformular ausgefüllt",
+    "editInProfile": "Im Profil ändern",
+    "missingProfile": "Füllen Sie das Teilnehmerformular in Ihrem Profil aus — der Veranstalter braucht das vor der Abreise.",
+    "fillInProfile": "Im Profil ausfüllen"
   },
   "waiver": {
     "v1": {

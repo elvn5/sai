@@ -19,6 +19,8 @@ export interface AppUser {
   partnerStatus: PartnerStatus;
   // A tour organizer or a driver who carries tour groups.
   partnerKind: PartnerKind;
+  // Whether the account has a password (one made in Telegram may not).
+  hasPassword?: boolean;
 }
 
 export type PartnerKind = 'organizer' | 'driver';
@@ -1043,4 +1045,11 @@ export interface TransportRequest {
   declineReason: string | null;
   driver: DriverProfile;
   vehicle: DriverVehicle | null;
+}
+
+// The participant's form a traveler keeps in their profile
+// (GET /tours/participant-form).
+export interface ProfileParticipantForm {
+  form: ParticipantForm | null;
+  updatedAt: string | null;
 }

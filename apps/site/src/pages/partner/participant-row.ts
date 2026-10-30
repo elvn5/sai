@@ -147,7 +147,7 @@ const METHODS: PaymentMethod[] = ['cash', 'transfer', 'card', 'other'];
           <div class="flex flex-col gap-2 border-t border-border pt-3">
             <p class="text-sm font-semibold text-text">{{ 'participantForm.title' | transloco }}</p>
             @if (editingForm()) {
-              <app-participant-form [value]="p.form" [busy]="busy()" (saved)="saveForm($event.form)" (cancelled)="editingForm.set(false)" />
+              <app-participant-form [value]="p.form" [busy]="busy()" (saved)="saveForm($event)" (cancelled)="editingForm.set(false)" />
             } @else if (p.form; as f) {
               <dl class="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
                 <div><dt class="text-xs text-text-muted">{{ 'participantForm.emergencyName' | transloco }}</dt><dd class="text-text">{{ f.emergencyName }} · <a class="hover:underline" [href]="'tel:' + f.emergencyPhone">{{ f.emergencyPhone }}</a></dd></div>

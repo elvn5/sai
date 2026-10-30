@@ -46,13 +46,16 @@ type PublicUser struct {
 	AvatarURL     *string `json:"avatarUrl"`
 	PartnerStatus string  `json:"partnerStatus"`
 	PartnerKind   string  `json:"partnerKind"`
+	// Whether the account has a password (a Telegram-only one may not):
+	// changing it asks for the current one only then.
+	HasPassword bool `json:"hasPassword"`
 }
 
 func (u User) Public() PublicUser {
 	return PublicUser{
 		ID: u.ID, TelegramID: u.TelegramID, Email: u.Email, Username: u.Username, FirstName: u.FirstName,
 		LastName: u.LastName, Phone: u.Phone, AvatarURL: u.AvatarURL, PartnerStatus: u.PartnerStatus,
-		PartnerKind: u.PartnerKind,
+		PartnerKind: u.PartnerKind, HasPassword: u.PasswordHash != nil,
 	}
 }
 

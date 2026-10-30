@@ -229,7 +229,9 @@
       "waitingHint": "If a place opens up, it goes to the first on the list — we'll message you in Telegram.",
       "leaveWaitlist": "Leave the waitlist",
       "joinWaitlist": "Join the waitlist",
-      "waitlistHint": "No places left, but someone may drop out — then the first on the waitlist gets the place."
+      "waitlistHint": "No places left, but someone may drop out — then the first on the waitlist gets the place.",
+      "formOptional": "You can fill in the participant form in your profile — the organizer will see it.",
+      "openProfile": "Open profile"
     }
   },
   "destinations": {
@@ -575,6 +577,19 @@
       "awards": "Achievements",
       "tours": "Tours",
       "upcoming": "Upcoming"
+    },
+    "password": {
+      "title": "Password",
+      "hint": "After changing the password, you'll be signed out on all other devices.",
+      "setHint": "Set a password to sign in with your email or phone.",
+      "needContact": "You sign in with Telegram. To sign in with a password, your account needs an email or a phone.",
+      "change": "Change password",
+      "set": "Set password",
+      "current": "Current password",
+      "currentRequired": "Enter your current password",
+      "done": "Password changed",
+      "wrongCurrent": "The current password is wrong",
+      "error": "Couldn't change the password. Please try again."
     }
   },
   "footer": {
@@ -1498,7 +1513,6 @@
   },
   "participantForm": {
     "title": "Participant form",
-    "why": "Only the organizer of this tour sees it: it helps them prepare and know whom to call in an emergency.",
     "emergencyName": "Emergency contact",
     "emergencyPhone": "Their phone",
     "experience": "Mountain experience",
@@ -1525,16 +1539,24 @@
     "notes": "Anything else the organizer should know",
     "notesPlaceholder": "Food, gear rental, transfer…",
     "save": "Save the form",
-    "missing": "Fill in the participant form and accept the rules — the organizer needs this before the trip.",
     "fill": "Fill in the form",
-    "done": "Form filled, rules accepted",
     "edit": "Edit the form",
     "errors": {
       "emergencyName": "Whom to call in an emergency",
       "phone": "Enter a phone number, e.g. +996 555 123 456",
       "experience": "Choose your experience",
       "waiver": "Accept the rules to sign up"
-    }
+    },
+    "profileWhy": "Fill it in once — organizers of the tours you sign up for will see it, so they can prepare and know whom to call in an emergency.",
+    "empty": "You haven't filled in the form yet. It's optional, but the organizer needs to know this before the trip.",
+    "saved": "Form saved",
+    "saveError": "Couldn't save the form. Please try again.",
+    "loadError": "Couldn't load the form.",
+    "acceptRules": "Accept the rules",
+    "filled": "Participant form filled in",
+    "editInProfile": "Edit in your profile",
+    "missingProfile": "Fill in the participant form in your profile — the organizer needs this before the trip.",
+    "fillInProfile": "Fill in in your profile"
   },
   "waiver": {
     "v1": {

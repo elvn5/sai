@@ -255,3 +255,53 @@ func TestSignUpNotificationLanguage(t *testing.T) {
 		}
 	}
 }
+
+// The form kept in the profile goes with every sign-up that has none.
+func TestProfileForm(t *testing.T) {
+	c, _, _, clock := setupTrips(t, telegram.RU)
+	_, body := c.do("POST", "/tours", tripTour, partner)
+	id := obj(t, body)["id"].(string)
+
+	if _, body := c.do("GET", "/tours/participant-form", "", guest); body != `{"form":null,"updatedAt":null}` {
+		t.Errorf("empty: %s", body)
+	}
+	if status, _ := c.do("GET", "/tours/participant-form", "", ""); status != 401 {
+		t.Errorf("signed out: %d", status)
+	}
+	if status, _ := c.do("PUT", "/tours/participant-form", `{"form":{"emergencyName":"","emergencyPhone":"x","experience":"pro"}}`, guest); status != 400 {
+		t.Errorf("invalid: %d", status)
+	}
+	form := `{"form":{"emergencyName":" Мама ","emergencyPhone":"+996 555 000 111","experience":"trekking","health":"Аллергия"}}`
+	if status, body := c.do("PUT", "/tours/participant-form", form, guest); status != 200 || !strings.Contains(body, `"emergencyName":"Мама"`) || strings.Contains(body, `"updatedAt":null`) {
+		t.Fatalf("save: %d %s", status, body)
+	}
+
+	// Signing up without a form: the organizer sees the profile's, and so
+	// does the participant on the tour.
+	if status, body := c.do("POST", "/tours/"+id+"/join", "", guest); status != 200 || !strings.Contains(body, `"myForm":{"emergencyName":"Мама"`) {
+		t.Fatalf("join: %d %s", status, body)
+	}
+	c.do("POST", "/tours/"+id+"/join", "", owner)
+	_, body = c.do("GET", "/crm/tours/"+id+"/participants", "", partner)
+	group := obj(t, body)
+	if group["totals"].(map[string]any)["forms"] != float64(1) || !strings.Contains(body, `"experience":"trekking"`) {
+		t.Errorf("organizer's view: %s", body)
+	}
+
+	// The newer of the tour's form and the profile's is shown.
+	*clock = clock.Add(time.Hour)
+	c.do("PUT", "/tours/"+id+"/form", `{"form":{"emergencyName":"Брат","emergencyPhone":"+996 777 000 222","experience":"none"}}`, guest)
+	if _, body := c.do("GET", "/tours/by-id/"+id, "", guest); !strings.Contains(body, `"emergencyName":"Брат"`) {
+		t.Errorf("the tour's newer form: %s", body)
+	}
+	*clock = clock.Add(time.Hour)
+	c.do("PUT", "/tours/participant-form", form, guest)
+	if _, body := c.do("GET", "/crm/tours/"+id+"/participants", "", partner); !strings.Contains(body, `"emergencyName":"Мама"`) || strings.Contains(body, "Брат") {
+		t.Errorf("the profile's newer form: %s", body)
+	}
+	// Removing the profile's leaves the tour's.
+	c.do("PUT", "/tours/participant-form", `{"form":null}`, guest)
+	if _, body := c.do("GET", "/crm/tours/"+id+"/participants", "", partner); !strings.Contains(body, `"emergencyName":"Брат"`) {
+		t.Errorf("after removing: %s", body)
+	}
+}

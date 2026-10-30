@@ -116,3 +116,10 @@ func (s *Store) PasswordResetValid(ctx context.Context, tokenHash string, now ti
 		WHERE token_hash = $1 AND expires_at > $2)`, tokenHash, now).Scan(&found)
 	return found, err
 }
+
+// SetPassword changes userID's password and ends the sessions issued before
+// validAfter.
+func (s *Store) SetPassword(ctx context.Context, userID, passwordHash string, validAfter time.Time) (models.User, error) {
+	return scanUser(s.db.QueryRow(ctx, `UPDATE users SET password_hash = $2, sessions_valid_after = $3, updated_at = now()
+		WHERE id::text = $1 RETURNING `+userColumns, userID, passwordHash, validAfter))
+}

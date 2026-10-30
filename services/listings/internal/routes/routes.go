@@ -73,6 +73,8 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.POST("/tours/:id/join", requireUser, trips.Join)
 	r.DELETE("/tours/:id/join", requireUser, trips.Leave)
 	r.PUT("/tours/:id/form", requireUser, trips.SaveForm)
+	r.GET("/tours/participant-form", requireUser, trips.ProfileForm)
+	r.PUT("/tours/participant-form", requireUser, trips.SaveProfileForm)
 	r.PUT("/tours/:id/participants/:userId/arrival", requireUser, trips.SetArrival)
 	r.DELETE("/tours/:id/participants/:userId/arrival", requireUser, trips.SetArrival)
 	r.PUT("/tours/:id/rating", requireUser, trips.Rate)

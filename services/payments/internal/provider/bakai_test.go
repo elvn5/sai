@@ -60,8 +60,8 @@ func TestBakai(t *testing.T) {
 	} {
 		linkBody = body
 		got, err := b.CreatePayment(ctx, payment)
-		if err != nil || got != want {
-			t.Errorf("%s: %q %v", body, got, err)
+		if err != nil || got.URL != want {
+			t.Errorf("%s: %q %v", body, got.URL, err)
 		}
 	}
 	if created["amount"] != float64(24000) || created["transactionID"] != "order-1" || created["ttl"] != float64(30) ||

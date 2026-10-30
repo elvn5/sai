@@ -96,7 +96,7 @@ func (h *Orders) Create(c *gin.Context) {
 		return
 	}
 
-	link, err := h.Provider.CreatePayment(ctx, provider.Payment{
+	checkout, err := h.Provider.CreatePayment(ctx, provider.Payment{
 		TransactionID: order.ID, Amount: amount, TTL: h.PaymentTTL,
 		Comment:   fmt.Sprintf("Ermekten: %s, %d чел.", tour.Title, *req.Quantity),
 		ReturnURL: h.SiteURL + "/payments/return?order=" + order.ID,
@@ -107,7 +107,12 @@ func (h *Orders) Create(c *gin.Context) {
 		msg := "The payment service is unavailable"
 		errPtr = &msg
 	} else {
-		linkPtr = &link
+		linkPtr = &checkout.URL
+		if checkout.Details != nil {
+			if err := h.Store.SaveTransaction(ctx, order.ID, h.Provider.Name(), provider.GoPayOrderID(order.ID), *checkout.Details); err != nil {
+				h.Log.ErrorContext(ctx, "could not save the transaction", "order", order.ID, "error", err)
+			}
+		}
 	}
 	order, saveErr := h.Store.SetPaymentLink(ctx, order.ID, linkPtr, errPtr)
 	if saveErr != nil {

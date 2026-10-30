@@ -1,6 +1,6 @@
-// Package worker settles pending orders against the payment gateway (it
-// has no callbacks, so payments are polled) and tells the partner and the
-// customer about paid bookings in Telegram.
+// Package worker settles pending orders against the payment gateway
+// (polled, and right away when a GoPay webhook arrives) and tells the
+// partner and the customer about paid bookings in Telegram.
 package worker
 
 import (
@@ -85,17 +85,32 @@ func (w *Worker) Tick(ctx context.Context) {
 	}
 }
 
-// Check asks the gateway about a pending order and records the outcome.
+// Check asks the gateway about an order and records the outcome: a pending
+// order is settled, a settled one only gets its transaction refreshed.
 func (w *Worker) Check(ctx context.Context, o models.Order) (models.Order, error) {
 	now := w.now()
 	expired := now.After(o.ExpiresAt.Add(expiryGrace))
 	res, err := w.Provider.Status(ctx, o.ID)
 	if err != nil {
+		_ = w.Store.TransactionError(ctx, o.ID, err.Error())
+		if o.Status != models.StatusPending {
+			return o, err
+		}
 		if expired {
 			return w.resolve(ctx, o, models.StatusExpired, nil)
 		}
 		_ = w.Store.MarkChecked(ctx, o.ID, now)
 		return o, err
+	}
+	if err := w.SaveDetails(ctx, o, res.Details); err != nil {
+		return o, err
+	}
+	if o.Status != models.StatusPending {
+		if res.State == provider.StatePaid && o.Status != models.StatusPaid && o.Status != models.StatusRefunded {
+			w.Log.ErrorContext(ctx, "the gateway reports a payment for a closed order",
+				slog.String("order", o.ID), slog.String("status", o.Status))
+		}
+		return o, nil
 	}
 	switch {
 	case res.State == provider.StatePaid && res.Amount > 0 && math.Abs(res.Amount-float64(o.Amount)) >= 1:
@@ -107,11 +122,20 @@ func (w *Worker) Check(ctx context.Context, o models.Order) (models.Order, error
 	case res.State == provider.StateFailed:
 		msg := res.Message
 		return w.resolve(ctx, o, models.StatusFailed, &msg)
-	case expired:
+	case res.State == provider.StateExpired, expired:
 		return w.resolve(ctx, o, models.StatusExpired, nil)
 	default:
 		return o, w.Store.MarkChecked(ctx, o.ID, now)
 	}
+}
+
+// SaveDetails keeps the gateway's record of the order's payment (when the
+// gateway gives one).
+func (w *Worker) SaveDetails(ctx context.Context, o models.Order, d *provider.Details) error {
+	if d == nil {
+		return nil
+	}
+	return w.Store.SaveTransaction(ctx, o.ID, w.Provider.Name(), provider.GoPayOrderID(o.ID), *d)
 }
 
 func (w *Worker) resolve(ctx context.Context, o models.Order, status string, msg *string) (models.Order, error) {

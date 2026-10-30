@@ -39,7 +39,7 @@ var errUnauthorized = errors.New("bakai: unauthorized")
 // ttlUnitMinutes is QrTtlUnits.Minutes.
 const ttlUnitMinutes = 1
 
-func (b *Bakai) CreatePayment(ctx context.Context, p Payment) (string, error) {
+func (b *Bakai) CreatePayment(ctx context.Context, p Payment) (Checkout, error) {
 	body := map[string]any{
 		"amount":        p.Amount,
 		"transactionID": p.TransactionID,
@@ -51,13 +51,13 @@ func (b *Bakai) CreatePayment(ctx context.Context, p Payment) (string, error) {
 	}
 	raw, err := b.call(ctx, http.MethodPost, "/api/PayLink/CreatePayLink", body)
 	if err != nil {
-		return "", err
+		return Checkout{}, err
 	}
 	link := findLink(raw)
 	if link == "" {
-		return "", fmt.Errorf("bakai: no payment link in the response: %.200s", raw)
+		return Checkout{}, fmt.Errorf("bakai: no payment link in the response: %.200s", raw)
 	}
-	return link, nil
+	return Checkout{URL: link}, nil
 }
 
 func (b *Bakai) Status(ctx context.Context, transactionID string) (Result, error) {

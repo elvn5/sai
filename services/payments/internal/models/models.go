@@ -90,3 +90,50 @@ type MonthSummary struct {
 	Fee     int `json:"fee"`
 	Earned  int `json:"earned"`
 }
+
+// Gateway statuses of a transaction (GoPay's own).
+var TransactionStatuses = []string{"CREATED", "PENDING", "COMMITTED", "FAILED", "EXPIRED", "CANCELLED"}
+
+// Transaction is the gateway's record of an order's payment (GoPay), for
+// the admin panel's online payments.
+type Transaction struct {
+	OrderID         string         `json:"orderId"`
+	Provider        string         `json:"provider"`
+	PaymentID       *string        `json:"paymentId"`
+	ProviderOrderID string         `json:"providerOrderId"`
+	Status          string         `json:"status"`
+	Amount          string         `json:"amount"`
+	Testing         bool           `json:"testing"`
+	CheckoutURL     *string        `json:"checkoutUrl"`
+	GatewayCreated  *jsontime.Time `json:"gatewayCreatedAt"`
+	ExpiresAt       *jsontime.Time `json:"expiresAt"`
+	CommittedAt     *jsontime.Time `json:"committedAt"`
+	BankOpDate      *string        `json:"bankOpDate"`
+	LastError       *string        `json:"lastError"`
+	CheckedAt       jsontime.Time  `json:"checkedAt"`
+	CreatedAt       jsontime.Time  `json:"createdAt"`
+	UpdatedAt       jsontime.Time  `json:"updatedAt"`
+	Order           *Order         `json:"order,omitempty"`
+	// Webhook deliveries about it, on the transaction's own card.
+	Events []ProviderEvent `json:"events,omitempty"`
+}
+
+// ProviderEvent is a webhook delivery from the gateway.
+type ProviderEvent struct {
+	ID          int64          `json:"id"`
+	Event       string         `json:"event"`
+	PaymentID   *string        `json:"paymentId"`
+	Testing     bool           `json:"testing"`
+	Attempts    int            `json:"attempts"`
+	ReceivedAt  jsontime.Time  `json:"receivedAt"`
+	ProcessedAt *jsontime.Time `json:"processedAt"`
+	Error       *string        `json:"error"`
+}
+
+// TransactionFilter narrows the admin's list; dates are Bishkek days.
+type TransactionFilter struct {
+	Status *string
+	From   *string
+	To     *string
+	Limit  int
+}

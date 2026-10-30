@@ -354,8 +354,8 @@ type stubGateway struct {
 }
 
 func (s *stubGateway) Name() string { return "stub" }
-func (s *stubGateway) CreatePayment(context.Context, provider.Payment) (string, error) {
-	return "https://pay.example/x", s.linkErr
+func (s *stubGateway) CreatePayment(context.Context, provider.Payment) (provider.Checkout, error) {
+	return provider.Checkout{URL: "https://pay.example/x"}, s.linkErr
 }
 func (s *stubGateway) Status(context.Context, string) (provider.Result, error) { return s.res, nil }
 

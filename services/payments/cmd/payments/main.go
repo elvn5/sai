@@ -1,5 +1,5 @@
-// Command payments takes online payments for bookings through Bakai Bank
-// Open Banking and keeps the books of what's owed to partners.
+// Command payments takes online payments for bookings through GoPay (or
+// Bakai Bank Open Banking) and keeps the books of what's owed to partners.
 package main
 
 import (
@@ -52,6 +52,11 @@ func run(log *slog.Logger) error {
 	var gateway provider.Provider
 	var fake *provider.Fake
 	switch cfg.Provider {
+	case "gopay":
+		if cfg.GoPayAPIKey == "" || cfg.GoPaySecretKey == "" || cfg.GoPayWebhookSecret == "" {
+			return errors.New("PAYMENTS_PROVIDER=gopay needs GOPAY_API_KEY, GOPAY_SECRET_KEY and GOPAY_WEBHOOK_SECRET")
+		}
+		gateway = &provider.GoPay{BaseURL: cfg.GoPayAPIURL, APIKey: cfg.GoPayAPIKey, SecretKey: cfg.GoPaySecretKey, WebhookSecret: cfg.GoPayWebhookSecret}
 	case "bakai":
 		if cfg.BakaiLogin == "" || cfg.BakaiPassword == "" || cfg.BakaiQRType == "" {
 			return errors.New("PAYMENTS_PROVIDER=bakai needs BAKAI_LOGIN, BAKAI_PASSWORD and BAKAI_QR_TYPE")

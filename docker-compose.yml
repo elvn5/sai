@@ -142,11 +142,17 @@ services:
       PAYMENTS_DB_NAME: payments
       USERS_GRPC_ADDR: users:9083
       LISTINGS_GRPC_ADDR: listings:9082
-      # "fake" (test page) until Bakai access is set up, then "bakai".
+      # "fake" (test page) until GoPay keys are set up, then "gopay".
       PAYMENTS_PROVIDER: ${PAYMENTS_PROVIDER:-fake}
       BAKAI_LOGIN: ${BAKAI_LOGIN:-}
       BAKAI_PASSWORD: ${BAKAI_PASSWORD:-}
       BAKAI_QR_TYPE: ${BAKAI_QR_TYPE:-}
+      # GoPay (PAYMENTS_PROVIDER=gopay): Test keys on staging, Live keys in
+      # production; the webhook secret signs /payments/gopay/events.
+      GOPAY_API_URL: ${GOPAY_API_URL:-https://api.gopay.kg}
+      GOPAY_API_KEY: ${GOPAY_API_KEY:-}
+      GOPAY_SECRET_KEY: ${GOPAY_SECRET_KEY:-}
+      GOPAY_WEBHOOK_SECRET: ${GOPAY_WEBHOOK_SECRET:-}
       PLATFORM_FEE_PERCENT: ${PLATFORM_FEE_PERCENT:-0}
       SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:3002}
       BOT_TOKEN: ${BOT_TOKEN:-}

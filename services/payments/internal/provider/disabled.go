@@ -15,7 +15,9 @@ type Disabled struct{}
 
 func (Disabled) Name() string { return "off" }
 
-func (Disabled) CreatePayment(context.Context, Payment) (string, error) { return "", ErrDisabled }
+func (Disabled) CreatePayment(context.Context, Payment) (Checkout, error) {
+	return Checkout{}, ErrDisabled
+}
 
 func (Disabled) Status(context.Context, string) (Result, error) { return Result{}, ErrDisabled }
 

@@ -17,10 +17,17 @@ type Config struct {
 	UsersGRPCAddr    string `env:"USERS_GRPC_ADDR,required"`
 	ListingsGRPCAddr string `env:"LISTINGS_GRPC_ADDR,required"`
 
-	// "bakai" (Bakai Bank Open Banking), "fake" (a test page instead of
-	// the bank, for development and staging without bank access) or "off"
+	// "gopay" (GoPay ELQR), "bakai" (Bakai Bank Open Banking), "fake" (a
+	// test page instead of the bank, for development without keys) or "off"
 	// (no online payment: orders are refused and the site hides booking).
 	Provider string `env:"PAYMENTS_PROVIDER" envDefault:"fake"`
+	// GoPay (https://doc.gopay.kg/v1/): one host for both modes, the key
+	// pair picks Test (staging) or Live (production). The webhook secret
+	// signs events_url deliveries to /payments/gopay/events.
+	GoPayAPIURL        string `env:"GOPAY_API_URL" envDefault:"https://api.gopay.kg"`
+	GoPayAPIKey        string `env:"GOPAY_API_KEY"`
+	GoPaySecretKey     string `env:"GOPAY_SECRET_KEY"`
+	GoPayWebhookSecret string `env:"GOPAY_WEBHOOK_SECRET"`
 	// Bakai Open Banking API (https://openbanking-api.bakai.kg/swagger).
 	BakaiAPIURL   string `env:"BAKAI_API_URL" envDefault:"https://openbanking-api.bakai.kg"`
 	BakaiLogin    string `env:"BAKAI_LOGIN"`

@@ -17,14 +17,14 @@ type Fake struct {
 
 func (f *Fake) Name() string { return "fake" }
 
-func (f *Fake) CreatePayment(_ context.Context, p Payment) (string, error) {
+func (f *Fake) CreatePayment(_ context.Context, p Payment) (Checkout, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if f.states == nil {
 		f.states = map[string]Result{}
 	}
 	f.states[p.TransactionID] = Result{State: StatePending, Amount: float64(p.Amount)}
-	return f.SiteURL + "/payments/test?order=" + p.TransactionID, nil
+	return Checkout{URL: f.SiteURL + "/payments/test?order=" + p.TransactionID}, nil
 }
 
 func (f *Fake) Status(_ context.Context, transactionID string) (Result, error) {

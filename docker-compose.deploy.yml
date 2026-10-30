@@ -135,6 +135,12 @@ services:
       BAKAI_LOGIN: ${BAKAI_LOGIN:-}
       BAKAI_PASSWORD: ${BAKAI_PASSWORD:-}
       BAKAI_QR_TYPE: ${BAKAI_QR_TYPE:-}
+      # GoPay (PAYMENTS_PROVIDER=gopay): Test keys on staging, Live keys in
+      # production; the webhook secret signs /payments/gopay/events.
+      GOPAY_API_URL: ${GOPAY_API_URL:-https://api.gopay.kg}
+      GOPAY_API_KEY: ${GOPAY_API_KEY:-}
+      GOPAY_SECRET_KEY: ${GOPAY_SECRET_KEY:-}
+      GOPAY_WEBHOOK_SECRET: ${GOPAY_WEBHOOK_SECRET:-}
       PLATFORM_FEE_PERCENT: ${PLATFORM_FEE_PERCENT:-0}
       SITE_URL: ${PUBLIC_SITE_URL}
       BOT_TOKEN: ${BOT_TOKEN}

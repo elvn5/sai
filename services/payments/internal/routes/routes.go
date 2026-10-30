@@ -50,6 +50,17 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string, fake 
 	r.GET("/payouts/balances", requireAdmin, admin.Balances)
 	r.POST("/payouts", requireAdmin, admin.CreatePayout)
 
+	transactions := &handlers.Transactions{Deps: d}
+	r.GET("/payments/admin/gateway", requireAdmin, transactions.Gateway)
+	r.GET("/payments/admin/transactions", requireAdmin, transactions.List)
+	r.GET("/payments/admin/transactions/:id", requireAdmin, transactions.Get)
+	r.POST("/payments/admin/transactions/:id/check", requireAdmin, transactions.Check)
+	r.POST("/payments/admin/transactions/:id/cancel", requireAdmin, transactions.Cancel)
+	if gopay, ok := d.Provider.(*provider.GoPay); ok {
+		webhook := &handlers.GoPayWebhook{Deps: d, GoPay: gopay}
+		r.POST("/payments/gopay/events", webhook.Receive)
+	}
+
 	if fake != nil {
 		test := &handlers.TestPayments{Deps: d, Fake: fake}
 		r.POST("/payments/test/:id", requireUser, test.Complete)

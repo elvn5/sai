@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/elvn5/sai/services/pkg/audit"
 	"github.com/elvn5/sai/services/pkg/auth"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
@@ -58,6 +59,8 @@ type Deps struct {
 	// Background runs work that outlives the request (sending a reset
 	// link); nil means a goroutine. Tests run it inline.
 	Background func(func())
+	// The admin panel's history; nil records nothing.
+	History *audit.Log
 }
 
 func (d Deps) now() time.Time {

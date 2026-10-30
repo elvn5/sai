@@ -24,6 +24,7 @@ import (
 	"github.com/elvn5/sai/services/payments/internal/routes"
 	"github.com/elvn5/sai/services/payments/internal/store"
 	"github.com/elvn5/sai/services/payments/internal/worker"
+	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
@@ -98,6 +99,7 @@ func run(log *slog.Logger) error {
 		Store: st, Provider: gateway, Tours: listings, Authors: users, Checker: w,
 		FeePercent: cfg.FeePercent, PaymentTTL: time.Duration(cfg.PaymentTTLMinutes) * time.Minute,
 		SiteURL: siteURL, Log: log,
+		History: audit.New(db, routes.HistoryModules, log),
 	}
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{

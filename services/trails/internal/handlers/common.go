@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/elvn5/sai/services/pkg/audit"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
 	"github.com/elvn5/sai/services/pkg/usersclient"
@@ -45,6 +46,8 @@ type Deps struct {
 	Authors AuthorSource
 	Log     *slog.Logger
 	Now     func() time.Time
+	// The admin panel's history; nil records nothing.
+	History *audit.Log
 }
 
 func (d Deps) now() time.Time {

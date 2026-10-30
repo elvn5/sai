@@ -12,12 +12,18 @@ import (
 	"github.com/elvn5/sai/services/users/internal/handlers"
 )
 
+// HistoryModules maps the paths whose admin changes go into the
+// panel's history to the panel module they belong to.
+var HistoryModules = map[string]string{
+	"/users": "users", "/partners": "partners", "/support": "support", "/achievements": "achievements",
+}
+
 // Setup builds the router. It sits behind the gateway, which handles CORS.
 func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 	r.RedirectFixedPath = false
-	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log))
+	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log), d.History.Middleware())
 	r.NoRoute(httperr.RouteNotFound)
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
@@ -61,6 +67,10 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	r.POST("/partners/:userId/reject", requireAdmin, admin.RejectPartner)
 	r.GET("/support", requireAdmin, admin.GetSupport)
 	r.PUT("/support", requireAdmin, admin.UpdateSupport)
+	r.GET("/partners", requireAdmin, admin.Partners)
+	r.POST("/partners", requireAdmin, admin.CreatePartner)
+	r.PUT("/partners/:userId", requireAdmin, admin.UpdatePartner)
+	r.DELETE("/partners/:userId", requireAdmin, admin.DeletePartner)
 
 	achievements := &handlers.Achievements{Deps: d}
 	requirePartner := middleware.RequirePartner()
@@ -77,6 +87,10 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	r.POST("/achievements", requireAdmin, achievements.Create)
 	r.PUT("/achievements/:id", requireAdmin, achievements.Update)
 	r.DELETE("/achievements/:id", requireAdmin, achievements.Delete)
+
+	for path, module := range HistoryModules {
+		r.GET(path+"/admin/history", requireAdmin, d.History.History(module))
+	}
 
 	return r
 }

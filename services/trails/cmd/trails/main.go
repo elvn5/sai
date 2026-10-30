@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
@@ -57,7 +58,8 @@ func run(log *slog.Logger) error {
 	defer func() { _ = users.Close() }()
 
 	st := store.New(db)
-	deps := handlers.Deps{Store: st, Authors: users, Log: log}
+	deps := handlers.Deps{Store: st, Authors: users, Log: log,
+		History: audit.New(db, routes.HistoryModules, log)}
 
 	gin.SetMode(gin.ReleaseMode)
 	srv := &http.Server{

@@ -23,6 +23,7 @@ import (
 	"github.com/elvn5/sai/services/content/internal/purge"
 	"github.com/elvn5/sai/services/content/internal/routes"
 	"github.com/elvn5/sai/services/content/internal/store"
+	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
@@ -92,6 +93,7 @@ func run(log *slog.Logger) error {
 		Addr: ":" + cfg.Port,
 		Handler: routes.Setup(routes.Deps{
 			Store: store.New(db), Media: media, Users: users, JWTSecret: cfg.JWTSecret, Log: log,
+			History: audit.New(db, routes.HistoryModules, log),
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,

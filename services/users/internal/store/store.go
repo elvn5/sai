@@ -108,6 +108,14 @@ func (s *Store) PendingPartners(ctx context.Context) ([]models.User, error) {
 		WHERE partner_status = 'pending' ORDER BY partner_requested_at ASC`)
 }
 
+// Partners lists accounts that are, were or want to be partners (any
+// status but "none"), or only those with status, newest change first.
+func (s *Store) Partners(ctx context.Context, status string) ([]models.User, error) {
+	return s.collect(ctx, `SELECT `+userColumns+` FROM users
+		WHERE partner_status <> 'none' AND ($1 = '' OR partner_status = $1)
+		ORDER BY updated_at DESC`, status)
+}
+
 // Insert creates an account and returns the stored row.
 func (s *Store) Insert(ctx context.Context, u models.User) (models.User, error) {
 	saved, err := scanUser(s.db.QueryRow(ctx, `INSERT INTO users (telegram_id, email, password_hash,

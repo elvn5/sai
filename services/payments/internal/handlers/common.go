@@ -16,6 +16,7 @@ import (
 	"github.com/elvn5/sai/services/payments/internal/models"
 	"github.com/elvn5/sai/services/payments/internal/provider"
 	"github.com/elvn5/sai/services/payments/internal/store"
+	"github.com/elvn5/sai/services/pkg/audit"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
 	"github.com/elvn5/sai/services/pkg/usersclient"
@@ -53,6 +54,8 @@ type Deps struct {
 	SiteURL    string
 	Log        *slog.Logger
 	Now        func() time.Time
+	// The admin panel's history; nil records nothing.
+	History *audit.Log
 }
 
 func (d Deps) now() time.Time {

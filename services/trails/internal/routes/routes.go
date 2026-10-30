@@ -12,12 +12,16 @@ import (
 	"github.com/elvn5/sai/services/trails/internal/handlers"
 )
 
+// HistoryModules maps the paths whose admin changes go into the
+// panel's history to the panel module they belong to.
+var HistoryModules = map[string]string{"/trails": "trails", "/conditions": "trails"}
+
 // Setup builds the router. It sits behind the gateway, which handles CORS.
 func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.Engine {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 	r.RedirectFixedPath = false
-	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log))
+	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log), d.History.Middleware())
 	r.NoRoute(httperr.RouteNotFound)
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
@@ -34,6 +38,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.GET("/trails/areas", trails.Areas)
 	r.GET("/trails/mine", requireUser, middleware.RequirePartner(), trails.Mine)
 	r.GET("/trails/admin/all", requireAdmin, trails.AdminAll)
+	r.GET("/trails/admin/history", requireAdmin, d.History.History("trails"))
 	// :key is a slug for reading and an id for changes.
 	r.GET("/trails/:key", optionalUser, trails.Get)
 	r.GET("/trails/:key/conditions", conditions.ForTrail)

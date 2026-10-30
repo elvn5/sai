@@ -3,9 +3,11 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/elvn5/sai/services/pkg/audit"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/respond"
 	"github.com/elvn5/sai/services/pkg/validation"
@@ -58,6 +60,7 @@ func (h *Admin) setPartnerStatus(c *gin.Context, status string) {
 	if !ok {
 		return
 	}
+	audit.SetSubject(c, displayName(user))
 	user.PartnerStatus = status
 	saved, err := h.Store.Save(c.Request.Context(), user)
 	if err != nil {
@@ -117,4 +120,147 @@ func (h *Admin) user(c *gin.Context, id string) (models.User, bool) {
 		return user, false
 	}
 	return user, true
+}
+
+type createPartnerRequest struct {
+	UserID *string `json:"userId" binding:"required,uuid"`
+	Kind   string  `json:"kind" binding:"omitempty,oneof=organizer driver"`
+}
+
+type updatePartnerRequest struct {
+	Kind      *string                  `json:"kind" binding:"omitnil,oneof=organizer driver"`
+	Status    *string                  `json:"status" binding:"omitnil,oneof=pending approved rejected"`
+	FirstName validation.Field[string] `json:"firstName" binding:"omitempty,max=255"`
+	LastName  validation.Field[string] `json:"lastName" binding:"omitempty,max=255"`
+	Phone     validation.Field[string] `json:"phone" binding:"omitempty,max=50"`
+}
+
+// Partners lists partners for the panel: ?status=pending|approved|rejected,
+// or every account with a partner status.
+func (h *Admin) Partners(c *gin.Context) {
+	status := c.Query("status")
+	switch status {
+	case "", "pending", "approved", "rejected":
+	default:
+		httperr.Abort(c, http.StatusBadRequest, "status must be one of pending, approved, rejected")
+		return
+	}
+	users, err := h.Store.Partners(c.Request.Context(), status)
+	if err != nil {
+		h.internalError(c, err)
+		return
+	}
+	respond.JSON(c, http.StatusOK, models.AdminUsers(users))
+}
+
+// CreatePartner makes an existing account an approved partner.
+func (h *Admin) CreatePartner(c *gin.Context) {
+	var req createPartnerRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	user, ok := h.user(c, *req.UserID)
+	if !ok {
+		return
+	}
+	if user.PartnerStatus == "approved" {
+		httperr.Abort(c, http.StatusConflict, "This user is already a partner")
+		return
+	}
+	if req.Kind == "" {
+		req.Kind = "organizer"
+	}
+	user.PartnerStatus = "approved"
+	user.PartnerKind = req.Kind
+	if user.PartnerRequestedAt == nil {
+		now := h.now()
+		user.PartnerRequestedAt = &now
+	}
+	h.savePartner(c, user, http.StatusCreated)
+}
+
+// UpdatePartner changes a partner's kind, status or contact details.
+func (h *Admin) UpdatePartner(c *gin.Context) {
+	var req updatePartnerRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	user, ok := h.partner(c)
+	if !ok {
+		return
+	}
+	if req.Kind != nil {
+		user.PartnerKind = *req.Kind
+	}
+	if req.Status != nil {
+		user.PartnerStatus = *req.Status
+	}
+	for dst, f := range map[**string]validation.Field[string]{
+		&user.FirstName: req.FirstName, &user.LastName: req.LastName, &user.Phone: req.Phone,
+	} {
+		if f.Set {
+			*dst = f.Ptr()
+		}
+	}
+	h.savePartner(c, user, http.StatusOK)
+}
+
+// DeletePartner takes partnership away; the account stays, as an ordinary
+// traveler who can apply again.
+func (h *Admin) DeletePartner(c *gin.Context) {
+	user, ok := h.partner(c)
+	if !ok {
+		return
+	}
+	user.PartnerStatus = "none"
+	user.PartnerKind = "organizer"
+	user.PartnerRequestedAt = nil
+	h.savePartner(c, user, http.StatusOK)
+}
+
+// partner loads the account in :userId, which must have a partner status.
+func (h *Admin) partner(c *gin.Context) (models.User, bool) {
+	user, ok := h.user(c, c.Param("userId"))
+	if ok && user.PartnerStatus == "none" {
+		httperr.Abort(c, http.StatusNotFound, "Partner not found")
+		return user, false
+	}
+	return user, ok
+}
+
+func (h *Admin) savePartner(c *gin.Context, user models.User, status int) {
+	audit.SetSubject(c, displayName(user))
+	saved, err := h.Store.Save(c.Request.Context(), user)
+	switch {
+	case errors.Is(err, store.ErrDuplicate):
+		httperr.Abort(c, http.StatusConflict, "This phone belongs to another account")
+		return
+	case err != nil:
+		h.internalError(c, err)
+		return
+	}
+	respond.JSON(c, status, saved.Admin())
+}
+
+// displayName is how the history names an account: its name, else its
+// email, phone or Telegram id.
+func displayName(u models.User) string {
+	var parts []string
+	for _, p := range []*string{u.FirstName, u.LastName} {
+		if p != nil && *p != "" {
+			parts = append(parts, *p)
+		}
+	}
+	if len(parts) > 0 {
+		return strings.Join(parts, " ")
+	}
+	for _, p := range []*string{u.Email, u.Phone, u.Username} {
+		if p != nil && *p != "" {
+			return *p
+		}
+	}
+	if u.TelegramID != nil {
+		return "tg:" + *u.TelegramID
+	}
+	return ""
 }

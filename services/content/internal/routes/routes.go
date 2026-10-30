@@ -9,6 +9,7 @@ import (
 
 	"github.com/elvn5/sai/services/content/internal/handlers"
 	"github.com/elvn5/sai/services/content/internal/store"
+	"github.com/elvn5/sai/services/pkg/audit"
 	"github.com/elvn5/sai/services/pkg/auth"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
@@ -20,14 +21,20 @@ type Deps struct {
 	Users     middleware.UserLookup // optional
 	JWTSecret string
 	Log       *slog.Logger
+	// The admin panel's history; nil records nothing.
+	History *audit.Log
 }
+
+// HistoryModules maps the paths whose admin changes go into the
+// panel's history to the panel module they belong to.
+var HistoryModules = map[string]string{"/blog": "blog", "/page-seo": "seo"}
 
 // Setup builds the router. It sits behind the gateway, which handles CORS.
 func Setup(d Deps) *gin.Engine {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 	r.RedirectFixedPath = false
-	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log))
+	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log), d.History.Middleware())
 	r.NoRoute(httperr.RouteNotFound)
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
@@ -67,6 +74,9 @@ func Setup(d Deps) *gin.Engine {
 	r.GET("/page-seo/admin/all", requireAdmin, pageSeo.ListAll)
 	r.GET("/page-seo/:page/:locale", pageSeo.Get)
 	r.PUT("/page-seo/:page/:locale", requireAdmin, pageSeo.Upsert)
+
+	r.GET("/blog/admin/history", requireAdmin, d.History.History("blog"))
+	r.GET("/page-seo/admin/history", requireAdmin, d.History.History("seo"))
 
 	return r
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 
+	"github.com/elvn5/sai/services/pkg/audit"
 	pkgauth "github.com/elvn5/sai/services/pkg/auth"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
@@ -89,6 +90,7 @@ func run(log *slog.Logger) error {
 			Email:    email.NewResend(cfg.ResendAPIKey, cfg.EmailFrom, cfg.ResendBaseURL),
 			Telegram: tg, SiteURL: cfg.SiteURL,
 			AdminPassword: cfg.AdminPassword, BotToken: cfg.BotToken, Log: log,
+			History: audit.New(db, routes.HistoryModules, log),
 		}, cfg.JWTSecret),
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       2 * time.Minute,

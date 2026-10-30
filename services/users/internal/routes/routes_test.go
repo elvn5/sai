@@ -22,6 +22,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/elvn5/sai/services/pkg/audit"
 	"github.com/elvn5/sai/services/pkg/auth"
 	"github.com/elvn5/sai/services/pkg/telegram"
 	"github.com/elvn5/sai/services/users/internal/handlers"
@@ -113,6 +114,7 @@ func setup(t *testing.T) *env {
 		AdminPassword: "admin-pass", BotToken: botToken, Log: slog.New(slog.DiscardHandler),
 		Now:        func() time.Time { return *e.clock },
 		Background: func(work func()) { work() },
+		History:    audit.New(db, routes.HistoryModules, slog.New(slog.DiscardHandler)),
 	}, secret)
 	return e
 }

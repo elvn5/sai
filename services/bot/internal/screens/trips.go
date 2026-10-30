@@ -35,8 +35,6 @@ const (
 
 const (
 	myToursShown = 8
-	// A tour still counts as upcoming this long after the meeting time.
-	startGrace = 3 * time.Hour
 	// Participants shown by name on a card; the rest are counted.
 	namesShown = 15
 )
@@ -47,8 +45,9 @@ func TripData(action, from, id string) string {
 
 func ListData(tab string) string { return keyboards.MyToursPrefix + ActList + ":" + tab }
 
-// IsUpcoming: the group hasn't met yet (with a few hours' grace).
-func IsUpcoming(t api.Tour, now time.Time) bool { return t.StartsAt().After(now.Add(-startGrace)) }
+// IsUpcoming: the tour isn't over yet, so travelers can still sign up,
+// even after the group has met.
+func IsUpcoming(t api.Tour, now time.Time) bool { return t.EndsAt().After(now) }
 
 // SplitTours separates upcoming tours (soonest first) from past ones
 // (latest first).

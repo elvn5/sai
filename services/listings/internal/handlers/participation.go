@@ -113,7 +113,7 @@ func (h *Participation) Join(c *gin.Context) {
 		httperr.Abort(c, http.StatusBadRequest, "You organize this tour")
 		return
 	}
-	status, err := h.Store.Join(c.Request.Context(), tour.ID, me, tour.StartsAt(), h.now())
+	status, err := h.Store.Join(c.Request.Context(), tour.ID, me, tour.EndsAt(), h.now())
 	switch {
 	case errors.Is(err, store.ErrClosed):
 		httperr.Abort(c, http.StatusConflict, "Sign-up for this tour is closed")

@@ -163,6 +163,22 @@ func (t Tour) StartsAt() time.Time {
 	return starts
 }
 
+// endHour: the last day of a tour is taken to end at this hour, as
+// listings does.
+const endHour = 18
+
+// EndsAt is when the tour is over: the end date at endHour in Bishkek, or
+// 10 hours after the start for a malformed end date or one that's over
+// before the group meets (as listings does).
+func (t Tour) EndsAt() time.Time {
+	day, err := time.ParseInLocation(time.DateOnly, t.EndDate, bishkek)
+	ends := day.Add(endHour * time.Hour)
+	if err != nil || !ends.After(t.StartsAt()) {
+		return t.StartsAt().Add(10 * time.Hour)
+	}
+	return ends
+}
+
 // Full: every place is taken (a tour without a limit never is).
 func (t Tour) Full() bool { return t.Capacity != nil && t.Taken >= *t.Capacity }
 

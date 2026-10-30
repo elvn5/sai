@@ -13,7 +13,7 @@ import (
 var (
 	// ErrFull: no places left on the tour.
 	ErrFull = errors.New("tour is full")
-	// ErrClosed: the tour has started or isn't published.
+	// ErrClosed: the tour is over or isn't published.
 	ErrClosed = errors.New("tour is closed")
 )
 
@@ -36,11 +36,11 @@ func (s *Store) JoinedTours(ctx context.Context, userID string) ([]models.Tour, 
 		ORDER BY start_date DESC LIMIT 100`, userID)
 }
 
-// Join signs userID up for a published tour that hasn't started (startsAt
-// is after now): with a place while there are any, else on the waitlist.
+// Join signs userID up for a published tour that isn't over (endsAt is
+// after now; a late traveler can still catch up with the group): with a place while there are any, else on the waitlist.
 // It returns the status they got. The row lock keeps two last-place
 // sign-ups from both getting it. The tour's partner gets them as a client.
-func (s *Store) Join(ctx context.Context, tourID, userID string, startsAt, now time.Time) (string, error) {
+func (s *Store) Join(ctx context.Context, tourID, userID string, endsAt, now time.Time) (string, error) {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return "", err
@@ -60,7 +60,7 @@ func (s *Store) Join(ctx context.Context, tourID, userID string, startsAt, now t
 	if current != nil && *current != StatusCancelled {
 		return "", ErrDuplicate
 	}
-	if !published || !startsAt.After(now) {
+	if !published || !endsAt.After(now) {
 		return "", ErrClosed
 	}
 	status := StatusNew

@@ -35,13 +35,15 @@ func (t Tour) StartsAt() time.Time {
 	return day.Add(time.Duration(clock.Hour())*time.Hour + time.Duration(clock.Minute())*time.Minute)
 }
 
-// EndsAt is the evening of the last day.
+// EndsAt is the evening of the last day (10 hours after the start for a
+// malformed end date, or one that's over before the group meets).
 func (t Tour) EndsAt() time.Time {
 	day, err := time.ParseInLocation(time.DateOnly, t.EndDate, Bishkek)
-	if err != nil || day.Before(t.StartsAt()) {
+	ends := day.Add(endHour * time.Hour)
+	if err != nil || !ends.After(t.StartsAt()) {
 		return t.StartsAt().Add(10 * time.Hour)
 	}
-	return day.Add(endHour * time.Hour)
+	return ends
 }
 
 // Schedule sets when the tour's reminder and follow-up (a request to rate

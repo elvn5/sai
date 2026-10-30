@@ -191,9 +191,19 @@ func TestSigningUpForTours(t *testing.T) {
 		t.Errorf("check-in: %s", body)
 	}
 
+	// Sign-up stays open after the group met, until the tour is over.
+	*clock = time.Date(2026, 10, 17, 5, 0, 0, 0, time.UTC) // 11:00 Bishkek, on the way
+	if status, body := c.do("POST", "/tours/"+id+"/join", "", owner); status != 200 || obj(t, body)["myStatus"] != "waitlist" {
+		t.Fatalf("late join: %d %s", status, body)
+	}
+	c.do("DELETE", "/tours/"+id+"/join", "", owner)
+
 	// After it: participants are asked to rate it, and the rating is their
 	// review of the tour.
 	*clock = time.Date(2026, 10, 18, 14, 0, 0, 0, time.UTC) // the last day, 20:00 Bishkek
+	if _, body := c.do("POST", "/tours/"+id+"/join", "", owner); !strings.Contains(body, "Sign-up for this tour is closed") {
+		t.Errorf("join after the end: %s", body)
+	}
 	notifier.Tick(ctx)
 	if sent := tg.take(); len(sent) != 1 || sent[0].chat != 1002 || sent[0].button.Data != "r:s:"+id || !strings.Contains(sent[0].text, "Как прошёл тур") {
 		t.Fatalf("follow-up: %+v", sent)

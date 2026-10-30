@@ -40,6 +40,8 @@ const WHEN: Intl.DateTimeFormatOptions = {
 
 // Used when a tour has no meeting time, as the API's reminders assume.
 const DEFAULT_MEETING_TIME = '09:00';
+// The last day of a tour is taken to end at this time (listings' endHour).
+const TOUR_END_TIME = '18:00';
 
 // Signing up for a tour: where and when the group meets, places taken,
 // and the visitor's own place. The organizer sees who signed up and who
@@ -115,7 +117,7 @@ const DEFAULT_MEETING_TIME = '09:00';
               <p class="text-sm text-text-muted">{{ 'tours.signup.noParticipants' | transloco }}</p>
             }
           </div>
-        } @else if (started()) {
+        } @else if (ended()) {
           @if (!t.isJoined) {
             <p class="text-sm text-text-muted">{{ 'tours.signup.closed' | transloco }}</p>
           }
@@ -146,7 +148,7 @@ const DEFAULT_MEETING_TIME = '09:00';
           <p class="ui-error" role="alert">{{ key | transloco }}</p>
         }
 
-        @if (t.myStatus && !t.isOrganizer && !started()) {
+        @if (t.myStatus && !t.isOrganizer && !ended()) {
           @if (editingForm()) {
             <div class="flex flex-col gap-2 border-t border-border pt-4">
               <h3 class="font-semibold text-text">{{ 'participantForm.title' | transloco }}</h3>
@@ -227,6 +229,15 @@ export class TourSignup {
   });
   protected readonly when = computed(() => formatInBishkek(this.lang(), this.startsAt(), WHEN));
   protected readonly started = computed(() => new Date(this.startsAt()).getTime() <= Date.now());
+  // Sign-up stays open until the tour is over (the evening of its last
+  // day, as listings counts it): a late traveler can still catch up.
+  protected readonly ended = computed(() => {
+    const t = this.item();
+    const starts = new Date(this.startsAt()).getTime();
+    const evening = new Date(`${t.endDate}T${TOUR_END_TIME}:00+06:00`).getTime();
+    const ends = evening > starts ? evening : starts + 10 * 60 * 60 * 1000;
+    return ends <= Date.now();
+  });
   protected readonly full = computed(() => {
     const t = this.item();
     return t.capacity !== null && t.taken >= t.capacity;

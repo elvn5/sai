@@ -25,6 +25,7 @@ export interface AppUser {
   lastName: string | null;
   phone: string | null;
   createdAt: string;
+  updatedAt: string;
   partnerStatus: PartnerStatus;
   partnerRequestedAt: string | null;
   // A tour organizer or a driver who carries tour groups.

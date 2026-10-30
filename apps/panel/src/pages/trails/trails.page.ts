@@ -1,10 +1,12 @@
 import type { ConditionReportSummary, TrailSummary } from '@/core/api/types';
+import { HistoryLog } from '@/ui/history-log';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-trails-page',
+  imports: [HistoryLog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-8">
@@ -90,6 +92,8 @@ import { firstValueFrom } from 'rxjs';
         </div>
       </section>
     </div>
+
+    <app-history-log class="mt-8" [modules]="['trails']" />
   `,
 })
 export class TrailsPage {

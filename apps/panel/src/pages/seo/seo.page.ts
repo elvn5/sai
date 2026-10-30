@@ -1,4 +1,5 @@
 import { LOCALE_OPTIONS, Locale, type PageSeo, SEO_PAGE_OPTIONS, SeoPage } from '@/core/api/types';
+import { HistoryLog } from '@/ui/history-log';
 import { ImageUploadField } from '@/ui/image-upload-field';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
@@ -14,7 +15,7 @@ interface SeoForm {
 // Per-page, per-language SEO overrides of the public site (services/content).
 @Component({
   selector: 'app-seo-page',
-  imports: [FormField, ImageUploadField],
+  imports: [FormField, HistoryLog, ImageUploadField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mx-auto max-w-2xl">
@@ -60,6 +61,8 @@ interface SeoForm {
         </form>
       }
     </div>
+
+    <app-history-log class="mx-auto mt-8 max-w-2xl" [modules]="['seo']" />
   `,
 })
 export class SeoSettingsPage {

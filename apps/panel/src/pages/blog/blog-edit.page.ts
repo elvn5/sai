@@ -8,6 +8,7 @@ import {
 import { ConfigStore } from '@/core/config/app-config';
 import { resolveMediaUrl } from '@/core/lib/media-url';
 import { slugify } from '@/core/lib/slugify';
+import { HistoryLog } from '@/ui/history-log';
 import { ImageUploadField } from '@/ui/image-upload-field';
 import { RichTextEditor } from '@/ui/rich-text-editor';
 import { Dialog, type DialogRef } from '@angular/cdk/dialog';
@@ -63,7 +64,7 @@ const SEASON_OPTIONS: { value: BlogSeason; label: string }[] = [
 // Writes or edits a blog post (services/content); /blog/new creates one.
 @Component({
   selector: 'app-blog-edit-page',
-  imports: [FormField, ImageUploadField, RichTextEditor, RouterLink],
+  imports: [FormField, HistoryLog, ImageUploadField, RichTextEditor, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="mx-auto max-w-3xl" (submit)="save($event)" novalidate>
@@ -167,6 +168,10 @@ const SEASON_OPTIONS: { value: BlogSeason; label: string }[] = [
         </div>
       </div>
     </ng-template>
+
+    @if (!isNew()) {
+      <app-history-log class="mt-8" [modules]="['blog']" [entityId]="id()" title="История статьи" />
+    }
   `,
 })
 export class BlogEditPage {

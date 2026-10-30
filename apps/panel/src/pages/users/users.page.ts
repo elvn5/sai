@@ -1,10 +1,12 @@
 import type { AppUser } from '@/core/api/types';
 import { formatDate, fullName } from '@/core/lib/format';
+import { HistoryLog } from '@/ui/history-log';
 import { httpResource } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 
 @Component({
   selector: 'app-users-page',
+  imports: [HistoryLog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h1 class="mb-4 text-xl font-semibold text-text">Пользователи</h1>
@@ -38,10 +40,15 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
         </tbody>
       </table>
     </div>
+
+    <app-history-log [names]="names()" class="mt-8" [modules]="['users', 'partners']" title="История изменений аккаунтов" />
   `,
 })
 export class UsersPage {
   protected readonly users = httpResource<AppUser[]>(() => '/users');
   protected readonly fullName = fullName;
+  protected readonly names = computed(() =>
+    Object.fromEntries((this.users.value() ?? []).map((u) => [u.id, fullName(u)])),
+  );
   protected readonly formatDate = formatDate;
 }

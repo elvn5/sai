@@ -47,6 +47,10 @@ export const routes: Routes = [
         loadComponent: () => import('@/pages/blog/blog-edit.page').then((m) => m.BlogEditPage),
       },
       {
+        path: 'history',
+        loadComponent: () => import('@/pages/history/history.page').then((m) => m.HistoryPage),
+      },
+      {
         path: 'seo',
         loadComponent: () => import('@/pages/seo/seo.page').then((m) => m.SeoSettingsPage),
       },

@@ -1,6 +1,7 @@
 import { apiErrorMessage, hasStatus } from '@/core/api/errors';
 import type { AdminOrder, OrderStatus, PayeeBalance, PayoutRecord } from '@/core/api/types';
 import { formatDateTime, personName, som } from '@/core/lib/format';
+import { HistoryLog } from '@/ui/history-log';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -26,6 +27,7 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
 // orders, refunds and payouts.
 @Component({
   selector: 'app-payments-page',
+  imports: [HistoryLog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-8">
@@ -150,6 +152,8 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
         </div>
       </section>
     </div>
+
+    <app-history-log class="mt-8" [modules]="['payments']" />
   `,
 })
 export class PaymentsPage {

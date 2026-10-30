@@ -6,6 +6,7 @@ import {
   type LocalizedText,
 } from '@/core/api/types';
 import { formatDateTime, personName } from '@/core/lib/format';
+import { HistoryLog } from '@/ui/history-log';
 import { Icon } from '@/ui/icon';
 import { Dialog, type DialogRef } from '@angular/cdk/dialog';
 import { HttpClient, httpResource } from '@angular/common/http';
@@ -99,7 +100,7 @@ function compact(texts: Texts): LocalizedText {
 // The catalog of achievements partners award on the site (services/users).
 @Component({
   selector: 'app-achievements-page',
-  imports: [FormField, Icon],
+  imports: [FormField, HistoryLog, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col gap-8">
@@ -279,6 +280,8 @@ function compact(texts: Texts): LocalizedText {
         </div>
       </form>
     </ng-template>
+
+    <app-history-log class="mt-8" [modules]="['achievements']" />
   `,
 })
 export class AchievementsPage {

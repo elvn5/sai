@@ -46,6 +46,7 @@ export class AdminLayout {
     { label: 'Платежи', path: '/payments' },
     { label: 'Блог', path: '/blog' },
     { label: 'SEO', path: '/seo' },
+    { label: 'История', path: '/history' },
   ];
 
   protected async logout(): Promise<void> {

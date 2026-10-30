@@ -1,4 +1,5 @@
 import type { SupportInfo } from '@/core/api/types';
+import { HistoryLog } from '@/ui/history-log';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormField, form, submit } from '@angular/forms/signals';
@@ -15,7 +16,7 @@ interface SupportForm {
 // Support contacts the bot shows (services/users).
 @Component({
   selector: 'app-support-page',
-  imports: [FormField],
+  imports: [FormField, HistoryLog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-xl">
@@ -40,6 +41,8 @@ interface SupportForm {
         </div>
       </form>
     </div>
+
+    <app-history-log class="mt-8" [modules]="['support']" />
   `,
 })
 export class SupportPage {

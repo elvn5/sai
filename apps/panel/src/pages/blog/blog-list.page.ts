@@ -1,4 +1,5 @@
 import { type BlogPost, LOCALE_OPTIONS, type Locale } from '@/core/api/types';
+import { HistoryLog } from '@/ui/history-log';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -6,7 +7,7 @@ import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-blog-list-page',
-  imports: [RouterLink],
+  imports: [HistoryLog, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-4 flex items-center justify-between">
@@ -62,6 +63,8 @@ import { firstValueFrom } from 'rxjs';
         </tbody>
       </table>
     </div>
+
+    <app-history-log class="mt-8" [modules]="['blog']" />
   `,
 })
 export class BlogListPage {

@@ -226,6 +226,23 @@ func TestToursCarousel(t *testing.T) {
 	if !first.Preview.IsDisabled {
 		t.Errorf("no cover, yet a preview: %+v", first.Preview)
 	}
+	// Signing up is on the card: a place, the waitlist, the user's own
+	// sign-up, nothing once the tour is over.
+	now := time.Date(2027, 6, 12, 12, 0, 0, 0, time.UTC) // on the way
+	full := sonKolFull(tours[1])
+	for want, tour := range map[string]api.Tour{
+		"✋ Записаться→o:join:t:t2":             tours[1],
+		"⏳ Встать в лист ожидания→o:join:t:t2": full,
+		"🎒 Моя запись→o:view:t:t2":             {ID: "t2", IsJoined: true},
+	} {
+		if g := buttons(screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabUpcoming, Tours: []api.Tour{tour}, Now: now}, links)); !has(g, want) {
+			t.Errorf("sign-up %q: %v", want, g)
+		}
+	}
+	over := screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabFavorites, Tours: tours[1:2], Now: now.AddDate(0, 0, 3)}, links)
+	if g := buttons(over); has(g, "✋ Записаться→o:join:t:t2") {
+		t.Errorf("sign-up after the end: %v", g)
+	}
 	empty := screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabFavorites}, links)
 	if !strings.Contains(empty.Text, "В избранном пока пусто") {
 		t.Errorf("empty:\n%s", empty.Text)
@@ -368,4 +385,10 @@ func TestCallbackDataFits(t *testing.T) {
 			}
 		}
 	}
+}
+
+// sonKolFull is the tour with every place taken.
+func sonKolFull(t api.Tour) api.Tour {
+	t.Capacity, t.Taken = num(10), 10
+	return t
 }

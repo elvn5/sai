@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -397,13 +398,22 @@ func (c *Client) ReceivedOrders(ctx context.Context, userID string) ([]Order, er
 	return out, c.do(ctx, http.MethodGet, "/orders/received", userID, nil, &out)
 }
 
-// UpcomingTours lists published tours in a language departing from today
-// on.
+// UpcomingTours lists published tours in a language that aren't over,
+// those already on the way included: sign-up stays open until the end.
 func (c *Client) UpcomingTours(ctx context.Context, locale string) ([]Tour, error) {
 	var out []Tour
-	q := url.Values{"locale": {locale}, "from": {c.Now().Format(time.DateOnly)}}
-	return out, c.do(ctx, http.MethodGet, "/tours?"+q.Encode(), "", nil, &out)
+	now := c.Now()
+	from := now.In(bishkek).AddDate(0, 0, -onTheWayDays).Format(time.DateOnly)
+	q := url.Values{"locale": {locale}, "from": {from}}
+	if err := c.do(ctx, http.MethodGet, "/tours?"+q.Encode(), "", nil, &out); err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(out, func(t Tour) bool { return !t.EndsAt().After(now) }), nil
 }
+
+// onTheWayDays: tours that left up to this many days ago are asked for, in
+// case one is still on the way.
+const onTheWayDays = 30
 
 // Tour is one published tour with its description and program.
 func (c *Client) Tour(ctx context.Context, locale, slug string) (Tour, error) {

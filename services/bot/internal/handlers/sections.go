@@ -271,7 +271,11 @@ func (h *Handlers) toursView(ctx context.Context, l i18n.Lang, userID, tab strin
 	if err != nil {
 		return screens.ToursView{}, err
 	}
-	v := screens.ToursView{Tab: tab, Index: index, Favorites: map[string]bool{}}
+	joined, err := h.Content.JoinedTours(ctx, userID)
+	if err != nil {
+		return screens.ToursView{}, err
+	}
+	v := screens.ToursView{Tab: tab, Index: index, Favorites: map[string]bool{}, Now: h.now()}
 	for _, t := range favorites {
 		v.Favorites[t.ID] = true
 	}
@@ -288,10 +292,14 @@ func (h *Handlers) toursView(ctx context.Context, l i18n.Lang, userID, tab strin
 	}
 	if v.Tab == screens.TabFavorites {
 		v.Tours = favorites
-		return v, nil
+	} else if v.Tours, err = h.Content.UpcomingTours(ctx, string(l)); err != nil {
+		return screens.ToursView{}, err
 	}
-	v.Tours, err = h.Content.UpcomingTours(ctx, string(l))
-	return v, err
+	// The lists are the public view: mark the tours the user has a place on.
+	for i := range v.Tours {
+		v.Tours[i].IsJoined = slices.ContainsFunc(joined, func(j api.Tour) bool { return j.ID == v.Tours[i].ID })
+	}
+	return v, nil
 }
 
 func (h *Handlers) toursMenu(ctx *th.Context, msg telego.Message) error {

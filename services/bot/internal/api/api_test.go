@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -85,12 +86,31 @@ func TestWrites(t *testing.T) {
 		{http.MethodPut, "/favorites/tour/t1", "", "u1"},
 		{http.MethodDelete, "/favorites/tour/t1", "", "u1"},
 		{http.MethodPut, "/tour-alerts", `{"destination":""}`, "u1"},
-		{http.MethodGet, "/tours?from=2026-10-20&locale=ru", "", ""},
+		{http.MethodGet, "/tours?from=2026-09-20&locale=ru", "", ""},
 	}
 	for i, w := range want {
 		if (*got)[i] != w {
 			t.Errorf("request %d: %+v, want %+v", i, (*got)[i], w)
 		}
+	}
+}
+
+// Upcoming tours keep those on the way (sign-up stays open), not those
+// over.
+func TestUpcomingTours(t *testing.T) {
+	c, _ := newClient(t, http.StatusOK, `[{"id":"on-the-way","startDate":"2026-10-19","endDate":"2026-10-21"},
+		{"id":"over","startDate":"2026-10-18","endDate":"2026-10-19"},{"id":"today","startDate":"2026-10-20","endDate":"2026-10-20"},
+		{"id":"next","startDate":"2026-11-01","endDate":"2026-11-02"}]`)
+	tours, err := c.UpcomingTours(context.Background(), "ru") // 18:00 Bishkek on 2026-10-20
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for _, tour := range tours {
+		ids = append(ids, tour.ID)
+	}
+	if strings.Join(ids, ",") != "on-the-way,next" {
+		t.Errorf("upcoming: %v", ids)
 	}
 }
 

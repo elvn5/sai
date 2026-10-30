@@ -59,6 +59,23 @@ type ToursView struct {
 	Favorites map[string]bool
 	// Whether the user hears about every new tour.
 	AlertOn bool
+	// The time the sign-up buttons are shown for.
+	Now time.Time
+}
+
+// signUpRow is a tour's sign-up button in the tours section: the user's
+// own sign-up, a place or the waitlist while the tour isn't over, else
+// nothing.
+func signUpRow(l i18n.Lang, t api.Tour, now time.Time) []telego.InlineKeyboardButton {
+	switch {
+	case t.IsJoined || t.IsOrganizer || t.Waiting():
+		return []telego.InlineKeyboardButton{keyboards.Button(l.T("🎒 Моя запись"), TripData(ActView, FromTours, t.ID))}
+	case !IsUpcoming(t, now):
+		return nil
+	case t.Full():
+		return []telego.InlineKeyboardButton{keyboards.Button(l.T("⏳ Встать в лист ожидания"), TripData(ActJoin, FromTours, t.ID))}
+	}
+	return []telego.InlineKeyboardButton{keyboards.Button(l.T("✋ Записаться"), TripData(ActJoin, FromTours, t.ID))}
 }
 
 // tourFacts are a tour's place, length, dates, price and rating lines.
@@ -124,6 +141,9 @@ func Tours(l i18n.Lang, v ToursView, links Links) Screen {
 
 		if n > 1 {
 			buttons = append(buttons, keyboards.Pager(index, n, func(i int) string { return TourData(v.Tab, i) }))
+		}
+		if row := signUpRow(l, t, v.Now); row != nil {
+			buttons = append(buttons, row)
 		}
 		save := keyboards.Button(l.T("❤️ В избранное"), tourAction(ActSave, v.Tab, index, t.ID))
 		if v.Favorites[t.ID] {
@@ -209,11 +229,8 @@ func TourMore(l i18n.Lang, t api.Tour, tab string, index, page int, favorite boo
 		}
 		buttons = append(buttons, row)
 	}
-	switch {
-	case t.IsJoined || t.IsOrganizer:
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🎒 Моя запись"), TripData(ActView, FromTours, t.ID))})
-	case IsUpcoming(t, now) && !t.Full():
-		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("✋ Записаться"), TripData(ActJoin, FromTours, t.ID))})
+	if row := signUpRow(l, t, now); row != nil {
+		buttons = append(buttons, row)
 	}
 	save := keyboards.Button(l.T("❤️ В избранное"), tourAction(ActSave, tab, index, t.ID)+":"+ActMore)
 	if favorite {

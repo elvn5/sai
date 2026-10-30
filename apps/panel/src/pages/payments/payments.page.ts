@@ -34,7 +34,7 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
       <div>
         <h1 class="text-xl font-semibold text-text">Платежи</h1>
         <p class="text-sm text-text-muted">
-          Онлайн-оплаты броней через Bakai Bank. Деньги приходят на счёт Ermekten; партнёрам выплачивается их часть за вычетом комиссии.
+          Онлайн-оплаты броней (платежи в GoPay — в разделе «Онлайн-платежи»). Деньги приходят на счёт Ermekten; партнёрам выплачивается их часть за вычетом комиссии.
         </p>
         @if (pageError()) {
           <p class="ui-error mt-2">{{ pageError() }}</p>

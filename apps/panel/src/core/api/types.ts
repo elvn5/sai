@@ -195,3 +195,52 @@ export interface PayoutRecord {
   note: string | null;
   createdAt: string;
 }
+
+// GoPay's own statuses of a payment.
+export type TransactionStatus =
+  | 'CREATED'
+  | 'PENDING'
+  | 'COMMITTED'
+  | 'FAILED'
+  | 'EXPIRED'
+  | 'CANCELLED';
+
+// A webhook delivery from the gateway about a payment.
+export interface ProviderEvent {
+  id: number;
+  event: string;
+  paymentId: string | null;
+  testing: boolean;
+  attempts: number;
+  receivedAt: string;
+  processedAt: string | null;
+  error: string | null;
+}
+
+// The gateway's record of an order's payment (GET /payments/admin/transactions).
+export interface Transaction {
+  orderId: string;
+  provider: string;
+  paymentId: string | null;
+  providerOrderId: string;
+  status: TransactionStatus;
+  amount: string;
+  testing: boolean;
+  checkoutUrl: string | null;
+  gatewayCreatedAt: string | null;
+  expiresAt: string | null;
+  committedAt: string | null;
+  bankOpDate: string | null;
+  lastError: string | null;
+  checkedAt: string;
+  createdAt: string;
+  updatedAt: string;
+  order: AdminOrder;
+  events?: ProviderEvent[];
+}
+
+export interface PaymentGateway {
+  provider: string;
+  online: boolean;
+  canCancel: boolean;
+}

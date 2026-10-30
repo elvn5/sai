@@ -39,6 +39,16 @@ export const routes: Routes = [
         loadComponent: () => import('@/pages/payments/payments.page').then((m) => m.PaymentsPage),
       },
       {
+        path: 'online-payments',
+        loadComponent: () =>
+          import('@/pages/online-payments/online-payments.page').then((m) => m.OnlinePaymentsPage),
+      },
+      {
+        path: 'online-payments/:id',
+        loadComponent: () =>
+          import('@/pages/online-payments/online-payment.page').then((m) => m.OnlinePaymentPage),
+      },
+      {
         path: 'blog',
         loadComponent: () => import('@/pages/blog/blog-list.page').then((m) => m.BlogListPage),
       },

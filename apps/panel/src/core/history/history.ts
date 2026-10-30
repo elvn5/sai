@@ -63,6 +63,8 @@ const ACTIONS: Record<string, string> = {
   'DELETE /conditions/:id': 'Сводка о состоянии удалена',
   'POST /orders/:id/refund': 'Возврат по заказу',
   'POST /payouts': 'Выплата создана',
+  'POST /payments/admin/transactions/:id/check': 'Платёж проверен в GoPay',
+  'POST /payments/admin/transactions/:id/cancel': 'Платёж отменён в GoPay',
   'POST /blog': 'Статья создана',
   'PUT /blog/:id': 'Статья изменена',
   'DELETE /blog/:id': 'Статья удалена',
@@ -81,7 +83,11 @@ export function actionLabel(entry: HistoryEntry): string {
 }
 
 export function actionTone(entry: HistoryEntry): string {
-  if (entry.method === 'DELETE' || entry.route.endsWith('/reject'))
+  if (
+    entry.method === 'DELETE' ||
+    entry.route.endsWith('/reject') ||
+    entry.route.endsWith('/cancel')
+  )
     return 'bg-red-100 text-red-800';
   if (entry.method === 'POST') return 'bg-green-100 text-green-800';
   return 'bg-sky-100 text-sky-800';

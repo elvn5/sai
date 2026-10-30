@@ -44,6 +44,7 @@ export class AdminLayout {
     { label: 'Достижения', path: '/achievements' },
     { label: 'Маршруты', path: '/trails' },
     { label: 'Платежи', path: '/payments' },
+    { label: 'Онлайн-платежи', path: '/online-payments' },
     { label: 'Блог', path: '/blog' },
     { label: 'SEO', path: '/seo' },
     { label: 'История', path: '/history' },

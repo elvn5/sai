@@ -16,6 +16,7 @@ import (
 	"github.com/elvn5/sai/services/listings/internal/alerts"
 	"github.com/elvn5/sai/services/listings/internal/models"
 	"github.com/elvn5/sai/services/listings/internal/store"
+	"github.com/elvn5/sai/services/pkg/audit"
 	"github.com/elvn5/sai/services/pkg/httperr"
 	"github.com/elvn5/sai/services/pkg/middleware"
 	"github.com/elvn5/sai/services/pkg/usersclient"
@@ -69,6 +70,8 @@ type Deps struct {
 	// Telegram messages about sign-ups; nil when the bot isn't configured.
 	Notify TourNotifier
 	Log    *slog.Logger
+	// The panel's history of admin changes; nil records nothing.
+	History *audit.Log
 	// Now is overridable in tests.
 	Now func() time.Time
 }

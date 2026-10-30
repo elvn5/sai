@@ -94,13 +94,13 @@ type paymentRequest struct {
 type CRM struct{ Deps }
 
 // accounts looks up the profiles of clients with an account.
-func (h *CRM) accounts(ctx context.Context, ids []string) map[string]usersclient.Author {
+func (d Deps) accounts(ctx context.Context, ids []string) map[string]usersclient.Author {
 	if len(ids) == 0 {
 		return nil
 	}
-	people, err := h.Authors.Authors(ctx, ids)
+	people, err := d.Authors.Authors(ctx, ids)
 	if err != nil {
-		h.Log.WarnContext(ctx, "clients' profiles", slog.Any("error", err))
+		d.Log.WarnContext(ctx, "clients' profiles", slog.Any("error", err))
 	}
 	return people
 }
@@ -339,14 +339,22 @@ func (h *CRM) Group(c *gin.Context) {
 }
 
 func (h *CRM) respondGroup(c *gin.Context, status int, tour models.Tour) {
-	ctx := c.Request.Context()
-	if fresh, err := h.Store.Tour(ctx, tour.ID); err == nil {
-		tour = fresh
-	}
-	group, err := h.Store.Group(ctx, tour.ID)
+	out, err := h.group(c.Request.Context(), tour)
 	if err != nil {
 		h.fail(c, err, tourNotFound, "")
 		return
+	}
+	respond.JSON(c, status, out)
+}
+
+// group is a tour's group with its totals, the tour read afresh.
+func (d Deps) group(ctx context.Context, tour models.Tour) (models.CRMGroup, error) {
+	if fresh, err := d.Store.Tour(ctx, tour.ID); err == nil {
+		tour = fresh
+	}
+	group, err := d.Store.Group(ctx, tour.ID)
+	if err != nil {
+		return models.CRMGroup{}, err
 	}
 	var ids []string
 	for _, p := range group {
@@ -354,14 +362,13 @@ func (h *CRM) respondGroup(c *gin.Context, status int, tour models.Tour) {
 			ids = append(ids, *p.UserID)
 		}
 	}
-	people := h.accounts(ctx, ids)
+	people := d.accounts(ctx, ids)
 	out := models.CRMGroup{Tour: tour, Participants: group}
-	if out.Expenses, err = h.Store.TourExpenses(ctx, tour.ID); err == nil {
-		out.Staff, err = h.Store.TourStaff(ctx, tour.ID)
+	if out.Expenses, err = d.Store.TourExpenses(ctx, tour.ID); err == nil {
+		out.Staff, err = d.Store.TourStaff(ctx, tour.ID)
 	}
 	if err != nil {
-		h.fail(c, err, tourNotFound, "")
-		return
+		return models.CRMGroup{}, err
 	}
 	for _, e := range out.Expenses {
 		out.Totals.Expenses += e.Amount
@@ -390,7 +397,7 @@ func (h *CRM) respondGroup(c *gin.Context, status int, tour models.Tour) {
 	if out.Participants == nil {
 		out.Participants = []models.CRMParticipant{}
 	}
-	respond.JSON(c, status, out)
+	return out, nil
 }
 
 // AddParticipant puts one of the partner's clients on a tour.

@@ -131,7 +131,8 @@ func (l *Log) Middleware() gin.HandlerFunc {
 
 // History serves a module's history to the panel (behind RequireAdmin):
 // ?limit= (50, at most 200), ?before= (an entry's createdAt, for the next
-// page), ?entityId=.
+// page), ?entityId= (that entity, and those under it: "tour" also finds
+// "tour/participant").
 func (l *Log) History(module string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if l == nil {
@@ -326,7 +327,7 @@ func (s PG) List(ctx context.Context, q Query) ([]Entry, error) {
 	}
 	rows, err := s.DB.Query(ctx, `SELECT id::text, module, method, route, path, entity_id, subject, payload,
 		status, ip, user_agent, created_at FROM admin_history
-		WHERE module = $1 AND ($2 = '' OR entity_id = $2) AND ($3::timestamptz IS NULL OR created_at < $3)
+		WHERE module = $1 AND ($2 = '' OR entity_id = $2 OR starts_with(entity_id, $2 || '/')) AND ($3::timestamptz IS NULL OR created_at < $3)
 		ORDER BY created_at DESC LIMIT $4`, q.Module, q.EntityID, before, q.Limit)
 	if err != nil {
 		return nil, err

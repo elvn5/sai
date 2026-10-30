@@ -27,6 +27,7 @@ import (
 	"github.com/elvn5/sai/services/listings/internal/purge"
 	"github.com/elvn5/sai/services/listings/internal/routes"
 	"github.com/elvn5/sai/services/listings/internal/store"
+	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
 	"github.com/elvn5/sai/services/pkg/logger"
@@ -76,7 +77,7 @@ func run(log *slog.Logger) error {
 	go partnerpurge.Run(ctx, db, users, purge.Service(), log)
 
 	st := store.New(db)
-	deps := handlers.Deps{Store: st, Authors: users, Log: log}
+	deps := handlers.Deps{Store: st, Authors: users, Log: log, History: audit.New(db, routes.HistoryModules, log)}
 	if cfg.BotToken != "" {
 		sender := telegram.New(cfg.BotToken, cfg.TelegramAPIURL)
 		deps.Alerts = &alerts.Notifier{Store: st, Chats: users, Sender: sender, Log: log}

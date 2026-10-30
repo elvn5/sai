@@ -8,6 +8,7 @@ export type HistoryModule =
   | 'achievements'
   | 'trails'
   | 'payments'
+  | 'tours'
   | 'blog'
   | 'seo';
 
@@ -37,6 +38,7 @@ export const HISTORY_MODULES: { module: HistoryModule; label: string; url: strin
   { module: 'achievements', label: 'Достижения', url: '/achievements/admin/history' },
   { module: 'trails', label: 'Маршруты', url: '/trails/admin/history' },
   { module: 'payments', label: 'Платежи', url: '/orders/admin/history' },
+  { module: 'tours', label: 'Туры', url: '/tours/admin/history' },
   { module: 'blog', label: 'Блог', url: '/blog/admin/history' },
   { module: 'seo', label: 'SEO', url: '/page-seo/admin/history' },
 ];
@@ -65,6 +67,8 @@ const ACTIONS: Record<string, string> = {
   'POST /payouts': 'Выплата создана',
   'POST /payments/admin/transactions/:id/check': 'Платёж проверен в GoPay',
   'POST /payments/admin/transactions/:id/cancel': 'Платёж отменён в GoPay',
+  'PATCH /tours/admin/:id/participants/:pid': 'Участник тура изменён',
+  'PUT /tours/admin/:id/published': 'Публикация тура изменена',
   'POST /blog': 'Статья создана',
   'PUT /blog/:id': 'Статья изменена',
   'DELETE /blog/:id': 'Статья удалена',

@@ -41,6 +41,7 @@ export class AdminLayout {
     { label: 'Поддержка', path: '/support' },
     { label: 'Пользователи', path: '/users' },
     { label: 'Партнёры', path: '/partners' },
+    { label: 'Туры', path: '/tours' },
     { label: 'Достижения', path: '/achievements' },
     { label: 'Маршруты', path: '/trails' },
     { label: 'Платежи', path: '/payments' },

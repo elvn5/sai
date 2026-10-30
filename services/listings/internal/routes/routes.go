@@ -12,12 +12,16 @@ import (
 	"github.com/elvn5/sai/services/pkg/middleware"
 )
 
+// HistoryModules maps the paths whose admin changes go into the
+// panel's history to the panel module they belong to.
+var HistoryModules = map[string]string{"/tours": "tours"}
+
 // Setup builds the router. It sits behind the gateway, which handles CORS.
 func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.Engine {
 	r := gin.New()
 	r.RedirectTrailingSlash = false
 	r.RedirectFixedPath = false
-	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log))
+	r.Use(middleware.Recovery(d.Log), middleware.RequestLogger(d.Log), d.History.Middleware())
 	r.NoRoute(httperr.RouteNotFound)
 	r.GET("/healthz", func(c *gin.Context) { c.JSON(http.StatusOK, gin.H{"status": "ok"}) })
 
@@ -26,6 +30,7 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	optionalUser := middleware.OptionalUser(verifier, users)
 	requirePartner := middleware.RequirePartner()
 	requireOrganizer := middleware.RequireOrganizer()
+	requireAdmin := middleware.RequireAdmin(verifier)
 
 	hotels := &handlers.Hotels{Deps: d}
 	r.GET("/hotels", hotels.List)
@@ -51,6 +56,14 @@ func Setup(d handlers.Deps, users middleware.UserLookup, jwtSecret string) *gin.
 	r.POST("/tours", requireUser, requireOrganizer, tours.Create)
 	r.PUT("/tours/:id", requireUser, tours.Update)
 	r.DELETE("/tours/:id", requireUser, tours.Delete)
+
+	// The panel: every tour with its group.
+	admin := &handlers.Admin{Deps: d}
+	r.GET("/tours/admin", requireAdmin, admin.Tours)
+	r.GET("/tours/admin/history", requireAdmin, d.History.History("tours"))
+	r.GET("/tours/admin/:id", requireAdmin, admin.Tour)
+	r.PATCH("/tours/admin/:id/participants/:pid", requireAdmin, admin.UpdateParticipant)
+	r.PUT("/tours/admin/:id/published", requireAdmin, admin.SetPublished)
 
 	// Signing up for a tour, the organizer's roster and check-in, and
 	// participants' ratings.

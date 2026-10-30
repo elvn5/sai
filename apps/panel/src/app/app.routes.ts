@@ -49,6 +49,14 @@ export const routes: Routes = [
           import('@/pages/online-payments/online-payment.page').then((m) => m.OnlinePaymentPage),
       },
       {
+        path: 'tours',
+        loadComponent: () => import('@/pages/tours/tours.page').then((m) => m.ToursPage),
+      },
+      {
+        path: 'tours/:id',
+        loadComponent: () => import('@/pages/tours/tour.page').then((m) => m.TourPage),
+      },
+      {
         path: 'blog',
         loadComponent: () => import('@/pages/blog/blog-list.page').then((m) => m.BlogListPage),
       },

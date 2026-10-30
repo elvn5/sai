@@ -244,3 +244,141 @@ export interface PaymentGateway {
   online: boolean;
   canCancel: boolean;
 }
+
+// Tours (listings, GET /tours/admin): where a departure stands — before
+// the group meets, on the way (until the evening of its last day), over.
+export type TourPhase = 'upcoming' | 'current' | 'past';
+
+export interface AdminTourInfo {
+  id: string;
+  locale: string;
+  slug: string;
+  title: string;
+  location: string | null;
+  price: number | null;
+  startDate: string;
+  endDate: string;
+  // HH:MM in Bishkek on startDate; 09:00 when unset.
+  meetingTime: string | null;
+  meetingPoint: string | null;
+  capacity: number | null;
+  // Places taken.
+  taken: number;
+  phone: string | null;
+  whatsapp: string | null;
+  telegram: string | null;
+  isPublished: boolean;
+  publishedAt: string | null;
+  userId: string | null;
+  organizer?: Person;
+  createdAt: string;
+}
+
+// A tour's participants by status; of those with a place: who came,
+// filled the form, accepted the rules, what they owe and paid.
+export interface AdminTourCounts {
+  active: number;
+  waitlist: number;
+  cancelled: number;
+  arrived: number;
+  forms: number;
+  waivers: number;
+  due: number;
+  paid: number;
+}
+
+export interface AdminTourRow {
+  tour: AdminTourInfo;
+  phase: TourPhase;
+  counts: AdminTourCounts;
+}
+
+export interface AdminTourList {
+  tours: AdminTourRow[];
+  // Tours per phase (after the search).
+  counts: Record<TourPhase, number>;
+}
+
+// "new" and "confirmed" take a place; "waitlist" waits for one.
+export type ParticipantStatus = 'new' | 'confirmed' | 'waitlist' | 'cancelled';
+
+export interface ParticipantForm {
+  emergencyName: string;
+  emergencyPhone: string;
+  // none, hiking, trekking or mountaineering.
+  experience: string;
+  health: string | null;
+  notes: string | null;
+}
+
+export interface TourPayment {
+  id: string;
+  // A refund counts against what they paid.
+  kind: 'payment' | 'refund';
+  amount: number;
+  method: string;
+  paidOn: string;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface TourParticipant {
+  id: string;
+  // An account that signed up, or a client the organizer added by hand.
+  userId: string | null;
+  account: Person | null;
+  // What the organizer typed for the client.
+  name: string | null;
+  phone: string | null;
+  telegram: string | null;
+  status: ParticipantStatus;
+  joinedAt: string;
+  arrivedAt: string | null;
+  amountDue: number | null;
+  due: number;
+  paid: number;
+  payments: TourPayment[];
+  form: ParticipantForm | null;
+  formAt: string | null;
+  waiverAt: string | null;
+  waiverVersion: string | null;
+}
+
+export interface TourTotals {
+  active: number;
+  waitlist: number;
+  arrived: number;
+  due: number;
+  paid: number;
+  forms: number;
+  waivers: number;
+  expenses: number;
+  margin: number;
+}
+
+export interface TourExpense {
+  id: string;
+  category: string;
+  amount: number;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface TourStaff {
+  id: string;
+  role: string;
+  name: string;
+  phone: string | null;
+  note: string | null;
+}
+
+// One tour's group (GET /tours/admin/:id).
+export interface AdminTourGroup {
+  tour: AdminTourInfo;
+  phase: TourPhase;
+  organizer: Person | null;
+  participants: TourParticipant[];
+  totals: TourTotals;
+  expenses: TourExpense[] | null;
+  staff: TourStaff[] | null;
+}

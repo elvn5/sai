@@ -285,3 +285,35 @@ type CRMReportTour struct {
 	Revenue   int    `json:"revenue"`
 	Expenses  int    `json:"expenses"`
 }
+
+// AdminTour is a tour in the panel's list: where it stands (Phase) and
+// its group's counts.
+type AdminTour struct {
+	Tour Tour `json:"tour"`
+	// "upcoming", "current" (the group met and the tour isn't over) or
+	// "past".
+	Phase  string          `json:"phase"`
+	Counts AdminTourCounts `json:"counts"`
+}
+
+// AdminTourCounts are a tour's participants by status; of those with a
+// place: how many came, filled the form and accepted the rules, what they
+// owe and paid.
+type AdminTourCounts struct {
+	Active    int `json:"active"`
+	Waitlist  int `json:"waitlist"`
+	Cancelled int `json:"cancelled"`
+	Arrived   int `json:"arrived"`
+	Forms     int `json:"forms"`
+	Waivers   int `json:"waivers"`
+	Due       int `json:"due"`
+	Paid      int `json:"paid"`
+}
+
+// AdminGroup is one tour in the panel: its group as the organizer sees
+// it, with the organizer and where the tour stands.
+type AdminGroup struct {
+	CRMGroup
+	Phase     string              `json:"phase"`
+	Organizer *usersclient.Author `json:"organizer"`
+}

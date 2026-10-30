@@ -20,15 +20,18 @@ const tourColumns = `id, locale, slug, title, excerpt, content, price, duration_
 	meeting_point, meeting_time, (SELECT count(*)::int FROM tour_participants p WHERE p.tour_id = tours.id AND p.status IN ('new', 'confirmed')),
 	remind_at, followup_at`
 
-func scanTour(row pgx.Row) (models.Tour, error) {
+func scanTour(row pgx.Row) (models.Tour, error) { return scanTourWith(row) }
+
+// scanTourWith reads tourColumns followed by more columns into extra.
+func scanTourWith(row pgx.Row, extra ...any) (models.Tour, error) {
 	var t models.Tour
 	var publishedAt *time.Time
 	var created, updated time.Time
-	err := row.Scan(&t.ID, &t.Locale, &t.Slug, &t.Title, &t.Excerpt, &t.Content, &t.Price,
+	err := row.Scan(append([]any{&t.ID, &t.Locale, &t.Slug, &t.Title, &t.Excerpt, &t.Content, &t.Price,
 		&t.DurationDays, &t.Location, &t.StartDate, &t.EndDate, &t.Destination, &t.CancellationPolicy,
 		&t.CoverImageURL, &t.Phone, &t.Whatsapp, &t.Telegram, &t.RatingAverage, &t.ReviewCount,
 		&t.IsPublished, &publishedAt, &t.UserID, &created, &updated, &t.Photos, &t.Program, &t.Capacity,
-		&t.MeetingPoint, &t.MeetingTime, &t.Taken, &t.RemindAt, &t.FollowUpAt)
+		&t.MeetingPoint, &t.MeetingTime, &t.Taken, &t.RemindAt, &t.FollowUpAt}, extra...)...)
 	t.PublishedAt = jsontime.Ptr(publishedAt)
 	t.Photos = nonNil(t.Photos)
 	if t.Program == nil {

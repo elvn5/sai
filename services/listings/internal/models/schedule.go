@@ -46,6 +46,25 @@ func (t Tour) EndsAt() time.Time {
 	return ends
 }
 
+// Tour phases, as the panel shows them.
+const (
+	PhaseUpcoming = "upcoming"
+	PhaseCurrent  = "current"
+	PhasePast     = "past"
+)
+
+// Phase is where the tour stands at now: before the group meets, on the
+// way (until EndsAt), or over.
+func (t Tour) Phase(now time.Time) string {
+	switch {
+	case now.Before(t.StartsAt()):
+		return PhaseUpcoming
+	case now.Before(t.EndsAt()):
+		return PhaseCurrent
+	}
+	return PhasePast
+}
+
 // Schedule sets when the tour's reminder and follow-up (a request to rate
 // it) are due, as of now. A tour set up (or moved) inside the reminder
 // window gets no reminder.

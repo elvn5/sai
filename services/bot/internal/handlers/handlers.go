@@ -7,7 +7,6 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -39,7 +38,7 @@ type Accounts interface {
 	ConfirmVerification(ctx context.Context, token string) (*users.Account, error)
 	Link(ctx context.Context, token string, telegramID int64, username string, move bool) (users.LinkResult, error)
 	UpdateFirstName(ctx context.Context, userID, firstName string) error
-	UpdatePhone(ctx context.Context, userID, phone string) error
+	ConfirmPhone(ctx context.Context, telegramID int64, phone string) (users.Account, bool, error)
 	Support(ctx context.Context) (users.Support, error)
 }
 
@@ -114,7 +113,9 @@ func (h *Handlers) Register(bh *th.BotHandler) {
 	bh.HandleCallbackQuery(h.linkMove, th.CallbackDataPrefix(keyboards.LinkMovePrefix))
 	bh.HandleCallbackQuery(h.linkCancel, th.CallbackDataEqual(keyboards.LinkCancel))
 	bh.HandleCallbackQuery(h.editField(session.FieldName, i18n.M("Введите новое имя:")), th.CallbackDataEqual(keyboards.EditName))
-	bh.HandleCallbackQuery(h.editField(session.FieldPhone, i18n.M("Введите новый номер телефона:")), th.CallbackDataEqual(keyboards.EditPhone))
+	bh.HandleCallbackQuery(h.askPhone, th.CallbackDataEqual(keyboards.EditPhone))
+	bh.HandleMessage(h.contact, isContact)
+	bh.HandleMessage(h.shareCancel, isShareCancel)
 	bh.HandleCallbackQuery(h.editCancel, th.CallbackDataEqual(keyboards.EditCancel))
 	bh.HandleMessage(h.text, th.AnyMessageWithText())
 }
@@ -212,6 +213,9 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 	if err != nil {
 		return err
 	}
+	if payload == phonePayload {
+		return h.sharePhone(ctx, l, msg.Chat.ID)
+	}
 	if h.sections() {
 		if id, ok := strings.CutPrefix(payload, tourPrefix); ok && id != "" {
 			return h.tourCard(ctx, l, msg.Chat.ID, from, id)
@@ -276,7 +280,7 @@ func (h *Handlers) link(ctx *th.Context, l i18n.Lang, chatID int64, from *telego
 			"Войдите на сайт через Telegram, чтобы пользоваться тем аккаунтом, или отвяжите Telegram в его профиле."), nil)
 	default: // LinkNeedsMove
 		return h.reply(ctx, chatID, l.T("У этого Telegram уже есть свой аккаунт Ermekten, созданный через бота. "+
-			"Привязать Telegram к аккаунту с сайта? Войти в старый Telegram-аккаунт после этого будет нельзя."),
+			"Привязать Telegram к аккаунту с сайта? Аккаунты объединятся: туры, избранное и достижения из Telegram-аккаунта перейдут в аккаунт с сайта."),
 			keyboards.LinkMove(l, token))
 	}
 }
@@ -424,7 +428,7 @@ func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 	if ok && h.profiles() && field == session.FieldPassword {
 		return h.passwordText(ctx, l, msg, arg)
 	}
-	if ok && field != session.FieldName && field != session.FieldPhone {
+	if ok && field != session.FieldName {
 		ok = false
 	}
 	if !ok {
@@ -443,18 +447,8 @@ func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 		return h.reply(ctx, msg.Chat.ID, l.T("Пустое значение не сохранено."), nil)
 	}
 
-	if field == session.FieldName {
-		if err := h.Users.UpdateFirstName(ctx, user.ID, value); err != nil {
-			return err
-		}
-		return h.reply(ctx, msg.Chat.ID, l.T("Имя обновлено."), h.mainMenu(l))
-	}
-	err = h.Users.UpdatePhone(ctx, user.ID, value)
-	if errors.Is(err, users.ErrPhoneTaken) {
-		return h.reply(ctx, msg.Chat.ID, l.T("Этот номер уже привязан к другому аккаунту."), h.mainMenu(l))
-	}
-	if err != nil {
+	if err := h.Users.UpdateFirstName(ctx, user.ID, value); err != nil {
 		return err
 	}
-	return h.reply(ctx, msg.Chat.ID, l.T("Телефон обновлен."), h.mainMenu(l))
+	return h.reply(ctx, msg.Chat.ID, l.T("Имя обновлено."), h.mainMenu(l))
 }

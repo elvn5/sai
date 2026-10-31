@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -52,6 +53,7 @@ type fakeUsers struct {
 	support  users.Support
 	err      error
 	phoneErr error
+	merged   bool
 }
 
 func (f *fakeUsers) record(s string) {
@@ -90,9 +92,9 @@ func (f *fakeUsers) UpdateFirstName(_ context.Context, userID, firstName string)
 	return f.err
 }
 
-func (f *fakeUsers) UpdatePhone(_ context.Context, userID, phone string) error {
-	f.record("phone " + userID + " " + phone)
-	return f.phoneErr
+func (f *fakeUsers) ConfirmPhone(_ context.Context, telegramID int64, phone string) (users.Account, bool, error) {
+	f.record(fmt.Sprintf("phone %d %s", telegramID, phone))
+	return f.account, f.merged, f.phoneErr
 }
 
 func (f *fakeUsers) Support(context.Context) (users.Support, error) {
@@ -159,6 +161,15 @@ func (h *harness) message(text string) {
 	h.nextID++
 	h.updates <- telego.Update{UpdateID: h.nextID, Message: &telego.Message{
 		MessageID: h.nextID, Chat: telego.Chat{ID: chatID, Type: "private"}, From: &sender, Text: text,
+	}}
+}
+
+// shareContact sends a contact, as the request_contact button does.
+func (h *harness) shareContact(userID int64, phone string) {
+	h.nextID++
+	h.updates <- telego.Update{UpdateID: h.nextID, Message: &telego.Message{
+		MessageID: h.nextID, Chat: telego.Chat{ID: chatID, Type: "private"}, From: &sender,
+		Contact: &telego.Contact{PhoneNumber: phone, FirstName: "Бакыт", UserID: userID},
 	}}
 }
 
@@ -265,7 +276,7 @@ func TestLinkDeepLink(t *testing.T) {
 		{users.LinkResult{Status: users.LinkTaken},
 			"Этот Telegram уже привязан к другому аккаунту Ermekten (с почтой или телефоном). Войдите на сайт через Telegram, чтобы пользоваться тем аккаунтом, или отвяжите Telegram в его профиле.", "null"},
 		{users.LinkResult{Status: users.LinkNeedsMove},
-			"У этого Telegram уже есть свой аккаунт Ermekten, созданный через бота. Привязать Telegram к аккаунту с сайта? Войти в старый Telegram-аккаунт после этого будет нельзя.",
+			"У этого Telegram уже есть свой аккаунт Ermekten, созданный через бота. Привязать Telegram к аккаунту с сайта? Аккаунты объединятся: туры, избранное и достижения из Telegram-аккаунта перейдут в аккаунт с сайта.",
 			`{"inline_keyboard":[[{"callback_data":"link_move:tok","text":"Привязать"},{"callback_data":"link_cancel","text":"Отмена"}]]}`},
 	} {
 		h.users.link = tc.result
@@ -349,22 +360,41 @@ func TestEditProfile(t *testing.T) {
 		t.Errorf("name saved: %q %s", msg.text(), msg.markup())
 	}
 
+	// The phone is shared as a contact, never typed.
 	h.press("profile_edit_phone")
-	if text := h.expect("answerCallbackQuery", "sendMessage")[1].text(); text != "Введите новый номер телефона:" {
-		t.Errorf("phone prompt: %q", text)
+	calls = h.expect("answerCallbackQuery", "sendMessage")
+	if !strings.HasPrefix(calls[1].text(), "Нажмите «📱 Поделиться номером» внизу") ||
+		calls[1].markup() != `{"keyboard":[[{"request_contact":true,"text":"📱 Поделиться номером"}],[{"text":"↩️ Не сейчас"}]],"one_time_keyboard":true,"resize_keyboard":true}` {
+		t.Errorf("phone prompt: %q %s", calls[1].text(), calls[1].markup())
+	}
+	h.shareContact(sender.ID+1, "+996700000000")
+	if text := h.expect("sendMessage")[0].text(); text != "Это не ваш номер. Нажмите «📱 Поделиться номером», чтобы отправить свой." {
+		t.Errorf("someone else's contact: %q", text)
 	}
 	h.users.phoneErr = users.ErrPhoneTaken
-	h.message("+996 700 123 456")
-	if text := h.expect("sendMessage")[0].text(); text != "Этот номер уже привязан к другому аккаунту." {
+	h.shareContact(sender.ID, "996700123456")
+	if text := h.expect("sendMessage")[0].text(); !strings.HasPrefix(text, "Этот номер уже есть в другом аккаунте Ermekten") {
 		t.Errorf("phone taken: %q", text)
 	}
-
 	h.users.phoneErr = nil
-	h.press("profile_edit_phone")
-	h.expect("answerCallbackQuery", "sendMessage")
-	h.message("+996 700 123 457")
-	if text := h.expect("sendMessage")[0].text(); text != "Телефон обновлен." {
-		t.Errorf("phone saved: %q", text)
+	h.shareContact(sender.ID, "996700123457")
+	if msg := h.expect("sendMessage")[0]; msg.text() != "✅ Номер подтверждён." || !strings.Contains(msg.markup(), "👤 Профиль") {
+		t.Errorf("phone confirmed: %q %s", msg.text(), msg.markup())
+	}
+	h.users.merged, h.users.account = true, users.Account{ID: "site", FirstName: str("Ермек")}
+	h.shareContact(sender.ID, "996700123458")
+	if text := h.expect("sendMessage")[0].text(); !strings.HasPrefix(text, "✅ Номер подтверждён. С ним уже был аккаунт Ermekten, Ермек — теперь это один аккаунт") {
+		t.Errorf("merged: %q", text)
+	}
+	h.users.merged, h.users.account = false, users.Account{ID: "u1"}
+	h.message("↩️ Не сейчас")
+	if text := h.expect("sendMessage")[0].text(); text != "Хорошо. Добавить номер можно в любой момент в профиле." {
+		t.Errorf("not now: %q", text)
+	}
+	// The site's «Добавить телефон» opens the bot with /start phone.
+	h.message("/start phone")
+	if text := h.expect("sendMessage")[0].text(); !strings.HasPrefix(text, "Нажмите «📱 Поделиться номером»") {
+		t.Errorf("deep link: %q", text)
 	}
 
 	h.press("profile_edit_name")
@@ -384,7 +414,7 @@ func TestEditProfile(t *testing.T) {
 	h.message("Не имя")
 	h.quiet()
 
-	want := "name u1 Бакыт,phone u1 +996 700 123 456,phone u1 +996 700 123 457"
+	want := "name u1 Бакыт,phone 42 996700123456,phone 42 996700123457,phone 42 996700123458"
 	var saved []string
 	for _, c := range h.users.calls() {
 		if strings.HasPrefix(c, "name ") || strings.HasPrefix(c, "phone ") {

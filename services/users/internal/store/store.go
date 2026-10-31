@@ -29,7 +29,7 @@ func New(db *pgxpool.Pool) *Store {
 
 const userColumns = `id::text, telegram_id::text, email, password_hash, username, first_name, last_name,
 	phone, avatar_url, is_verified, verification_code_hash, verification_code_expires_at,
-	verification_code_sent_at, verification_attempts, partner_status, partner_requested_at,
+	verification_code_sent_at, verification_attempts, pending_email, partner_status, partner_requested_at,
 	partner_kind, sessions_valid_after, created_at, updated_at`
 
 func scanUser(row pgx.Row) (models.User, error) {
@@ -37,7 +37,7 @@ func scanUser(row pgx.Row) (models.User, error) {
 	err := row.Scan(&u.ID, &u.TelegramID, &u.Email, &u.PasswordHash, &u.Username, &u.FirstName,
 		&u.LastName, &u.Phone, &u.AvatarURL, &u.IsVerified, &u.VerificationCodeHash,
 		&u.VerificationCodeExpiresAt, &u.VerificationCodeSentAt, &u.VerificationAttempts,
-		&u.PartnerStatus, &u.PartnerRequestedAt, &u.PartnerKind, &u.SessionsValidAfter, &u.CreatedAt, &u.UpdatedAt)
+		&u.PendingEmail, &u.PartnerStatus, &u.PartnerRequestedAt, &u.PartnerKind, &u.SessionsValidAfter, &u.CreatedAt, &u.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return u, ErrNotFound
 	}
@@ -131,11 +131,12 @@ func (s *Store) Save(ctx context.Context, u models.User) (models.User, error) {
 	saved, err := scanUser(s.db.QueryRow(ctx, `UPDATE users SET username = $2, first_name = $3,
 		last_name = $4, phone = $5, avatar_url = $6, is_verified = $7, verification_code_hash = $8,
 		verification_code_expires_at = $9, verification_code_sent_at = $10, verification_attempts = $11,
-		partner_status = $12, partner_requested_at = $13, partner_kind = $14, updated_at = now()
+		partner_status = $12, partner_requested_at = $13, partner_kind = $14, email = $15,
+		pending_email = $16, updated_at = now()
 		WHERE id = $1 RETURNING `+userColumns,
 		u.ID, u.Username, u.FirstName, u.LastName, u.Phone, u.AvatarURL, u.IsVerified, u.VerificationCodeHash,
 		u.VerificationCodeExpiresAt, u.VerificationCodeSentAt, u.VerificationAttempts, u.PartnerStatus,
-		u.PartnerRequestedAt, u.PartnerKind))
+		u.PartnerRequestedAt, u.PartnerKind, u.Email, u.PendingEmail))
 	return saved, duplicate(err)
 }
 

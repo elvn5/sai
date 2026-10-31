@@ -28,6 +28,8 @@ const (
 	UsersService_UpdateProfile_FullMethodName               = "/users.v1.UsersService/UpdateProfile"
 	UsersService_GetSupportInfo_FullMethodName              = "/users.v1.UsersService/GetSupportInfo"
 	UsersService_SetTelegramLanguage_FullMethodName         = "/users.v1.UsersService/SetTelegramLanguage"
+	UsersService_ConfirmTelegramPhone_FullMethodName        = "/users.v1.UsersService/ConfirmTelegramPhone"
+	UsersService_ListAccountMerges_FullMethodName           = "/users.v1.UsersService/ListAccountMerges"
 )
 
 // UsersServiceClient is the client API for UsersService service.
@@ -54,8 +56,8 @@ type UsersServiceClient interface {
 	// token (/start link_<token>). NOT_FOUND: unknown or expired token.
 	// ALREADY_EXISTS: the Telegram id belongs to another account that has its
 	// own sign-in (email, phone or password). FAILED_PRECONDITION: it belongs
-	// to a Telegram-only account; repeat with move_from_other_account to move
-	// the Telegram id over (that account can no longer be signed in to).
+	// to a Telegram-only account; repeat with move_from_other_account to
+	// merge that account into the site account (account_merges).
 	LinkTelegram(ctx context.Context, in *LinkTelegramRequest, opts ...grpc.CallOption) (*LinkTelegramResponse, error)
 	// Updates fields edited from the bot. ALREADY_EXISTS if the phone number
 	// belongs to another account.
@@ -67,6 +69,15 @@ type UsersServiceClient interface {
 	// services' notifications come in it. Keyed by Telegram id: it may
 	// arrive before the account exists and follows the id when it moves.
 	SetTelegramLanguage(ctx context.Context, in *SetTelegramLanguageRequest, opts ...grpc.CallOption) (*SetTelegramLanguageResponse, error)
+	// Confirms a phone number the Telegram user shared from the bot (their
+	// own contact, so Telegram vouches for it). If another account has that
+	// number, a Telegram-only account is merged into it (merged is set).
+	// NOT_FOUND: no account with this Telegram id. ALREADY_EXISTS: the number
+	// belongs to another account and the two can't be merged.
+	ConfirmTelegramPhone(ctx context.Context, in *ConfirmTelegramPhoneRequest, opts ...grpc.CallOption) (*ConfirmTelegramPhoneResponse, error)
+	// The accounts merged into others after after_id, oldest first: each
+	// service moves what the first owned onto the second.
+	ListAccountMerges(ctx context.Context, in *ListAccountMergesRequest, opts ...grpc.CallOption) (*ListAccountMergesResponse, error)
 }
 
 type usersServiceClient struct {
@@ -167,6 +178,26 @@ func (c *usersServiceClient) SetTelegramLanguage(ctx context.Context, in *SetTel
 	return out, nil
 }
 
+func (c *usersServiceClient) ConfirmTelegramPhone(ctx context.Context, in *ConfirmTelegramPhoneRequest, opts ...grpc.CallOption) (*ConfirmTelegramPhoneResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmTelegramPhoneResponse)
+	err := c.cc.Invoke(ctx, UsersService_ConfirmTelegramPhone_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersServiceClient) ListAccountMerges(ctx context.Context, in *ListAccountMergesRequest, opts ...grpc.CallOption) (*ListAccountMergesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAccountMergesResponse)
+	err := c.cc.Invoke(ctx, UsersService_ListAccountMerges_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServiceServer is the server API for UsersService service.
 // All implementations must embed UnimplementedUsersServiceServer
 // for forward compatibility.
@@ -191,8 +222,8 @@ type UsersServiceServer interface {
 	// token (/start link_<token>). NOT_FOUND: unknown or expired token.
 	// ALREADY_EXISTS: the Telegram id belongs to another account that has its
 	// own sign-in (email, phone or password). FAILED_PRECONDITION: it belongs
-	// to a Telegram-only account; repeat with move_from_other_account to move
-	// the Telegram id over (that account can no longer be signed in to).
+	// to a Telegram-only account; repeat with move_from_other_account to
+	// merge that account into the site account (account_merges).
 	LinkTelegram(context.Context, *LinkTelegramRequest) (*LinkTelegramResponse, error)
 	// Updates fields edited from the bot. ALREADY_EXISTS if the phone number
 	// belongs to another account.
@@ -204,6 +235,15 @@ type UsersServiceServer interface {
 	// services' notifications come in it. Keyed by Telegram id: it may
 	// arrive before the account exists and follows the id when it moves.
 	SetTelegramLanguage(context.Context, *SetTelegramLanguageRequest) (*SetTelegramLanguageResponse, error)
+	// Confirms a phone number the Telegram user shared from the bot (their
+	// own contact, so Telegram vouches for it). If another account has that
+	// number, a Telegram-only account is merged into it (merged is set).
+	// NOT_FOUND: no account with this Telegram id. ALREADY_EXISTS: the number
+	// belongs to another account and the two can't be merged.
+	ConfirmTelegramPhone(context.Context, *ConfirmTelegramPhoneRequest) (*ConfirmTelegramPhoneResponse, error)
+	// The accounts merged into others after after_id, oldest first: each
+	// service moves what the first owned onto the second.
+	ListAccountMerges(context.Context, *ListAccountMergesRequest) (*ListAccountMergesResponse, error)
 	mustEmbedUnimplementedUsersServiceServer()
 }
 
@@ -240,6 +280,12 @@ func (UnimplementedUsersServiceServer) GetSupportInfo(context.Context, *GetSuppo
 }
 func (UnimplementedUsersServiceServer) SetTelegramLanguage(context.Context, *SetTelegramLanguageRequest) (*SetTelegramLanguageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetTelegramLanguage not implemented")
+}
+func (UnimplementedUsersServiceServer) ConfirmTelegramPhone(context.Context, *ConfirmTelegramPhoneRequest) (*ConfirmTelegramPhoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConfirmTelegramPhone not implemented")
+}
+func (UnimplementedUsersServiceServer) ListAccountMerges(context.Context, *ListAccountMergesRequest) (*ListAccountMergesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAccountMerges not implemented")
 }
 func (UnimplementedUsersServiceServer) mustEmbedUnimplementedUsersServiceServer() {}
 func (UnimplementedUsersServiceServer) testEmbeddedByValue()                      {}
@@ -424,6 +470,42 @@ func _UsersService_SetTelegramLanguage_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UsersService_ConfirmTelegramPhone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmTelegramPhoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).ConfirmTelegramPhone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_ConfirmTelegramPhone_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).ConfirmTelegramPhone(ctx, req.(*ConfirmTelegramPhoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UsersService_ListAccountMerges_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAccountMergesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServiceServer).ListAccountMerges(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UsersService_ListAccountMerges_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServiceServer).ListAccountMerges(ctx, req.(*ListAccountMergesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UsersService_ServiceDesc is the grpc.ServiceDesc for UsersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -466,6 +548,14 @@ var UsersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetTelegramLanguage",
 			Handler:    _UsersService_SetTelegramLanguage_Handler,
+		},
+		{
+			MethodName: "ConfirmTelegramPhone",
+			Handler:    _UsersService_ConfirmTelegramPhone_Handler,
+		},
+		{
+			MethodName: "ListAccountMerges",
+			Handler:    _UsersService_ListAccountMerges_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

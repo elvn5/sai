@@ -30,6 +30,8 @@ export interface AppUser {
   partnerRequestedAt: string | null;
   // A tour organizer or a driver who carries tour groups.
   partnerKind: 'organizer' | 'driver';
+  // Whether the account has a password (absent from older answers).
+  hasPassword?: boolean;
 }
 
 export enum Locale {

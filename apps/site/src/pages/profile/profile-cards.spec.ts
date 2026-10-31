@@ -1,5 +1,6 @@
 import { type AppUser, PartnerStatus } from '@/core/api/types';
 import { AuthStore } from '@/core/auth/auth.store';
+import { ContactsCard } from '@/pages/profile/contacts-card';
 import { ParticipantFormCard } from '@/pages/profile/participant-form-card';
 import { PasswordCard } from '@/pages/profile/password-card';
 import { pageTestProviders } from '@/testing/providers';
@@ -127,5 +128,58 @@ describe('PasswordCard', () => {
     const telegramOnly = render({ ...user, hasPassword: false, email: null });
     expect(telegramOnly.el.textContent).toContain('profile.password.needContact');
     expect(telegramOnly.el.querySelector('button')).toBeNull();
+  });
+});
+
+describe('ContactsCard', () => {
+  const telegramOnly: AppUser = { ...user, telegramId: '777', email: null, hasPassword: false };
+
+  function render(account: AppUser): { el: HTMLElement; api: HttpTestingController } {
+    TestBed.configureTestingModule({ providers: pageTestProviders() });
+    const api = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(ContactsCard);
+    fixture.componentRef.setInput('user', account);
+    TestBed.tick();
+    return { el: fixture.nativeElement as HTMLElement, api };
+  }
+
+  it('stays hidden when the account has an email and a phone', () => {
+    const { el } = render({ ...user, phone: '+996555000111' });
+    expect(el.querySelector('section')).toBeNull();
+  });
+
+  it('reminds a Telegram account and merges it by the email', async () => {
+    const { el, api } = render(telegramOnly);
+    expect(el.textContent).toContain('profile.contacts.reminder');
+
+    type(el, 'input[type=email]', 'aida@example.kg');
+    el.querySelector('form')?.dispatchEvent(new Event('submit'));
+    await settle();
+    const send = api.expectOne('/auth/user/email');
+    expect(send.request.body).toEqual({ email: 'aida@example.kg' });
+    send.flush({ verification: { identifier: 'aida@example.kg', method: 'email' } });
+    await settle();
+    expect(el.textContent).toContain('profile.contacts.codeSent');
+
+    type(el, 'input[autocomplete=one-time-code]', '123456');
+    el.querySelector('form')?.dispatchEvent(new Event('submit'));
+    await settle();
+    const confirm = api.expectOne('/auth/user/email/confirm');
+    expect(confirm.request.body).toEqual({ code: '123456' });
+    confirm.flush({ user: { ...user, id: 'site' }, merged: true });
+    await settle();
+    expect(TestBed.inject(AuthStore).user()?.id).toBe('site');
+  });
+
+  it('explains an email that belongs to an account with a password', async () => {
+    const { el, api } = render(telegramOnly);
+    type(el, 'input[type=email]', 'taken@example.kg');
+    el.querySelector('form')?.dispatchEvent(new Event('submit'));
+    await settle();
+    api
+      .expectOne('/auth/user/email')
+      .flush({ message: 'Email is already registered' }, { status: 409, statusText: 'Conflict' });
+    await settle();
+    expect(el.textContent).toContain('profile.contacts.emailTaken');
   });
 });

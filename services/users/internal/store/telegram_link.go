@@ -31,26 +31,12 @@ func (s *Store) ByTelegramLinkToken(ctx context.Context, tokenHash string, now t
 }
 
 // LinkTelegram sets userID's Telegram id (and username, if it has none)
-// and clears the link token. With moveFrom set, that account's Telegram id
-// is cleared first, in the same transaction.
-func (s *Store) LinkTelegram(ctx context.Context, userID, telegramID string, username *string, moveFrom string) (models.User, error) {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return models.User{}, err
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if moveFrom != "" {
-		if _, err := tx.Exec(ctx, `UPDATE users SET telegram_id = NULL, updated_at = now() WHERE id::text = $1`, moveFrom); err != nil {
-			return models.User{}, err
-		}
-	}
-	u, err := scanUser(tx.QueryRow(ctx, `UPDATE users SET telegram_id = $2::bigint, username = coalesce(username, $3),
+// and clears the link token.
+func (s *Store) LinkTelegram(ctx context.Context, userID, telegramID string, username *string) (models.User, error) {
+	u, err := scanUser(s.db.QueryRow(ctx, `UPDATE users SET telegram_id = $2::bigint, username = coalesce(username, $3),
 		telegram_link_token_hash = NULL, telegram_link_expires_at = NULL, updated_at = now()
 		WHERE id::text = $1 RETURNING `+userColumns, userID, telegramID, username))
-	if err != nil {
-		return u, duplicate(err)
-	}
-	return u, tx.Commit(ctx)
+	return u, duplicate(err)
 }
 
 // UnlinkTelegram clears userID's Telegram id.

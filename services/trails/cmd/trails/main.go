@@ -14,6 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/elvn5/sai/services/pkg/accountmerge"
 	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
@@ -56,6 +57,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	defer func() { _ = users.Close() }()
+	go accountmerge.Run(ctx, db, users, log)
 
 	st := store.New(db)
 	deps := handlers.Deps{Store: st, Authors: users, Log: log,

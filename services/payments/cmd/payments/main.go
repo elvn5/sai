@@ -24,6 +24,7 @@ import (
 	"github.com/elvn5/sai/services/payments/internal/routes"
 	"github.com/elvn5/sai/services/payments/internal/store"
 	"github.com/elvn5/sai/services/payments/internal/worker"
+	"github.com/elvn5/sai/services/pkg/accountmerge"
 	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
@@ -87,6 +88,7 @@ func run(log *slog.Logger) error {
 		return err
 	}
 	defer func() { _ = users.Close() }()
+	go accountmerge.Run(ctx, db, users, log)
 	listings, err := listingsclient.New(cfg.ListingsGRPCAddr)
 	if err != nil {
 		return err

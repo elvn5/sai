@@ -2,6 +2,7 @@ package grpcserver_test
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net"
 	"testing"
@@ -277,7 +278,7 @@ func TestLinkTelegram(t *testing.T) {
 	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: token, TelegramId: "500"}); status.Code(err) != codes.AlreadyExists {
 		t.Errorf("full account: %v", err)
 	}
-	// A Telegram-only account needs confirmation, then loses the id.
+	// A Telegram-only account needs confirmation, then is merged in.
 	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: token, TelegramId: "600"}); status.Code(err) != codes.FailedPrecondition {
 		t.Errorf("shell without confirmation: %v", err)
 	}
@@ -288,8 +289,12 @@ func TestLinkTelegram(t *testing.T) {
 	if u, _ := st.ByID(ctx, site.ID); u.TelegramID == nil || *u.TelegramID != "600" {
 		t.Errorf("site account telegram: %v", u.TelegramID)
 	}
-	if u, _ := st.ByID(ctx, shell.GetAccount().GetId()); u.TelegramID != nil {
-		t.Errorf("shell kept telegram: %v", *u.TelegramID)
+	if _, err := st.ByID(ctx, shell.GetAccount().GetId()); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("shell account still there: %v", err)
+	}
+	if merges, err := c.ListAccountMerges(ctx, &usersv1.ListAccountMergesRequest{}); err != nil || len(merges.GetMerges()) != 1 ||
+		merges.GetMerges()[0].GetFromUserId() != shell.GetAccount().GetId() || merges.GetMerges()[0].GetToUserId() != site.ID {
+		t.Errorf("merges: %v %v", merges, err)
 	}
 	// The token is single-use.
 	if _, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: token, TelegramId: "600"}); status.Code(err) != codes.NotFound {
@@ -304,5 +309,69 @@ func TestLinkTelegram(t *testing.T) {
 	other, _ := st.Insert(ctx, models.User{Phone: str("+996700111222"), PasswordHash: &pass, IsVerified: true})
 	if res, err := c.LinkTelegram(ctx, &usersv1.LinkTelegramRequest{Token: issue(other.ID, time.Minute), TelegramId: "800"}); err != nil || res.GetAccount().GetId() != other.ID {
 		t.Errorf("fresh link: %v %v", res, err)
+	}
+}
+
+func TestConfirmTelegramPhone(t *testing.T) {
+	db, _ := testdb.New(t, true)
+	st := store.New(db)
+	c := client(t, st)
+	ctx := context.Background()
+
+	if _, err := c.ConfirmTelegramPhone(ctx, &usersv1.ConfirmTelegramPhoneRequest{TelegramId: "1", Phone: "+996555000111"}); status.Code(err) != codes.NotFound {
+		t.Errorf("unknown telegram: %v", err)
+	}
+
+	// A new number is confirmed on the Telegram account itself.
+	solo, _ := c.UpsertTelegramUser(ctx, &usersv1.UpsertTelegramUserRequest{TelegramId: "100"})
+	res, err := c.ConfirmTelegramPhone(ctx, &usersv1.ConfirmTelegramPhoneRequest{TelegramId: "100", Phone: "996 555 000 111"})
+	if err != nil || res.GetMerged() || res.GetAccount().GetId() != solo.GetAccount().GetId() || res.GetAccount().GetPhone() != "+996555000111" {
+		t.Fatalf("own number: %v %v", res, err)
+	}
+
+	// A number another account has, typed in its local form: the Telegram
+	// account and what it owns are merged into that account.
+	pass := "hash"
+	site, _ := st.Insert(ctx, models.User{Phone: str("0700 123 456"), PasswordHash: &pass, IsVerified: true})
+	shell, _ := c.UpsertTelegramUser(ctx, &usersv1.UpsertTelegramUserRequest{TelegramId: "200", Username: str("zetxc"), FirstName: str("Ermek")})
+	var achievement string
+	if err := db.QueryRow(ctx, `INSERT INTO achievements (title, icon) VALUES ('{"ru":"Пик"}', 'i-mdi-trophy') RETURNING id`).Scan(&achievement); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{shell.GetAccount().GetId(), site.ID} {
+		if _, err := db.Exec(ctx, `INSERT INTO user_achievements (user_id, achievement_id) VALUES ($1, $2)`, id, achievement); err != nil {
+			t.Fatal(err)
+		}
+	}
+	res, err = c.ConfirmTelegramPhone(ctx, &usersv1.ConfirmTelegramPhoneRequest{TelegramId: "200", Phone: "+996700123456"})
+	if err != nil || !res.GetMerged() || res.GetAccount().GetId() != site.ID || res.GetAccount().GetUsername() != "zetxc" {
+		t.Fatalf("merge: %v %v", res, err)
+	}
+	if u, _ := st.ByID(ctx, site.ID); u.TelegramID == nil || *u.TelegramID != "200" || u.FirstName == nil || *u.FirstName != "Ermek" {
+		t.Errorf("merged account: %+v", u)
+	}
+	var awards int
+	if err := db.QueryRow(ctx, `SELECT count(*) FROM user_achievements WHERE user_id = $1`, site.ID).Scan(&awards); err != nil || awards != 1 {
+		t.Errorf("achievements after merge: %d %v", awards, err)
+	}
+	if again, err := c.UpsertTelegramUser(ctx, &usersv1.UpsertTelegramUserRequest{TelegramId: "200"}); err != nil || again.GetAccount().GetId() != site.ID {
+		t.Errorf("upsert after merge: %v %v", again, err)
+	}
+
+	// An account with its own email or password is never merged away.
+	full, _ := st.Insert(ctx, models.User{Email: str("a@x.kg"), PasswordHash: &pass, IsVerified: true, TelegramID: str("300")})
+	if _, err := c.ConfirmTelegramPhone(ctx, &usersv1.ConfirmTelegramPhoneRequest{TelegramId: "300", Phone: "+996700123456"}); status.Code(err) != codes.AlreadyExists {
+		t.Errorf("full account: %v", err)
+	}
+	if _, err := st.ByID(ctx, full.ID); err != nil {
+		t.Errorf("full account gone: %v", err)
+	}
+
+	merges, err := c.ListAccountMerges(ctx, &usersv1.ListAccountMergesRequest{})
+	if err != nil || len(merges.GetMerges()) != 1 {
+		t.Fatalf("merges: %v %v", merges, err)
+	}
+	if later, err := c.ListAccountMerges(ctx, &usersv1.ListAccountMergesRequest{AfterId: merges.GetMerges()[0].GetId()}); err != nil || len(later.GetMerges()) != 0 {
+		t.Errorf("merges after the last: %v %v", later, err)
 	}
 }

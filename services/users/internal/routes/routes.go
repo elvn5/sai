@@ -55,6 +55,10 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	r.POST("/auth/user/telegram/link", requireUser, telegramLink.Start)
 	r.DELETE("/auth/user/telegram", requireUser, telegramLink.Unlink)
 
+	contacts := &handlers.Contacts{Deps: d}
+	r.POST("/auth/user/email", requireUser, contacts.AddEmail)
+	r.POST("/auth/user/email/confirm", requireUser, contacts.ConfirmEmail)
+
 	telegram := &handlers.Telegram{Deps: d}
 	r.POST("/auth/telegram/widget", telegram.Widget)
 	r.POST("/auth/telegram/miniapp", telegram.MiniApp)
@@ -62,6 +66,7 @@ func Setup(d handlers.Deps, jwtSecret string) *gin.Engine {
 	admin := &handlers.Admin{Deps: d}
 	r.GET("/users", requireAdmin, admin.ListUsers)
 	r.GET("/users/:id", requireAdmin, admin.GetUser)
+	r.POST("/users/:id/merge", requireAdmin, admin.MergeUser)
 	r.GET("/users/:id/public", (&handlers.Profiles{Deps: d}).Public)
 	r.GET("/partners/requests", requireAdmin, admin.PartnerRequests)
 	r.POST("/partners/:userId/approve", requireAdmin, admin.ApprovePartner)

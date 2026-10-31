@@ -27,8 +27,8 @@ service UsersService {
   // token (/start link_<token>). NOT_FOUND: unknown or expired token.
   // ALREADY_EXISTS: the Telegram id belongs to another account that has its
   // own sign-in (email, phone or password). FAILED_PRECONDITION: it belongs
-  // to a Telegram-only account; repeat with move_from_other_account to move
-  // the Telegram id over (that account can no longer be signed in to).
+  // to a Telegram-only account; repeat with move_from_other_account to
+  // merge that account into the site account (account_merges).
   rpc LinkTelegram(LinkTelegramRequest) returns (LinkTelegramResponse);
   // Updates fields edited from the bot. ALREADY_EXISTS if the phone number
   // belongs to another account.
@@ -40,6 +40,44 @@ service UsersService {
   // services' notifications come in it. Keyed by Telegram id: it may
   // arrive before the account exists and follows the id when it moves.
   rpc SetTelegramLanguage(SetTelegramLanguageRequest) returns (SetTelegramLanguageResponse);
+  // Confirms a phone number the Telegram user shared from the bot (their
+  // own contact, so Telegram vouches for it). If another account has that
+  // number, a Telegram-only account is merged into it (merged is set).
+  // NOT_FOUND: no account with this Telegram id. ALREADY_EXISTS: the number
+  // belongs to another account and the two can't be merged.
+  rpc ConfirmTelegramPhone(ConfirmTelegramPhoneRequest) returns (ConfirmTelegramPhoneResponse);
+
+  // For every service.
+
+  // The accounts merged into others after after_id, oldest first: each
+  // service moves what the first owned onto the second.
+  rpc ListAccountMerges(ListAccountMergesRequest) returns (ListAccountMergesResponse);
+}
+
+message ConfirmTelegramPhoneRequest {
+  string telegram_id = 1;
+  string phone = 2;
+}
+
+message ConfirmTelegramPhoneResponse {
+  TelegramAccount account = 1;
+  bool merged = 2;
+}
+
+message ListAccountMergesRequest {
+  int64 after_id = 1;
+  // At most this many (100 when 0).
+  int32 limit = 2;
+}
+
+message AccountMerge {
+  int64 id = 1;
+  string from_user_id = 2;
+  string to_user_id = 3;
+}
+
+message ListAccountMergesResponse {
+  repeated AccountMerge merges = 1;
 }
 
 enum PartnerStatus {
@@ -107,6 +145,8 @@ message TelegramAccount {
   optional string first_name = 2;
   optional string username = 3;
   optional string phone = 4;
+  // Whether the account has an email (it's never sent).
+  bool has_email = 5;
 }
 
 message LinkTelegramRequest {

@@ -22,6 +22,9 @@ const (
 	Profile       = "👤 Профиль"
 	Support       = "🆘 Поддержка"
 	MiniApp       = "🏔 Открыть Ermekten"
+	// The keyboard asking for the user's phone number (ShareContact).
+	SharePhone  = "📱 Поделиться номером"
+	ShareCancel = "↩️ Не сейчас"
 )
 
 // Callback data of inline buttons.
@@ -102,11 +105,20 @@ func ProfileEdit(l i18n.Lang) *telego.InlineKeyboardMarkup {
 	)
 }
 
+// ShareContact asks for the user's own phone number: Telegram sends it
+// as a contact, which confirms it.
+func ShareContact(l i18n.Lang) *telego.ReplyKeyboardMarkup {
+	return tu.Keyboard(
+		tu.KeyboardRow(tu.KeyboardButton(l.T(SharePhone)).WithRequestContact()),
+		tu.KeyboardRow(tu.KeyboardButton(l.T(ShareCancel))),
+	).WithResizeKeyboard().WithOneTimeKeyboard()
+}
+
 func CancelEdit(l i18n.Lang) *telego.InlineKeyboardMarkup {
 	return tu.InlineKeyboard(tu.InlineKeyboardRow(tu.InlineKeyboardButton(l.T("Отмена")).WithCallbackData(EditCancel)))
 }
 
-// LinkMove asks whether to move Telegram from its bot-made account to the
+// LinkMove asks whether to merge Telegram's bot-made account into the
 // site account behind token.
 func LinkMove(l i18n.Lang, token string) *telego.InlineKeyboardMarkup {
 	return tu.InlineKeyboard(tu.InlineKeyboardRow(

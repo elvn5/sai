@@ -15,6 +15,7 @@ import { loaded } from '@/core/lib/resource';
 import { injectSiteNavigate } from '@/core/lib/site-navigate';
 import { Notify } from '@/core/notify/notify';
 import { bindPageMeta } from '@/core/seo/seo.service';
+import { ContactsCard } from '@/pages/profile/contacts-card';
 import { ParticipantFormCard } from '@/pages/profile/participant-form-card';
 import { PasswordCard } from '@/pages/profile/password-card';
 import { AchievementShelf } from '@/ui/achievements/achievement-shelf';
@@ -68,6 +69,7 @@ interface ListingItem {
   imports: [
     AchievementShelf,
     AwardCodeCard,
+    ContactsCard,
     HallPodium,
     MountainScene,
     ListSkeleton,
@@ -218,6 +220,7 @@ interface ListingItem {
                   <dd><app-telegram-link /></dd>
                 </div>
               </dl>
+              <app-contacts-card [user]="user" />
               <app-participant-form-card />
               <app-password-card [user]="user" />
               </div>
@@ -451,7 +454,7 @@ export class ProfilePage {
   private readonly favoritesStore = inject(FavoritesStore);
   protected readonly favorites = httpResource<Favorites>(() => {
     this.favoritesStore.version();
-    return this.active() === 'favorites' ? '/favorites/mine' : undefined;
+    return this.active() === 'favorites' && this.userId() ? '/favorites/mine' : undefined;
   });
   protected readonly favoritesValue = computed(() => loaded(this.favorites));
   protected readonly favoriteCount = computed(() => {
@@ -460,8 +463,15 @@ export class ProfilePage {
   });
   private readonly lang = injectLang();
   private readonly transloco = inject(TranslocoService);
-  protected readonly joined = httpResource<Tour[]>(() => '/tours/joined');
-  private readonly achievements = httpResource<MyAchievements>(() => '/achievements/me');
+  // The data below is reloaded when the account changes: confirming an
+  // email (ContactsCard) can merge this one into another.
+  private readonly userId = computed(() => this.auth.user()?.id);
+  protected readonly joined = httpResource<Tour[]>(() =>
+    this.userId() ? '/tours/joined' : undefined,
+  );
+  private readonly achievements = httpResource<MyAchievements>(() =>
+    this.userId() ? '/achievements/me' : undefined,
+  );
   private readonly hall = httpResource<HallOfFame>(() =>
     this.active() === 'achievements' ? '/hall-of-fame' : undefined,
   );

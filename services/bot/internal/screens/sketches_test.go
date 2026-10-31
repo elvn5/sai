@@ -440,13 +440,15 @@ func TestSketchProfile(t *testing.T) {
 		"🌐 Язык · 🇷🇺 Русский→l:menu",
 	)
 
-	// What didn't load is left out; a traveler has no organizer's room.
+	// What didn't load is left out; a traveler has no organizer's room; an
+	// account with neither phone nor email is asked to add one.
 	traveler := screens.ProfileView{Me: api.Me{ID: "u2", PartnerStatus: api.PartnerPending, PartnerKind: api.KindDriver}, Organizing: true}
 	checkScreen(t, screens.Profile(i18n.RU, traveler, at(10, 20, 12, 0)),
 		"👤 <b>Без имени</b>\n\n"+
 			"📞 Телефон: не указан\n✉️ Email: не указан\n🔑 Пароль: не задан\n\n"+
+			"⚠️ Добавьте телефон или email, чтобы не потерять аккаунт. Если они уже есть в другом аккаунте Ermekten, аккаунты объединятся.\n\n"+
 			"🤝 Партнёрство: ⏳ заявка водителя на рассмотрении",
-		"✏️ Изменить имя→profile_edit_name | ✏️ Изменить телефон→profile_edit_phone",
+		"✏️ Изменить имя→profile_edit_name | 📱 Добавить телефон→profile_edit_phone",
 		"📝 Анкета участника→p:form | 🔑 Задать пароль→p:pw",
 		"🏆 Достижения→p:aw | 🤝 Партнёрство→p:pa",
 		"🎒 Мои туры→o:list:u | ❤️ Избранное→t:f:0",
@@ -501,7 +503,7 @@ func TestSketchPassword(t *testing.T) {
 	checkScreen(t, screens.PasswordScreen(i18n.RU, api.Me{}, ""),
 		"🔑 <b>Пароль</b>\n\n"+
 			"Вы входите через Telegram. Чтобы входить на сайт по паролю, к аккаунту нужен email или телефон — добавьте телефон, и пароль можно будет задать.",
-		"✏️ Изменить телефон→profile_edit_phone",
+		"📱 Добавить телефон→profile_edit_phone",
 		"◀️ Профиль→p:home",
 	)
 	checkScreen(t, screens.PasswordStep(i18n.RU, screens.StepNew, ""),

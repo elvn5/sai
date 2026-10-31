@@ -264,3 +264,36 @@ func displayName(u models.User) string {
 	}
 	return ""
 }
+
+type mergeRequest struct {
+	IntoID *string `json:"intoId" binding:"required,uuid"`
+}
+
+// MergeUser handles POST /users/:id/merge: the admin folds a duplicate
+// Telegram-only account into the person's other account (intoId).
+func (h *Admin) MergeUser(c *gin.Context) {
+	var req mergeRequest
+	if !validation.BindJSON(c, &req) {
+		return
+	}
+	from, ok := h.user(c, c.Param("id"))
+	if !ok {
+		return
+	}
+	into, ok := h.user(c, *req.IntoID)
+	if !ok {
+		return
+	}
+	audit.SetSubject(c, displayName(from)+" → "+displayName(into))
+	merged, err := h.Store.Merge(c.Request.Context(), from.ID, into.ID, store.MergeAdmin)
+	switch {
+	case errors.Is(err, store.ErrSameAccount):
+		httperr.Abort(c, http.StatusBadRequest, "An account can't be merged into itself")
+	case errors.Is(err, store.ErrNotMergeable):
+		httperr.Abort(c, http.StatusConflict, "Only an account without email and password can be merged into another")
+	case err != nil:
+		h.internalError(c, err)
+	default:
+		respond.JSON(c, http.StatusOK, merged.Admin())
+	}
+}

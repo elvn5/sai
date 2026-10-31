@@ -29,6 +29,7 @@ type Account struct {
 	FirstName *string
 	Username  *string
 	Phone     *string
+	HasEmail  bool
 }
 
 // Profile is what Telegram tells about a user.
@@ -48,7 +49,8 @@ const (
 	LinkInvalid
 	// The Telegram account belongs to another account with its own sign-in.
 	LinkTaken
-	// It belongs to a Telegram-only account; linking moves it from there.
+	// It belongs to a Telegram-only account; linking merges that account
+	// into the site one.
 	LinkNeedsMove
 )
 
@@ -92,7 +94,7 @@ func (c *Client) Close() error {
 }
 
 func account(a *usersv1.TelegramAccount) Account {
-	return Account{ID: a.GetId(), FirstName: a.FirstName, Username: a.Username, Phone: a.Phone}
+	return Account{ID: a.GetId(), FirstName: a.FirstName, Username: a.Username, Phone: a.Phone, HasEmail: a.GetHasEmail()}
 }
 
 // optional is a proto optional string: unset when empty, as Telegram
@@ -164,22 +166,33 @@ func (c *Client) Link(ctx context.Context, token string, telegramID int64, usern
 	}
 }
 
-func (c *Client) UpdateFirstName(ctx context.Context, userID, firstName string) error {
-	return c.updateProfile(ctx, &usersv1.UpdateProfileRequest{UserId: userID, FirstName: &firstName})
+// ConfirmPhone confirms the number the Telegram user shared as their
+// contact. merged: another account had it, and the Telegram account was
+// merged into it (the returned account). ErrPhoneTaken if the number
+// belongs to an account this one can't be merged into.
+func (c *Client) ConfirmPhone(ctx context.Context, telegramID int64, phone string) (Account, bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	res, err := c.client.ConfirmTelegramPhone(ctx, &usersv1.ConfirmTelegramPhoneRequest{
+		TelegramId: strconv.FormatInt(telegramID, 10), Phone: phone,
+	})
+	if status.Code(err) == codes.AlreadyExists {
+		return Account{}, false, ErrPhoneTaken
+	}
+	if err != nil {
+		return Account{}, false, fmt.Errorf("confirm telegram phone: %w", err)
+	}
+	return account(res.GetAccount()), res.GetMerged(), nil
 }
 
-// UpdatePhone fails with ErrPhoneTaken if another account uses the number.
-func (c *Client) UpdatePhone(ctx context.Context, userID, phone string) error {
-	return c.updateProfile(ctx, &usersv1.UpdateProfileRequest{UserId: userID, Phone: &phone})
+func (c *Client) UpdateFirstName(ctx context.Context, userID, firstName string) error {
+	return c.updateProfile(ctx, &usersv1.UpdateProfileRequest{UserId: userID, FirstName: &firstName})
 }
 
 func (c *Client) updateProfile(ctx context.Context, req *usersv1.UpdateProfileRequest) error {
 	ctx, cancel := context.WithTimeout(ctx, callTimeout)
 	defer cancel()
 	_, err := c.client.UpdateProfile(ctx, req)
-	if status.Code(err) == codes.AlreadyExists {
-		return ErrPhoneTaken
-	}
 	if err != nil {
 		return fmt.Errorf("update profile: %w", err)
 	}

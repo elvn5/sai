@@ -104,7 +104,7 @@ func TestPasswordResetByTelegram(t *testing.T) {
 		r.body != `{"channel":"telegram"}` || len(e.tg.sent) != 0 {
 		t.Fatalf("unlinked: %d %s %v", r.status, r.body, e.tg.sent)
 	}
-	if _, err := e.store.LinkTelegram(ctx, id, "777001", nil, ""); err != nil {
+	if _, err := e.store.LinkTelegram(ctx, id, "777001", nil); err != nil {
 		t.Fatal(err)
 	}
 	if err := e.store.SetTelegramLanguage(ctx, 777001, "ky"); err != nil {
@@ -146,7 +146,7 @@ func TestPasswordResetForPhoneAccount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := e.store.LinkTelegram(ctx, user.ID, "777002", nil, ""); err != nil {
+	if _, err := e.store.LinkTelegram(ctx, user.ID, "777002", nil); err != nil {
 		t.Fatal(err)
 	}
 	if r := e.do("POST", "/auth/user/password/forgot", `{"identifier":"+996700111222"}`); r.status != 200 || r.body != `{"channel":"telegram"}` {

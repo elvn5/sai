@@ -142,26 +142,81 @@ func (s *Server) LinkTelegram(ctx context.Context, req *usersv1.LinkTelegramRequ
 		return nil, status.Error(codes.AlreadyExists, "the account is linked to another Telegram account")
 	}
 
-	moveFrom := ""
 	other, err := s.Store.ByTelegramID(ctx, req.GetTelegramId())
 	switch {
 	case errors.Is(err, store.ErrNotFound):
 	case err != nil:
 		return nil, s.storeError(ctx, err, "")
-	case other.ID != u.ID && (other.Email != nil || other.Phone != nil || other.PasswordHash != nil):
+	case other.ID != u.ID && store.CanMerge(other, u) != nil:
 		return nil, status.Error(codes.AlreadyExists, "this Telegram account belongs to another Ermekten account")
 	case other.ID != u.ID && !req.GetMoveFromOtherAccount():
 		return nil, status.Error(codes.FailedPrecondition, "this Telegram account has its own Ermekten account")
 	case other.ID != u.ID:
-		moveFrom = other.ID
-		s.Log.InfoContext(ctx, "moving a Telegram id to a site account", slog.String("from", other.ID), slog.String("to", u.ID))
+		merged, err := s.Store.Merge(ctx, other.ID, u.ID, store.MergeTelegram)
+		if errors.Is(err, store.ErrNotMergeable) {
+			return nil, status.Error(codes.AlreadyExists, "this Telegram account belongs to another Ermekten account")
+		} else if err != nil {
+			return nil, s.storeError(ctx, err, "")
+		}
+		s.Log.InfoContext(ctx, "merged a Telegram account into a site account", slog.String("from", other.ID), slog.String("to", u.ID))
+		u = merged
 	}
 
-	linked, err := s.Store.LinkTelegram(ctx, u.ID, req.GetTelegramId(), req.Username, moveFrom)
+	linked, err := s.Store.LinkTelegram(ctx, u.ID, req.GetTelegramId(), req.Username)
 	if err != nil {
 		return nil, s.storeError(ctx, err, "")
 	}
 	return &usersv1.LinkTelegramResponse{Account: toAccount(linked)}, nil
+}
+
+func (s *Server) ConfirmTelegramPhone(ctx context.Context, req *usersv1.ConfirmTelegramPhoneRequest) (*usersv1.ConfirmTelegramPhoneResponse, error) {
+	phone := "+" + store.Digits(req.GetPhone())
+	if len(phone) < 6 {
+		return nil, status.Error(codes.InvalidArgument, "phone is required")
+	}
+	u, err := s.Store.ByTelegramID(ctx, req.GetTelegramId())
+	if err != nil {
+		return nil, s.storeError(ctx, err, "no account with this Telegram id")
+	}
+	owner, err := s.Store.ByPhone(ctx, phone)
+	switch {
+	case errors.Is(err, store.ErrNotFound), err == nil && owner.ID == u.ID:
+		u.Phone = &phone
+		saved, err := s.Store.Save(ctx, u)
+		if errors.Is(err, store.ErrDuplicate) {
+			return nil, status.Error(codes.AlreadyExists, "phone number is used by another account")
+		} else if err != nil {
+			return nil, s.storeError(ctx, err, "")
+		}
+		return &usersv1.ConfirmTelegramPhoneResponse{Account: toAccount(saved)}, nil
+	case err != nil:
+		return nil, s.storeError(ctx, err, "")
+	}
+
+	merged, err := s.Store.Merge(ctx, u.ID, owner.ID, store.MergePhone)
+	if errors.Is(err, store.ErrNotMergeable) {
+		return nil, status.Error(codes.AlreadyExists, "phone number is used by another account")
+	} else if err != nil {
+		return nil, s.storeError(ctx, err, "")
+	}
+	s.Log.InfoContext(ctx, "accounts merged by phone", slog.String("from", u.ID), slog.String("to", merged.ID))
+	return &usersv1.ConfirmTelegramPhoneResponse{Account: toAccount(merged), Merged: true}, nil
+}
+
+func (s *Server) ListAccountMerges(ctx context.Context, req *usersv1.ListAccountMergesRequest) (*usersv1.ListAccountMergesResponse, error) {
+	limit := int(req.GetLimit())
+	if limit <= 0 || limit > 1000 {
+		limit = 100
+	}
+	merges, err := s.Store.AccountMerges(ctx, req.GetAfterId(), limit)
+	if err != nil {
+		return nil, s.storeError(ctx, err, "")
+	}
+	out := make([]*usersv1.AccountMerge, len(merges))
+	for i, m := range merges {
+		out[i] = &usersv1.AccountMerge{Id: m.ID, FromUserId: m.From, ToUserId: m.To}
+	}
+	return &usersv1.ListAccountMergesResponse{Merges: out}, nil
 }
 
 func (s *Server) UpdateProfile(ctx context.Context, req *usersv1.UpdateProfileRequest) (*usersv1.UpdateProfileResponse, error) {
@@ -226,5 +281,7 @@ func toProto(u models.User) *usersv1.User {
 }
 
 func toAccount(u models.User) *usersv1.TelegramAccount {
-	return &usersv1.TelegramAccount{Id: u.ID, FirstName: u.FirstName, Username: u.Username, Phone: u.Phone}
+	return &usersv1.TelegramAccount{
+		Id: u.ID, FirstName: u.FirstName, Username: u.Username, Phone: u.Phone, HasEmail: u.Email != nil,
+	}
 }

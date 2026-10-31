@@ -23,6 +23,7 @@ import (
 	"github.com/elvn5/sai/services/content/internal/purge"
 	"github.com/elvn5/sai/services/content/internal/routes"
 	"github.com/elvn5/sai/services/content/internal/store"
+	"github.com/elvn5/sai/services/pkg/accountmerge"
 	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
@@ -86,6 +87,7 @@ func run(log *slog.Logger) error {
 		users = client
 		// In the background: it waits for the users service.
 		go partnerpurge.Run(ctx, db, client, purge.Service(media, log), log)
+		go accountmerge.Run(ctx, db, client, log)
 	}
 
 	gin.SetMode(gin.ReleaseMode)

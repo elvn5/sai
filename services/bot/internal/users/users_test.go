@@ -41,6 +41,10 @@ func (f *fakeService) UpdateProfile(context.Context, *usersv1.UpdateProfileReque
 	return &usersv1.UpdateProfileResponse{}, f.err
 }
 
+func (f *fakeService) ConfirmTelegramPhone(context.Context, *usersv1.ConfirmTelegramPhoneRequest, ...grpc.CallOption) (*usersv1.ConfirmTelegramPhoneResponse, error) {
+	return &usersv1.ConfirmTelegramPhoneResponse{Account: &usersv1.TelegramAccount{Id: "u1"}}, f.err
+}
+
 func TestFindOrCreateLeavesOutMissingFields(t *testing.T) {
 	svc := &fakeService{}
 	c := users.NewWithClient(svc)
@@ -81,7 +85,7 @@ func TestErrorMapping(t *testing.T) {
 	if a, err := users.NewWithClient(&fakeService{err: status.Error(codes.NotFound, "x")}).ConfirmVerification(ctx, "t"); a != nil || err != nil {
 		t.Errorf("unknown token: %+v %v", a, err)
 	}
-	if err := users.NewWithClient(&fakeService{err: status.Error(codes.AlreadyExists, "x")}).UpdatePhone(ctx, "u1", "+996"); !errors.Is(err, users.ErrPhoneTaken) {
+	if _, _, err := users.NewWithClient(&fakeService{err: status.Error(codes.AlreadyExists, "x")}).ConfirmPhone(ctx, 42, "+996"); !errors.Is(err, users.ErrPhoneTaken) {
 		t.Errorf("phone taken: %v", err)
 	}
 }

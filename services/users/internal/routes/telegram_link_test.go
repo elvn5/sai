@@ -27,7 +27,7 @@ func TestTelegramLinkEndpoints(t *testing.T) {
 
 	// Once linked (by the bot), a second link is refused and unlinking
 	// works for an account with a password.
-	if _, err := e.store.LinkTelegram(context.Background(), id, "4242", nil, ""); err != nil {
+	if _, err := e.store.LinkTelegram(context.Background(), id, "4242", nil); err != nil {
 		t.Fatal(err)
 	}
 	if r := e.do("GET", "/auth/user/me", "", session); !strings.Contains(r.body, `"telegramId":"4242"`) {

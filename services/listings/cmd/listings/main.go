@@ -27,6 +27,7 @@ import (
 	"github.com/elvn5/sai/services/listings/internal/purge"
 	"github.com/elvn5/sai/services/listings/internal/routes"
 	"github.com/elvn5/sai/services/listings/internal/store"
+	"github.com/elvn5/sai/services/pkg/accountmerge"
 	"github.com/elvn5/sai/services/pkg/audit"
 	pkgconfig "github.com/elvn5/sai/services/pkg/config"
 	"github.com/elvn5/sai/services/pkg/database"
@@ -75,6 +76,7 @@ func run(log *slog.Logger) error {
 	defer func() { _ = users.Close() }()
 	// In the background: it waits for the users service.
 	go partnerpurge.Run(ctx, db, users, purge.Service(), log)
+	go accountmerge.Run(ctx, db, users, log)
 
 	st := store.New(db)
 	deps := handlers.Deps{Store: st, Authors: users, Log: log, History: audit.New(db, routes.HistoryModules, log)}

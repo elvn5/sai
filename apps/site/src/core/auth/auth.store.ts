@@ -133,6 +133,26 @@ export class AuthStore {
     this.setUser((await this.post<{ user: AppUser }>('/auth/user/password/change', payload)).user);
   }
 
+  // Sends a code to an email being added to an account that has none (one
+  // made by signing in with Telegram). Sending again waits a minute.
+  async addEmail(email: string): Promise<PendingVerification> {
+    const res = await this.post<{ verification: PendingVerification }>('/auth/user/email', {
+      email,
+    });
+    return res.verification;
+  }
+
+  // Confirms the added email with its code. merged: the email belonged to
+  // another account of this person, the two are now one and the session
+  // is that account's.
+  async confirmEmail(code: string): Promise<{ merged: boolean }> {
+    const res = await this.post<{ user: AppUser; merged: boolean }>('/auth/user/email/confirm', {
+      code,
+    });
+    this.setUser(res.user);
+    return { merged: res.merged };
+  }
+
   async resendCode(identifier: string): Promise<PendingVerification> {
     const res = await this.post<{ verification: PendingVerification }>('/auth/user/resend-code', {
       identifier,

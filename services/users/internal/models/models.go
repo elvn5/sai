@@ -25,9 +25,11 @@ type User struct {
 	VerificationCodeExpiresAt *time.Time
 	VerificationCodeSentAt    *time.Time
 	VerificationAttempts      int
-	PartnerStatus             string
-	PartnerRequestedAt        *time.Time
-	PartnerKind               string // "organizer" or "driver"
+	// An email being added, confirmed by the code above.
+	PendingEmail       *string
+	PartnerStatus      string
+	PartnerRequestedAt *time.Time
+	PartnerKind        string // "organizer" or "driver"
 	// Sessions issued before this are refused (the password was reset).
 	SessionsValidAfter *time.Time
 	CreatedAt          time.Time
@@ -77,8 +79,11 @@ type AdminUser struct {
 	PartnerStatus             string         `json:"partnerStatus"`
 	PartnerRequestedAt        *jsontime.Time `json:"partnerRequestedAt"`
 	PartnerKind               string         `json:"partnerKind"`
-	CreatedAt                 jsontime.Time  `json:"createdAt"`
-	UpdatedAt                 jsontime.Time  `json:"updatedAt"`
+	// Whether the account has a password: one without it or an email
+	// signs in only through Telegram and can be merged into another.
+	HasPassword bool          `json:"hasPassword"`
+	CreatedAt   jsontime.Time `json:"createdAt"`
+	UpdatedAt   jsontime.Time `json:"updatedAt"`
 }
 
 func (u User) Admin() AdminUser {
@@ -89,7 +94,8 @@ func (u User) Admin() AdminUser {
 		VerificationCodeSentAt:    jsontime.Ptr(u.VerificationCodeSentAt),
 		VerificationAttempts:      u.VerificationAttempts, PartnerStatus: u.PartnerStatus,
 		PartnerRequestedAt: jsontime.Ptr(u.PartnerRequestedAt), PartnerKind: u.PartnerKind,
-		CreatedAt: jsontime.New(u.CreatedAt), UpdatedAt: jsontime.New(u.UpdatedAt),
+		HasPassword: u.PasswordHash != nil,
+		CreatedAt:   jsontime.New(u.CreatedAt), UpdatedAt: jsontime.New(u.UpdatedAt),
 	}
 }
 

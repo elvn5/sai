@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
+	"github.com/elvn5/sai/services/pkg/accountmerge"
 	"github.com/elvn5/sai/services/pkg/middleware"
 	"github.com/elvn5/sai/services/pkg/telegram"
 	usersv1 "github.com/elvn5/sai/services/proto/gen/go/users/v1"
@@ -146,6 +147,21 @@ func (c *Client) TelegramRecipients(ctx context.Context, ids []string) (map[stri
 	}
 	for id, chat := range res.GetChatIds() {
 		out[id] = TelegramChat{ID: chat, Lang: telegram.ParseLang(res.GetLanguages()[id])}
+	}
+	return out, nil
+}
+
+// AccountMerges implements accountmerge.Source.
+func (c *Client) AccountMerges(ctx context.Context, after int64) ([]accountmerge.Merge, error) {
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
+	defer cancel()
+	res, err := c.client.ListAccountMerges(ctx, &usersv1.ListAccountMergesRequest{AfterId: after})
+	if err != nil {
+		return nil, fmt.Errorf("list account merges: %w", err)
+	}
+	out := make([]accountmerge.Merge, len(res.GetMerges()))
+	for i, m := range res.GetMerges() {
+		out[i] = accountmerge.Merge{ID: m.GetId(), From: m.GetFromUserId(), To: m.GetToUserId()}
 	}
 	return out, nil
 }

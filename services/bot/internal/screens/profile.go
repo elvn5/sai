@@ -124,6 +124,9 @@ func Profile(l i18n.Lang, v ProfileView, now time.Time) Screen {
 		l.F("🔑 Пароль: %s", password),
 		"",
 	}
+	if !HasLogin(me) {
+		lines = append(lines, l.T("⚠️ Добавьте телефон или email, чтобы не потерять аккаунт. Если они уже есть в другом аккаунте Ermekten, аккаунты объединятся."), "")
+	}
 	if v.JoinedKnown {
 		upcoming, past := SplitTours(v.Joined, now)
 		lines = append(lines, l.F("🎒 Туров пройдено: %d · впереди: %d", len(past), len(upcoming)))
@@ -140,12 +143,16 @@ func Profile(l i18n.Lang, v ProfileView, now time.Time) Screen {
 	}
 	lines = append(lines, l.F("🤝 Партнёрство: %s", partnerLine(l, me)))
 
+	phoneButton := l.T("✏️ Изменить телефон")
+	if me.Phone == nil || *me.Phone == "" {
+		phoneButton = l.T("📱 Добавить телефон")
+	}
 	passwordButton := l.T("🔑 Задать пароль")
 	if me.HasPassword {
 		passwordButton = l.T("🔑 Сменить пароль")
 	}
 	kb := [][]telego.InlineKeyboardButton{
-		{keyboards.Button(l.T("✏️ Изменить имя"), keyboards.EditName), keyboards.Button(l.T("✏️ Изменить телефон"), keyboards.EditPhone)},
+		{keyboards.Button(l.T("✏️ Изменить имя"), keyboards.EditName), keyboards.Button(phoneButton, keyboards.EditPhone)},
 		{keyboards.Button(l.T("📝 Анкета участника"), ProfileForm), keyboards.Button(passwordButton, ProfilePassword)},
 		{keyboards.Button(l.T("🏆 Достижения"), ProfileAwards), keyboards.Button(l.T("🤝 Партнёрство"), ProfilePartner)},
 		{keyboards.Button(l.T("🎒 Мои туры"), ListData(FromMine)), keyboards.Button(l.T("❤️ Избранное"), TourData(TabFavorites, 0))},
@@ -262,7 +269,7 @@ func PasswordScreen(l i18n.Lang, me api.Me, note string) Screen {
 	case !me.HasPassword && !HasLogin(me):
 		b.WriteString(l.T("Вы входите через Telegram. Чтобы входить на сайт по паролю, к аккаунту нужен email или телефон — добавьте телефон, и пароль можно будет задать."))
 		return Screen{Text: b.String(), Preview: noPreview(), Markup: rows(
-			[]telego.InlineKeyboardButton{keyboards.Button(l.T("✏️ Изменить телефон"), keyboards.EditPhone)},
+			[]telego.InlineKeyboardButton{keyboards.Button(l.T("📱 Добавить телефон"), keyboards.EditPhone)},
 			backToProfile(l),
 		)}
 	case me.HasPassword:

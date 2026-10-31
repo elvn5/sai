@@ -322,7 +322,7 @@ export class TrailsListPage {
     const area = this.area();
     return area
       ? `${this.transloco.translate('trails.title')}: ${this.transloco.translate(`trails.area.${area}`)}`
-      : this.transloco.translate('trails.title');
+      : this.transloco.translate('trails.pageTitle');
   });
 
   protected readonly activeFilters = computed(
@@ -349,7 +349,8 @@ export class TrailsListPage {
       if (this.trails.isLoading() || this.areas.isLoading()) return undefined;
       const heading = this.transloco.translate('trails.title');
       return {
-        title: this.heading(),
+        // Worded for what people search; an area keeps its own heading.
+        title: this.area() ? this.heading() : this.transloco.translate('trails.metaTitle'),
         description: this.transloco.translate('trails.subtitle'),
         image: this.list()[0]?.coverImageUrl ?? this.list()[0]?.photos[0],
         robots: Object.keys(this.filters()).length > 0 ? 'noindex, follow' : undefined,

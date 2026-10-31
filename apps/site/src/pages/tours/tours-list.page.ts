@@ -102,7 +102,7 @@ function matchesDuration(days: number | null, range: string): boolean {
       </nav>
       <div class="mt-2 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 class="text-[1.875rem] leading-tight font-extrabold tracking-tight text-text">{{ 'tours.heading' | transloco }}</h1>
+          <h1 class="text-[1.875rem] leading-tight font-extrabold tracking-tight text-text">{{ 'tours.pageTitle' | transloco }}</h1>
           <p class="mt-1 text-text-muted">{{ 'tours.metaDescription' | transloco }}</p>
         </div>
         @if (auth.isPartner()) {
@@ -442,7 +442,8 @@ export class ToursListPage {
       const custom = overrides.hasValue() ? overrides.value() : null;
       const heading = this.transloco.translate('tours.heading');
       return {
-        title: custom?.title || heading,
+        // Worded for what people search ("туры по Кыргызстану").
+        title: custom?.title || this.transloco.translate('tours.metaTitle'),
         description: custom?.description || this.transloco.translate('tours.metaDescription'),
         image: custom?.ogImageUrl,
         robots: this.destination() ? 'noindex, follow' : undefined,

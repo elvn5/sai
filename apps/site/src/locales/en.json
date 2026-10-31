@@ -45,7 +45,7 @@
   },
   "blog": {
     "heading": "Blog",
-    "metaDescription": "News, stories, and travel tips about exploring Kyrgyzstan from Ermekten.",
+    "metaDescription": "How to choose your first hike, what to pack, when and where to go in the mountains of Kyrgyzstan — tips, checklists and stories from Ermekten.",
     "empty": "No posts yet",
     "badges": {
       "difficulty": "Difficulty",
@@ -81,7 +81,9 @@
       "create": "Publish",
       "saveError": "Couldn't save the post. Please try again.",
       "notFound": "Post not found."
-    }
+    },
+    "pageTitle": "Blog about hiking in Kyrgyzstan",
+    "metaTitle": "Kyrgyzstan hiking tips and guides"
   },
   "gallery": {
     "heading": "Gallery",
@@ -114,7 +116,7 @@
   },
   "tours": {
     "heading": "Tours",
-    "metaDescription": "Ready-made tours across Kyrgyzstan from Ermekten's vetted partners.",
+    "metaDescription": "Day hikes from Bishkek and multi-day tours to Kyrgyzstan's mountain lakes from vetted organizers: departure dates, itinerary and online sign-up.",
     "empty": "No tours yet",
     "addButton": "Add tour",
     "newTitle": "New tour",
@@ -232,7 +234,9 @@
       "waitlistHint": "No places left, but someone may drop out — then the first on the waitlist gets the place.",
       "formOptional": "You can fill in the participant form in your profile — the organizer will see it.",
       "openProfile": "Open profile"
-    }
+    },
+    "pageTitle": "Tours and hikes in Kyrgyzstan",
+    "metaTitle": "Kyrgyzstan tours and hiking trips from Bishkek"
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -1221,7 +1225,9 @@
       "pdfAttached": "PDF attached.",
       "pdfError": "Upload failed. Choose a PDF up to 20 MB and try again.",
       "downloadPdf": "Download checklist · PDF"
-    }
+    },
+    "pageTitle": "Hiking routes in the mountains of Kyrgyzstan",
+    "metaTitle": "Kyrgyzstan hiking trails with GPS tracks"
   },
   "chat": {
     "title": "Messages",

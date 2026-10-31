@@ -23,8 +23,11 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="ui-container py-12">
-      <div class="mb-8 flex items-center justify-between gap-4">
-        <h1 class="text-3xl font-extrabold text-text">{{ 'blog.heading' | transloco }}</h1>
+      <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-extrabold text-text">{{ 'blog.pageTitle' | transloco }}</h1>
+          <p class="mt-1 max-w-[38.75rem] text-text-muted">{{ 'blog.metaDescription' | transloco }}</p>
+        </div>
         @if (auth.isPartner()) {
           <a appSiteLink="/blog/new" class="ui-btn-primary">
             <span class="icon-[heroicons--pencil-square] size-4" aria-hidden="true"></span>
@@ -96,7 +99,8 @@ export class BlogListPage {
       const heading = transloco.translate('blog.heading');
       const posts = loaded(this.posts);
       return {
-        title: custom?.title || heading,
+        // Worded for what people search ("походы в горы Кыргызстана").
+        title: custom?.title || transloco.translate('blog.metaTitle'),
         description: custom?.description || transloco.translate('blog.metaDescription'),
         image: custom?.ogImageUrl,
         // No posts in this language yet: nothing to find here.

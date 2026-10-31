@@ -45,7 +45,7 @@
   },
   "blog": {
     "heading": "Blog",
-    "metaDescription": "Neuigkeiten, Geschichten und Reisetipps rund um Kirgisistan von Ermekten.",
+    "metaDescription": "Die erste Wanderung wählen, richtig packen, wann und wohin in die Berge Kirgistans — Tipps, Checklisten und Geschichten von Ermekten.",
     "empty": "Noch keine Beiträge",
     "badges": {
       "difficulty": "Schwierigkeit",
@@ -81,7 +81,9 @@
       "create": "Veröffentlichen",
       "saveError": "Der Beitrag konnte nicht gespeichert werden. Bitte erneut versuchen.",
       "notFound": "Beitrag nicht gefunden."
-    }
+    },
+    "pageTitle": "Blog übers Wandern in Kirgistan",
+    "metaTitle": "Wandern in Kirgistan: Tipps und Ratgeber"
   },
   "gallery": {
     "heading": "Galerie",
@@ -114,7 +116,7 @@
   },
   "tours": {
     "heading": "Touren",
-    "metaDescription": "Fertige Touren durch Kirgisistan von geprüften Ermekten-Partnern.",
+    "metaDescription": "Tageswanderungen ab Bischkek und mehrtägige Touren zu den Bergseen Kirgistans von geprüften Veranstaltern: Termine, Programm und Online-Anmeldung.",
     "empty": "Noch keine Touren",
     "addButton": "Tour hinzufügen",
     "newTitle": "Neue Tour",
@@ -232,7 +234,9 @@
       "waitlistHint": "Keine Plätze frei, aber jemand könnte absagen — dann bekommt der Erste auf der Warteliste den Platz.",
       "formOptional": "Das Teilnehmerformular können Sie in Ihrem Profil ausfüllen — der Veranstalter sieht es.",
       "openProfile": "Profil öffnen"
-    }
+    },
+    "pageTitle": "Touren und Wanderungen in Kirgistan",
+    "metaTitle": "Kirgistan: Touren und Wanderreisen ab Bischkek"
   },
   "destinations": {
     "issyk_kul": "Issyk-Kul",
@@ -1221,7 +1225,9 @@
       "pdfAttached": "PDF angehängt.",
       "pdfError": "Upload fehlgeschlagen. Wählen Sie eine PDF bis 20 MB und versuchen Sie es erneut.",
       "downloadPdf": "Checkliste herunterladen · PDF"
-    }
+    },
+    "pageTitle": "Wanderrouten in den Bergen Kirgistans",
+    "metaTitle": "Wanderwege in Kirgistan mit GPS-Tracks"
   },
   "chat": {
     "title": "Nachrichten",

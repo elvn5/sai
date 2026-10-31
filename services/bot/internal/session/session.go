@@ -18,6 +18,10 @@ const (
 	FieldBroadcastReady Field = "broadcast_ready"
 	// A participant's comment to their rating of a tour (the argument).
 	FieldReview Field = "review"
+	// The profile's participant form being filled in, and the password
+	// being changed (the argument: the answers so far, as JSON).
+	FieldForm     Field = "form"
+	FieldPassword Field = "password"
 )
 
 // ttl drops edits a user walked away from.
@@ -55,6 +59,18 @@ func (s *Store) StartWith(chatID int64, field Field, arg string) {
 		}
 	}
 	s.edits[chatID] = pending{field: field, arg: arg, expires: now.Add(ttl)}
+}
+
+// Peek returns the chat's pending edit without forgetting it (a button
+// pressed in the middle of filling something in).
+func (s *Store) Peek(chatID int64) (Field, string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p, ok := s.edits[chatID]
+	if !ok || s.Now().After(p.expires) {
+		return "", "", false
+	}
+	return p.field, p.arg, true
 }
 
 // Consume returns and forgets the chat's pending edit, if any.

@@ -419,3 +419,118 @@ func TestSketchRating(t *testing.T) {
 	}
 	checkScreen(t, screens.ReviewPrompt(i18n.RU, o), "Напишите отзыв о туре «Пик Учитель» одним сообщением.", "Отмена→r:v:o1:0")
 }
+
+// The profile, as on the site: the account, the participant's form, the
+// password, achievements and partnership.
+func TestSketchProfile(t *testing.T) {
+	me := api.Me{ID: "u1", FirstName: str("Айбек"), Username: str("aibek"), Phone: str("+996 555 123 456"),
+		PartnerStatus: api.PartnerApproved, PartnerKind: api.KindOrganizer, HasPassword: true}
+	v := screens.ProfileView{Me: me, Joined: []api.Tour{uchitel, alaKol}, JoinedKnown: true,
+		Awards: &api.MyAchievements{Points: 80, Awards: make([]api.Award, 2)}, FormKnown: true, Form: &profileForm, Organizing: true}
+	checkScreen(t, screens.Profile(i18n.RU, v, at(10, 20, 12, 0)),
+		"👤 <b>Айбек</b> · @aibek\n\n"+
+			"📞 Телефон: +996 555 123 456\n✉️ Email: не указан\n🔑 Пароль: задан\n\n"+
+			"🎒 Туров пройдено: 0 · впереди: 2\n🏆 Достижений: 2 · очков: 80\n"+
+			"📝 Анкета участника: ✅ заполнена\n🤝 Партнёрство: ✅ организатор туров",
+		"✏️ Изменить имя→profile_edit_name | ✏️ Изменить телефон→profile_edit_phone",
+		"📝 Анкета участника→p:form | 🔑 Сменить пароль→p:pw",
+		"🏆 Достижения→p:aw | 🤝 Партнёрство→p:pa",
+		"🎒 Мои туры→o:list:u | ❤️ Избранное→t:f:0",
+		"🧑‍✈️ Кабинет организатора→g:home",
+		"🌐 Язык · 🇷🇺 Русский→l:menu",
+	)
+
+	// What didn't load is left out; a traveler has no organizer's room.
+	traveler := screens.ProfileView{Me: api.Me{ID: "u2", PartnerStatus: api.PartnerPending, PartnerKind: api.KindDriver}, Organizing: true}
+	checkScreen(t, screens.Profile(i18n.RU, traveler, at(10, 20, 12, 0)),
+		"👤 <b>Без имени</b>\n\n"+
+			"📞 Телефон: не указан\n✉️ Email: не указан\n🔑 Пароль: не задан\n\n"+
+			"🤝 Партнёрство: ⏳ заявка водителя на рассмотрении",
+		"✏️ Изменить имя→profile_edit_name | ✏️ Изменить телефон→profile_edit_phone",
+		"📝 Анкета участника→p:form | 🔑 Задать пароль→p:pw",
+		"🏆 Достижения→p:aw | 🤝 Партнёрство→p:pa",
+		"🎒 Мои туры→o:list:u | ❤️ Избранное→t:f:0",
+		"🌐 Язык · 🇷🇺 Русский→l:menu",
+	)
+}
+
+var profileForm = api.ParticipantForm{EmergencyName: "Мама", EmergencyPhone: "+996 700 000 111", Experience: "trekking",
+	Health: str("Аллергия на пыльцу")}
+
+func TestSketchParticipantForm(t *testing.T) {
+	why := "Заполните один раз — анкету увидят организаторы туров, на которые вы записываетесь: так они подготовятся и будут знать, кому звонить в экстренном случае."
+	checkScreen(t, screens.FormScreen(i18n.RU, &profileForm, ""),
+		"📝 <b>Анкета участника</b>\n\n"+why+"\n\n"+
+			"🆘 <b>Экстренный контакт:</b> Мама, +996 700 000 111\n"+
+			"🧗 <b>Опыт в горах:</b> Многодневные треки\n"+
+			"❤️ <b>Здоровье:</b> Аллергия на пыльцу",
+		"✏️ Изменить анкету→p:fe",
+		"◀️ Профиль→p:home",
+	)
+	checkScreen(t, screens.FormScreen(i18n.RU, nil, ""),
+		"📝 <b>Анкета участника</b>\n\n"+why+"\n\n"+
+			"Анкета пока не заполнена. Это необязательно, но организатору важно знать это до выезда.",
+		"📝 Заполнить анкету→p:fe",
+		"◀️ Профиль→p:home",
+	)
+	checkScreen(t, screens.FormStep(i18n.RU, screens.StepExperience, "trekking", ""),
+		"📝 <b>Анкета участника</b> · 3 из 5\n\nКакой у вас опыт в горах?",
+		"Нет опыта→p:fx:none",
+		"Однодневные походы→p:fx:hiking",
+		"✅ Многодневные треки→p:fx:trekking",
+		"Альпинизм→p:fx:mountaineering",
+		"Отмена→p:fc",
+	)
+	checkScreen(t, screens.FormStep(i18n.RU, screens.StepHealth, "Аллергия на пыльцу", ""),
+		"📝 <b>Анкета участника</b> · 4 из 5\n\n"+
+			"Что о здоровье важно знать организатору — аллергии, хронические болезни, лекарства? Напишите или пропустите.",
+		"➡️ Оставить: Аллергия на пыльцу→p:fk",
+		"⏭ Пропустить→p:fs",
+		"Отмена→p:fc",
+	)
+}
+
+func TestSketchPassword(t *testing.T) {
+	withPassword := api.Me{Phone: str("+996 555 123 456"), HasPassword: true}
+	checkScreen(t, screens.PasswordScreen(i18n.RU, withPassword, ""),
+		"🔑 <b>Пароль</b>\n\n"+
+			"Пароль задан — им можно входить на сайт по email или телефону. После смены пароля выйдем из аккаунта на всех других устройствах.",
+		"🔑 Сменить пароль→p:pc",
+		"◀️ Профиль→p:home",
+	)
+	checkScreen(t, screens.PasswordScreen(i18n.RU, api.Me{}, ""),
+		"🔑 <b>Пароль</b>\n\n"+
+			"Вы входите через Telegram. Чтобы входить на сайт по паролю, к аккаунту нужен email или телефон — добавьте телефон, и пароль можно будет задать.",
+		"✏️ Изменить телефон→profile_edit_phone",
+		"◀️ Профиль→p:home",
+	)
+	checkScreen(t, screens.PasswordStep(i18n.RU, screens.StepNew, ""),
+		"🔑 <b>Пароль</b>\n\nВведите новый пароль — не короче 8 символов.\n\n🔒 Сообщение с паролем я сразу удалю из чата.",
+		"Отмена→p:px",
+	)
+}
+
+func TestSketchPartner(t *testing.T) {
+	checkScreen(t, screens.Partner(i18n.RU, api.Me{PartnerStatus: api.PartnerRejected}, true, ""),
+		"🤝 <b>Партнёрство</b>\n\n"+
+			"❌ Заявка была отклонена. Вы можете подать её снова.\n\n"+
+			"Станьте партнёром Ermekten. Кем вы хотите стать?\n\n"+
+			"🧭 <b>Организатор туров</b> — публикуйте туры, ведите группы, клиентов и оплаты.\n"+
+			"🚐 <b>Водитель</b> — возите туристические группы: заявки от организаторов, рейсы, транспорт и доходы.",
+		"🧭 Организатор туров→p:ap:organizer | 🚐 Водитель→p:ap:driver",
+		"◀️ Профиль→p:home",
+	)
+	checkScreen(t, screens.Partner(i18n.RU, api.Me{PartnerStatus: api.PartnerApproved, PartnerKind: api.KindOrganizer}, true, ""),
+		"🤝 <b>Партнёрство</b>\n\n"+
+			"✅ Вы организатор туров Ermekten: публикуйте туры, ведите группы и вручайте путешественникам достижения.\n\n"+
+			"Создать тур можно на сайте, в «🏔 Открыть Ermekten».",
+		"🧑‍✈️ Кабинет организатора→g:home",
+		"◀️ Профиль→p:home",
+	)
+	checkScreen(t, screens.Partner(i18n.RU, api.Me{PartnerStatus: api.PartnerApproved, PartnerKind: api.KindDriver}, true, ""),
+		"🤝 <b>Партнёрство</b>\n\n"+
+			"✅ Вы водитель-партнёр Ermekten: организаторы туров находят вас в каталоге и присылают заявки на перевозку групп.\n\n"+
+			"Заявки, рейсы и транспорт — в кабинете на сайте, в «🏔 Открыть Ermekten».",
+		"◀️ Профиль→p:home",
+	)
+}

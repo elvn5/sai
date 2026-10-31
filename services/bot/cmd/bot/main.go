@@ -169,6 +169,7 @@ func run(log *slog.Logger) error {
 	if content != nil {
 		h.Content, h.Subscribers = content, db
 		h.Organizer, h.Chats, h.Ratings = content, accounts, content
+		h.Profiles = content
 		feed := &blogfeed.Feed{Posts: content, Store: db, Bot: bot, Links: links, Log: log, Interval: blogFeedInterval}
 		go feed.Run(ctx)
 	}

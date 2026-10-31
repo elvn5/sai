@@ -54,6 +54,8 @@ const (
 	OrganizerPrefix = "g:"
 	// Rating a tour after it: "r:<action>:<tour id>[:<stars>]".
 	RatingPrefix = "r:"
+	// The profile: "p:<action>[:<arg>]".
+	ProfilePrefix = "p:"
 )
 
 // MainMenu is the persistent menu, with a Mini App button when its URL is

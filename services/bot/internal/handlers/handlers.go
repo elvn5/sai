@@ -68,7 +68,10 @@ type Handlers struct {
 	Chats     Chats
 	// Participants rating tours; off without the sections.
 	Ratings Rating
-	Links   screens.Links
+	// The profile as on the site (form, password, achievements,
+	// partnership); off without the sections.
+	Profiles Profiles
+	Links    screens.Links
 	// Now is overridable in tests.
 	Now func() time.Time
 	// Where events go (analytics.Client); nil: not reported.
@@ -79,7 +82,12 @@ type Handlers struct {
 // so free text (a value being edited) comes last.
 func (h *Handlers) Register(bh *th.BotHandler) {
 	bh.HandleMessage(h.start, th.CommandEqual("start"))
-	bh.HandleMessage(h.menu("profile", h.profile), menuButton(keyboards.Profile, "profile"))
+	profile := h.profile
+	if h.profiles() {
+		profile = h.profileSection
+		bh.HandleCallbackQuery(h.profilePress, th.CallbackDataPrefix(keyboards.ProfilePrefix))
+	}
+	bh.HandleMessage(h.menu("profile", profile), menuButton(keyboards.Profile, "profile"))
 	bh.HandleMessage(h.menu("support", h.support), menuButton(keyboards.Support, "support"))
 	bh.HandleMessage(h.menu("language", h.languageMenu), th.CommandEqual("language"))
 	bh.HandleCallbackQuery(h.languagePress, th.CallbackDataPrefix(keyboards.LanguagePrefix))
@@ -398,8 +406,8 @@ func (h *Handlers) editCancel(ctx *th.Context, q telego.CallbackQuery) error {
 }
 
 // text saves the value of a profile field being edited, takes an
-// organizer's message to the participants or a participant's review;
-// other text is ignored.
+// organizer's message to the participants, a participant's review, an
+// answer of the participant's form or a password; other text is ignored.
 func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 	l := h.lang(ctx, msg.From)
 	field, arg, ok := h.Sessions.ConsumeWith(msg.Chat.ID)
@@ -410,7 +418,13 @@ func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
 	if ok && h.rating() && field == session.FieldReview {
 		return h.reviewText(ctx, l, msg, arg)
 	}
-	if ok && (field == session.FieldBroadcast || field == session.FieldBroadcastReady || field == session.FieldReview) {
+	if ok && h.profiles() && field == session.FieldForm {
+		return h.formText(ctx, l, msg, arg)
+	}
+	if ok && h.profiles() && field == session.FieldPassword {
+		return h.passwordText(ctx, l, msg, arg)
+	}
+	if ok && field != session.FieldName && field != session.FieldPhone {
 		ok = false
 	}
 	if !ok {

@@ -58,6 +58,14 @@ func TestScreensInEnglish(t *testing.T) {
 	published := at(10, 18, 9, 0)
 	post := api.BlogPost{ID: "b1", Title: "Autumn in the mountains", Excerpt: &text, PublishedAt: &published, Content: "<p>Go.</p>"}
 	links := screens.Links{Bot: "ermekten_bot"}
+	me := api.Me{ID: "p1", FirstName: ann, Username: bob, Phone: &phone, PartnerStatus: api.PartnerApproved,
+		PartnerKind: api.KindOrganizer, HasPassword: true}
+	form := api.ParticipantForm{EmergencyName: "Mom", EmergencyPhone: phone, Experience: "mountaineering", Health: &text, Notes: &text}
+	mine := api.MyAchievements{Code: "AB12CD34", Points: 51, Awards: []api.Award{
+		{Achievement: api.Achievement{ID: "a1", Title: map[string]string{"ru": "Вершина", "en": "First summit"}, Points: 50}},
+		{Achievement: api.Achievement{ID: "a2", Title: map[string]string{"en": "Early bird"}, Points: 1}},
+	}}
+	leaders := []api.HallEntry{{Rank: 1, User: api.Person{ID: "p1", FirstName: ann}, Points: 51}}
 
 	all := map[string]screens.Screen{
 		"my tours":         screens.MyTours(en, []api.Tour{going, organized, unlimited, past}, screens.FromMine, now),
@@ -96,6 +104,28 @@ func TestScreensInEnglish(t *testing.T) {
 		"thanks":           screens.RateThanks(en, past),
 		"review":           screens.ReviewPrompt(en, past),
 		"welcome":          {Text: screens.Welcome(en, "Ann", &going)},
+		"profile": screens.Profile(en, screens.ProfileView{Me: me, Joined: []api.Tour{going, past}, JoinedKnown: true,
+			Awards: &mine, FormKnown: true, Form: &form, Organizing: true}, now),
+		"empty profile":    screens.Profile(en, screens.ProfileView{Me: api.Me{PartnerStatus: api.PartnerPending, PartnerKind: api.KindDriver}, FormKnown: true}, now),
+		"form":             screens.FormScreen(en, &form, ""),
+		"no form":          screens.FormScreen(en, nil, ""),
+		"form name":        screens.FormStep(en, screens.StepName, "Mom", ""),
+		"form phone":       screens.FormStep(en, screens.StepPhone, "", ""),
+		"form level":       screens.FormStep(en, screens.StepExperience, "hiking", ""),
+		"form health":      screens.FormStep(en, screens.StepHealth, "", ""),
+		"form notes":       screens.FormStep(en, screens.StepNotes, "Vegan", ""),
+		"password":         screens.PasswordScreen(en, me, ""),
+		"first password":   screens.PasswordScreen(en, api.Me{Email: &place}, ""),
+		"no login":         screens.PasswordScreen(en, api.Me{}, ""),
+		"password current": screens.PasswordStep(en, screens.StepCurrent, ""),
+		"password new":     screens.PasswordStep(en, screens.StepNew, ""),
+		"password again":   screens.PasswordStep(en, screens.StepConfirm, ""),
+		"awards":           screens.Awards(en, mine, leaders, "p1"),
+		"no awards":        screens.Awards(en, api.MyAchievements{Code: "X"}, nil, "p1"),
+		"partner":          screens.Partner(en, api.Me{PartnerStatus: api.PartnerRejected}, true, ""),
+		"organizer":        screens.Partner(en, me, true, ""),
+		"driver":           screens.Partner(en, api.Me{PartnerStatus: api.PartnerApproved, PartnerKind: api.KindDriver}, true, ""),
+		"applied":          screens.Partner(en, api.Me{PartnerStatus: api.PartnerPending}, true, ""),
 	}
 
 	for name, s := range all {

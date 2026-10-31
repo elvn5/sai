@@ -1,21 +1,26 @@
-import {
-  type GetJson,
-  SitemapCache,
-  collectEntries,
-  renderIndex,
-  renderUrlset,
-} from '@/server/sitemap';
+import { type GetJson, SitemapCache, collectEntries, renderUrlset } from '@/server/sitemap';
 
 const SITE = 'https://ermekten.com';
 
 describe('sitemap', () => {
-  it('indexes one sitemap per content type', () => {
-    const xml = renderIndex(SITE);
-    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/pages.xml</loc>');
-    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/tours.xml</loc>');
-    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/organizers.xml</loc>');
-    expect(xml).toContain('<loc>https://ermekten.com/sitemaps/trails.xml</loc>');
-    expect(xml).not.toContain('hotels.xml');
+  it('lists every page in one sitemap: sections, blog posts and trails', async () => {
+    const getJson: GetJson = async (path) => {
+      if (path === '/trails') return [{ slug: 'ala-kul', updatedAt: '2026-10-28T10:00:00Z' }];
+      if (path === '/blog?locale=ru') return [{ slug: 'first-hike', publishedAt: null }];
+      if (path === '/tours?locale=ru') {
+        return [{ slug: 'song-kol', publishedAt: null, userId: 'u1' }];
+      }
+      return [];
+    };
+    const xml = await new SitemapCache(SITE, getJson).get('all');
+    expect(xml).toContain('<urlset');
+    expect(xml).not.toContain('<sitemapindex');
+    expect(xml).toContain('<loc>https://ermekten.com/blog</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/blog/first-hike</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/trails/ala-kul</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/tours/song-kol</loc>');
+    expect(xml).toContain('<loc>https://ermekten.com/organizers/u1</loc>');
+    expect(xml).not.toContain('/hotels');
   });
 
   it('lists language-independent pages in every language with hreflang', () => {

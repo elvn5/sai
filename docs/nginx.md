@@ -54,7 +54,7 @@ location / {
 
 - `curl -sI https://ermekten.com/blog` — `X-Cache-Status: MISS`, при повторе `HIT`; в HTML нет `/_nuxt/`;
 - `curl -sI https://ermekten.com/profile` — `X-Robots-Tag: noindex`, `Cache-Control: no-store`;
-- `curl -s https://ermekten.com/sitemap.xml | head` — индекс `sitemapindex`; `robots.txt` отвечает сайт;
+- `curl -s https://ermekten.com/sitemap.xml | head` — список всех страниц (`urlset`: разделы, туры, блог, организаторы, маршруты); `robots.txt` отвечает сайт;
 - вход по паролю и через Telegram, возврат из банка на `/payments/return?order=…` (адрес возврата — `SITE_URL` сервиса платежей), кабинет партнёра, Telegram Mini App;
 - на странице маршрута грузится карта (`/media/leaflet/leaflet.css` — 200) и прогноз погоды;
 - админка открывается и входит.

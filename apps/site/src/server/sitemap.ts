@@ -1,9 +1,10 @@
 import { DEFAULT_LANG, LANGS, type Lang, localizedPath } from '@/core/i18n/langs';
 import { publishedLegalPaths } from '@/core/legal/documents';
 
-// sitemap.xml for the SSR server: an index (/sitemap.xml) of one sitemap per
-// content type (/sitemaps/<type>.xml), with lastmod and hreflang alternates
-// (docs/angular-migration-plan.md, section 4).
+// sitemap.xml for the SSR server: every public page in one list
+// (/sitemap.xml), and the same pages by content type (/sitemaps/<type>.xml),
+// with lastmod and hreflang alternates (docs/angular-migration-plan.md,
+// section 4). One list stays far below the 50,000 URLs a sitemap may hold.
 
 // Hotels, local guides and travel guides are paused for now
 // (server/paused-sections.ts): no sitemaps of theirs.
@@ -153,18 +154,12 @@ export function renderUrlset(siteUrl: string, entries: SitemapEntry[]): string {
   return `${XML_DECLARATION}<urlset xmlns="${SITEMAP_NS}" xmlns:xhtml="${XHTML_NS}">${urls.join('')}</urlset>`;
 }
 
-export function renderIndex(siteUrl: string): string {
-  const sitemaps = SITEMAP_TYPES.map(
-    (type) => `<sitemap><loc>${escapeXml(`${siteUrl}/sitemaps/${type}.xml`)}</loc></sitemap>`,
-  ).join('');
-  return `${XML_DECLARATION}<sitemapindex xmlns="${SITEMAP_NS}">${sitemaps}</sitemapindex>`;
-}
-
 // Keeps each rendered sitemap for `ttlMs`, so crawlers don't hit the API on
 // every request. A failed API call is not cached and fails the request: a
 // short outage must not look like every page was removed.
 export class SitemapCache {
-  private readonly entries = new Map<SitemapType, { xml: string; expires: number }>();
+  // By content type, and 'all' for the whole list.
+  private readonly entries = new Map<SitemapType | 'all', { xml: string; expires: number }>();
 
   constructor(
     private readonly siteUrl: string,
@@ -173,10 +168,13 @@ export class SitemapCache {
     private readonly now: () => number = Date.now,
   ) {}
 
-  async get(type: SitemapType): Promise<string> {
+  // One content type's pages, or with 'all' every public page.
+  async get(type: SitemapType | 'all'): Promise<string> {
     const cached = this.entries.get(type);
     if (cached && cached.expires > this.now()) return cached.xml;
-    const xml = renderUrlset(this.siteUrl, await collectEntries(type, this.getJson));
+    const types = type === 'all' ? SITEMAP_TYPES : [type];
+    const entries = await Promise.all(types.map((t) => collectEntries(t, this.getJson)));
+    const xml = renderUrlset(this.siteUrl, entries.flat());
     this.entries.set(type, { xml, expires: this.now() + this.ttlMs });
     return xml;
   }

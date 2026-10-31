@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { contextFromEnv } from '@/core/config/app-config';
 import { movedSectionRedirect, pausedSectionRedirect } from '@/server/paused-sections';
-import { SitemapCache, isSitemapType, renderIndex } from '@/server/sitemap';
+import { SitemapCache, type SitemapType, isSitemapType } from '@/server/sitemap';
 import { serveTerrain } from '@/server/terrain';
 import {
   AngularNodeAppEngine,
@@ -83,19 +83,7 @@ app.get('/robots.txt', (_req, res) => {
   );
 });
 
-app.get('/sitemap.xml', (_req, res) => {
-  res
-    .type('application/xml')
-    .setHeader('Cache-Control', SITEMAP_CACHE)
-    .send(renderIndex(config.siteUrl));
-});
-
-app.get('/sitemaps/:file', (req, res, next) => {
-  const type = req.params.file.replace(/\.xml$/, '');
-  if (!req.params.file.endsWith('.xml') || !isSitemapType(type)) {
-    next();
-    return;
-  }
+function sendSitemap(type: SitemapType | 'all', res: express.Response): void {
   sitemaps.get(type).then(
     (xml) => res.type('application/xml').setHeader('Cache-Control', SITEMAP_CACHE).send(xml),
     (error: unknown) => {
@@ -108,6 +96,20 @@ app.get('/sitemaps/:file', (req, res, next) => {
         .send('Sitemap unavailable');
     },
   );
+}
+
+// Every public page: sections, tours, blog posts, organizers, trails.
+app.get('/sitemap.xml', (_req, res) => {
+  sendSitemap('all', res);
+});
+
+app.get('/sitemaps/:file', (req, res, next) => {
+  const type = req.params.file.replace(/\.xml$/, '');
+  if (!req.params.file.endsWith('.xml') || !isSitemapType(type)) {
+    next();
+    return;
+  }
+  sendSitemap(type, res);
 });
 
 if (!config.indexable) {

@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 ## General Rules & Code Style
+- **Deployments:** Follow `AGENTS.md`: production only from an existing GitHub release tag; staging from `main` unless explicitly requested otherwise.
 - **Imports:** ALWAYS use absolute imports (`@/` in the Angular apps) instead of relative paths (`../`, `./`).
 - **Architecture:**
   - **Go services (`services/`):** Follow standard Gin conventions, not Clean Architecture — `cmd/<service>/main.go`, and under `internal/`: `config`, `routes` (router + middleware wiring), `handlers`, `middleware`, plus domain packages as needed. Shared code lives in `services/pkg`.

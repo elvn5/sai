@@ -1,9 +1,9 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "SITE_URL=https://ermekten.com node dist/site/server/server.mjs",
+      "startServerCommand": "PORT=4600 SITE_URL=https://ermekten.com node dist/site/server/server.mjs",
       "startServerReadyPattern": "site listening",
-      "url": ["http://localhost:4000/", "http://localhost:4000/en"],
+      "url": ["http://localhost:4600/", "http://localhost:4600/en"],
       "numberOfRuns": 1
     },
     "assert": {

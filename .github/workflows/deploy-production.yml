@@ -19,9 +19,10 @@ permissions:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, sai]
     environment: production
     strategy:
+      max-parallel: 1
       matrix:
         include:
           - service: bot
@@ -50,6 +51,14 @@ jobs:
           ref: ${{ inputs.tag || github.ref_name }}
 
       - uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            memory=4g
+            cpu-period=100000
+            cpu-quota=75000
+          buildkitd-config-inline: |
+            [worker.oci]
+              max-parallelism = 1
 
       - uses: docker/login-action@v3
         with:
@@ -70,7 +79,7 @@ jobs:
 
   deploy:
     needs: build-and-push
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, sai]
     environment: production
     steps:
       - uses: actions/checkout@v7
@@ -222,4 +231,3 @@ jobs:
             # Once every service has copied its data out of the former NestJS
             # database, back it up to ./backups and drop it (no-op after that).
             POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" bash scripts/drop-legacy-db.sh ermekten-prod
-            docker image prune -f

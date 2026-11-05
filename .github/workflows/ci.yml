@@ -5,9 +5,19 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+env:
+  GOMAXPROCS: "2"
+  NG_BUILD_MAX_WORKERS: "2"
+
 jobs:
   lint-typecheck-build:
-    runs-on: ubuntu-latest
+    # Do not execute code from fork PRs on the application server.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, sai]
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 
@@ -41,7 +51,10 @@ jobs:
   # SEO and performance budgets of the Angular site (apps/site/lighthouserc.json),
   # measured on its SSR server as production would serve it.
   lighthouse:
-    runs-on: ubuntu-latest
+    # Do not execute code from fork PRs on the application server.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, sai]
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
 
@@ -65,7 +78,10 @@ jobs:
         run: pnpm dlx @lhci/cli@0.15.1 autorun
 
   go:
-    runs-on: ubuntu-latest
+    # Do not execute code from fork PRs on the application server.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, sai]
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -76,8 +92,6 @@ jobs:
     env:
       # Same as the Docker builds: pure-Go WebP codec, no dlopen.
       GOFLAGS: -tags=nodynamic
-      # Database-backed tests create throwaway databases on this server.
-      TEST_POSTGRES_DSN: host=localhost port=5432 user=test password=test dbname=postgres
     services:
       postgres:
         image: postgres:16-alpine
@@ -85,7 +99,7 @@ jobs:
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
         ports:
-          - 5432:5432
+          - "127.0.0.1::5432"
         options: >-
           --health-cmd "pg_isready -U test"
           --health-interval 5s
@@ -106,6 +120,8 @@ jobs:
           working-directory: services/${{ matrix.module }}
 
       - name: Test
+        env:
+          TEST_POSTGRES_DSN: host=127.0.0.1 port=${{ job.services.postgres.ports['5432'] }} user=test password=test dbname=postgres
         run: go test -race ./...
 
       # GOWORK=off, as in the Docker builds: each module must build on its own
@@ -114,7 +130,10 @@ jobs:
         run: GOWORK=off go build ./...
 
   proto:
-    runs-on: ubuntu-latest
+    # Do not execute code from fork PRs on the application server.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, sai]
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: services/proto

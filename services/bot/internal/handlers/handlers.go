@@ -197,6 +197,9 @@ func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
 		return nil
 	}
 	l := h.lang(ctx, from)
+	if h.MiniAppURL == "" {
+		h.localMiniApp(ctx, msg.Chat.ID, l)
+	}
 	_, _, payload := tu.ParseCommandPayload(msg.Text)
 	h.track(from, l, eventStart, startParams(payload))
 	if token, ok := strings.CutPrefix(payload, verifyPrefix); ok {

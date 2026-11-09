@@ -181,7 +181,7 @@ services:
     restart: unless-stopped
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
-      MINI_APP_URL: ${MINI_APP_URL}
+      MINI_APP_URL: "" # Public site retired; keep the bot in chat mode.
       # Accounts and support contacts come from the users service.
       USERS_GRPC_ADDR: users:9083
       # Tours and the blog: the gateway, called on users' behalf
@@ -208,31 +208,7 @@ services:
       gateway:
         condition: service_started
 
-  # The public site (SSR) and the admin panel, on the ports nginx proxies
-  # to (CLIENT_PORT, ADMIN_PORT).
-  site:
-    image: ghcr.io/${IMAGE_OWNER}/ermekten-site:${IMAGE_TAG}
-    restart: unless-stopped
-    environment:
-      API_BASE_URL: ${PUBLIC_API_BASE_URL}
-      # Server-side rendering calls the gateway over the Docker network.
-      API_INTERNAL_URL: http://gateway:8080
-      SITE_URL: ${PUBLIC_SITE_URL}
-      TELEGRAM_BOT_USERNAME: ${PUBLIC_TELEGRAM_BOT_USERNAME}
-      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
-      # Shown in the footer: the deployed image's tag.
-      APP_VERSION: ${IMAGE_TAG}
-      DEV_MENU_PASSWORD_HASH: ${DEV_MENU_PASSWORD_HASH:-}
-      # Firebase Analytics in the browser; unset — off.
-      FIREBASE_API_KEY: ${FIREBASE_API_KEY:-}
-      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
-      FIREBASE_WEB_APP_ID: ${FIREBASE_WEB_APP_ID:-}
-      FIREBASE_MEASUREMENT_ID: ${FIREBASE_MEASUREMENT_ID:-}
-    ports:
-      - "${BIND_ADDRESS:-127.0.0.1}:${CLIENT_PORT}:3000"
-    depends_on:
-      - gateway
-
+  # Admin panel; runtime configuration.
   panel:
     image: ghcr.io/${IMAGE_OWNER}/ermekten-panel:${IMAGE_TAG}
     restart: unless-stopped

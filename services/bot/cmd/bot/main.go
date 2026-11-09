@@ -112,17 +112,16 @@ func run(log *slog.Logger) error {
 		log.Warn("could not read the bot's username", slog.Any("error", err))
 	}
 
+	// Clear a previously registered Web App when the public site is disabled.
+	var menu telego.MenuButton = &telego.MenuButtonCommands{Type: telego.ButtonTypeCommands}
 	if cfg.MiniAppURL != "" {
-		err := bot.SetChatMenuButton(ctx, &telego.SetChatMenuButtonParams{
-			MenuButton: &telego.MenuButtonWebApp{
-				Type:   telego.ButtonTypeWebApp,
-				Text:   "Ermekten",
-				WebApp: telego.WebAppInfo{URL: cfg.MiniAppURL},
-			},
-		})
-		if err != nil {
-			log.Warn("could not set the Mini App menu button", slog.Any("error", err))
+		menu = &telego.MenuButtonWebApp{
+			Type: telego.ButtonTypeWebApp, Text: "Ermekten",
+			WebApp: telego.WebAppInfo{URL: cfg.MiniAppURL},
 		}
+	}
+	if err := bot.SetChatMenuButton(ctx, &telego.SetChatMenuButtonParams{MenuButton: menu}); err != nil {
+		log.Warn("could not set the chat menu button", slog.Any("error", err))
 	}
 
 	if content != nil {

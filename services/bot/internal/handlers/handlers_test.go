@@ -237,7 +237,11 @@ func TestStart(t *testing.T) {
 func TestStartWithoutMiniApp(t *testing.T) {
 	h := newHarness(t, "")
 	h.message("/start")
-	if m := h.expect("sendMessage")[0].markup(); strings.Contains(m, "web_app") {
+	calls := h.expect("setChatMenuButton", "sendMessage")
+	if button, _ := calls[0].params["menu_button"].(map[string]any); button == nil || button["type"] != "commands" {
+		t.Errorf("stale Mini App menu was not cleared: %v", calls[0].params)
+	}
+	if m := calls[1].markup(); strings.Contains(m, "web_app") {
 		t.Errorf("menu without a Mini App: %s", m)
 	}
 }

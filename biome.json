@@ -32,7 +32,7 @@
   },
   "overrides": [
     {
-      "include": ["apps/site/**", "apps/panel/**"],
+      "include": ["apps/panel/**"],
       "linter": {
         "rules": {
           "complexity": {

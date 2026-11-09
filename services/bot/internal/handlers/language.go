@@ -47,18 +47,18 @@ func (h *Handlers) languagePress(ctx *th.Context, q telego.CallbackQuery) error 
 	return h.reply(ctx, chatOf(q), l.T("✅ Теперь я говорю по-русски. Сменить язык — /language или в «👤 Профиль»."), h.mainMenu(l))
 }
 
-// localMiniApp points the chat's menu button at the site in the chat's
-// language, best effort.
+// localMiniApp refreshes the per-chat menu, clearing old Web App overrides
+// when the public site is disabled.
 func (h *Handlers) localMiniApp(ctx *th.Context, chatID int64, l i18n.Lang) {
-	if h.MiniAppURL == "" {
-		return
-	}
-	err := ctx.Bot().SetChatMenuButton(ctx, &telego.SetChatMenuButtonParams{
-		ChatID: chatID,
-		MenuButton: &telego.MenuButtonWebApp{
+	var menu telego.MenuButton = &telego.MenuButtonCommands{Type: telego.ButtonTypeCommands}
+	if h.MiniAppURL != "" {
+		menu = &telego.MenuButtonWebApp{
 			Type: telego.ButtonTypeWebApp, Text: "Ermekten",
 			WebApp: telego.WebAppInfo{URL: keyboards.SiteURL(h.MiniAppURL, l)},
-		},
+		}
+	}
+	err := ctx.Bot().SetChatMenuButton(ctx, &telego.SetChatMenuButtonParams{
+		ChatID: chatID, MenuButton: menu,
 	})
 	if err != nil {
 		h.Log.DebugContext(ctx, "could not set the chat's menu button", slog.Any("error", err))

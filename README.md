@@ -1,9 +1,8 @@
 # Ermekten
 
-Ermekten: a travel site for Kyrgyzstan with an admin panel and a Telegram bot. The backend is
-a set of Go (Gin) services behind an API gateway, each with its own PostgreSQL database; the
-frontends are Angular (the site with SSR, the admin panel client-only) and the bot is Go +
-Telego.
+Ermekten: a Telegram travel bot for Kyrgyzstan with an Angular admin panel.
+The backend is a set of Go services behind an API gateway, each with its own
+PostgreSQL database. The public website and Telegram Mini App have been removed.
 
 ## Stack
 
@@ -17,7 +16,6 @@ Telego.
 | [`services/payments`](services/payments) | Go + Gin | Online payments for bookings via Bakai Bank Open Banking (or a test page), partner balances and payouts; own `payments` database |
 | [`services/users`](services/users) | Go + Gin | Accounts: sign-in (password, Telegram, admin), registration, partners, support; gRPC for the other services and the bot; own `users` database |
 | [`services/bot`](services/bot) | Go + Telego | Telegram bot, long polling (no database; accounts via the users service's gRPC API) |
-| [`apps/site`](apps/site) | Angular 22 + SSR | Public site and Telegram Mini App |
 | [`apps/panel`](apps/panel) | Angular 22 | Admin panel (client-only, served by nginx) |
 
 Services talk to each other over gRPC (contracts in [`services/proto`](services/proto)).
@@ -52,7 +50,7 @@ docker compose up -d --build
 ```
 
 This starts PostgreSQL, the Go services with the gateway on the public API port (`:3001`), the
-bot, the site (`:3002`) and the admin panel (`:3000`).
+bot and the admin panel (`:3000`).
 
 ### Run locally
 
@@ -67,20 +65,17 @@ pnpm dev:trails   # http://localhost:8085
 pnpm dev:payments # http://localhost:8086 (needs listings gRPC :9082)
 pnpm dev:gateway  # http://localhost:3001 — the API the frontends call
 pnpm dev:bot      # needs USERS_GRPC_ADDR=localhost:9083
-pnpm dev:site     # http://localhost:3012
 pnpm dev:panel    # http://localhost:3013
 ```
 
-The frontends read their settings at runtime: the site from `API_BASE_URL`, `SITE_URL` and
-`TELEGRAM_BOT_USERNAME`, the panel from `public/config.json` (both default to the gateway on
-`http://localhost:3001`). The services read theirs from `.env` (see
-[.env.example](.env.example)).
+The admin panel reads its runtime API URL from `public/config.json`.
+The services read settings from `.env` (see [.env.example](.env.example)).
 
 ## Scripts
 
 | Command | Description |
 | --- | --- |
-| `pnpm dev:site` / `dev:panel` | Run a frontend in watch mode |
+| `pnpm dev:panel` | Run a frontend in watch mode |
 | `pnpm build` | Build all workspace packages |
 | `pnpm lint` / `pnpm lint:fix` | Biome check / check --write |
 | `pnpm typecheck` | Type-check all workspace packages |
@@ -103,7 +98,6 @@ services/   Go workspace (go.work)
   proto/    gRPC contracts between services (buf; `pnpm proto:generate`)
   pkg/      Shared Go code: config, logging, errors, validation, CORS, JWT, databases
 apps/
-  site/     Angular public site + Telegram Mini App (SSR)
   panel/    Angular admin panel
 packages/
   tokens/   Design tokens (Tailwind CSS 4) shared by the frontends
@@ -123,3 +117,9 @@ conventions.
 ## License
 
 [MIT](LICENSE)
+
+## Public site retirement
+
+Deploy with `docker compose up -d --remove-orphans` to remove the old `site` container.
+Production/staging workflows already use this flag. Host nginx requires the separate
+change described in [docs/nginx.md](docs/nginx.md). Other services and data volumes remain.

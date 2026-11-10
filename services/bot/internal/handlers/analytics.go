@@ -39,6 +39,9 @@ func (h *Handlers) track(from *telego.User, l i18n.Lang, name string, params map
 // shows it.
 func (h *Handlers) menu(section string, next th.MessageHandler) th.MessageHandler {
 	return func(ctx *th.Context, msg telego.Message) error {
+		if h.Cabinet != nil {
+			h.Cabinet.Cancel(msg.Chat.ID)
+		}
 		if h.Analytics != nil && msg.From != nil {
 			h.track(msg.From, h.lang(ctx, msg.From), eventMenu, map[string]any{"section": section})
 		}

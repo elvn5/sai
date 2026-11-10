@@ -9,6 +9,7 @@ replace github.com/elvn5/sai/services/proto => ../proto
 require (
 	github.com/elvn5/sai/services/pkg v0.0.0
 	github.com/elvn5/sai/services/proto v0.0.0
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/mymmrac/telego v1.12.1
 	golang.org/x/net v0.61.0

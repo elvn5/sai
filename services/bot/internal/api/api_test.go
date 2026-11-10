@@ -258,3 +258,60 @@ func TestDetailReads(t *testing.T) {
 		t.Errorf("post: %+v %v %+v", post, err, *got)
 	}
 }
+
+func TestCabinetUsesUserSessionAndHandlesEmptyResponses(t *testing.T) {
+	c, got := newClient(t, 204, "")
+	if err := c.CabinetRequest(t.Context(), "owner", "DELETE", "/crm/clients/id", nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	if (*got)[0].userID != "owner" || (*got)[0].uri != "/crm/clients/id" {
+		t.Fatalf("wrong account: %+v", *got)
+	}
+}
+func TestUploadImageUsesMultipartAndUserSession(t *testing.T) {
+	verifier := auth.NewVerifier(secret)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie(auth.UserCookie)
+		if err != nil {
+			t.Error(err)
+			w.WriteHeader(401)
+			return
+		}
+		user, err := verifier.UserID(cookie.Value)
+		if err != nil || user != "owner" {
+			t.Errorf("identity %s %v", user, err)
+		}
+		if r.URL.Path != "/uploads/image" || r.Method != "POST" {
+			t.Errorf("wrong upload route")
+		}
+		if err := r.ParseMultipartForm(1 << 20); err != nil {
+			t.Error(err)
+			w.WriteHeader(400)
+			return
+		}
+		defer func() { _ = r.MultipartForm.RemoveAll() }()
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			t.Error(err)
+			w.WriteHeader(400)
+			return
+		}
+		defer func() { _ = file.Close() }()
+		if header.Header.Get("Content-Type") != "image/png" {
+			t.Errorf("type: %v", header.Header)
+		}
+		_, _ = io.WriteString(w, `{"url":"/uploads/image.webp"}`)
+	}))
+	defer srv.Close()
+	client, err := api.New(srv.URL, secret)
+	if err != nil {
+		t.Fatal(err)
+	}
+	url, err := client.UploadImage(t.Context(), "owner", []byte("\x89PNG\r\n\x1a\nimage"))
+	if err != nil || url != "/uploads/image.webp" {
+		t.Fatalf("upload %s %v", url, err)
+	}
+	if _, err := client.UploadImage(t.Context(), "owner", make([]byte, (8<<20)+1)); err == nil {
+		t.Fatal("oversize upload allowed")
+	}
+}

@@ -22,6 +22,7 @@ import (
 	"github.com/elvn5/sai/services/bot/internal/analytics"
 	"github.com/elvn5/sai/services/bot/internal/api"
 	"github.com/elvn5/sai/services/bot/internal/blogfeed"
+	"github.com/elvn5/sai/services/bot/internal/cabinet"
 	"github.com/elvn5/sai/services/bot/internal/config"
 	"github.com/elvn5/sai/services/bot/internal/handlers"
 	"github.com/elvn5/sai/services/bot/internal/i18n"
@@ -45,6 +46,7 @@ const (
 // commands is the bot's command menu in a language.
 func commands(l i18n.Lang) []telego.BotCommand {
 	return []telego.BotCommand{
+		{Command: "partner", Description: l.T("Туры и партнёры")},
 		{Command: "mytours", Description: l.T("Мои туры")},
 		{Command: "organizer", Description: l.T("Кабинет организатора: участники, туры")},
 		{Command: "tours", Description: l.T("Туры: избранное и ближайшие")},
@@ -167,6 +169,7 @@ func run(log *slog.Logger) error {
 	}
 	if content != nil {
 		h.Content, h.Subscribers = content, db
+		h.Cabinet = cabinet.New(content, links)
 		h.Organizer, h.Chats, h.Ratings = content, accounts, content
 		h.Profiles = content
 		feed := &blogfeed.Feed{Posts: content, Store: db, Bot: bot, Links: links, Log: log, Interval: blogFeedInterval}

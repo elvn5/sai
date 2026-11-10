@@ -184,7 +184,7 @@ func TestChats(t *testing.T) {
 	notifier.Tick(ctx)
 	sent := tg.take()
 	if len(sent) != 1 || sent[0].chat != 1002 || !strings.Contains(sent[0].text, "Новое сообщение от <b>User 3333</b>:\n\nСбор в 6:00 &lt;b&gt;у ворот&lt;/b&gt;") ||
-		sent[0].button == nil || sent[0].button.URL != "https://ermekten.test/messages/"+chatID {
+		sent[0].button == nil || sent[0].button.Data != "k:chat:"+chatID {
 		t.Fatalf("message notification: %+v", sent)
 	}
 	if _, body := c.do("GET", "/chats/unread", "", guest); body != `{"chats":1}` {
@@ -214,7 +214,7 @@ func TestChats(t *testing.T) {
 	c.do("POST", "/chats/"+chatID+"/messages", `{"body":"Спасибо!"}`, guest)
 	notifier.Tick(ctx)
 	if sent := tg.take(); len(sent) != 1 || sent[0].chat != 1003 || !strings.Contains(sent[0].text, "New message from") ||
-		sent[0].button.URL != "https://ermekten.test/en/partner/messages/"+chatID || sent[0].button.Text != "💬 Reply" {
+		sent[0].button.Data != "k:chat:"+chatID || sent[0].button.Text != "💬 Reply" {
 		t.Fatalf("reply notification: %+v", sent)
 	}
 	if _, body := c.do("GET", "/crm/clients", "", partner); !strings.Contains(body, guest) {
@@ -390,8 +390,15 @@ func TestCRMTools(t *testing.T) {
 	_, body = c.do("GET", "/crm/reports?from=2026-10-01&to=2026-10-31", "", partner)
 	report := obj(t, body)
 	if report["tours"] != float64(1) || report["participants"] != float64(1) || report["revenue"] != float64(4000) ||
-		report["places"] != float64(3) || report["clients"] != float64(1) || !strings.Contains(body, `{"source":"instagram","total":1,"won":0,"lost":1}`) {
+		report["places"] != float64(3) || report["clients"] != float64(1) {
 		t.Errorf("report: %s", body)
+	}
+	// Leads are timestamped by PostgreSQL; query their actual creation day,
+	// independently of the departure's fixed fixture date.
+	leadDate := lead["createdAt"].(string)[:10]
+	_, body = c.do("GET", "/crm/reports?from="+leadDate+"&to="+leadDate, "", partner)
+	if !strings.Contains(body, `{"source":"instagram","total":1,"won":0,"lost":1}`) {
+		t.Errorf("lead report: %s", body)
 	}
 	if status, _ := c.do("GET", "/crm/reports?from=2026-10-31&to=2026-10-01", "", partner); status != 400 {
 		t.Errorf("bad period: %d", status)

@@ -165,6 +165,7 @@ func Tours(l i18n.Lang, v ToursView, links Links) Screen {
 		buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("📖 Подробнее"), MoreData(v.Tab, index, 0)), save})
 	}
 
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🔎 Поиск и фильтры"), "k:catalog")})
 	buttons = append(buttons, keyboards.Tabs(TourData(v.Tab, 0),
 		[2]string{l.T("❤️ Избранное"), TourData(TabFavorites, 0)},
 		[2]string{l.T("🆕 Ближайшие"), TourData(TabUpcoming, 0)},
@@ -250,5 +251,6 @@ func TourMore(l i18n.Lang, t api.Tour, tab string, index, page int, favorite boo
 		save = keyboards.Button(l.T("💔 Из избранного"), tourAction(ActDrop, tab, index, t.ID)+":"+ActMore)
 	}
 	buttons = append(buttons, []telego.InlineKeyboardButton{save, keyboards.Button(l.T("⬅️ К турам"), TourData(tab, index))})
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("Отзывы и новости тура"), "k:tour:"+t.ID)})
 	return Screen{Text: b.String(), Markup: rows(buttons...), Preview: coverPreview(picture)}
 }

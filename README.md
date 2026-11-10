@@ -123,3 +123,8 @@ conventions.
 Deploy with `docker compose up -d --remove-orphans` to remove the old `site` container.
 Production/staging workflows already use this flag. Host nginx requires the separate
 change described in [docs/nginx.md](docs/nginx.md). Other services and data volumes remain.
+
+## Tour and partner tools in Telegram
+
+Use `/partner` or **🗂 Туры и партнёры** for the former website’s tour editor,
+CRM, driver cabinet, reviews and messages. See [the workflow map](docs/telegram-partner-tools.md).

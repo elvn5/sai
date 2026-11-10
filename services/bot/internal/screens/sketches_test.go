@@ -173,6 +173,7 @@ func TestSketchTourMore(t *testing.T) {
 			"📞 <b>Связь с организатором</b>\nTelegram: @sonkol_tours\nТелефон: +996 555 123 456",
 		"✋ Записаться→o:join:t:t2 | 📤 Поделиться→share:https://t.me/ermekten_bot?start=tour_t2",
 		"💔 Из избранного→t:drop:f:1:t2:more | ⬅️ К турам→t:f:1",
+		"Отзывы и новости тура→k:tour:t2",
 	)
 	tour.IsJoined = true
 	if got := layout(screens.TourMore(i18n.RU, tour, screens.TabFavorites, 1, 0, true, links, at(10, 20, 10, 0))); got[0] != "🎒 Моя запись→o:view:t:t2 | 📤 Поделиться→share:https://t.me/ermekten_bot?start=tour_t2" {
@@ -200,6 +201,7 @@ func TestSketchTours(t *testing.T) {
 		"◀️→t:f:0 | 2 / 5→noop | ▶️→t:f:2",
 		"✋ Записаться→o:join:t:t2 | 📤 Поделиться→share:https://t.me/ermekten_bot?start=tour_t2",
 		"📖 Подробнее→t:more:f:1:0 | 💔 Из избранного→t:drop:f:1:t2",
+		"🔎 Поиск и фильтры→k:catalog",
 		"• ❤️ Избранное •→t:f:0 | 🆕 Ближайшие→t:n:0",
 		"🔔 Сообщать о новых турах→t:alert:f:1",
 	)
@@ -309,6 +311,7 @@ func TestSketchOrganizerHome(t *testing.T) {
 			"<b>1. Водопад Барскоон</b>\n25 октября · 👥 4 из 12 мест · ✅ на месте 2 из 4\n\n"+
 			"<b>2. Сон-Кёль на лошадях</b>\n12 — 14 июня · 👥 3 из 12 мест\n\n"+
 			"<b>3. Ала-Кёль</b>\n3 — 5 июля · 👥 записались: 0 · 📝 черновик",
+		"🗂 Туры и партнёры→k:home",
 		"1 · Водопад Барскоон→g:t:0",
 		"2 · Сон-Кёль на лошадях→g:t:1",
 		"3 · Ала-Кёль→g:t:2",
@@ -525,14 +528,16 @@ func TestSketchPartner(t *testing.T) {
 	checkScreen(t, screens.Partner(i18n.RU, api.Me{PartnerStatus: api.PartnerApproved, PartnerKind: api.KindOrganizer}, true, ""),
 		"🤝 <b>Партнёрство</b>\n\n"+
 			"✅ Вы организатор туров Ermekten: публикуйте туры, ведите группы и вручайте путешественникам достижения.\n\n"+
-			"Создать тур можно на сайте, в «🏔 Открыть Ermekten».",
+			"Создавайте туры и управляйте ими в разделе «🗂 Туры и партнёры».",
+		"🗂 Туры и партнёры→k:home",
 		"🧑‍✈️ Кабинет организатора→g:home",
 		"◀️ Профиль→p:home",
 	)
 	checkScreen(t, screens.Partner(i18n.RU, api.Me{PartnerStatus: api.PartnerApproved, PartnerKind: api.KindDriver}, true, ""),
 		"🤝 <b>Партнёрство</b>\n\n"+
 			"✅ Вы водитель-партнёр Ermekten: организаторы туров находят вас в каталоге и присылают заявки на перевозку групп.\n\n"+
-			"Заявки, рейсы и транспорт — в кабинете на сайте, в «🏔 Открыть Ermekten».",
+			"Заявки, рейсы и транспорт доступны в разделе «🗂 Туры и партнёры».",
+		"🗂 Туры и партнёры→k:home",
 		"◀️ Профиль→p:home",
 	)
 }

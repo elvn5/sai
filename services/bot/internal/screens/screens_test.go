@@ -315,7 +315,7 @@ func TestToursEdges(t *testing.T) {
 		t.Errorf("one tour: %q %v", s.Text, buttons(s))
 	}
 	up := screens.Tours(i18n.RU, screens.ToursView{Tab: screens.TabUpcoming}, links)
-	if !strings.Contains(up.Text, "Ближайших туров пока нет") || len(up.Markup.InlineKeyboard) != 2 {
+	if !strings.Contains(up.Text, "Ближайших туров пока нет") || len(up.Markup.InlineKeyboard) != 3 {
 		t.Errorf("no upcoming: %v\n%s", buttons(up), up.Text)
 	}
 }

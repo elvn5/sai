@@ -375,12 +375,12 @@ func Partner(l i18n.Lang, me api.Me, organizing bool, note string) Screen {
 	case api.PartnerApproved:
 		if driver {
 			b.WriteString(l.T("✅ Вы водитель-партнёр Ermekten: организаторы туров находят вас в каталоге и присылают заявки на перевозку групп.") + "\n\n" +
-				l.T("Заявки, рейсы и транспорт — в кабинете на сайте, в «🏔 Открыть Ermekten»."))
-			return Screen{Text: b.String(), Preview: noPreview(), Markup: rows(backToProfile(l))}
+				l.T("Заявки, рейсы и транспорт доступны в разделе «🗂 Туры и партнёры»."))
+			return Screen{Text: b.String(), Preview: noPreview(), Markup: rows([]telego.InlineKeyboardButton{keyboards.Button(l.T("🗂 Туры и партнёры"), "k:home")}, backToProfile(l))}
 		}
 		b.WriteString(l.T("✅ Вы организатор туров Ermekten: публикуйте туры, ведите группы и вручайте путешественникам достижения.") + "\n\n" +
-			l.T("Создать тур можно на сайте, в «🏔 Открыть Ermekten»."))
-		kb := [][]telego.InlineKeyboardButton{}
+			l.T("Создавайте туры и управляйте ими в разделе «🗂 Туры и партнёры»."))
+		kb := [][]telego.InlineKeyboardButton{{keyboards.Button(l.T("🗂 Туры и партнёры"), "k:home")}}
 		if organizing {
 			kb = append(kb, []telego.InlineKeyboardButton{keyboards.Button(l.T("🧑‍✈️ Кабинет организатора"), OrgHome)})
 		}

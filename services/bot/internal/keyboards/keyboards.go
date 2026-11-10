@@ -15,6 +15,7 @@ import (
 // Main menu buttons, in Russian: they show in the user's language and are
 // matched by text in any language when pressed (see Texts).
 const (
+	Cabinet       = "🗂 Туры и партнёры"
 	MyTours       = "🎒 Мои туры"
 	Tours         = "🧭 Туры"
 	Blog          = "📰 Блог"
@@ -67,12 +68,16 @@ func MainMenu(l i18n.Lang, miniAppURL string, sections bool) *telego.ReplyKeyboa
 	button := func(text string) telego.KeyboardButton { return tu.KeyboardButton(l.T(text)) }
 	var rows [][]telego.KeyboardButton
 	if sections {
+
 		rows = append(rows,
 			tu.KeyboardRow(button(MyTours), button(Tours)),
 			tu.KeyboardRow(button(Blog), button(Notifications)),
 		)
 	}
 	rows = append(rows, tu.KeyboardRow(button(Profile), button(Support)))
+	if sections {
+		rows = append(rows, tu.KeyboardRow(button(Cabinet)))
+	}
 	if miniAppURL != "" {
 		rows = append(rows, tu.KeyboardRow(button(MiniApp).WithWebApp(tu.WebAppInfo(SiteURL(miniAppURL, l)))))
 	}

@@ -100,6 +100,7 @@ func OrganizerHome(l i18n.Lang, tours []api.Tour, now time.Time) Screen {
 	var b strings.Builder
 	b.WriteString(l.T("🧑‍✈️ <b>Кабинет организатора</b>\nУчастники, отметка на сборе и ваши туры."))
 	var buttons [][]telego.InlineKeyboardButton
+	buttons = append(buttons, []telego.InlineKeyboardButton{keyboards.Button(l.T("🗂 Туры и партнёры"), "k:home")})
 	if len(tours) == 0 {
 		b.WriteString("\n\n" + l.T("У вас пока нет туров. Добавьте тур на сайте — здесь появятся его участники, отметка прибывших и рассылка."))
 	} else {

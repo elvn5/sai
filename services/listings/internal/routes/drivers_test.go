@@ -68,10 +68,10 @@ func TestDrivers(t *testing.T) {
 	notifier.Tick(ctx)
 	sent := tg.take()
 	if len(sent) != 1 || sent[0].chat != 1005 || !strings.Contains(sent[0].text, "<b>User 3333</b> просит транспорт для тура «Ала-Куль &lt;тест&gt;»") ||
-		sent[0].button == nil || !strings.HasPrefix(sent[0].button.URL, "https://ermekten.test/partner/trips/") {
+		sent[0].button == nil || !strings.HasPrefix(sent[0].button.Data, "k:trip:") {
 		t.Fatalf("request notification: %+v", sent)
 	}
-	tripID := strings.TrimPrefix(sent[0].button.URL, "https://ermekten.test/partner/trips/")
+	tripID := strings.TrimPrefix(sent[0].button.Data, "k:trip:")
 
 	// The driver sees the group's size and the meeting point, and accepts.
 	_, body = c.do("GET", "/driver/trips/"+tripID, "", driver)
@@ -89,7 +89,7 @@ func TestDrivers(t *testing.T) {
 	notifier.Tick(ctx)
 	sent = tg.take()
 	if len(sent) != 1 || sent[0].chat != 1003 || !strings.Contains(sent[0].text, "Водитель <b>Бакыт</b> принял заявку") ||
-		sent[0].button.URL != "https://ermekten.test/partner/tours/"+tourID+"/participants" {
+		sent[0].button.Data != "k:group:"+tourID {
 		t.Fatalf("accepted notification: %+v", sent)
 	}
 	if _, body := c.do("GET", "/crm/tours/"+tourID+"/transport", "", partner); !strings.Contains(body, `"status":"accepted"`) || !strings.Contains(body, `"plate":"01KG123ABC"`) {

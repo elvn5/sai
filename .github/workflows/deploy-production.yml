@@ -208,6 +208,26 @@ jobs:
             docker ps -aq --filter label=com.docker.compose.project=ermekten-prod --filter label=com.docker.compose.service=tourism | xargs -r docker rm -f
             docker ps -aq --filter label=com.docker.compose.project=ermekten-prod --filter label=com.docker.compose.service=admin | xargs -r docker rm -f
             docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env up -d --remove-orphans
+            # Read-only probes: gateway, tour API and successful bot polling.
+            bot_id=$(docker compose -p ermekten-prod -f docker-compose.deploy.yml --env-file .env ps -q bot)
+            ready=false
+            for attempt in $(seq 1 30); do
+              if curl -fsS --max-time 5 "http://127.0.0.1:${API_PORT}/healthz" >/dev/null &&
+                 curl -fsS --max-time 5 "http://127.0.0.1:${API_PORT}/tours?locale=ru" >/dev/null &&
+                 docker logs --since 5m "$bot_id" 2>&1 | grep -q 'bot polling for updates'; then
+                ready=true
+                break
+              fi
+              sleep 2
+            done
+            if [ "$ready" != true ]; then
+              echo "Production readiness failed: gateway, tours or bot polling did not become ready"
+              exit 1
+            fi
+            sleep 5
+            test "$(docker inspect --format '{{.State.Running}}' "$bot_id")" = true
+            test "$(docker inspect --format '{{.RestartCount}}' "$bot_id")" = 0
+            echo "Production ready: gateway, listings and bot polling"
             # Once every service has copied its data out of the former NestJS
             # database, back it up to ./backups and drop it (no-op after that).
             POSTGRES_DB="$POSTGRES_DB" POSTGRES_USER="$POSTGRES_USER" bash scripts/drop-legacy-db.sh ermekten-prod

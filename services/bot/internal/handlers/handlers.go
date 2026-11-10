@@ -18,6 +18,7 @@ import (
 	tu "github.com/mymmrac/telego/telegoutil"
 
 	"github.com/elvn5/sai/services/bot/internal/api"
+	"github.com/elvn5/sai/services/bot/internal/cabinet"
 	"github.com/elvn5/sai/services/bot/internal/i18n"
 	"github.com/elvn5/sai/services/bot/internal/keyboards"
 	"github.com/elvn5/sai/services/bot/internal/screens"
@@ -50,6 +51,7 @@ type Languages interface {
 }
 
 type Handlers struct {
+	Cabinet    *cabinet.Engine
 	Users      Accounts
 	Sessions   *session.Store
 	MiniAppURL string
@@ -81,6 +83,22 @@ type Handlers struct {
 // so free text (a value being edited) comes last.
 func (h *Handlers) Register(bh *th.BotHandler) {
 	bh.HandleMessage(h.start, th.CommandEqual("start"))
+	if h.Cabinet != nil {
+		bh.Use(func(ctx *th.Context, u telego.Update) error {
+			if q := u.CallbackQuery; q != nil && !strings.HasPrefix(q.Data, "k:") {
+				h.Cabinet.Cancel(chatOf(*q))
+			}
+			return ctx.Next(u)
+		})
+		bh.HandleMessage(func(ctx *th.Context, msg telego.Message) error {
+			h.Cabinet.Cancel(msg.Chat.ID)
+			h.Sessions.Cancel(msg.Chat.ID)
+			return h.reply(ctx, msg.Chat.ID, h.lang(ctx, msg.From).T("Редактирование отменено."), h.mainMenu(h.lang(ctx, msg.From)))
+		}, th.CommandEqual("cancel"))
+		bh.HandleMessage(h.cabinetMenu, menuButton(keyboards.Cabinet, "partner"))
+		bh.HandleMessage(h.cabinetPhoto, func(_ context.Context, u telego.Update) bool { return u.Message != nil && len(u.Message.Photo) > 0 })
+		bh.HandleCallbackQuery(h.cabinetPress, th.CallbackDataPrefix("k:"))
+	}
 	profile := h.profile
 	if h.profiles() {
 		profile = h.profileSection
@@ -193,6 +211,9 @@ func withName(a users.Account) string {
 }
 
 func (h *Handlers) start(ctx *th.Context, msg telego.Message) error {
+	if h.Cabinet != nil {
+		h.Cabinet.Cancel(msg.Chat.ID)
+	}
 	from := msg.From
 	if from == nil {
 		return nil
@@ -416,6 +437,20 @@ func (h *Handlers) editCancel(ctx *th.Context, q telego.CallbackQuery) error {
 // organizer's message to the participants, a participant's review, an
 // answer of the participant's form or a password; other text is ignored.
 func (h *Handlers) text(ctx *th.Context, msg telego.Message) error {
+	if h.Cabinet != nil && msg.From != nil && msg.Chat.ID == msg.From.ID {
+		user, err := h.userOf(ctx, msg.From)
+		if err != nil {
+			return err
+		}
+		screen, handled, err := h.Cabinet.Text(ctx, user, msg.Chat.ID, h.lang(ctx, msg.From), msg.Text)
+		if handled {
+			if err != nil {
+				return h.failed(ctx, h.lang(ctx, msg.From), msg.Chat.ID, err)
+			}
+			return h.send(ctx, msg.Chat.ID, screen)
+		}
+	}
+
 	l := h.lang(ctx, msg.From)
 	field, arg, ok := h.Sessions.ConsumeWith(msg.Chat.ID)
 	if ok && h.organizing() && (field == session.FieldBroadcast || field == session.FieldBroadcastReady) {

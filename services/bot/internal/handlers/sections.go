@@ -156,6 +156,7 @@ func (h *Handlers) tourCard(ctx *th.Context, l i18n.Lang, chatID int64, from *te
 	if err != nil {
 		return h.failed(ctx, l, chatID, err)
 	}
+	h.recordTourView(ctx, userID, t.ID)
 	return h.send(ctx, chatID, screens.TourCard(l, t, screens.FromMine, h.Links, h.now()))
 }
 
@@ -386,6 +387,7 @@ func (h *Handlers) tourPress(ctx *th.Context, q telego.CallbackQuery) error {
 		}
 		if err == nil {
 			if action == screens.ActMore && page == 0 {
+				h.recordTourView(ctx, userID, t.ID)
 				h.track(&q.From, l, eventViewTour, map[string]any{"tour_id": t.ID, "source": "list"})
 			}
 			if err := h.answer(ctx, q, toast); err != nil {
@@ -419,6 +421,7 @@ func (h *Handlers) openTour(ctx *th.Context, l i18n.Lang, q telego.CallbackQuery
 	if err != nil {
 		return h.failedPress(ctx, l, q, err)
 	}
+	h.recordTourView(ctx, userID, id)
 	h.track(&q.From, l, eventViewTour, map[string]any{"tour_id": id, "source": "alert"})
 	if err := h.answer(ctx, q, ""); err != nil {
 		return err

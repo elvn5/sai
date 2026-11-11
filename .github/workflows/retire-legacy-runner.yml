@@ -1,0 +1,32 @@
+name: Inspect legacy runner for removal
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, linux, x64, sai]
+    timeout-minutes: 5
+    steps:
+      - name: Identify runner installation and service
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$RUNNER_NAME" = sai-server
+          id
+          hostname -I
+          runner_root=$(dirname "$(dirname "$RUNNER_WORKSPACE")")
+          printf 'Runner root: %s\n' "$runner_root"
+          test -f "$runner_root/.runner"
+          jq '{agentId, agentName, gitHubUrl, workFolder}' "$runner_root/.runner"
+          if test -f "$runner_root/.service"; then
+            service=$(cat "$runner_root/.service")
+            printf 'Runner service: %s\n' "$service"
+            systemctl show "$service" -p FragmentPath -p User -p WorkingDirectory -p ActiveState
+          fi
+          if sudo -n true; then
+            echo 'Passwordless sudo available'
+          fi

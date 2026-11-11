@@ -213,7 +213,7 @@ func TestStartWithSections(t *testing.T) {
 		msg.params["parse_mode"] != "HTML" {
 		t.Errorf("greeting: %q", msg.text())
 	}
-	if m := msg.markup(); !strings.Contains(m, `[[{"text":"🎒 Мои туры"},{"text":"🧭 Туры"}],[{"text":"📰 Блог"},{"text":"🔔 Уведомления"}],[{"text":"👤 Профиль"},{"text":"🆘 Поддержка"}],`) {
+	if m := msg.markup(); !strings.Contains(m, `[[{"text":"🧭 Туры"},{"text":"🔔 Уведомления"}],[{"text":"👤 Профиль"},{"text":"🆘 Поддержка"}],`) {
 		t.Errorf("main menu: %s", m)
 	}
 

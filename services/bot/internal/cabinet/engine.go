@@ -251,14 +251,15 @@ func (v *view) home() (screens.Screen, error) {
 		return screens.Screen{}, err
 	}
 	me := object(object(value)["user"])
-	keys := []string{"catalog", "chats"}
+	keys := []string{"catalog"}
 	if str(me["partnerStatus"]) == "approved" {
 		if str(me["partnerKind"]) == "driver" {
-			keys = append(keys, "driverSummary", "driverProfile", "vehicles", "trips", "driverExpenses", "driverReports")
+			keys = append(keys, "chats", "driverSummary", "driverProfile", "vehicles", "trips", "driverExpenses", "driverReports", "clients", "tasks", "templates", "broadcasts", "awards")
 		} else {
-			keys = append(keys, "summary", "tours", "drivers", "reports", "leads", "reviews", "stats", "bookings", "finances")
+			keys = append(keys, "tours", "leads", "bookings", "finances", "clients", "templates")
 		}
-		keys = append(keys, "clients", "tasks", "templates", "broadcasts", "awards")
+	} else {
+		keys = append(keys, "chats")
 	}
 	for _, key := range keys {
 		v.button(v.e.resources[key].title, v.listAction(key, nil, nil, 0))

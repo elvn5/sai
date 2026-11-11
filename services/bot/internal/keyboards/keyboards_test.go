@@ -28,11 +28,11 @@ func TestMainMenu(t *testing.T) {
 		}
 		rows = append(rows, strings.Join(cells, " | "))
 	}
-	want := "🎒 Мои туры | 🧭 Туры\n📰 Блог | 🔔 Уведомления\n👤 Профиль | 🆘 Поддержка\n🗂 Туры и партнёры\n🏔 Открыть Ermekten"
+	want := "🧭 Туры | 🔔 Уведомления\n👤 Профиль | 🆘 Поддержка\n🏔 Открыть Ermekten"
 	if strings.Join(rows, "\n") != want {
 		t.Errorf("menu:\n%s", strings.Join(rows, "\n"))
 	}
-	if m.Keyboard[4][0].WebApp == nil || m.Keyboard[4][0].WebApp.URL != "https://ermekten.kg" ||
+	if m.Keyboard[2][0].WebApp == nil || m.Keyboard[2][0].WebApp.URL != "https://ermekten.kg" ||
 		!m.ResizeKeyboard || m.InputFieldPlaceholder != "Выберите раздел" {
 		t.Errorf("menu options: %s", asJSON(m))
 	}
@@ -47,10 +47,10 @@ func TestMainMenu(t *testing.T) {
 // site; a pressed button is recognized in any language.
 func TestMainMenuInEnglish(t *testing.T) {
 	m := keyboards.MainMenu(i18n.EN, "https://ermekten.kg/", true)
-	if got := m.Keyboard[0][0].Text; got != "🎒 My tours" {
-		t.Errorf("my tours button: %q", got)
+	if got := m.Keyboard[0][0].Text; got != "🧭 Tours" {
+		t.Errorf("tours button: %q", got)
 	}
-	if got := m.Keyboard[4][0].WebApp.URL; got != "https://ermekten.kg/en" {
+	if got := m.Keyboard[2][0].WebApp.URL; got != "https://ermekten.kg/en" {
 		t.Errorf("Mini App: %q", got)
 	}
 	if got := keyboards.Texts(keyboards.MyTours); len(got) != 4 || got[0] != keyboards.MyTours || got[2] != "🎒 My tours" {

@@ -99,7 +99,7 @@ func TestProfileSection(t *testing.T) {
 	if msg.text() != want {
 		t.Errorf("profile:\n%s\n--- want:\n%s", msg.text(), want)
 	}
-	for _, data := range []string{"profile_edit_name", "profile_edit_phone", "p:form", "p:pw", "p:aw", "p:pa", "o:list:u", "t:f:0", "l:menu"} {
+	for _, data := range []string{"profile_edit_name", "profile_edit_phone", "p:form", "p:pa", "o:list:u", "t:f:0", "l:menu"} {
 		if !strings.Contains(msg.markup(), `"callback_data":"`+data+`"`) {
 			t.Errorf("no %s button: %s", data, msg.markup())
 		}

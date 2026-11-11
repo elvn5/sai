@@ -63,21 +63,14 @@ const (
 )
 
 // MainMenu is the persistent menu, with a Mini App button when its URL is
-// set; sections reaches the tours and blog buttons (they need the API).
+// set; sections enables the tours and notification buttons (they need the API).
 func MainMenu(l i18n.Lang, miniAppURL string, sections bool) *telego.ReplyKeyboardMarkup {
 	button := func(text string) telego.KeyboardButton { return tu.KeyboardButton(l.T(text)) }
 	var rows [][]telego.KeyboardButton
 	if sections {
-
-		rows = append(rows,
-			tu.KeyboardRow(button(MyTours), button(Tours)),
-			tu.KeyboardRow(button(Blog), button(Notifications)),
-		)
+		rows = append(rows, tu.KeyboardRow(button(Tours), button(Notifications)))
 	}
 	rows = append(rows, tu.KeyboardRow(button(Profile), button(Support)))
-	if sections {
-		rows = append(rows, tu.KeyboardRow(button(Cabinet)))
-	}
 	if miniAppURL != "" {
 		rows = append(rows, tu.KeyboardRow(button(MiniApp).WithWebApp(tu.WebAppInfo(SiteURL(miniAppURL, l)))))
 	}

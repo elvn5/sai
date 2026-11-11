@@ -147,14 +147,9 @@ func Profile(l i18n.Lang, v ProfileView, now time.Time) Screen {
 	if me.Phone == nil || *me.Phone == "" {
 		phoneButton = l.T("📱 Добавить телефон")
 	}
-	passwordButton := l.T("🔑 Задать пароль")
-	if me.HasPassword {
-		passwordButton = l.T("🔑 Сменить пароль")
-	}
 	kb := [][]telego.InlineKeyboardButton{
 		{keyboards.Button(l.T("✏️ Изменить имя"), keyboards.EditName), keyboards.Button(phoneButton, keyboards.EditPhone)},
-		{keyboards.Button(l.T("📝 Анкета участника"), ProfileForm), keyboards.Button(passwordButton, ProfilePassword)},
-		{keyboards.Button(l.T("🏆 Достижения"), ProfileAwards), keyboards.Button(l.T("🤝 Партнёрство"), ProfilePartner)},
+		{keyboards.Button(l.T("📝 Анкета участника"), ProfileForm), keyboards.Button(l.T("🤝 Партнёрство"), ProfilePartner)},
 		{keyboards.Button(l.T("🎒 Мои туры"), ListData(FromMine)), keyboards.Button(l.T("❤️ Избранное"), TourData(TabFavorites, 0))},
 	}
 	if v.Organizing && IsOrganizer(me) {

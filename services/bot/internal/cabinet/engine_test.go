@@ -350,7 +350,10 @@ func TestPaginationAndReferencePicker(t *testing.T) {
 func TestReviewReplyDeleteAndOwnership(t *testing.T) {
 	h := newHarness(t)
 	h.open("home")
-	h.press("Отзывы о моих турах")
+	// Exercise the retained review workflow independently of the home menu.
+	v := &view{e: h.e}
+	h.e.state(10).actions["review-list"] = v.listAction("reviews", nil, nil, 0)
+	h.open("review-list")
 	h.press("A good tour!")
 	h.press("Ответить")
 	if !strings.Contains(h.screen.Text, "Thank you") {

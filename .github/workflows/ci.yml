@@ -8,15 +8,9 @@ on:
 permissions:
   contents: read
 
-env:
-  GOMAXPROCS: "2"
-  NG_BUILD_MAX_WORKERS: "2"
-
 jobs:
   lint-typecheck-build:
-    # Do not execute code from fork PRs on the application server.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, sai]
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
@@ -49,9 +43,7 @@ jobs:
         run: pnpm build
 
   go:
-    # Do not execute code from fork PRs on the application server.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, sai]
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -101,9 +93,7 @@ jobs:
         run: GOWORK=off go build ./...
 
   proto:
-    # Do not execute code from fork PRs on the application server.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, linux, x64, sai]
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     defaults:
       run:

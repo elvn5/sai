@@ -83,6 +83,18 @@ The services read settings from `.env` (see [.env.example](.env.example)).
 | `pnpm proto:generate` | Regenerate gRPC code from `services/proto` |
 | `pnpm test:go` | Test all Go modules |
 
+## CI and deployment
+
+All workflows run on standard GitHub-hosted `ubuntu-latest` runners. The repository
+is public; it does not require a runner installed on the application server.
+CI tests pull requests, including forks, with read-only repository permissions.
+Deployment jobs use environment secrets to connect to the application server over SSH.
+
+Docker images build in parallel on separate GitHub runners. Pushes to `main`
+deploy staging; production deploys only from a `vX.Y.Z` release tag, as required
+by [AGENTS.md](AGENTS.md). Older tags retain their original workflow definitions;
+create a new release tag containing the hosted-runner workflows for future releases.
+
 ## Project structure
 
 ```
